@@ -18,6 +18,7 @@ class HomeWidgetService {
   static Future<void> initialize() async {
     await HomeWidget.setAppGroupId(_appGroupId);
     await _loadVakitler();
+    await _loadWidgetColors();
     await updateAllWidgets();
     
     // Her dakika güncelle
@@ -31,6 +32,36 @@ class HomeWidgetService {
   static void dispose() {
     _updateTimer?.cancel();
     _updateTimer = null;
+  }
+  
+  /// Widget renk ayarlarını yükle
+  static Future<void> _loadWidgetColors() async {
+    final prefs = await SharedPreferences.getInstance();
+    final arkaPlanKey = prefs.getString('widget_arkaplan_key') ?? 'orange';
+    final yaziRengiHex = prefs.getString('widget_yazi_rengi_hex') ?? 'FFFFFF';
+    final seffaflik = prefs.getDouble('widget_seffaflik') ?? 1.0;
+    
+    await HomeWidget.saveWidgetData<String>('arkaplan_key', arkaPlanKey);
+    await HomeWidget.saveWidgetData<String>('yazi_rengi_hex', yaziRengiHex);
+    await HomeWidget.saveWidgetData<double>('seffaflik', seffaflik);
+  }
+  
+  /// Widget renklerini güncelle
+  static Future<void> updateWidgetColors({
+    required String arkaPlanKey,
+    required String yaziRengiHex,
+    required double seffaflik,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('widget_arkaplan_key', arkaPlanKey);
+    await prefs.setString('widget_yazi_rengi_hex', yaziRengiHex);
+    await prefs.setDouble('widget_seffaflik', seffaflik);
+    
+    await HomeWidget.saveWidgetData<String>('arkaplan_key', arkaPlanKey);
+    await HomeWidget.saveWidgetData<String>('yazi_rengi_hex', yaziRengiHex);
+    await HomeWidget.saveWidgetData<double>('seffaflik', seffaflik);
+    
+    await updateAllWidgets();
   }
   
   /// Vakitleri yükle
@@ -99,6 +130,9 @@ class HomeWidgetService {
     await HomeWidget.saveWidgetData<String>('gunun_sozu', hadis['metin']!);
     await HomeWidget.saveWidgetData<String>('soz_kaynak', hadis['kaynak']!);
     
+    // Günün hadisi
+    await HomeWidget.saveWidgetData<String>('gunun_hadisi', hadis['metin']!);
+    
     // Esmaül Hüsna
     final esma = _getGununEsmasi();
     await HomeWidget.saveWidgetData<String>('esma_arapca', esma['arapca']!);
@@ -108,15 +142,16 @@ class HomeWidgetService {
     // Kıble derecesi (örnek değer - gerçek hesaplama için konum gerekli)
     await HomeWidget.saveWidgetData<double>('kible_derece', 156.7);
     
-    // Widget'ları güncelle
-    await HomeWidget.updateWidget(name: 'KompaktVakitWidget');
-    await HomeWidget.updateWidget(name: 'GunlukVakitlerWidget');
-    await HomeWidget.updateWidget(name: 'PremiumSayacWidget');
-    await HomeWidget.updateWidget(name: 'MinimalDaireWidget');
-    await HomeWidget.updateWidget(name: 'GununSozuWidget');
-    await HomeWidget.updateWidget(name: 'EsmaulHusnaWidget');
-    await HomeWidget.updateWidget(name: 'KibleWidget');
-    await HomeWidget.updateWidget(name: 'IkiVakitWidget');
+    // Widget'ları güncelle - tam paket yolu gerekli
+    try {
+      await HomeWidget.updateWidget(name: 'KlasikTuruncuWidget', androidName: 'com.example.huzur_vakti.widgets.KlasikTuruncuWidget');
+      await HomeWidget.updateWidget(name: 'KompaktBannerWidget', androidName: 'com.example.huzur_vakti.widgets.KompaktBannerWidget');
+      await HomeWidget.updateWidget(name: 'CamiSiluetWidget', androidName: 'com.example.huzur_vakti.widgets.CamiSiluetWidget');
+      await HomeWidget.updateWidget(name: 'MiniSunsetWidget', androidName: 'com.example.huzur_vakti.widgets.MiniSunsetWidget');
+    } catch (e) {
+      // Widget güncellenemezse devam et (widget henüz ekranda olmayabilir)
+      print('Widget güncelleme hatası: $e');
+    }
   }
   
   /// Vakit bilgisini hesapla

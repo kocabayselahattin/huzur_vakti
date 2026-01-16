@@ -7,6 +7,9 @@ import 'services/home_widget_service.dart';
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
   
+  // Tarih formatını Türkçe için başlat
+  await initializeDateFormatting('tr_TR', null);
+  
   // Tema servisini başlat
   final temaService = TemaService();
   await temaService.temayiYukle();
@@ -14,7 +17,7 @@ void main() async {
   // Home Widget servisini başlat
   await HomeWidgetService.initialize();
   
-  initializeDateFormatting('tr_TR', null).then((_) => runApp(const HuzurVaktiApp()));
+  runApp(const HuzurVaktiApp());
 }
 
 class HuzurVaktiApp extends StatefulWidget {

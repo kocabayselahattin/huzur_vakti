@@ -291,10 +291,11 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                 Center(
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       // Mevcut vakit badge
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
                         decoration: BoxDecoration(
                           color: renkler.vurgu.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(30),
@@ -325,11 +326,11 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                         ),
                       ),
                       
-                      const SizedBox(height: 16),
+                      const SizedBox(height: 10),
                       
                       // Sayaç container
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
                           gradient: LinearGradient(
@@ -406,7 +407,7 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                         ),
                       ),
                       
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       
                       // Sonraki vakit
                       Row(
@@ -449,7 +450,7 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                         ],
                       ),
                       
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       
                       // Miladi ve Hicri Takvim
                       _buildTakvimRow(renkler),

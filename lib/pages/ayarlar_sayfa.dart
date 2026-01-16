@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'bildirim_ayarlari_sayfa.dart';
 import 'il_ilce_sec_sayfa.dart';
 import 'tema_ayarlari_sayfa.dart';
+import 'widget_ayarlari_sayfa.dart';
 import '../services/tema_service.dart';
 
 class AyarlarSayfa extends StatefulWidget {
@@ -111,6 +112,24 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
                 Icon(Icons.chevron_right, color: renkler.yaziSecondary),
               ],
             ),
+          ),
+          Divider(color: renkler.ayirac),
+
+          // Widget Ayarları
+          _ayarSatiri(
+            icon: Icons.widgets,
+            iconColor: renkler.vurgu,
+            baslik: 'Widget Ayarları',
+            altBaslik: 'Ana ekran widget renkleri',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const WidgetAyarlariSayfa(),
+                ),
+              );
+            },
+            renkler: renkler,
           ),
           Divider(color: renkler.ayirac),
 

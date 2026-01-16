@@ -185,14 +185,15 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
               animation: _glowAnimation,
               builder: (context, child) {
                 return Container(
-                  padding: const EdgeInsets.all(20),
+                  padding: const EdgeInsets.all(16),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       // Üst neon bar
                       _buildNeonBar(renkler),
                       
-                      const SizedBox(height: 15),
+                      const SizedBox(height: 10),
                       
                       // Dijital saat
                       Row(
@@ -206,11 +207,11 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
                         ],
                       ),
                       
-                      const SizedBox(height: 15),
+                      const SizedBox(height: 10),
                       
                       // Vakit bilgisi
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
@@ -242,12 +243,12 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
                         ),
                       ),
                       
-                      const SizedBox(height: 15),
+                      const SizedBox(height: 10),
                       
                       // İlerleme çubuğu
                       _buildProgressBar(renkler),
                       
-                      const SizedBox(height: 12),
+                      const SizedBox(height: 8),
                       
                       // Miladi ve Hicri Takvim
                       _buildTakvimRow(renkler),

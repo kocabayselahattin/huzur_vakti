@@ -26,175 +26,60 @@
             </intent-filter>
         </activity>
         
-        <!-- Widget 1: Kompakt Namaz Vakti (2x1) -->
+        <!-- Widget 1: Klasik Turuncu (3x2) -->
         <receiver 
-            android:name=".widgets.KompaktVakitWidget"
+            android:name=".widgets.KlasikTuruncuWidget"
             android:exported="true"
-            android:label="@string/widget_kompakt_name">
+            android:label="@string/widget_klasik_turuncu_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_klasik_info" />
+        </receiver>
+        
+        <!-- Widget 2: Kompakt Banner (4x1) -->
+        <receiver 
+            android:name=".widgets.KompaktBannerWidget"
+            android:exported="true"
+            android:label="@string/widget_kompakt_banner_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_kompakt_info" />
         </receiver>
         
-        <!-- Widget 2: Günlük Vakitler (2x2) -->
+        <!-- Widget 3: Cami Silüet (4x3) -->
         <receiver 
-            android:name=".widgets.GunlukVakitlerWidget"
+            android:name=".widgets.CamiSiluetWidget"
             android:exported="true"
-            android:label="@string/widget_gunluk_name">
+            android:label="@string/widget_cami_siluet_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/widget_gunluk_info" />
+                android:resource="@xml/widget_cami_info" />
         </receiver>
         
-        <!-- Widget 3: Premium Sayaç (3x2) -->
+        <!-- Widget 4: Mini Sunset (3x1) -->
         <receiver 
-            android:name=".widgets.PremiumSayacWidget"
+            android:name=".widgets.MiniSunsetWidget"
             android:exported="true"
-            android:label="@string/widget_premium_name">
+            android:label="@string/widget_mini_sunset_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/widget_premium_info" />
-        </receiver>
-        
-        <!-- Widget 4: Minimal Daire (2x2) -->
-        <receiver 
-            android:name=".widgets.MinimalDaireWidget"
-            android:exported="true"
-            android:label="@string/widget_minimal_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_minimal_info" />
-        </receiver>
-        
-        <!-- Widget 5: Günün Sözü (4x1) -->
-        <receiver 
-            android:name=".widgets.GununSozuWidget"
-            android:exported="true"
-            android:label="@string/widget_sozu_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_sozu_info" />
-        </receiver>
-        
-        <!-- Widget 6: Esmaül Hüsna (2x1) -->
-        <receiver 
-            android:name=".widgets.EsmaulHusnaWidget"
-            android:exported="true"
-            android:label="@string/widget_esma_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_esma_info" />
-        </receiver>
-        
-        <!-- Widget 7: Kıble Pusulası (2x2) -->
-        <receiver 
-            android:name=".widgets.KibleWidget"
-            android:exported="true"
-            android:label="@string/widget_kible_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_kible_info" />
-        </receiver>
-        
-        <!-- Widget 8: İki Vakit (2x2) -->
-        <receiver 
-            android:name=".widgets.IkiVakitWidget"
-            android:exported="true"
-            android:label="@string/widget_iki_vakit_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_iki_vakit_info" />
-        </receiver>
-        
-        <!-- Widget 9: Ramazan Sayaç (3x2) -->
-        <receiver 
-            android:name=".widgets.RamazanSayacWidget"
-            android:exported="true"
-            android:label="@string/widget_ramazan_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_ramazan_info" />
-        </receiver>
-        
-        <!-- Widget 10: Zikir Sayaç (2x2) -->
-        <receiver 
-            android:name=".widgets.ZikirSayacWidget"
-            android:exported="true"
-            android:label="@string/widget_zikir_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.example.huzur_vakti.ACTION_INCREMENT" />
-                <action android:name="com.example.huzur_vakti.ACTION_DECREMENT" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_zikir_info" />
-        </receiver>
-        
-        <!-- Widget 11: Cuma Sayaç (3x2) -->
-        <receiver 
-            android:name=".widgets.CumaSayacWidget"
-            android:exported="true"
-            android:label="@string/widget_cuma_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_cuma_info" />
-        </receiver>
-        
-        <!-- Widget 12: Haftalık Vakitler (3x3) -->
-        <receiver 
-            android:name=".widgets.HaftalikVakitWidget"
-            android:exported="true"
-            android:label="@string/widget_haftalik_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_haftalik_info" />
-        </receiver>
-        
-        <!-- Widget 13: Günün Ayeti (4x2) -->
-        <receiver 
-            android:name=".widgets.GununAyetiWidget"
-            android:exported="true"
-            android:label="@string/widget_ayet_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_ayet_info" />
+                android:resource="@xml/widget_mini_info" />
         </receiver>
         
         <!-- Don't delete the meta-data below.
