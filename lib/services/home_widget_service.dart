@@ -1,0 +1,248 @@
+import 'dart:async';
+import 'package:home_widget/home_widget.dart';
+import 'package:intl/intl.dart';
+import 'package:hijri/hijri_calendar.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+import 'diyanet_api_service.dart';
+import 'konum_service.dart';
+
+/// Android Home Screen Widget'larını güncelleyen servis
+class HomeWidgetService {
+  static const String _appGroupId = 'group.com.example.huzur_vakti';
+  static const String _androidWidgetName = 'KompaktVakitWidget';
+  
+  static Timer? _updateTimer;
+  static Map<String, String> _vakitSaatleri = {};
+  
+  /// Servisi başlat
+  static Future<void> initialize() async {
+    await HomeWidget.setAppGroupId(_appGroupId);
+    await _loadVakitler();
+    await updateAllWidgets();
+    
+    // Her dakika güncelle
+    _updateTimer?.cancel();
+    _updateTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+      updateAllWidgets();
+    });
+  }
+  
+  /// Servisi durdur
+  static void dispose() {
+    _updateTimer?.cancel();
+    _updateTimer = null;
+  }
+  
+  /// Vakitleri yükle
+  static Future<void> _loadVakitler() async {
+    final ilceId = await KonumService.getIlceId();
+    if (ilceId != null) {
+      final data = await DiyanetApiService.getVakitler(ilceId);
+      if (data != null) {
+        _vakitSaatleri = {
+          'Imsak': data['Imsak'] ?? '05:30',
+          'Gunes': data['Gunes'] ?? '07:00',
+          'Ogle': data['Ogle'] ?? '12:30',
+          'Ikindi': data['Ikindi'] ?? '15:30',
+          'Aksam': data['Aksam'] ?? '18:00',
+          'Yatsi': data['Yatsi'] ?? '19:30',
+        };
+      }
+    }
+  }
+  
+  /// Tüm widget'ları güncelle
+  static Future<void> updateAllWidgets() async {
+    if (_vakitSaatleri.isEmpty) {
+      await _loadVakitler();
+    }
+    
+    final now = DateTime.now();
+    final vakitBilgisi = _hesaplaVakitBilgisi(now);
+    
+    // Tarih bilgileri
+    final miladiTarih = DateFormat('dd MMMM yyyy', 'tr_TR').format(now);
+    final miladiKisa = DateFormat('dd MMM yyyy', 'tr_TR').format(now);
+    final hicri = HijriCalendar.now();
+    final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
+    
+    // Konum bilgisi
+    final il = await KonumService.getIl();
+    final ilce = await KonumService.getIlce();
+    final konum = il != null && ilce != null ? '$il / $ilce' : il ?? 'Konum seçilmedi';
+    
+    // Widget verilerini kaydet
+    await HomeWidget.saveWidgetData<String>('sonraki_vakit', vakitBilgisi['sonrakiVakit']!);
+    await HomeWidget.saveWidgetData<String>('sonraki_vakit_saati', vakitBilgisi['sonrakiSaat']!);
+    await HomeWidget.saveWidgetData<String>('mevcut_vakit', vakitBilgisi['mevcutVakit']!);
+    await HomeWidget.saveWidgetData<String>('mevcut_vakit_saati', vakitBilgisi['mevcutSaat']!);
+    await HomeWidget.saveWidgetData<String>('kalan_sure', vakitBilgisi['kalanSure']!);
+    await HomeWidget.saveWidgetData<String>('kalan_kisa', vakitBilgisi['kalanKisa']!);
+    await HomeWidget.saveWidgetData<String>('geri_sayim', vakitBilgisi['geriSayim']!);
+    await HomeWidget.saveWidgetData<int>('ilerleme', int.parse(vakitBilgisi['ilerleme']!));
+    
+    await HomeWidget.saveWidgetData<String>('tarih', miladiTarih);
+    await HomeWidget.saveWidgetData<String>('miladi_tarih', miladiKisa);
+    await HomeWidget.saveWidgetData<String>('hicri_tarih', hicriTarih);
+    await HomeWidget.saveWidgetData<String>('konum', konum);
+    
+    // Vakit saatlerini kaydet
+    await HomeWidget.saveWidgetData<String>('imsak_saati', _vakitSaatleri['Imsak']!);
+    await HomeWidget.saveWidgetData<String>('gunes_saati', _vakitSaatleri['Gunes']!);
+    await HomeWidget.saveWidgetData<String>('ogle_saati', _vakitSaatleri['Ogle']!);
+    await HomeWidget.saveWidgetData<String>('ikindi_saati', _vakitSaatleri['Ikindi']!);
+    await HomeWidget.saveWidgetData<String>('aksam_saati', _vakitSaatleri['Aksam']!);
+    await HomeWidget.saveWidgetData<String>('yatsi_saati', _vakitSaatleri['Yatsi']!);
+    
+    // Günün sözü
+    final hadis = await _getGununHadisi();
+    await HomeWidget.saveWidgetData<String>('gunun_sozu', hadis['metin']!);
+    await HomeWidget.saveWidgetData<String>('soz_kaynak', hadis['kaynak']!);
+    
+    // Esmaül Hüsna
+    final esma = _getGununEsmasi();
+    await HomeWidget.saveWidgetData<String>('esma_arapca', esma['arapca']!);
+    await HomeWidget.saveWidgetData<String>('esma_turkce', esma['turkce']!);
+    await HomeWidget.saveWidgetData<String>('esma_anlam', esma['anlam']!);
+    
+    // Kıble derecesi (örnek değer - gerçek hesaplama için konum gerekli)
+    await HomeWidget.saveWidgetData<double>('kible_derece', 156.7);
+    
+    // Widget'ları güncelle
+    await HomeWidget.updateWidget(name: 'KompaktVakitWidget');
+    await HomeWidget.updateWidget(name: 'GunlukVakitlerWidget');
+    await HomeWidget.updateWidget(name: 'PremiumSayacWidget');
+    await HomeWidget.updateWidget(name: 'MinimalDaireWidget');
+    await HomeWidget.updateWidget(name: 'GununSozuWidget');
+    await HomeWidget.updateWidget(name: 'EsmaulHusnaWidget');
+    await HomeWidget.updateWidget(name: 'KibleWidget');
+    await HomeWidget.updateWidget(name: 'IkiVakitWidget');
+  }
+  
+  /// Vakit bilgisini hesapla
+  static Map<String, String> _hesaplaVakitBilgisi(DateTime now) {
+    if (_vakitSaatleri.isEmpty) {
+      return {
+        'sonrakiVakit': 'Öğle',
+        'sonrakiSaat': '12:30',
+        'mevcutVakit': 'Güneş',
+        'mevcutSaat': '07:00',
+        'kalanSure': '2s 30dk kaldı',
+        'kalanKisa': '2s 30dk',
+        'geriSayim': '02:30:00',
+        'ilerleme': '50',
+      };
+    }
+    
+    final nowMinutes = now.hour * 60 + now.minute;
+    
+    final vakitListesi = [
+      {'key': 'Imsak', 'adi': 'İmsak'},
+      {'key': 'Gunes', 'adi': 'Güneş'},
+      {'key': 'Ogle', 'adi': 'Öğle'},
+      {'key': 'Ikindi', 'adi': 'İkindi'},
+      {'key': 'Aksam', 'adi': 'Akşam'},
+      {'key': 'Yatsi', 'adi': 'Yatsı'},
+    ];
+    
+    String sonrakiVakit = 'İmsak';
+    String sonrakiSaat = _vakitSaatleri['Imsak']!;
+    String mevcutVakit = 'Yatsı';
+    String mevcutSaat = _vakitSaatleri['Yatsi']!;
+    int kalanDakika = 0;
+    int toplamDakika = 1;
+    int gecenDakika = 0;
+    
+    for (int i = 0; i < vakitListesi.length; i++) {
+      final vakit = vakitListesi[i];
+      final saat = _vakitSaatleri[vakit['key']]!;
+      final parts = saat.split(':');
+      final vakitMinutes = int.parse(parts[0]) * 60 + int.parse(parts[1]);
+      
+      if (vakitMinutes > nowMinutes) {
+        sonrakiVakit = vakit['adi']!;
+        sonrakiSaat = saat;
+        
+        if (i > 0) {
+          mevcutVakit = vakitListesi[i - 1]['adi']!;
+          mevcutSaat = _vakitSaatleri[vakitListesi[i - 1]['key']]!;
+          final mevcutParts = mevcutSaat.split(':');
+          final mevcutMinutes = int.parse(mevcutParts[0]) * 60 + int.parse(mevcutParts[1]);
+          toplamDakika = vakitMinutes - mevcutMinutes;
+          gecenDakika = nowMinutes - mevcutMinutes;
+        }
+        
+        kalanDakika = vakitMinutes - nowMinutes;
+        break;
+      }
+    }
+    
+    // Yarın imsak
+    if (kalanDakika == 0) {
+      final imsakSaat = _vakitSaatleri['Imsak']!;
+      final parts = imsakSaat.split(':');
+      final imsakMinutes = int.parse(parts[0]) * 60 + int.parse(parts[1]);
+      kalanDakika = (24 * 60 - nowMinutes) + imsakMinutes;
+      sonrakiVakit = 'İmsak';
+      sonrakiSaat = imsakSaat;
+      mevcutVakit = 'Yatsı';
+      mevcutSaat = _vakitSaatleri['Yatsi']!;
+    }
+    
+    final kalanSaat = kalanDakika ~/ 60;
+    final kalanDk = kalanDakika % 60;
+    final kalanSaniye = 60 - now.second;
+    
+    final ilerleme = toplamDakika > 0 ? ((gecenDakika / toplamDakika) * 100).round() : 0;
+    
+    return {
+      'sonrakiVakit': sonrakiVakit,
+      'sonrakiSaat': sonrakiSaat,
+      'mevcutVakit': mevcutVakit,
+      'mevcutSaat': mevcutSaat,
+      'kalanSure': '${kalanSaat}s ${kalanDk}dk kaldı',
+      'kalanKisa': '${kalanSaat}s ${kalanDk}dk',
+      'geriSayim': '${kalanSaat.toString().padLeft(2, '0')}:${kalanDk.toString().padLeft(2, '0')}:${kalanSaniye.toString().padLeft(2, '0')}',
+      'ilerleme': ilerleme.toString(),
+    };
+  }
+  
+  static String _getHicriAyAdi(int ay) {
+    const aylar = ['', 'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir', 
+      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban', 'Ramazan', 
+      'Şevval', 'Zilkade', 'Zilhicce'];
+    return aylar[ay];
+  }
+  
+  static Future<Map<String, String>> _getGununHadisi() async {
+    final hadisler = [
+      {'metin': 'Ameller niyetlere göredir.', 'kaynak': 'Buhârî'},
+      {'metin': 'Müslüman, elinden ve dilinden Müslümanların güvende olduğu kimsedir.', 'kaynak': 'Buhârî'},
+      {'metin': 'Kolaylaştırınız, zorlaştırmayınız.', 'kaynak': 'Buhârî'},
+      {'metin': 'Sizin en hayırlınız ahlakça en güzel olanınızdır.', 'kaynak': 'Buhârî'},
+      {'metin': 'Güzel söz sadakadır.', 'kaynak': 'Buhârî'},
+      {'metin': 'Cennette yetim himaye edenle beraber olacağız.', 'kaynak': 'Buhârî'},
+      {'metin': 'Allah temizdir, temizi sever.', 'kaynak': 'Tirmizî'},
+    ];
+    
+    final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
+    final index = dayOfYear % hadisler.length;
+    return hadisler[index];
+  }
+  
+  static Map<String, String> _getGununEsmasi() {
+    final esmalar = [
+      {'arapca': 'الرحمن', 'turkce': 'ER-RAHMÂN', 'anlam': 'Çok merhametli'},
+      {'arapca': 'الرحيم', 'turkce': 'ER-RAHÎM', 'anlam': 'Çok bağışlayan'},
+      {'arapca': 'الملك', 'turkce': 'EL-MELİK', 'anlam': 'Mülkün sahibi'},
+      {'arapca': 'القدوس', 'turkce': 'EL-KUDDÛS', 'anlam': 'Çok kutsal'},
+      {'arapca': 'السلام', 'turkce': 'ES-SELÂM', 'anlam': 'Selamet veren'},
+      {'arapca': 'المؤمن', 'turkce': "EL-MÜ'MİN", 'anlam': 'Güven veren'},
+      {'arapca': 'المهيمن', 'turkce': 'EL-MÜHEYMİN', 'anlam': 'Koruyup gözeten'},
+    ];
+    
+    final dayOfYear = DateTime.now().difference(DateTime(DateTime.now().year, 1, 1)).inDays;
+    final index = dayOfYear % esmalar.length;
+    return esmalar[index];
+  }
+}

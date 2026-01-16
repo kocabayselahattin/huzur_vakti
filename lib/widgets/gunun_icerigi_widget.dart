@@ -82,6 +82,40 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
     {'dua': 'Allah\'ım! Ömrümü hayırla tamamla.', 'kaynak': 'Hadis'},
   ];
 
+  // Hadis listesi
+  static const List<Map<String, String>> _hadisler = [
+    {'hadis': 'Ameller niyetlere göredir. Herkesin niyeti ne ise eline geçecek odur.', 'kaynak': 'Buhârî, Müslim'},
+    {'hadis': 'Müslüman, elinden ve dilinden Müslümanların emin olduğu kimsedir.', 'kaynak': 'Buhârî, Müslim'},
+    {'hadis': 'Kolaylaştırınız, zorlaştırmayınız. Müjdeleyiniz, nefret ettirmeyiniz.', 'kaynak': 'Buhârî, Müslim'},
+    {'hadis': 'Sizin en hayırlınız, ahlakı en güzel olanınızdır.', 'kaynak': 'Buhârî'},
+    {'hadis': 'Güzel söz sadakadır.', 'kaynak': 'Buhârî, Müslim'},
+    {'hadis': 'Cennet annelerin ayakları altındadır.', 'kaynak': 'Nesâî'},
+    {'hadis': 'Hiçbiriniz, kendisi için istediğini kardeşi için de istemedikçe iman etmiş olmaz.', 'kaynak': 'Buhârî, Müslim'},
+    {'hadis': 'Temizlik imanın yarısıdır.', 'kaynak': 'Müslim'},
+    {'hadis': 'Kuvvetli mümin, zayıf müminden daha hayırlıdır.', 'kaynak': 'Müslim'},
+    {'hadis': 'Allah\'a ve ahiret gününe iman eden, komşusuna eziyet etmesin.', 'kaynak': 'Buhârî, Müslim'},
+    {'hadis': 'Kim Allah\'a ve ahiret gününe iman ediyorsa, ya hayır söylesin ya da sussun.', 'kaynak': 'Buhârî, Müslim'},
+    {'hadis': 'Dünya ahiretin tarlasıdır.', 'kaynak': 'Deylemî'},
+    {'hadis': 'İlim talep etmek her Müslümana farzdır.', 'kaynak': 'İbn Mâce'},
+    {'hadis': 'Beşikten mezara kadar ilim öğreniniz.', 'kaynak': 'Hadis-i Şerif'},
+    {'hadis': 'Hikmet müminin yitiğidir, nerede bulursa alsın.', 'kaynak': 'Tirmizî'},
+    {'hadis': 'İnsanların en hayırlısı insanlara faydalı olandır.', 'kaynak': 'Taberânî'},
+    {'hadis': 'Sabır acıdır, meyvesi tatlıdır.', 'kaynak': 'Hadis-i Şerif'},
+    {'hadis': 'Bir saat tefekkür, bir sene nafile ibadetten hayırlıdır.', 'kaynak': 'Hadis-i Şerif'},
+    {'hadis': 'Güleryüzlülük sadakadır.', 'kaynak': 'Tirmizî'},
+    {'hadis': 'Öfkelendiğin zaman sus.', 'kaynak': 'Ahmed b. Hanbel'},
+    {'hadis': 'Yolda eziyet veren şeyleri kaldırmak imandandır.', 'kaynak': 'Müslim'},
+    {'hadis': 'Her iyilik sadakadır.', 'kaynak': 'Buhârî'},
+    {'hadis': 'İki nimet vardır, insanların çoğu bunlarda aldanmıştır: Sağlık ve boş vakit.', 'kaynak': 'Buhârî'},
+    {'hadis': 'Beş şey gelmeden önce beş şeyi ganimet bil: Ölümünden önce hayatını...', 'kaynak': 'Hâkim'},
+    {'hadis': 'Kul, kardeşinin yardımında olduğu sürece Allah da onun yardımındadır.', 'kaynak': 'Müslim'},
+    {'hadis': 'Namaz dinin direğidir.', 'kaynak': 'Tirmizî'},
+    {'hadis': 'Namaz müminin miracıdır.', 'kaynak': 'Hadis-i Şerif'},
+    {'hadis': 'En faziletli cihad, zalim sultanın yanında hak söz söylemektir.', 'kaynak': 'Ebû Dâvûd'},
+    {'hadis': 'Utanmadıktan sonra dilediğini yap.', 'kaynak': 'Buhârî'},
+    {'hadis': 'Vera (şüphelilerden kaçınmak), dinin başıdır.', 'kaynak': 'Hadis-i Şerif'},
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -113,11 +147,19 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
     return _dualar[index];
   }
 
+  Map<String, String> _getGununHadisi() {
+    final now = DateTime.now();
+    final dayOfYear = now.difference(DateTime(now.year, 1, 1)).inDays;
+    final index = (dayOfYear + 14) % _hadisler.length; // Farklı sıralama için +14
+    return _hadisler[index];
+  }
+
   @override
   Widget build(BuildContext context) {
     final renkler = _temaService.renkler;
     final gununAyeti = _getGununAyeti();
     final gununDuasi = _getGununDuasi();
+    final gununHadisi = _getGununHadisi();
     
     return Column(
       children: [
@@ -142,6 +184,8 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
                   _buildPageIndicator(0, renkler),
                   const SizedBox(width: 6),
                   _buildPageIndicator(1, renkler),
+                  const SizedBox(width: 6),
+                  _buildPageIndicator(2, renkler),
                 ],
               ),
             ],
@@ -165,6 +209,13 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
                 icerik: gununAyeti['ayet']!,
                 kaynak: gununAyeti['kaynak']!,
                 ikon: Icons.menu_book_rounded,
+                renkler: renkler,
+              ),
+              _buildIcerikKart(
+                baslik: 'GÜNÜN HADİSİ',
+                icerik: gununHadisi['hadis']!,
+                kaynak: gununHadisi['kaynak']!,
+                ikon: Icons.star_rounded,
                 renkler: renkler,
               ),
               _buildIcerikKart(

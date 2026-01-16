@@ -1,0 +1,77 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_zikir_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="12dp"
+    android:background="@drawable/widget_background_zikir">
+
+    <!-- Zikir başlığı -->
+    <TextView
+        android:id="@+id/tv_zikir_baslik"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="📿 ZİKİR"
+        android:textColor="#4FC3F7"
+        android:textSize="11sp"
+        android:letterSpacing="0.15" />
+
+    <!-- Zikir metni -->
+    <TextView
+        android:id="@+id/tv_zikir_metin"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="سُبْحَانَ اللّهِ"
+        android:textColor="#FFFFFF"
+        android:textSize="22sp"
+        android:textStyle="bold"
+        android:layout_marginTop="6dp" />
+
+    <TextView
+        android:id="@+id/tv_zikir_anlam"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="Sübhanallah"
+        android:textColor="#B0BEC5"
+        android:textSize="12sp"
+        android:layout_marginTop="2dp" />
+
+    <!-- Sayaç -->
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center"
+        android:layout_marginTop="8dp">
+
+        <ImageButton
+            android:id="@+id/btn_zikir_azalt"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/widget_button_circle"
+            android:src="@android:drawable/ic_media_previous"
+            android:contentDescription="Azalt" />
+
+        <TextView
+            android:id="@+id/tv_zikir_sayac"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="33"
+            android:textColor="#4FC3F7"
+            android:textSize="28sp"
+            android:textStyle="bold"
+            android:paddingHorizontal="16dp" />
+
+        <ImageButton
+            android:id="@+id/btn_zikir_artir"
+            android:layout_width="32dp"
+            android:layout_height="32dp"
+            android:background="@drawable/widget_button_circle"
+            android:src="@android:drawable/ic_media_next"
+            android:contentDescription="Artır" />
+
+    </LinearLayout>
+
+</LinearLayout>

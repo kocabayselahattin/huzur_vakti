@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dart:async';
+import 'package:hijri/hijri_calendar.dart';
+import 'package:intl/intl.dart';
 import '../services/konum_service.dart';
 import '../services/diyanet_api_service.dart';
 import '../services/tema_service.dart';
@@ -446,6 +448,11 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                           ],
                         ],
                       ),
+                      
+                      const SizedBox(height: 12),
+                      
+                      // Miladi ve Hicri Takvim
+                      _buildTakvimRow(renkler),
                     ],
                   ),
                 ),
@@ -455,6 +462,72 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
         ),
       ),
     );
+  }
+  
+  Widget _buildTakvimRow(TemaRenkleri renkler) {
+    final now = DateTime.now();
+    final miladiTarih = DateFormat('dd MMM yyyy', 'tr_TR').format(now);
+    final hicri = HijriCalendar.now();
+    final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
+    
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Miladi
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: renkler.vurgu.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.calendar_today, size: 12, color: renkler.yaziSecondary),
+              const SizedBox(width: 4),
+              Text(
+                miladiTarih,
+                style: TextStyle(
+                  color: renkler.yaziSecondary,
+                  fontSize: 10,
+                ),
+              ),
+            ],
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Hicri
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+          decoration: BoxDecoration(
+            color: renkler.vurgu.withValues(alpha: 0.1),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.brightness_3, size: 12, color: renkler.vurgu),
+              const SizedBox(width: 4),
+              Text(
+                hicriTarih,
+                style: TextStyle(
+                  color: renkler.vurgu,
+                  fontSize: 10,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+  
+  String _getHicriAyAdi(int ay) {
+    const aylar = ['', 'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir', 
+      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban', 'Ramazan', 
+      'Şevval', 'Zilkade', 'Zilhicce'];
+    return aylar[ay];
   }
 
   String _sonrakiVakitKey() {

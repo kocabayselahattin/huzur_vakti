@@ -1,0 +1,506 @@
+import 'package:flutter/material.dart';
+import 'dart:math' as math;
+import 'dart:async';
+import 'package:hijri/hijri_calendar.dart';
+import 'package:intl/intl.dart';
+import '../services/diyanet_api_service.dart';
+import '../services/konum_service.dart';
+import '../services/tema_service.dart';
+
+class NeonSayacWidget extends StatefulWidget {
+  const NeonSayacWidget({super.key});
+
+  @override
+  State<NeonSayacWidget> createState() => _NeonSayacWidgetState();
+}
+
+class _NeonSayacWidgetState extends State<NeonSayacWidget>
+    with TickerProviderStateMixin {
+  final TemaService _temaService = TemaService();
+  Timer? _timer;
+  Duration _kalanSure = Duration.zero;
+  String _sonrakiVakit = '';
+  double _ilerlemeOrani = 0.0;
+  Map<String, String> _vakitSaatleri = {};
+  
+  late AnimationController _glowController;
+  late AnimationController _waveController;
+  late Animation<double> _glowAnimation;
+
+  @override
+  void initState() {
+    super.initState();
+    
+    _glowController = AnimationController(
+      duration: const Duration(milliseconds: 1500),
+      vsync: this,
+    )..repeat(reverse: true);
+    
+    _glowAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
+      CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
+    );
+    
+    _waveController = AnimationController(
+      duration: const Duration(seconds: 3),
+      vsync: this,
+    )..repeat();
+    
+    _vakitleriYukle();
+    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+      _hesaplaKalanSure();
+    });
+    _temaService.addListener(_onTemaChanged);
+  }
+
+  void _onTemaChanged() {
+    if (mounted) setState(() {});
+  }
+
+  @override
+  void dispose() {
+    _timer?.cancel();
+    _glowController.dispose();
+    _waveController.dispose();
+    _temaService.removeListener(_onTemaChanged);
+    super.dispose();
+  }
+
+  Future<void> _vakitleriYukle() async {
+    final ilceId = await KonumService.getIlceId();
+    if (ilceId != null) {
+      final vakitler = await DiyanetApiService.getVakitler(ilceId);
+      if (vakitler != null && mounted) {
+        setState(() {
+          _vakitSaatleri = {
+            'imsak': vakitler['Imsak'] ?? '05:30',
+            'gunes': vakitler['Gunes'] ?? '07:00',
+            'ogle': vakitler['Ogle'] ?? '12:30',
+            'ikindi': vakitler['Ikindi'] ?? '15:45',
+            'aksam': vakitler['Aksam'] ?? '18:15',
+            'yatsi': vakitler['Yatsi'] ?? '19:45',
+          };
+        });
+        _hesaplaKalanSure();
+      }
+    }
+  }
+
+  void _hesaplaKalanSure() {
+    if (_vakitSaatleri.isEmpty) return;
+    
+    final now = DateTime.now();
+    final nowMinutes = now.hour * 60 + now.minute;
+
+    final vakitListesi = [
+      {'adi': 'İmsak', 'saat': _vakitSaatleri['imsak']!},
+      {'adi': 'Güneş', 'saat': _vakitSaatleri['gunes']!},
+      {'adi': 'Öğle', 'saat': _vakitSaatleri['ogle']!},
+      {'adi': 'İkindi', 'saat': _vakitSaatleri['ikindi']!},
+      {'adi': 'Akşam', 'saat': _vakitSaatleri['aksam']!},
+      {'adi': 'Yatsı', 'saat': _vakitSaatleri['yatsi']!},
+    ];
+
+    DateTime? sonrakiVakitZamani;
+    DateTime? oncekiVakitZamani;
+    String sonrakiVakitAdi = '';
+
+    for (int i = 0; i < vakitListesi.length; i++) {
+      final vakit = vakitListesi[i];
+      final parts = vakit['saat']!.split(':');
+      final vakitMinutes = int.parse(parts[0]) * 60 + int.parse(parts[1]);
+      
+      if (vakitMinutes > nowMinutes) {
+        sonrakiVakitZamani = DateTime(now.year, now.month, now.day,
+            int.parse(parts[0]), int.parse(parts[1]));
+        sonrakiVakitAdi = vakit['adi']!;
+        
+        if (i > 0) {
+          final oncekiParts = vakitListesi[i - 1]['saat']!.split(':');
+          oncekiVakitZamani = DateTime(now.year, now.month, now.day,
+              int.parse(oncekiParts[0]), int.parse(oncekiParts[1]));
+        }
+        break;
+      }
+    }
+
+    if (sonrakiVakitZamani == null) {
+      final yarin = now.add(const Duration(days: 1));
+      final imsakParts = _vakitSaatleri['imsak']!.split(':');
+      sonrakiVakitZamani = DateTime(yarin.year, yarin.month, yarin.day,
+          int.parse(imsakParts[0]), int.parse(imsakParts[1]));
+      sonrakiVakitAdi = 'İmsak';
+      
+      final yatsiParts = _vakitSaatleri['yatsi']!.split(':');
+      oncekiVakitZamani = DateTime(now.year, now.month, now.day,
+          int.parse(yatsiParts[0]), int.parse(yatsiParts[1]));
+    }
+
+    double oran = 0.0;
+    if (oncekiVakitZamani != null) {
+      final toplamSure = sonrakiVakitZamani.difference(oncekiVakitZamani).inSeconds;
+      final gecenSure = now.difference(oncekiVakitZamani).inSeconds;
+      oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
+    }
+
+    setState(() {
+      _kalanSure = sonrakiVakitZamani!.difference(now);
+      _sonrakiVakit = sonrakiVakitAdi;
+      _ilerlemeOrani = oran;
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final renkler = _temaService.renkler;
+    final hours = _kalanSure.inHours;
+    final minutes = _kalanSure.inMinutes % 60;
+    final seconds = _kalanSure.inSeconds % 60;
+
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        color: Colors.black,
+        border: Border.all(
+          color: renkler.vurgu.withValues(alpha: 0.5),
+          width: 2,
+        ),
+      ),
+      child: ClipRRect(
+        borderRadius: BorderRadius.circular(22),
+        child: Stack(
+          children: [
+            // Neon grid arka plan
+            Positioned.fill(
+              child: CustomPaint(
+                painter: _NeonGridPainter(
+                  vurguRenk: renkler.vurgu,
+                  waveValue: _waveController.value,
+                ),
+              ),
+            ),
+            
+            // Ana içerik
+            AnimatedBuilder(
+              animation: _glowAnimation,
+              builder: (context, child) {
+                return Container(
+                  padding: const EdgeInsets.all(20),
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      // Üst neon bar
+                      _buildNeonBar(renkler),
+                      
+                      const SizedBox(height: 15),
+                      
+                      // Dijital saat
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildNeonDigit(hours.toString().padLeft(2, '0'), renkler),
+                          _buildNeonColon(renkler),
+                          _buildNeonDigit(minutes.toString().padLeft(2, '0'), renkler),
+                          _buildNeonColon(renkler),
+                          _buildNeonDigit(seconds.toString().padLeft(2, '0'), renkler),
+                        ],
+                      ),
+                      
+                      const SizedBox(height: 15),
+                      
+                      // Vakit bilgisi
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(
+                            color: renkler.vurgu.withValues(alpha: _glowAnimation.value),
+                            width: 1,
+                          ),
+                          boxShadow: [
+                            BoxShadow(
+                              color: renkler.vurgu.withValues(alpha: 0.3 * _glowAnimation.value),
+                              blurRadius: 10,
+                              spreadRadius: 2,
+                            ),
+                          ],
+                        ),
+                        child: Text(
+                          '$_sonrakiVakit VAKTİNE',
+                          style: TextStyle(
+                            color: renkler.vurgu,
+                            fontSize: 14,
+                            fontWeight: FontWeight.bold,
+                            letterSpacing: 4,
+                            shadows: [
+                              Shadow(
+                                color: renkler.vurgu,
+                                blurRadius: 10,
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                      
+                      const SizedBox(height: 15),
+                      
+                      // İlerleme çubuğu
+                      _buildProgressBar(renkler),
+                      
+                      const SizedBox(height: 12),
+                      
+                      // Miladi ve Hicri Takvim
+                      _buildTakvimRow(renkler),
+                    ],
+                  ),
+                );
+              },
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNeonBar(TemaRenkleri renkler) {
+    return Container(
+      height: 3,
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(2),
+        gradient: LinearGradient(
+          colors: [
+            Colors.transparent,
+            renkler.vurgu.withValues(alpha: _glowAnimation.value),
+            Colors.transparent,
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: renkler.vurgu.withValues(alpha: 0.5),
+            blurRadius: 10,
+            spreadRadius: 2,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildNeonDigit(String digit, TemaRenkleri renkler) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(8),
+        border: Border.all(
+          color: renkler.vurgu.withValues(alpha: 0.3),
+          width: 1,
+        ),
+      ),
+      child: Text(
+        digit,
+        style: TextStyle(
+          fontSize: 42,
+          fontWeight: FontWeight.w300,
+          color: renkler.vurgu,
+          fontFamily: 'monospace',
+          shadows: [
+            Shadow(
+              color: renkler.vurgu,
+              blurRadius: 15 * _glowAnimation.value,
+            ),
+            Shadow(
+              color: renkler.vurgu.withValues(alpha: 0.5),
+              blurRadius: 30 * _glowAnimation.value,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildNeonColon(TemaRenkleri renkler) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 4),
+      child: Text(
+        ':',
+        style: TextStyle(
+          fontSize: 42,
+          fontWeight: FontWeight.w300,
+          color: renkler.vurgu.withValues(alpha: _glowAnimation.value),
+          shadows: [
+            Shadow(
+              color: renkler.vurgu,
+              blurRadius: 10,
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildProgressBar(TemaRenkleri renkler) {
+    return Column(
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              'İLERLEME',
+              style: TextStyle(
+                color: renkler.yaziSecondary,
+                fontSize: 10,
+                letterSpacing: 2,
+              ),
+            ),
+            Text(
+              '${(_ilerlemeOrani * 100).toInt()}%',
+              style: TextStyle(
+                color: renkler.vurgu,
+                fontSize: 10,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 6),
+        Container(
+          height: 6,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(3),
+            color: renkler.yaziSecondary.withValues(alpha: 0.2),
+          ),
+          child: Stack(
+            children: [
+              FractionallySizedBox(
+                widthFactor: _ilerlemeOrani,
+                child: Container(
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(3),
+                    gradient: LinearGradient(
+                      colors: [
+                        renkler.vurgu,
+                        renkler.vurgu.withValues(alpha: 0.7),
+                      ],
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: renkler.vurgu.withValues(alpha: 0.6),
+                        blurRadius: 8,
+                        spreadRadius: 1,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+  
+  Widget _buildTakvimRow(TemaRenkleri renkler) {
+    final now = DateTime.now();
+    final miladiTarih = DateFormat('dd MMM yyyy', 'tr_TR').format(now);
+    final hicri = HijriCalendar.now();
+    final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
+    
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        // Miladi
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            border: Border.all(color: renkler.vurgu.withValues(alpha: 0.3)),
+            borderRadius: BorderRadius.circular(4),
+          ),
+          child: Text(
+            miladiTarih,
+            style: TextStyle(
+              color: renkler.yaziSecondary,
+              fontSize: 9,
+              letterSpacing: 1,
+              shadows: [
+                Shadow(color: renkler.vurgu.withValues(alpha: 0.3), blurRadius: 4),
+              ],
+            ),
+          ),
+        ),
+        // Hicri
+        Container(
+          padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+          decoration: BoxDecoration(
+            border: Border.all(color: renkler.vurgu.withValues(alpha: 0.5)),
+            borderRadius: BorderRadius.circular(4),
+            boxShadow: [
+              BoxShadow(
+                color: renkler.vurgu.withValues(alpha: 0.2),
+                blurRadius: 6,
+              ),
+            ],
+          ),
+          child: Text(
+            hicriTarih,
+            style: TextStyle(
+              color: renkler.vurgu,
+              fontSize: 9,
+              letterSpacing: 1,
+              fontWeight: FontWeight.w500,
+              shadows: [
+                Shadow(color: renkler.vurgu, blurRadius: 8),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+  
+  String _getHicriAyAdi(int ay) {
+    const aylar = ['', 'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir', 
+      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban', 'Ramazan', 
+      'Şevval', 'Zilkade', 'Zilhicce'];
+    return aylar[ay];
+  }
+}
+
+class _NeonGridPainter extends CustomPainter {
+  final Color vurguRenk;
+  final double waveValue;
+
+  _NeonGridPainter({required this.vurguRenk, required this.waveValue});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = vurguRenk.withValues(alpha: 0.1)
+      ..strokeWidth = 0.5
+      ..style = PaintingStyle.stroke;
+
+    // Yatay çizgiler
+    for (int i = 0; i < 15; i++) {
+      final y = (size.height / 15) * i;
+      final waveOffset = math.sin(waveValue * 2 * math.pi + i * 0.3) * 2;
+      
+      final path = Path();
+      path.moveTo(0, y + waveOffset);
+      
+      for (double x = 0; x < size.width; x += 5) {
+        final localWave = math.sin(waveValue * 2 * math.pi + x * 0.02 + i * 0.3) * 2;
+        path.lineTo(x, y + localWave);
+      }
+      
+      canvas.drawPath(path, paint);
+    }
+
+    // Dikey çizgiler
+    for (int i = 0; i < 20; i++) {
+      final x = (size.width / 20) * i;
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _NeonGridPainter oldDelegate) =>
+      waveValue != oldDelegate.waveValue;
+}

@@ -1,0 +1,106 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_sonraki_iki_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="@drawable/widget_background_rounded">
+
+    <!-- Şu anki vakit -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:background="@drawable/widget_item_active"
+        android:padding="8dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_mevcut_vakit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="ÖĞLE"
+                android:textColor="#4FC3F7"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_mevcut_kalan"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="Şu an"
+                android:textColor="#78909C"
+                android:textSize="10sp" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_mevcut_saat"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="12:34"
+            android:textColor="#FFFFFF"
+            android:textSize="20sp"
+            android:textStyle="bold" />
+
+    </LinearLayout>
+
+    <View
+        android:layout_width="match_parent"
+        android:layout_height="1dp"
+        android:background="#1A4FC3F7"
+        android:layout_marginVertical="4dp" />
+
+    <!-- Sonraki vakit -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="0dp"
+        android:layout_weight="1"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:padding="8dp">
+
+        <LinearLayout
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:orientation="vertical">
+
+            <TextView
+                android:id="@+id/tv_sonraki_vakit"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="İKİNDİ"
+                android:textColor="#B0BEC5"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+
+            <TextView
+                android:id="@+id/tv_sonraki_kalan"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2s 45dk kaldı"
+                android:textColor="#78909C"
+                android:textSize="10sp" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_sonraki_saat"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="15:22"
+            android:textColor="#78909C"
+            android:textSize="20sp" />
+
+    </LinearLayout>
+
+</LinearLayout>

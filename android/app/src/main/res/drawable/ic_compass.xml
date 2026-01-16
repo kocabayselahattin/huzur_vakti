@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="48dp"
+    android:height="48dp"
+    android:viewportWidth="48"
+    android:viewportHeight="48">
+    
+    <!-- Dış çember -->
+    <path
+        android:fillColor="@android:color/transparent"
+        android:strokeColor="#4FC3F7"
+        android:strokeWidth="2"
+        android:pathData="M24,4 A20,20 0 1,1 23.99,4" />
+    
+    <!-- Kuzey işareti -->
+    <path
+        android:fillColor="#FF5252"
+        android:pathData="M24,8 L27,16 L24,14 L21,16 Z" />
+    
+    <!-- Güney işareti -->
+    <path
+        android:fillColor="#B0BEC5"
+        android:pathData="M24,40 L27,32 L24,34 L21,32 Z" />
+    
+    <!-- Doğu-Batı çizgisi -->
+    <path
+        android:strokeColor="#4FC3F7"
+        android:strokeWidth="1"
+        android:pathData="M8,24 L40,24" />
+    
+    <!-- Merkez nokta -->
+    <path
+        android:fillColor="#4FC3F7"
+        android:pathData="M24,24 m-3,0 a3,3 0 1,1 6,0 a3,3 0 1,1 -6,0" />
+    
+</vector>

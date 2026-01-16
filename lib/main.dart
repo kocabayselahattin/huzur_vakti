@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/date_symbol_data_local.dart';
 import 'pages/splash_screen.dart';
 import 'services/tema_service.dart';
+import 'services/home_widget_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -9,6 +10,9 @@ void main() async {
   // Tema servisini başlat
   final temaService = TemaService();
   await temaService.temayiYukle();
+  
+  // Home Widget servisini başlat
+  await HomeWidgetService.initialize();
   
   initializeDateFormatting('tr_TR', null).then((_) => runApp(const HuzurVaktiApp()));
 }

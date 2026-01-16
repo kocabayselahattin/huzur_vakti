@@ -301,9 +301,15 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
           ),
           const SizedBox(height: 12),
           SizedBox(
-            height: 80,
-            child: ListView.builder(
+            height: 180,
+            child: GridView.builder(
               scrollDirection: Axis.horizontal,
+              gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+                crossAxisCount: 2,
+                mainAxisSpacing: 8,
+                crossAxisSpacing: 8,
+                childAspectRatio: 0.75,
+              ),
               itemCount: TemaService.hazirPaletler.length,
               itemBuilder: (context, index) {
                 final palet = TemaService.hazirPaletler[index];
@@ -317,22 +323,46 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
                     });
                   },
                   child: Container(
-                    width: 100,
-                    margin: const EdgeInsets.only(right: 10),
                     decoration: BoxDecoration(
                       color: palet['arkaPlan'] as Color,
                       borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: palet['vurgu'] as Color, width: 2),
+                      border: Border.all(
+                        color: _ozelArkaPlan == palet['arkaPlan'] 
+                            ? (palet['vurgu'] as Color) 
+                            : (palet['vurgu'] as Color).withOpacity(0.5), 
+                        width: _ozelArkaPlan == palet['arkaPlan'] ? 3 : 2,
+                      ),
+                      boxShadow: _ozelArkaPlan == palet['arkaPlan'] 
+                          ? [BoxShadow(color: (palet['vurgu'] as Color).withOpacity(0.4), blurRadius: 8)]
+                          : null,
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Icon(Icons.palette, color: palet['vurgu'] as Color),
-                        const SizedBox(height: 4),
-                        Text(
-                          palet['isim'] as String,
-                          style: const TextStyle(color: Colors.white, fontSize: 10),
-                          textAlign: TextAlign.center,
+                        Container(
+                          width: 28,
+                          height: 28,
+                          decoration: BoxDecoration(
+                            color: palet['vurgu'] as Color,
+                            shape: BoxShape.circle,
+                            boxShadow: [
+                              BoxShadow(
+                                color: (palet['vurgu'] as Color).withOpacity(0.5),
+                                blurRadius: 8,
+                              ),
+                            ],
+                          ),
+                        ),
+                        const SizedBox(height: 6),
+                        Padding(
+                          padding: const EdgeInsets.symmetric(horizontal: 4),
+                          child: Text(
+                            palet['isim'] as String,
+                            style: const TextStyle(color: Colors.white, fontSize: 9, fontWeight: FontWeight.w500),
+                            textAlign: TextAlign.center,
+                            maxLines: 2,
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
                       ],
                     ),
@@ -450,26 +480,48 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
 
   Widget _buildRenkPaleti() {
     final renkler = [
-      // Kırmızılar
-      const Color(0xFFE53935), const Color(0xFFD32F2F), const Color(0xFFC62828),
-      // Pembeler
-      const Color(0xFFEC407A), const Color(0xFFD81B60), const Color(0xFFC2185B),
-      // Morlar
-      const Color(0xFFAB47BC), const Color(0xFF8E24AA), const Color(0xFF7B1FA2),
+      // Kırmızılar & Bordolar
+      const Color(0xFFFF1744), const Color(0xFFE53935), const Color(0xFFD32F2F), 
+      const Color(0xFFC62828), const Color(0xFFB71C1C), const Color(0xFF8B0000),
+      // Pembeler & Rose
+      const Color(0xFFFF4081), const Color(0xFFEC407A), const Color(0xFFD81B60), 
+      const Color(0xFFC2185B), const Color(0xFFB76E79), const Color(0xFFE91E63),
+      // Morlar & Lavantalar
+      const Color(0xFFAA00FF), const Color(0xFFAB47BC), const Color(0xFF8E24AA), 
+      const Color(0xFF7B1FA2), const Color(0xFF6A1B9A), const Color(0xFF4A148C),
+      // Indigo & Derin Mor
+      const Color(0xFF7C4DFF), const Color(0xFF651FFF), const Color(0xFF536DFE),
+      const Color(0xFF3D5AFE), const Color(0xFF304FFE), const Color(0xFF1A237E),
       // Maviler
-      const Color(0xFF42A5F5), const Color(0xFF1E88E5), const Color(0xFF1565C0),
-      // Cyan
-      const Color(0xFF26C6DA), const Color(0xFF00ACC1), const Color(0xFF00838F),
+      const Color(0xFF448AFF), const Color(0xFF42A5F5), const Color(0xFF1E88E5), 
+      const Color(0xFF1565C0), const Color(0xFF0D47A1), const Color(0xFF0288D1),
+      // Cyan & Turkuaz
+      const Color(0xFF00FFFF), const Color(0xFF00E5FF), const Color(0xFF26C6DA), 
+      const Color(0xFF00ACC1), const Color(0xFF00838F), const Color(0xFF006064),
+      // Teal & Deniz Yeşili
+      const Color(0xFF64FFDA), const Color(0xFF1DE9B6), const Color(0xFF00BFA5),
+      const Color(0xFF009688), const Color(0xFF00796B), const Color(0xFF004D40),
       // Yeşiller
-      const Color(0xFF66BB6A), const Color(0xFF43A047), const Color(0xFF2E7D32),
-      // Sarılar
-      const Color(0xFFFFCA28), const Color(0xFFFFB300), const Color(0xFFFFA000),
+      const Color(0xFF00FF41), const Color(0xFF00E676), const Color(0xFF66BB6A), 
+      const Color(0xFF43A047), const Color(0xFF2E7D32), const Color(0xFF1B5E20),
+      // Lime & Fıstık Yeşili
+      const Color(0xFFC6FF00), const Color(0xFFAEEA00), const Color(0xFF9E9D24),
+      const Color(0xFF8BC34A), const Color(0xFF689F38), const Color(0xFF558B2F),
+      // Sarılar & Altın
+      const Color(0xFFFFFF00), const Color(0xFFFFD700), const Color(0xFFFFCA28), 
+      const Color(0xFFFFB300), const Color(0xFFFFA000), const Color(0xFFFF8F00),
       // Turuncular
-      const Color(0xFFFF7043), const Color(0xFFF4511E), const Color(0xFFE64A19),
-      // Kahverengiler
-      const Color(0xFF8D6E63), const Color(0xFF6D4C41), const Color(0xFF4E342E),
-      // Griler
-      const Color(0xFF78909C), const Color(0xFF546E7A), const Color(0xFF37474F),
+      const Color(0xFFFFAB40), const Color(0xFFFF9100), const Color(0xFFFF7043), 
+      const Color(0xFFF4511E), const Color(0xFFE64A19), const Color(0xFFBF360C),
+      // Kahverengiler & Bronz
+      const Color(0xFFCD7F32), const Color(0xFFA1887F), const Color(0xFF8D6E63), 
+      const Color(0xFF6D4C41), const Color(0xFF4E342E), const Color(0xFF3E2723),
+      // Griler & Metalik
+      const Color(0xFFE5E4E2), const Color(0xFFB0BEC5), const Color(0xFF78909C), 
+      const Color(0xFF546E7A), const Color(0xFF455A64), const Color(0xFF37474F),
+      // Neon Özel
+      const Color(0xFFFF00FF), const Color(0xFF9D00FF), const Color(0xFFFF6B6B),
+      const Color(0xFF00FFFF), const Color(0xFFB388FF), const Color(0xFFEA80FC),
     ];
 
     return Wrap(
@@ -502,10 +554,27 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
 
   void _showColorPicker(Color currentColor, Function(Color) onColorSelected) {
     final List<Color> arkaPlanRenkleri = [
-      const Color(0xFF1B2741), const Color(0xFF1A1A1A), const Color(0xFF0D0D1A),
-      const Color(0xFF2D1B4E), const Color(0xFF1B3D2F), const Color(0xFF3E2723),
-      const Color(0xFF4A1C1C), const Color(0xFF0D2137), const Color(0xFF2E2240),
-      const Color(0xFF2D2133), const Color(0xFF121212), const Color(0xFF1565C0),
+      // Siyahlar & Karanlık
+      const Color(0xFF000000), const Color(0xFF0D0D0D), const Color(0xFF121212),
+      const Color(0xFF1A1A1A), const Color(0xFF1C1C1E), const Color(0xFF212121),
+      // Mavi Tonları
+      const Color(0xFF0A192F), const Color(0xFF0A1628), const Color(0xFF1B2741),
+      const Color(0xFF0D2137), const Color(0xFF141B21), const Color(0xFF1565C0),
+      // Mor & Mor-Mavi
+      const Color(0xFF0B0B1A), const Color(0xFF14081F), const Color(0xFF150A1F),
+      const Color(0xFF1E1A26), const Color(0xFF2D1B4E), const Color(0xFF2E1F47),
+      // Yeşil Tonları
+      const Color(0xFF081A12), const Color(0xFF0D1F0D), const Color(0xFF0A140A),
+      const Color(0xFF142021), const Color(0xFF1B3D2F), const Color(0xFF2E3D1B),
+      // Kırmızı & Bordo
+      const Color(0xFF1A0A0F), const Color(0xFF1A080A), const Color(0xFF3E1A1A),
+      const Color(0xFF4A1C1C), const Color(0xFF3D2429), const Color(0xFF2D1B2D),
+      // Kahverengi & Toprak
+      const Color(0xFF1A1215), const Color(0xFF1F1710), const Color(0xFF211A17),
+      const Color(0xFF2D1F14), const Color(0xFF1A1408), const Color(0xFF3E2723),
+      // Özel Karışımlar
+      const Color(0xFF0F0A1A), const Color(0xFF0D1418), const Color(0xFF2E2240),
+      const Color(0xFF2D2133), const Color(0xFF0D3B3E), const Color(0xFF0A0A14),
     ];
 
     showModalBottomSheet(

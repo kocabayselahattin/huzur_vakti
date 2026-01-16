@@ -1,0 +1,40 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_kible_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:gravity="center"
+    android:padding="12dp"
+    android:background="@drawable/widget_background_rounded">
+
+    <!-- Pusula ikonu -->
+    <ImageView
+        android:id="@+id/img_compass"
+        android:layout_width="60dp"
+        android:layout_height="60dp"
+        android:src="@drawable/ic_compass"
+        android:rotation="45" />
+
+    <!-- Kıble yönü -->
+    <TextView
+        android:id="@+id/tv_kible_yon"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="KIBLE"
+        android:textColor="#4FC3F7"
+        android:textSize="12sp"
+        android:textStyle="bold"
+        android:letterSpacing="0.15"
+        android:layout_marginTop="8dp" />
+
+    <TextView
+        android:id="@+id/tv_kible_derece"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:text="156.7°"
+        android:textColor="#FFFFFF"
+        android:textSize="16sp"
+        android:layout_marginTop="2dp" />
+
+</LinearLayout>

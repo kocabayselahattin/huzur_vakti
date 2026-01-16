@@ -413,6 +413,7 @@ class TemaService extends ChangeNotifier {
 
   // Hazır renk paletleri
   static const List<Map<String, dynamic>> hazirPaletler = [
+    // Klasik Tonlar
     {'isim': 'Gece Mavisi', 'arkaPlan': Color(0xFF1B2741), 'vurgu': Color(0xFF00BCD4)},
     {'isim': 'Orman Yeşili', 'arkaPlan': Color(0xFF1B3D2F), 'vurgu': Color(0xFF4CAF50)},
     {'isim': 'Bordo', 'arkaPlan': Color(0xFF3E1A1A), 'vurgu': Color(0xFFE53935)},
@@ -421,6 +422,40 @@ class TemaService extends ChangeNotifier {
     {'isim': 'Karamel', 'arkaPlan': Color(0xFF3E2723), 'vurgu': Color(0xFFFF9800)},
     {'isim': 'Gül Kurusu', 'arkaPlan': Color(0xFF3D2429), 'vurgu': Color(0xFFE91E63)},
     {'isim': 'Zeytin', 'arkaPlan': Color(0xFF2E3D1B), 'vurgu': Color(0xFF8BC34A)},
+    
+    // Lüks & Elegant
+    {'isim': 'Altın Siyah', 'arkaPlan': Color(0xFF0D0D0D), 'vurgu': Color(0xFFFFD700)},
+    {'isim': 'Rose Gold', 'arkaPlan': Color(0xFF1A1215), 'vurgu': Color(0xFFB76E79)},
+    {'isim': 'Platin', 'arkaPlan': Color(0xFF1C1C1E), 'vurgu': Color(0xFFE5E4E2)},
+    {'isim': 'Bronz', 'arkaPlan': Color(0xFF1F1710), 'vurgu': Color(0xFFCD7F32)},
+    
+    // Doğa Tonları
+    {'isim': 'Okyanus', 'arkaPlan': Color(0xFF0A192F), 'vurgu': Color(0xFF64FFDA)},
+    {'isim': 'Orman Gece', 'arkaPlan': Color(0xFF0D1F0D), 'vurgu': Color(0xFF00E676)},
+    {'isim': 'Çöl Gece', 'arkaPlan': Color(0xFF2D1F14), 'vurgu': Color(0xFFFFAB40)},
+    {'isim': 'Gün Batımı', 'arkaPlan': Color(0xFF2D1B2D), 'vurgu': Color(0xFFFF6B6B)},
+    
+    // Neon & Cyberpunk
+    {'isim': 'Neon Pembe', 'arkaPlan': Color(0xFF0F0A1A), 'vurgu': Color(0xFFFF00FF)},
+    {'isim': 'Neon Mavi', 'arkaPlan': Color(0xFF0A0A14), 'vurgu': Color(0xFF00FFFF)},
+    {'isim': 'Neon Yeşil', 'arkaPlan': Color(0xFF0A140A), 'vurgu': Color(0xFF00FF41)},
+    {'isim': 'Elektrik Mor', 'arkaPlan': Color(0xFF14081F), 'vurgu': Color(0xFF9D00FF)},
+    
+    // Pastel & Soft
+    {'isim': 'Lavanta', 'arkaPlan': Color(0xFF1E1A26), 'vurgu': Color(0xFFB39DDB)},
+    {'isim': 'Mint', 'arkaPlan': Color(0xFF142021), 'vurgu': Color(0xFF80CBC4)},
+    {'isim': 'Şeftali', 'arkaPlan': Color(0xFF211A17), 'vurgu': Color(0xFFFFAB91)},
+    {'isim': 'Buz Mavisi', 'arkaPlan': Color(0xFF141B21), 'vurgu': Color(0xFF81D4FA)},
+    
+    // Premium & Özel
+    {'isim': 'Galaksi', 'arkaPlan': Color(0xFF0B0B1A), 'vurgu': Color(0xFF7C4DFF)},
+    {'isim': 'Aurora', 'arkaPlan': Color(0xFF0D1418), 'vurgu': Color(0xFF00E5FF)},
+    {'isim': 'Nar Çiçeği', 'arkaPlan': Color(0xFF1A0A0F), 'vurgu': Color(0xFFFF4081)},
+    {'isim': 'Safir', 'arkaPlan': Color(0xFF0A1628), 'vurgu': Color(0xFF448AFF)},
+    {'isim': 'Kehribar', 'arkaPlan': Color(0xFF1A1408), 'vurgu': Color(0xFFFFB300)},
+    {'isim': 'Yakut', 'arkaPlan': Color(0xFF1A080A), 'vurgu': Color(0xFFFF1744)},
+    {'isim': 'Zümrüt', 'arkaPlan': Color(0xFF081A12), 'vurgu': Color(0xFF00E676)},
+    {'isim': 'Ametist', 'arkaPlan': Color(0xFF150A1F), 'vurgu': Color(0xFFAA00FF)},
   ];
 
   ThemeData buildThemeData() {

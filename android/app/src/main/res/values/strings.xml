@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">Huzur Vakti</string>
+    
+    <!-- Widget Descriptions -->
+    <string name="widget_kompakt_desc">Sonraki namaz vakti ve geri sayım</string>
+    <string name="widget_gunluk_desc">Günlük tüm namaz vakitleri</string>
+    <string name="widget_premium_desc">Premium geri sayım sayacı</string>
+    <string name="widget_minimal_desc">Minimal dairesel sayaç</string>
+    <string name="widget_sozu_desc">Günün hadisi veya ayeti</string>
+    <string name="widget_esma_desc">Günün Esmaül Hüsnası</string>
+    <string name="widget_kible_desc">Kıble yönü pusulası</string>
+    <string name="widget_iki_vakit_desc">Mevcut ve sonraki vakit</string>
+    <string name="widget_ramazan_desc">Ramazan iftar/sahur geri sayımı</string>
+    <string name="widget_zikir_desc">İnteraktif zikir sayacı</string>
+    <string name="widget_cuma_desc">Cuma namazına geri sayım</string>
+    <string name="widget_haftalik_desc">Haftalık imsak ve akşam vakitleri</string>
+    <string name="widget_ayet_desc">Günün ayeti ve meali</string>
+    
+    <!-- Widget Names -->
+    <string name="widget_kompakt_name">Namaz Vakti (Kompakt)</string>
+    <string name="widget_gunluk_name">Günlük Vakitler</string>
+    <string name="widget_premium_name">Premium Sayaç</string>
+    <string name="widget_minimal_name">Minimal Sayaç</string>
+    <string name="widget_sozu_name">Günün Sözü</string>
+    <string name="widget_esma_name">Esmaül Hüsna</string>
+    <string name="widget_kible_name">Kıble Pusulası</string>
+    <string name="widget_iki_vakit_name">İki Vakit</string>
+    <string name="widget_ramazan_name">Ramazan Sayaç</string>
+    <string name="widget_zikir_name">Zikir Sayaç</string>
+    <string name="widget_cuma_name">Cuma Sayaç</string>
+    <string name="widget_haftalik_name">Haftalık Vakitler</string>
+    <string name="widget_ayet_name">Günün Ayeti</string>
+    
+    <!-- Vakit Names -->
+    <string name="imsak">İmsak</string>
+    <string name="gunes">Güneş</string>
+    <string name="ogle">Öğle</string>
+    <string name="ikindi">İkindi</string>
+    <string name="aksam">Akşam</string>
+    <string name="yatsi">Yatsı</string>
+    
+</resources>

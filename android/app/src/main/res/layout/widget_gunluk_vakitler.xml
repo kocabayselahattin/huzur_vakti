@@ -1,0 +1,70 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/widget_gunluk_container"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:orientation="vertical"
+    android:padding="12dp"
+    android:background="@drawable/widget_background_rounded">
+
+    <!-- Başlık -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="horizontal"
+        android:gravity="center_vertical"
+        android:layout_marginBottom="8dp">
+
+        <TextView
+            android:id="@+id/tv_tarih"
+            android:layout_width="0dp"
+            android:layout_height="wrap_content"
+            android:layout_weight="1"
+            android:text="17 Ocak 2026"
+            android:textColor="#4FC3F7"
+            android:textSize="12sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:id="@+id/tv_konum"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="📍 İstanbul"
+            android:textColor="#B0BEC5"
+            android:textSize="10sp" />
+
+    </LinearLayout>
+
+    <!-- Vakitler listesi -->
+    <LinearLayout
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:orientation="vertical">
+
+        <!-- İmsak -->
+        <include layout="@layout/widget_vakit_row"
+            android:id="@+id/row_imsak" />
+
+        <!-- Güneş -->
+        <include layout="@layout/widget_vakit_row"
+            android:id="@+id/row_gunes" />
+
+        <!-- Öğle -->
+        <include layout="@layout/widget_vakit_row"
+            android:id="@+id/row_ogle" />
+
+        <!-- İkindi -->
+        <include layout="@layout/widget_vakit_row"
+            android:id="@+id/row_ikindi" />
+
+        <!-- Akşam -->
+        <include layout="@layout/widget_vakit_row"
+            android:id="@+id/row_aksam" />
+
+        <!-- Yatsı -->
+        <include layout="@layout/widget_vakit_row"
+            android:id="@+id/row_yatsi" />
+
+    </LinearLayout>
+
+</LinearLayout>

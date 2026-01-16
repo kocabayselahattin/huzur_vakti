@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/premium_sayac_widget.dart';
 import '../widgets/vakit_listesi_widget.dart';
 import '../widgets/gunun_icerigi_widget.dart';
-import '../widgets/yarim_daire_sayac_widget.dart';
+import '../widgets/galaksi_sayac_widget.dart';
+import '../widgets/neon_sayac_widget.dart';
+import '../widgets/okyanus_sayac_widget.dart';
 import '../widgets/dijital_sayac_widget.dart';
 import '../widgets/esmaul_husna_widget.dart';
 import '../services/konum_service.dart';
@@ -23,16 +26,36 @@ class AnaSayfa extends StatefulWidget {
 class _AnaSayfaState extends State<AnaSayfa> {
   String konumBasligi = "KONUM SEÇİLMEDİ";
   final TemaService _temaService = TemaService();
+  late PageController _sayacController;
+  int _currentSayacIndex = 0;
+  final int _sayacCount = 5; // Toplam sayaç sayısı
 
   @override
   void initState() {
     super.initState();
+    _sayacController = PageController(viewportFraction: 0.95);
+    _loadSayacIndex();
     _konumYukle();
     _temaService.addListener(_onTemaChanged);
   }
 
+  Future<void> _loadSayacIndex() async {
+    final prefs = await SharedPreferences.getInstance();
+    final index = prefs.getInt('secili_sayac_index') ?? 0;
+    setState(() {
+      _currentSayacIndex = index;
+      _sayacController = PageController(viewportFraction: 0.95, initialPage: index);
+    });
+  }
+
+  Future<void> _saveSayacIndex(int index) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('secili_sayac_index', index);
+  }
+
   @override
   void dispose() {
+    _sayacController.dispose();
     _temaService.removeListener(_onTemaChanged);
     super.dispose();
   }
@@ -84,13 +107,30 @@ class _AnaSayfaState extends State<AnaSayfa> {
             children: [
               // --- SAYAÇ SLIDER BÖLÜMÜ ---
               SizedBox(
-                height: 240,
-                child: PageView(
-                  controller: PageController(viewportFraction: 0.95),
-                  children: const [
-                    DijitalSayacWidget(),
-                    PremiumSayacWidget(),
-                    YarimDaireSayacWidget(),
+                height: 260,
+                child: Column(
+                  children: [
+                    Expanded(
+                      child: PageView(
+                        controller: _sayacController,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentSayacIndex = index;
+                          });
+                          _saveSayacIndex(index);
+                        },
+                        children: const [
+                          DijitalSayacWidget(),
+                          PremiumSayacWidget(),
+                          GalaksiSayacWidget(),
+                          NeonSayacWidget(),
+                          OkyanusSayacWidget(),
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    // Sayaç page indicator
+                    _buildPageIndicator(renkler),
                   ],
                 ),
               ),
@@ -123,6 +163,84 @@ class _AnaSayfaState extends State<AnaSayfa> {
         child: Icon(Icons.menu, color: renkler.yaziPrimary),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+
+  Widget _buildPageIndicator(TemaRenkleri renkler) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: [
+        // Sol ok
+        GestureDetector(
+          onTap: () {
+            if (_currentSayacIndex > 0) {
+              _sayacController.previousPage(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            }
+          },
+          child: Icon(
+            Icons.chevron_left,
+            color: _currentSayacIndex > 0 
+                ? renkler.vurgu 
+                : renkler.yaziSecondary.withValues(alpha: 0.3),
+            size: 24,
+          ),
+        ),
+        const SizedBox(width: 8),
+        // Dot indicators
+        ...List.generate(5, (index) {
+          final isActive = index == _currentSayacIndex;
+          return GestureDetector(
+            onTap: () {
+              _sayacController.animateToPage(
+                index,
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            },
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 200),
+              margin: const EdgeInsets.symmetric(horizontal: 4),
+              width: isActive ? 24 : 8,
+              height: 8,
+              decoration: BoxDecoration(
+                borderRadius: BorderRadius.circular(4),
+                color: isActive 
+                    ? renkler.vurgu 
+                    : renkler.yaziSecondary.withValues(alpha: 0.3),
+                boxShadow: isActive ? [
+                  BoxShadow(
+                    color: renkler.vurgu.withValues(alpha: 0.4),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ] : null,
+              ),
+            ),
+          );
+        }),
+        const SizedBox(width: 8),
+        // Sağ ok
+        GestureDetector(
+          onTap: () {
+            if (_currentSayacIndex < 4) {
+              _sayacController.nextPage(
+                duration: const Duration(milliseconds: 300),
+                curve: Curves.easeInOut,
+              );
+            }
+          },
+          child: Icon(
+            Icons.chevron_right,
+            color: _currentSayacIndex < 4 
+                ? renkler.vurgu 
+                : renkler.yaziSecondary.withValues(alpha: 0.3),
+            size: 24,
+          ),
+        ),
+      ],
     );
   }
 
