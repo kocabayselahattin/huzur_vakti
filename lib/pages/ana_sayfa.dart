@@ -3,70 +3,127 @@ import '../widgets/pasta_sayac_widget.dart';
 import '../widgets/vakit_listesi_widget.dart';
 import '../widgets/gunun_icerigi_widget.dart';
 import '../widgets/yarim_daire_sayac_widget.dart';
+import '../widgets/dijital_sayac_widget.dart';
+import '../services/konum_service.dart';
+import '../services/tema_service.dart';
 import 'imsakiye_sayfa.dart';
 import 'ayarlar_sayfa.dart';
+import 'zikir_matik_sayfa.dart';
 
-class AnaSayfa extends StatelessWidget {
+class AnaSayfa extends StatefulWidget {
   const AnaSayfa({super.key});
 
   @override
+  State<AnaSayfa> createState() => _AnaSayfaState();
+}
+
+class _AnaSayfaState extends State<AnaSayfa> {
+  String konumBasligi = "KONUM SEÇİLMEDİ";
+  final TemaService _temaService = TemaService();
+
+  @override
+  void initState() {
+    super.initState();
+    _konumYukle();
+    _temaService.addListener(_onTemaChanged);
+  }
+
+  @override
+  void dispose() {
+    _temaService.removeListener(_onTemaChanged);
+    super.dispose();
+  }
+
+  void _onTemaChanged() {
+    if (mounted) setState(() {});
+  }
+
+  Future<void> _konumYukle() async {
+    final il = await KonumService.getIl();
+    final ilce = await KonumService.getIlce();
+
+    if (il != null && ilce != null) {
+      setState(() {
+        konumBasligi = "$il / $ilce";
+      });
+    } else if (il != null) {
+      setState(() {
+        konumBasligi = il;
+      });
+    }
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final renkler = _temaService.renkler;
+
     return Scaffold(
-      backgroundColor: const Color(0xFF1B2741), // Görseldeki koyu mavi ton
+      backgroundColor: renkler.arkaPlan,
       appBar: AppBar(
-        title: const Text("İSTANBUL", style: TextStyle(letterSpacing: 3)),
+        title: Text(
+          konumBasligi.toUpperCase(),
+          style: TextStyle(
+            letterSpacing: 2, 
+            fontSize: 14,
+            color: renkler.yaziPrimary,
+          ),
+        ),
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
-      body: SingleChildScrollView(
-        child: Column(
-          children: [
-            // --- SAYAÇ SLIDER BÖLÜMÜ ---
-            // Bu alan sağa kaydırılabilir sayaçları barındırır.
-            SizedBox(
-              height: 240, // Yarım daire için ayarlandı
-              child: PageView(
-                controller: PageController(
-                  viewportFraction: 0.95,
-                ), // Yan sayfaları hafif hissettirir
-                children: [
-                  const PastaSayacWidget(), // Senin yarım dairesel tasarımın
-                  const YarimDaireSayacWidget(), // Yarım daire geri sayım
-                  _ucuncuSayac(), // Sağa kaydırınca gelecek 3. sayaç
-                ],
+      body: Container(
+        decoration: renkler.arkaPlanGradient != null
+            ? BoxDecoration(gradient: renkler.arkaPlanGradient)
+            : null,
+        child: SingleChildScrollView(
+          child: Column(
+            children: [
+              // --- SAYAÇ SLIDER BÖLÜMÜ ---
+              SizedBox(
+                height: 240,
+                child: PageView(
+                  controller: PageController(viewportFraction: 0.95),
+                  children: const [
+                    DijitalSayacWidget(),
+                    PastaSayacWidget(),
+                    YarimDaireSayacWidget(),
+                  ],
+                ),
               ),
-            ),
 
-            const SizedBox(height: 10),
+              const SizedBox(height: 10),
 
-            // --- VAKİT LİSTESİ ---
-            const VakitListesiWidget(),
+              // --- VAKİT LİSTESİ ---
+              const VakitListesiWidget(),
 
-            const SizedBox(height: 20),
+              const SizedBox(height: 20),
 
-            // --- GÜNÜN İÇERİĞİ (AYET/HADİS/DUA) ---
-            const GununIcerigiWidget(),
+              // --- GÜNÜN İÇERİĞİ ---
+              const GununIcerigiWidget(),
 
-            const SizedBox(height: 50),
-          ],
+              const SizedBox(height: 50),
+            ],
+          ),
         ),
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () {
           _showMenu(context);
         },
-        backgroundColor: const Color(0xFF2B3151),
-        child: const Icon(Icons.menu, color: Colors.white),
+        backgroundColor: renkler.kartArkaPlan,
+        child: Icon(Icons.menu, color: renkler.yaziPrimary),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
 
   void _showMenu(BuildContext context) {
+    final renkler = _temaService.renkler;
+
     showModalBottomSheet(
       context: context,
-      backgroundColor: const Color(0xFF1B2741),
+      backgroundColor: renkler.arkaPlan,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -77,54 +134,58 @@ class AnaSayfa extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               ListTile(
-                leading: const Icon(Icons.schedule, color: Colors.white),
-                title: const Text('İmsakiye', style: TextStyle(color: Colors.white)),
+                leading: Icon(Icons.schedule, color: renkler.vurgu),
+                title: Text(
+                  'İmsakiye',
+                  style: TextStyle(color: renkler.yaziPrimary),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const ImsakiyeSayfa()),
+                    MaterialPageRoute(
+                      builder: (context) => const ImsakiyeSayfa(),
+                    ),
                   );
                 },
               ),
               ListTile(
-                leading: const Icon(Icons.auto_awesome, color: Colors.white),
-                title: const Text('Zikir Matik', style: TextStyle(color: Colors.white)),
-                onTap: () {
-                  Navigator.pop(context);
-                  // TODO: Zikir Matik sayfasına git
-                },
-              ),
-              ListTile(
-                leading: const Icon(Icons.settings, color: Colors.white),
-                title: const Text('Ayarlar', style: TextStyle(color: Colors.white)),
+                leading: Icon(Icons.auto_awesome, color: renkler.vurgu),
+                title: Text(
+                  'Zikir Matik',
+                  style: TextStyle(color: renkler.yaziPrimary),
+                ),
                 onTap: () {
                   Navigator.pop(context);
                   Navigator.push(
                     context,
-                    MaterialPageRoute(builder: (context) => const AyarlarSayfa()),
+                    MaterialPageRoute(
+                      builder: (context) => const ZikirMatikSayfa(),
+                    ),
                   );
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.settings, color: renkler.vurgu),
+                title: Text(
+                  'Ayarlar',
+                  style: TextStyle(color: renkler.yaziPrimary),
+                ),
+                onTap: () async {
+                  Navigator.pop(context);
+                  await Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const AyarlarSayfa(),
+                    ),
+                  );
+                  _konumYukle();
                 },
               ),
             ],
           ),
         );
       },
-    );
-  }
-
-  // Örnek ek sayaçlar (İleride bunları 'diger_sayaclar.dart' içine taşıyabiliriz)
-  Widget _ucuncuSayac() {
-    return Card(
-      color: Colors.white.withOpacity(0.05),
-      margin: const EdgeInsets.all(10),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: const Center(
-        child: Text(
-          "İftara Kalan Süre (Yakında)",
-          style: TextStyle(color: Colors.cyanAccent),
-        ),
-      ),
     );
   }
 }

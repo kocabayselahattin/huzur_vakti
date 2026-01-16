@@ -1,75 +1,233 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dart:async';
+import '../services/konum_service.dart';
+import '../services/diyanet_api_service.dart';
 
-class PastaSayacWidget extends StatelessWidget {
+class PastaSayacWidget extends StatefulWidget {
   const PastaSayacWidget({super.key});
 
   @override
+  State<PastaSayacWidget> createState() => _PastaSayacWidgetState();
+}
+
+class _PastaSayacWidgetState extends State<PastaSayacWidget> {
+  List<_Segment> mainSegments = [];
+  bool _loading = true;
+
+  @override
+  void initState() {
+    super.initState();
+    _vakitleriYukle();
+  }
+
+  TimeOfDay _parseTime(String time) {
+    try {
+      final parts = time.split(':');
+      return TimeOfDay(hour: int.parse(parts[0]), minute: int.parse(parts[1]));
+    } catch (e) {
+      return const TimeOfDay(hour: 0, minute: 0);
+    }
+  }
+
+  TimeOfDay _addMinutes(TimeOfDay time, int minutes) {
+    final totalMinutes = time.hour * 60 + time.minute + minutes;
+    return TimeOfDay(
+      hour: (totalMinutes ~/ 60) % 24,
+      minute: totalMinutes % 60,
+    );
+  }
+
+  TimeOfDay _subtractMinutes(TimeOfDay time, int minutes) {
+    var totalMinutes = time.hour * 60 + time.minute - minutes;
+    if (totalMinutes < 0) totalMinutes += 24 * 60;
+    return TimeOfDay(
+      hour: (totalMinutes ~/ 60) % 24,
+      minute: totalMinutes % 60,
+    );
+  }
+
+  Future<void> _vakitleriYukle() async {
+    final ilceId = await KonumService.getIlceId();
+    if (ilceId == null) {
+      _setDefaultSegments();
+      return;
+    }
+
+    try {
+      final data = await DiyanetApiService.getVakitler(ilceId);
+      if (data != null && data.containsKey('vakitler')) {
+        final vakitler = data['vakitler'] as List;
+
+        if (vakitler.isNotEmpty) {
+          final bugun = DateTime.now();
+
+          final bugunVakit =
+              vakitler.firstWhere(
+                    (v) {
+                      final tarih = v['MiladiTarihKisa'] ?? '';
+                      try {
+                        final parts = tarih.split('.');
+                        if (parts.length == 3) {
+                          final gun = int.parse(parts[0]);
+                          final ay = int.parse(parts[1]);
+                          final yil = int.parse(parts[2]);
+                          return gun == bugun.day &&
+                              ay == bugun.month &&
+                              yil == bugun.year;
+                        }
+                      } catch (e) {
+                        // Parse hatası
+                      }
+                      return false;
+                    },
+                    orElse: () => vakitler.isNotEmpty
+                        ? Map<String, dynamic>.from(vakitler[0])
+                        : <String, dynamic>{},
+                  )
+                  as Map<String, dynamic>;
+
+          final imsak = _parseTime(bugunVakit['Imsak'] ?? '06:00');
+          final gunes = _parseTime(bugunVakit['Gunes'] ?? '07:30');
+          final ogle = _parseTime(bugunVakit['Ogle'] ?? '13:00');
+          final ikindi = _parseTime(bugunVakit['Ikindi'] ?? '16:00');
+          final aksam = _parseTime(bugunVakit['Aksam'] ?? '18:30');
+          final yatsi = _parseTime(bugunVakit['Yatsi'] ?? '20:00');
+
+          // Diyanet'e göre kerahat vakitleri:
+          // 1. Güneş doğduktan 45 dk sonrasına kadar (işrak vakti)
+          // 2. Öğleden önce yaklaşık 40-45 dk (istiva vakti - güneş tam tepede)
+          // 3. Akşama yaklaşık 45 dk kala (güneş batarken)
+          final kerahat1Bitis = _addMinutes(gunes, 45);
+          final kerahat2Baslangic = _subtractMinutes(ogle, 40);
+          final kerahat3Baslangic = _subtractMinutes(aksam, 45);
+
+          setState(() {
+            mainSegments = [
+              _Segment('İmsak', imsak, gunes, const Color(0xFF7E819A)),
+              _Segment('Güneş', gunes, kerahat1Bitis, const Color(0xFF8A8D9F)),
+              _Segment(
+                'Kerahat Vakti',
+                gunes,
+                kerahat1Bitis,
+                const Color(0xFFA1A4B7),
+              ),
+              _Segment(
+                'Duha',
+                kerahat1Bitis,
+                kerahat2Baslangic,
+                const Color(0xFF8A8D9F),
+              ),
+              _Segment(
+                'Kerahat Vakti',
+                kerahat2Baslangic,
+                ogle,
+                const Color(0xFFA1A4B7),
+              ),
+              _Segment('Öğle', ogle, ikindi, const Color(0xFF7E819A)),
+              _Segment(
+                'İkindi',
+                ikindi,
+                kerahat3Baslangic,
+                const Color(0xFF8A8D9F),
+              ),
+              _Segment(
+                'Kerahat Vakti',
+                kerahat3Baslangic,
+                aksam,
+                const Color(0xFFA1A4B7),
+              ),
+              _Segment('Akşam', aksam, yatsi, const Color(0xFF8A8D9F)),
+              _Segment('Yatsı', yatsi, imsak, const Color(0xFF7B7F96)),
+            ];
+            _loading = false;
+          });
+          return;
+        }
+      }
+    } catch (e) {
+      // Hata
+    }
+    _setDefaultSegments();
+  }
+
+  void _setDefaultSegments() {
+    setState(() {
+      mainSegments = [
+        _Segment(
+          'İmsak',
+          const TimeOfDay(hour: 6, minute: 0),
+          const TimeOfDay(hour: 7, minute: 30),
+          const Color(0xFF7E819A),
+        ),
+        _Segment(
+          'Güneş',
+          const TimeOfDay(hour: 7, minute: 30),
+          const TimeOfDay(hour: 8, minute: 15),
+          const Color(0xFF8A8D9F),
+        ),
+        _Segment(
+          'Kerahat Vakti',
+          const TimeOfDay(hour: 7, minute: 30),
+          const TimeOfDay(hour: 8, minute: 15),
+          const Color(0xFFA1A4B7),
+        ),
+        _Segment(
+          'Duha',
+          const TimeOfDay(hour: 8, minute: 15),
+          const TimeOfDay(hour: 12, minute: 20),
+          const Color(0xFF8A8D9F),
+        ),
+        _Segment(
+          'Kerahat Vakti',
+          const TimeOfDay(hour: 12, minute: 20),
+          const TimeOfDay(hour: 13, minute: 0),
+          const Color(0xFFA1A4B7),
+        ),
+        _Segment(
+          'Öğle',
+          const TimeOfDay(hour: 13, minute: 0),
+          const TimeOfDay(hour: 16, minute: 0),
+          const Color(0xFF7E819A),
+        ),
+        _Segment(
+          'İkindi',
+          const TimeOfDay(hour: 16, minute: 0),
+          const TimeOfDay(hour: 17, minute: 45),
+          const Color(0xFF8A8D9F),
+        ),
+        _Segment(
+          'Kerahat Vakti',
+          const TimeOfDay(hour: 17, minute: 45),
+          const TimeOfDay(hour: 18, minute: 30),
+          const Color(0xFFA1A4B7),
+        ),
+        _Segment(
+          'Akşam',
+          const TimeOfDay(hour: 18, minute: 30),
+          const TimeOfDay(hour: 20, minute: 0),
+          const Color(0xFF8A8D9F),
+        ),
+        _Segment(
+          'Yatsı',
+          const TimeOfDay(hour: 20, minute: 0),
+          const TimeOfDay(hour: 6, minute: 0),
+          const Color(0xFF7B7F96),
+        ),
+      ];
+      _loading = false;
+    });
+  }
+
+  @override
   Widget build(BuildContext context) {
+    if (_loading || mainSegments.isEmpty) {
+      return const Center(
+        child: CircularProgressIndicator(color: Colors.cyanAccent),
+      );
+    }
+
     final now = TimeOfDay.fromDateTime(DateTime.now());
-    final mainSegments = <_Segment>[
-      _Segment(
-        'İmsak',
-        const TimeOfDay(hour: 6, minute: 12),
-        const TimeOfDay(hour: 7, minute: 45),
-        const Color(0xFF7E819A),
-      ),
-      _Segment(
-        'Güneş',
-        const TimeOfDay(hour: 7, minute: 45),
-        const TimeOfDay(hour: 9, minute: 6),
-        const Color(0xFF8A8D9F),
-      ),
-      _Segment(
-        'Kerahat Vakti',
-        const TimeOfDay(hour: 9, minute: 6),
-        const TimeOfDay(hour: 9, minute: 26),
-        const Color(0xFFA1A4B7),
-      ),
-      _Segment(
-        'Duha',
-        const TimeOfDay(hour: 9, minute: 26),
-        const TimeOfDay(hour: 12, minute: 0),
-        const Color(0xFF8A8D9F),
-      ),
-      _Segment(
-        'Kerahat Vakti',
-        const TimeOfDay(hour: 12, minute: 0),
-        const TimeOfDay(hour: 13, minute: 0),
-        const Color(0xFFA1A4B7),
-      ),
-      _Segment(
-        'Öğle',
-        const TimeOfDay(hour: 13, minute: 0),
-        const TimeOfDay(hour: 15, minute: 58),
-        const Color(0xFF7E819A),
-      ),
-      _Segment(
-        'İkindi',
-        const TimeOfDay(hour: 15, minute: 58),
-        const TimeOfDay(hour: 17, minute: 0),
-        const Color(0xFF8A8D9F),
-      ),
-      _Segment(
-        'Kerahat Vakti',
-        const TimeOfDay(hour: 17, minute: 0),
-        const TimeOfDay(hour: 18, minute: 5),
-        const Color(0xFFA1A4B7),
-      ),
-      _Segment(
-        'Akşam',
-        const TimeOfDay(hour: 18, minute: 5),
-        const TimeOfDay(hour: 19, minute: 0),
-        const Color(0xFF8A8D9F),
-      ),
-      _Segment(
-        'Yatsı',
-        const TimeOfDay(hour: 19, minute: 0),
-        const TimeOfDay(hour: 4, minute: 44),
-        const Color(0xFF7B7F96),
-      ),
-    ];
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 12),
       child: Column(
@@ -205,16 +363,18 @@ class _ZamanUstBaslikState extends State<_ZamanUstBaslik> {
       final isKerahat = seg.label == 'Kerahat Vakti';
       final isDuha = seg.label == 'Duha';
       final isEvvabin = seg.label == 'Akşam'; // Evvabin aslında Akşam vakti
-      
+
       if (i > 0) {
-        widgets.add(const SizedBox(width: 6));
+        widgets.add(const SizedBox(width: 2)); // Boşluk 6'dan 2'ye düşürüldü
       }
-      
+
       widgets.add(
         _BaslikItem(
           label: seg.label,
           time: _formatTime(seg.start),
-          endTime: (isKerahat || isDuha || isEvvabin) ? _formatTime(seg.end) : null,
+          endTime: (isKerahat || isDuha || isEvvabin)
+              ? _formatTime(seg.end)
+              : null,
         ),
       );
     }
@@ -238,7 +398,7 @@ class _BaslikItem extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SizedBox(
-      width: 120,
+      width: 95, // 120'den 95'e düşürüldü
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.center,
         children: [
@@ -249,7 +409,7 @@ class _BaslikItem extends StatelessWidget {
             textAlign: TextAlign.center,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 12,
+              fontSize: 11, // 12'den 11'e düşürüldü
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -258,7 +418,7 @@ class _BaslikItem extends StatelessWidget {
             time,
             style: const TextStyle(
               color: Colors.white,
-              fontSize: 20,
+              fontSize: 18, // 20'den 18'e düşürüldü
               fontWeight: FontWeight.w700,
             ),
           ),
@@ -268,7 +428,7 @@ class _BaslikItem extends StatelessWidget {
               endTime!,
               style: const TextStyle(
                 color: Colors.white70,
-                fontSize: 16,
+                fontSize: 14, // 16'dan 14'e düşürüldü
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -333,17 +493,17 @@ class _VakitCizelgePainter extends CustomPainter {
     for (final seg in mainSegments) {
       final startMinutes = seg.start.hour * 60 + seg.start.minute;
       var endMinutes = seg.end.hour * 60 + seg.end.minute;
-      
+
       // Gece geçişini ele al
       if (endMinutes < startMinutes) {
         endMinutes += 24 * 60;
       }
-      
+
       var checkNowMinutes = nowMinutes;
       if (nowMinutes < startMinutes && seg.start.hour > 12) {
         checkNowMinutes += 24 * 60;
       }
-      
+
       if (checkNowMinutes >= startMinutes && checkNowMinutes < endMinutes) {
         return seg.label;
       }
@@ -374,7 +534,7 @@ class _VakitCizelgePainter extends CustomPainter {
     final mainBandTop = 2.0;
     final mainBandHeight = 98.0;
     final gapWidth = 2.0; // Vakitler arası boşluk
-    
+
     for (final seg in mainSegments) {
       final left = toX(seg.start) + gapWidth / 2;
       final right = toX(seg.end) - gapWidth / 2;
@@ -400,7 +560,7 @@ class _VakitCizelgePainter extends CustomPainter {
           ),
           textDirection: TextDirection.ltr,
         )..layout();
-        
+
         textPainter.paint(
           canvas,
           Offset(
@@ -409,12 +569,7 @@ class _VakitCizelgePainter extends CustomPainter {
           ),
         );
       } else {
-        _paintRotatedLabel(
-          canvas,
-          seg.label,
-          rect.center,
-          math.pi / 2,
-        );
+        _paintRotatedLabel(canvas, seg.label, rect.center, math.pi / 2);
       }
     }
 
@@ -451,7 +606,7 @@ class _VakitCizelgePainter extends CustomPainter {
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      
+
       // Şeffaf kırmızı kutu
       final boxPadding = 6.0;
       final boxRect = Rect.fromLTWH(
@@ -467,7 +622,7 @@ class _VakitCizelgePainter extends CustomPainter {
         RRect.fromRectAndRadius(boxRect, const Radius.circular(4)),
         boxPaint,
       );
-      
+
       vakitTextPainter.paint(
         canvas,
         Offset(
@@ -478,7 +633,16 @@ class _VakitCizelgePainter extends CustomPainter {
     }
 
     // Evvabin etiketi
-    final evvabinX = toX(const TimeOfDay(hour: 18, minute: 5));
+    final aksamSegment = mainSegments.firstWhere(
+      (s) => s.label == 'Akşam',
+      orElse: () => _Segment(
+        'Akşam',
+        const TimeOfDay(hour: 18, minute: 30),
+        const TimeOfDay(hour: 20, minute: 0),
+        Colors.grey,
+      ),
+    );
+    final evvabinX = toX(aksamSegment.start);
     final evvRect = Rect.fromLTWH(
       evvabinX - 40,
       mainBandTop + mainBandHeight + 3,

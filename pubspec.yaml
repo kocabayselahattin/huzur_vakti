@@ -37,6 +37,8 @@ dependencies:
   http: ^1.2.0
   shared_preferences: ^2.2.2
   geolocator: ^11.0.0
+  hijri: ^3.0.0
+  intl: ^0.20.2
 
 dev_dependencies:
   flutter_test:
@@ -48,6 +50,14 @@ dev_dependencies:
   # package. See that file for information about deactivating specific lint
   # rules and activating additional ones.
   flutter_lints: ^6.0.0
+  flutter_launcher_icons: ^0.14.3
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "assets/icon/app_icon.png"
+  adaptive_icon_background: "#1B2741"
+  adaptive_icon_foreground: "assets/icon/app_icon_foreground.png"
 
 # For information on the generic Dart part of this file, see the
 # following page: https://dart.dev/tools/pub/pubspec

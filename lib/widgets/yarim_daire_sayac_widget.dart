@@ -15,12 +15,36 @@ class _YarimDaireSayacWidgetState extends State<YarimDaireSayacWidget> {
   String _sonrakiVakit = '';
 
   final List<_VakitDilimi> vakitler = [
-    _VakitDilimi('Sabah', const TimeOfDay(hour: 6, minute: 12), const TimeOfDay(hour: 7, minute: 45)),
-    _VakitDilimi('Güneş', const TimeOfDay(hour: 7, minute: 45), const TimeOfDay(hour: 12, minute: 0)),
-    _VakitDilimi('Öğle', const TimeOfDay(hour: 13, minute: 22), const TimeOfDay(hour: 15, minute: 58)),
-    _VakitDilimi('İkindi', const TimeOfDay(hour: 15, minute: 58), const TimeOfDay(hour: 18, minute: 25)),
-    _VakitDilimi('Akşam', const TimeOfDay(hour: 18, minute: 25), const TimeOfDay(hour: 19, minute: 50)),
-    _VakitDilimi('Yatsı', const TimeOfDay(hour: 19, minute: 50), const TimeOfDay(hour: 6, minute: 12)),
+    _VakitDilimi(
+      'Sabah',
+      const TimeOfDay(hour: 6, minute: 12),
+      const TimeOfDay(hour: 7, minute: 45),
+    ),
+    _VakitDilimi(
+      'Güneş',
+      const TimeOfDay(hour: 7, minute: 45),
+      const TimeOfDay(hour: 12, minute: 0),
+    ),
+    _VakitDilimi(
+      'Öğle',
+      const TimeOfDay(hour: 13, minute: 22),
+      const TimeOfDay(hour: 15, minute: 58),
+    ),
+    _VakitDilimi(
+      'İkindi',
+      const TimeOfDay(hour: 15, minute: 58),
+      const TimeOfDay(hour: 18, minute: 25),
+    ),
+    _VakitDilimi(
+      'Akşam',
+      const TimeOfDay(hour: 18, minute: 25),
+      const TimeOfDay(hour: 19, minute: 50),
+    ),
+    _VakitDilimi(
+      'Yatsı',
+      const TimeOfDay(hour: 19, minute: 50),
+      const TimeOfDay(hour: 6, minute: 12),
+    ),
   ];
 
   @override
@@ -56,7 +80,8 @@ class _YarimDaireSayacWidgetState extends State<YarimDaireSayacWidget> {
     ];
 
     for (final vakit in vakitSaatleri) {
-      final vakitMinutes = (vakit['saat'] as int) * 60 + (vakit['dakika'] as int);
+      final vakitMinutes =
+          (vakit['saat'] as int) * 60 + (vakit['dakika'] as int);
       if (vakitMinutes > nowMinutes) {
         sonrakiVakitZamani = DateTime(
           now.year,
@@ -168,7 +193,7 @@ class _YarimDairePainter extends CustomPainter {
     final bgPaint = Paint()
       ..color = const Color(0xFFF5F5F5)
       ..style = PaintingStyle.fill;
-    
+
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: radius),
       math.pi,
@@ -181,7 +206,7 @@ class _YarimDairePainter extends CustomPainter {
     final innerPaint = Paint()
       ..color = const Color(0xFF2D9DA6)
       ..style = PaintingStyle.fill;
-    
+
     canvas.drawArc(
       Rect.fromCircle(center: center, radius: innerRadius),
       math.pi,
@@ -200,13 +225,44 @@ class _YarimDairePainter extends CustomPainter {
       const Color(0xFFE8E8E8), // Yatsı - açık gri
     ];
 
+    // Vakit açılarını gerçek saatlere göre hesapla
+    double _saatToOran(int saat, int dakika) {
+      double toplamSaat = saat + dakika / 60.0;
+      if (toplamSaat < 6) toplamSaat += 24;
+      return (toplamSaat - 6) / 24.0;
+    }
+
     final vakitAcilari = [
-      {'start': 0.0, 'sweep': 0.12, 'label': 'Sabah'},      // 6-8
-      {'start': 0.12, 'sweep': 0.20, 'label': 'Güneş'},     // 8-12
-      {'start': 0.32, 'sweep': 0.15, 'label': 'Öğle'},      // 12-15
-      {'start': 0.47, 'sweep': 0.12, 'label': 'İkindi'},    // 15-18
-      {'start': 0.59, 'sweep': 0.08, 'label': 'Akşam'},     // 18-20
-      {'start': 0.67, 'sweep': 0.33, 'label': 'Yatsı'},     // 20-6
+      {
+        'start': _saatToOran(6, 12),
+        'sweep': _saatToOran(7, 45) - _saatToOran(6, 12),
+        'label': 'Sabah',
+      },
+      {
+        'start': _saatToOran(7, 45),
+        'sweep': _saatToOran(13, 22) - _saatToOran(7, 45),
+        'label': 'Güneş',
+      },
+      {
+        'start': _saatToOran(13, 22),
+        'sweep': _saatToOran(15, 58) - _saatToOran(13, 22),
+        'label': 'Öğle',
+      },
+      {
+        'start': _saatToOran(15, 58),
+        'sweep': _saatToOran(18, 25) - _saatToOran(15, 58),
+        'label': 'İkindi',
+      },
+      {
+        'start': _saatToOran(18, 25),
+        'sweep': _saatToOran(19, 50) - _saatToOran(18, 25),
+        'label': 'Akşam',
+      },
+      {
+        'start': _saatToOran(19, 50),
+        'sweep': (1.0 + _saatToOran(6, 12)) - _saatToOran(19, 50),
+        'label': 'Yatsı',
+      },
     ];
 
     for (int i = 0; i < vakitAcilari.length; i++) {
@@ -247,7 +303,7 @@ class _YarimDairePainter extends CustomPainter {
       canvas.save();
       canvas.translate(labelX, labelY);
       canvas.rotate(midAngle + math.pi / 2);
-      
+
       final textPainter = TextPainter(
         text: TextSpan(
           text: vakit['label'] as String,
@@ -259,7 +315,7 @@ class _YarimDairePainter extends CustomPainter {
         ),
         textDirection: TextDirection.ltr,
       )..layout();
-      
+
       textPainter.paint(
         canvas,
         Offset(-textPainter.width / 2, -textPainter.height / 2),
@@ -270,7 +326,7 @@ class _YarimDairePainter extends CustomPainter {
       final linePaint = Paint()
         ..color = const Color(0xFF2D9DA6)
         ..strokeWidth = 1.5;
-      
+
       canvas.drawLine(
         Offset(
           center.dx + innerRadius * math.cos(startAngle),
@@ -289,12 +345,12 @@ class _YarimDairePainter extends CustomPainter {
     for (int i = 0; i <= 6; i++) {
       final angle = math.pi + (i / 6) * math.pi;
       final dotRadius = radius - 8;
-      
+
       // Nokta
       final dotPaint = Paint()
         ..color = const Color(0xFF888888)
         ..style = PaintingStyle.fill;
-      
+
       canvas.drawCircle(
         Offset(
           center.dx + dotRadius * math.cos(angle),
@@ -308,7 +364,7 @@ class _YarimDairePainter extends CustomPainter {
       if (i < 6) {
         final textAngle = math.pi + ((i + 0.5) / 6) * math.pi;
         final textRadius = radius + 5;
-        
+
         final textPainter = TextPainter(
           text: TextSpan(
             text: saatler[i].toString().padLeft(2, '0'),
@@ -324,8 +380,12 @@ class _YarimDairePainter extends CustomPainter {
         textPainter.paint(
           canvas,
           Offset(
-            center.dx + textRadius * math.cos(textAngle) - textPainter.width / 2,
-            center.dy + textRadius * math.sin(textAngle) - textPainter.height / 2,
+            center.dx +
+                textRadius * math.cos(textAngle) -
+                textPainter.width / 2,
+            center.dy +
+                textRadius * math.sin(textAngle) -
+                textPainter.height / 2,
           ),
         );
       }
@@ -340,13 +400,13 @@ class _YarimDairePainter extends CustomPainter {
     if (saatNormalize < 6) saatNormalize += 24;
     final saatOrani = (saatNormalize - 6) / 24.0; // 0-1 arası
     final kadranAcisi = math.pi + saatOrani * math.pi;
-    
+
     // Kadran çizgisi
     final kadranPaint = Paint()
       ..color = const Color(0xFF2D9DA6)
       ..strokeWidth = 3
       ..strokeCap = StrokeCap.round;
-    
+
     canvas.drawLine(
       Offset(
         center.dx + (innerRadius - 5) * math.cos(kadranAcisi),
@@ -358,7 +418,7 @@ class _YarimDairePainter extends CustomPainter {
       ),
       kadranPaint,
     );
-    
+
     // Kadran ucu (üçgen)
     final arrowLength = 8.0;
     final arrowAngle = 0.3;
