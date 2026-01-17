@@ -15,6 +15,9 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
   
   // Yazı renkleri
   int _secilenYaziRengiIndex = 0;
+
+  // Yazı tipi
+  int _secilenFontIndex = 0;
   
   // Şeffaflık
   double _seffaflik = 1.0;
@@ -51,6 +54,16 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
     {'isim': 'Gri', 'renk': Color(0xFF9E9E9E), 'hex': '9E9E9E'},
   ];
 
+  final List<Map<String, String>> _fontSecenekleri = [
+    {'isim': 'Modern', 'key': 'modern'},
+    {'isim': 'Condensed', 'key': 'condensed'},
+    {'isim': 'Medium', 'key': 'medium'},
+    {'isim': 'Light', 'key': 'light'},
+    {'isim': 'Black', 'key': 'black'},
+    {'isim': 'Serif', 'key': 'serif'},
+    {'isim': 'Mono', 'key': 'mono'},
+  ];
+
   @override
   void initState() {
     super.initState();
@@ -64,6 +77,9 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
       _secilenYaziRengiIndex = prefs.getInt('widget_yazi_rengi_index') ?? 0;
       _seffaflik = prefs.getDouble('widget_seffaflik') ?? 1.0;
       _seffafTema = prefs.getBool('widget_seffaf_tema') ?? false;
+      final fontKey = prefs.getString('widget_font_key') ?? 'condensed';
+      final fontIndex = _fontSecenekleri.indexWhere((item) => item['key'] == fontKey);
+      _secilenFontIndex = fontIndex >= 0 ? fontIndex : 0;
     });
   }
 
@@ -77,11 +93,13 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
     // Widget verilerini güncelle
     final arkaPlan = _arkaPlanSecenekleri[_secilenArkaPlanIndex];
     final yaziRengi = _yaziRengiSecenekleri[_secilenYaziRengiIndex];
+    final fontKey = _fontSecenekleri[_secilenFontIndex]['key'] ?? 'condensed';
     
     await HomeWidgetService.updateWidgetColors(
       arkaPlanKey: arkaPlan['key'],
       yaziRengiHex: yaziRengi['hex'],
       seffaflik: _seffafTema ? 0.0 : _seffaflik,
+      fontKey: fontKey,
     );
     
     if (mounted) {
@@ -182,6 +200,17 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
           ),
           const SizedBox(height: 12),
           _buildYaziRengiSecimi(),
+          const SizedBox(height: 24),
+
+          // Yazı Tipi Seçimi
+          Text(
+            'Yazı Tipi',
+            style: theme.textTheme.titleMedium?.copyWith(
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 12),
+          _buildFontSecimi(),
           const SizedBox(height: 32),
           
           // Kaydet Butonu
@@ -230,6 +259,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
   Widget _buildOnizleme(bool isDark) {
     final arkaPlan = _arkaPlanSecenekleri[_secilenArkaPlanIndex];
     final yaziRengi = _yaziRengiSecenekleri[_secilenYaziRengiIndex]['renk'] as Color;
+    final previewFont = _getPreviewFontFamily();
     
     final Color renk1 = _seffafTema 
         ? Colors.transparent 
@@ -296,6 +326,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
                   style: TextStyle(
                     color: Color.fromRGBO(yaziRengi.red, yaziRengi.green, yaziRengi.blue, 0.7),
                     fontSize: 10,
+                    fontFamily: previewFont,
                   ),
                 ),
                 const SizedBox(height: 2),
@@ -307,6 +338,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
                         color: yaziRengi,
                         fontSize: 14,
                         fontWeight: FontWeight.bold,
+                        fontFamily: previewFont,
                       ),
                     ),
                     const Spacer(),
@@ -315,6 +347,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
                       style: TextStyle(
                         color: Color.fromRGBO(yaziRengi.red, yaziRengi.green, yaziRengi.blue, 0.8),
                         fontSize: 12,
+                        fontFamily: previewFont,
                       ),
                     ),
                   ],
@@ -326,6 +359,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
                     color: yaziRengi,
                     fontSize: 28,
                     fontWeight: FontWeight.bold,
+                    fontFamily: previewFont,
                   ),
                 ),
               ],
@@ -334,6 +368,27 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
         ],
       ),
     );
+  }
+
+  String? _getPreviewFontFamily() {
+    final key = _fontSecenekleri[_secilenFontIndex]['key'];
+    switch (key) {
+      case 'serif':
+        return 'serif';
+      case 'condensed':
+        return 'sans-serif-condensed';
+      case 'medium':
+        return 'sans-serif-medium';
+      case 'light':
+        return 'sans-serif-light';
+      case 'black':
+        return 'sans-serif-black';
+      case 'mono':
+        return 'monospace';
+      case 'modern':
+      default:
+        return 'sans-serif';
+    }
   }
 
   Widget _buildArkaPlanSecimi() {
@@ -470,6 +525,26 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
           ),
         );
       },
+    );
+  }
+
+  Widget _buildFontSecimi() {
+    return Wrap(
+      spacing: 8,
+      runSpacing: 8,
+      children: List.generate(_fontSecenekleri.length, (index) {
+        final secenek = _fontSecenekleri[index];
+        final isSelected = index == _secilenFontIndex;
+        return ChoiceChip(
+          label: Text(secenek['isim'] ?? ''),
+          selected: isSelected,
+          onSelected: (_) {
+            setState(() {
+              _secilenFontIndex = index;
+            });
+          },
+        );
+      }),
     );
   }
 }

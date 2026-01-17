@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:math';
 import '../services/tema_service.dart';
 
@@ -15,6 +16,8 @@ class _EsmaulHusnaWidgetState extends State<EsmaulHusnaWidget>
   bool _isExpanded = false;
   late AnimationController _controller;
   late Animation<double> _animation;
+  Timer? _midnightTimer;
+  DateTime? _lastDate;
 
   static const List<Map<String, String>> _esmaulHusna = [
     {'arapca': 'الله', 'turkce': 'Allah', 'anlam': 'Bütün isimlerin vasıflarını içine alan öz adı'},
@@ -129,6 +132,8 @@ class _EsmaulHusnaWidgetState extends State<EsmaulHusnaWidget>
     );
     _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
     _gununIsmi = _getGununIsmi();
+    _lastDate = DateTime.now();
+    _scheduleMidnightRefresh();
     _temaService.addListener(_onTemaChanged);
   }
 
@@ -138,9 +143,25 @@ class _EsmaulHusnaWidgetState extends State<EsmaulHusnaWidget>
 
   @override
   void dispose() {
+    _midnightTimer?.cancel();
     _controller.dispose();
     _temaService.removeListener(_onTemaChanged);
     super.dispose();
+  }
+
+  void _scheduleMidnightRefresh() {
+    _midnightTimer?.cancel();
+    final now = DateTime.now();
+    final nextMidnight = DateTime(now.year, now.month, now.day).add(const Duration(days: 1));
+    final duration = nextMidnight.difference(now);
+    _midnightTimer = Timer(duration, () {
+      if (!mounted) return;
+      setState(() {
+        _gununIsmi = _getGununIsmi();
+        _lastDate = DateTime.now();
+      });
+      _scheduleMidnightRefresh();
+    });
   }
 
   Map<String, String> _getGununIsmi() {
@@ -165,6 +186,14 @@ class _EsmaulHusnaWidgetState extends State<EsmaulHusnaWidget>
   @override
   Widget build(BuildContext context) {
     final renkler = _temaService.renkler;
+    final now = DateTime.now();
+    if (_lastDate == null ||
+        now.year != _lastDate!.year ||
+        now.month != _lastDate!.month ||
+        now.day != _lastDate!.day) {
+      _gununIsmi = _getGununIsmi();
+      _lastDate = now;
+    }
     
     return GestureDetector(
       onTap: _toggleExpand,

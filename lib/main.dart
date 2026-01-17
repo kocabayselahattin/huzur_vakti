@@ -3,6 +3,8 @@ import 'package:intl/date_symbol_data_local.dart';
 import 'pages/splash_screen.dart';
 import 'services/tema_service.dart';
 import 'services/home_widget_service.dart';
+import 'services/dnd_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -16,6 +18,13 @@ void main() async {
   
   // Home Widget servisini başlat
   await HomeWidgetService.initialize();
+
+  // Sessize alma ayarı açıksa DND zamanlamasını kur
+  final prefs = await SharedPreferences.getInstance();
+  final sessizeAl = prefs.getBool('sessize_al') ?? false;
+  if (sessizeAl) {
+    await DndService.schedulePrayerDnd();
+  }
   
   runApp(const HuzurVaktiApp());
 }

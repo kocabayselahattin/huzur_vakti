@@ -1,4 +1,5 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
+    <uses-permission android:name="android.permission.ACCESS_NOTIFICATION_POLICY" />
     <application
         android:label="Huzur Vakti"
         android:name="${applicationName}"
@@ -54,20 +55,6 @@
                 android:resource="@xml/widget_kompakt_info" />
         </receiver>
         
-        <!-- Widget 3: Cami Silüet (4x3) -->
-        <receiver 
-            android:name=".widgets.CamiSiluetWidget"
-            android:exported="true"
-            android:label="@string/widget_cami_siluet_name">
-            <intent-filter>
-                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
-            </intent-filter>
-            <meta-data
-                android:name="android.appwidget.provider"
-                android:resource="@xml/widget_cami_info" />
-        </receiver>
-        
         <!-- Widget 4: Mini Sunset (3x1) -->
         <receiver 
             android:name=".widgets.MiniSunsetWidget"
@@ -81,6 +68,24 @@
                 android:name="android.appwidget.provider"
                 android:resource="@xml/widget_mini_info" />
         </receiver>
+        
+        <!-- Widget 5: Kompakt Vakit (örnek) -->
+        <receiver 
+            android:name=".widgets.KompaktVakitWidget"
+            android:exported="true"
+            android:label="@string/widget_kompakt_vakit_name">
+            <intent-filter>
+                <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
+                <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
+            </intent-filter>
+            <meta-data
+                android:name="android.appwidget.provider"
+                android:resource="@xml/widget_kompakt_vakit_info" />
+        </receiver>
+
+        <receiver
+            android:name=".dnd.PrayerDndReceiver"
+            android:exported="false" />
         
         <!-- Don't delete the meta-data below.
              This is used by the Flutter tool to generate GeneratedPluginRegistrant.java -->

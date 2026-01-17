@@ -9,4 +9,4 @@
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:previewImage="@drawable/widget_bg_dark_mosque"
-    android:description="@string/widget_cami_desc" />
+    android:description="@string/widget_kompakt_desc" />

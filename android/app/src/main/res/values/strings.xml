@@ -9,8 +9,9 @@
     <string name="widget_kompakt_banner_name">Kompakt Banner</string>
     <string name="widget_kompakt_desc">Yatay kompakt vakit listesi</string>
     
-    <string name="widget_cami_siluet_name">Cami Silüet</string>
-    <string name="widget_cami_desc">Büyük geri sayım ve günün hadisi</string>
+    <string name="widget_kompakt_vakit_name">Kompakt Vakit</string>
+    <string name="widget_kompakt_vakit_desc">Kompakt vakit listesi</string>
+    
     
     <string name="widget_mini_sunset_name">Mini Sunset</string>
     <string name="widget_mini_desc">Sonraki iki vakit gösterimi</string>

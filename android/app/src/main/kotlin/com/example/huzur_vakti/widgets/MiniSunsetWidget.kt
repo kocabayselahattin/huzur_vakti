@@ -5,6 +5,8 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.os.Bundle
+import android.util.TypedValue
 import android.widget.RemoteViews
 import com.example.huzur_vakti.R
 import es.antonborri.home_widget.HomeWidgetPlugin
@@ -31,6 +33,15 @@ class MiniSunsetWidget : AppWidgetProvider() {
             onUpdate(context, appWidgetManager, appWidgetIds)
         }
     }
+
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: Bundle
+    ) {
+        updateAppWidget(context, appWidgetManager, appWidgetId)
+    }
     
     companion object {
         internal fun updateAppWidget(
@@ -50,21 +61,45 @@ class MiniSunsetWidget : AppWidgetProvider() {
             
             // Diğer bilgiler
             val sonrakiVakit = widgetData.getString("sonraki_vakit", "Öğle") ?: "Öğle"
-            val kalanKisa = widgetData.getString("kalan_kisa", "2s 30dk") ?: "2s 30dk"
+            val geriSayim = widgetData.getString("geri_sayim", "02:30:00") ?: "02:30:00"
+            val mevcutVakit = widgetData.getString("mevcut_vakit", "İmsak") ?: "İmsak"
+            val mevcutSaat = widgetData.getString("mevcut_vakit_saati", "05:30") ?: "05:30"
+            val sonrakiSaat = widgetData.getString("sonraki_vakit_saati", "06:30") ?: "06:30"
+            val miladiTarih = widgetData.getString("miladi_tarih", "17 Ocak 2026") ?: "17 Ocak 2026"
+            val hicriTarih = widgetData.getString("hicri_tarih", "28 Recep 1447") ?: "28 Recep 1447"
+            val konum = widgetData.getString("konum", "İstanbul") ?: "İstanbul"
+            val ilerleme = widgetData.getInt("ilerleme", 0)
+
             
             // Renk ayarlarını al
             val arkaPlanKey = widgetData.getString("arkaplan_key", "sunset") ?: "sunset"
             val yaziRengiHex = widgetData.getString("yazi_rengi_hex", "664422") ?: "664422"
-            val yaziRengi = Color.parseColor("#$yaziRengiHex")
+            val yaziRengi = WidgetUtils.parseColorSafe(yaziRengiHex, Color.parseColor("#664422"))
             val yaziRengiSecondary = Color.argb(180, Color.red(yaziRengi), Color.green(yaziRengi), Color.blue(yaziRengi))
             
             val views = RemoteViews(context.packageName, R.layout.widget_mini_sunset)
+
+
+            val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
+            val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
+
+            if (minWidth < 280) {
+                views.setTextViewTextSize(R.id.tv_sonraki_label, TypedValue.COMPLEX_UNIT_SP, 10f)
+                views.setTextViewTextSize(R.id.tv_countdown, TypedValue.COMPLEX_UNIT_SP, 12f)
+                views.setTextViewTextSize(R.id.tv_mevcut_vakit, TypedValue.COMPLEX_UNIT_SP, 10f)
+                views.setTextViewTextSize(R.id.tv_sonraki_vakit, TypedValue.COMPLEX_UNIT_SP, 10f)
+            } else {
+                views.setTextViewTextSize(R.id.tv_sonraki_label, TypedValue.COMPLEX_UNIT_SP, 12f)
+                views.setTextViewTextSize(R.id.tv_countdown, TypedValue.COMPLEX_UNIT_SP, 15f)
+                views.setTextViewTextSize(R.id.tv_mevcut_vakit, TypedValue.COMPLEX_UNIT_SP, 11f)
+                views.setTextViewTextSize(R.id.tv_sonraki_vakit, TypedValue.COMPLEX_UNIT_SP, 11f)
+            }
             
             // Arka plan ayarla
             val bgDrawable = when(arkaPlanKey) {
                 "orange" -> R.drawable.widget_bg_orange
-                "light" -> R.drawable.widget_bg_light
-                "dark" -> R.drawable.widget_bg_dark_mosque
+                "light" -> R.drawable.widget_bg_card_light
+                "dark" -> R.drawable.widget_bg_card_dark
                 "sunset" -> R.drawable.widget_bg_sunset
                 "green" -> R.drawable.widget_bg_green
                 "purple" -> R.drawable.widget_bg_purple
@@ -75,47 +110,33 @@ class MiniSunsetWidget : AppWidgetProvider() {
                 "transparent" -> R.drawable.widget_bg_transparent
                 "semi_black" -> R.drawable.widget_bg_semi_black
                 "semi_white" -> R.drawable.widget_bg_semi_white
-                else -> R.drawable.widget_bg_sunset
+                else -> R.drawable.widget_bg_card_dark
             }
             views.setInt(R.id.widget_root, "setBackgroundResource", bgDrawable)
             
-            // Mevcut saat
-            val currentTime = java.text.SimpleDateFormat("HH:mm", java.util.Locale.getDefault()).format(java.util.Date())
-            views.setTextViewText(R.id.tv_saat, currentTime)
-            views.setTextColor(R.id.tv_saat, yaziRengi)
-            
-            // Sonraki vakit için saat bul ve bir sonrakini de bul
-            val vakitler = listOf(
-                "İmsak" to imsak,
-                "Güneş" to gunes,
-                "Öğle" to ogle,
-                "İkindi" to ikindi,
-                "Akşam" to aksam,
-                "Yatsı" to yatsi
-            )
-            
-            // Sonraki vakti ve ardından geleni bul
-            var sonrakiIndex = vakitler.indexOfFirst { it.first == sonrakiVakit }
-            if (sonrakiIndex == -1) sonrakiIndex = 0
-            
-            val sonrakiBirinci = vakitler[sonrakiIndex]
-            val sonrakiIkinci = vakitler[(sonrakiIndex + 1) % vakitler.size]
-            
-            // İlk sonraki vakit (büyük)
-            views.setTextViewText(R.id.tv_vakit1_adi, sonrakiBirinci.first)
-            views.setTextColor(R.id.tv_vakit1_adi, yaziRengiSecondary)
-            views.setTextViewText(R.id.tv_vakit1_saat, sonrakiBirinci.second)
-            views.setTextColor(R.id.tv_vakit1_saat, yaziRengi)
-            
-            // İkinci sonraki vakit
-            views.setTextViewText(R.id.tv_vakit2_adi, sonrakiIkinci.first)
-            views.setTextColor(R.id.tv_vakit2_adi, yaziRengiSecondary)
-            views.setTextViewText(R.id.tv_vakit2_saat, sonrakiIkinci.second)
-            views.setTextColor(R.id.tv_vakit2_saat, yaziRengi)
-            
-            // Geri sayım
-            views.setTextViewText(R.id.tv_countdown, kalanKisa)
+            // Konum ve tarih
+            val sehir = konum.split("/").firstOrNull()?.trim() ?: konum
+            views.setTextViewText(R.id.tv_location, "$sehir, ${konum.split("/").getOrNull(1)?.trim() ?: ""}".trim().trimEnd(','))
+            views.setTextViewText(R.id.tv_date, "$hicriTarih • $miladiTarih")
+            views.setTextColor(R.id.tv_location, yaziRengi)
+            views.setTextColor(R.id.tv_date, yaziRengiSecondary)
+
+            // Geri sayım ve başlık
+            WidgetUtils.applyCountdown(views, R.id.tv_countdown, geriSayim)
             views.setTextColor(R.id.tv_countdown, yaziRengi)
+            views.setTextViewText(R.id.tv_sonraki_label, "$sonrakiVakit Vaktine Kalan")
+            views.setTextColor(R.id.tv_sonraki_label, yaziRengiSecondary)
+
+            // İlerleme
+            views.setProgressBar(R.id.progress_vakit, 100, ilerleme, false)
+
+            // Alt bilgi
+            views.setTextViewText(R.id.tv_mevcut_vakit, "$mevcutVakit ($mevcutSaat)")
+            views.setTextViewText(R.id.tv_sonraki_vakit, "$sonrakiVakit ($sonrakiSaat)")
+            views.setTextColor(R.id.tv_mevcut_vakit, yaziRengi)
+            views.setTextColor(R.id.tv_sonraki_vakit, yaziRengi)
+
+            views.setOnClickPendingIntent(R.id.widget_root, WidgetUtils.createLaunchPendingIntent(context))
             
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }

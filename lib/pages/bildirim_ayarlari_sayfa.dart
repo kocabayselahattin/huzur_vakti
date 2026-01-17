@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import '../services/dnd_service.dart';
 
 class BildirimAyarlariSayfa extends StatefulWidget {
   const BildirimAyarlariSayfa({super.key});
@@ -18,6 +19,9 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     'aksam': true,
     'yatsi': true,
   };
+
+  // Vakitlerde sessize al seçeneği
+  bool _sessizeAl = false;
 
   // Erken bildirim süreleri (dakika)
   Map<String, int> _erkenBildirim = {
@@ -45,6 +49,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
         _bildirimAcik[vakit] = prefs.getBool('bildirim_$vakit') ?? _bildirimAcik[vakit]!;
         _erkenBildirim[vakit] = prefs.getInt('erken_$vakit') ?? _erkenBildirim[vakit]!;
       }
+      _sessizeAl = prefs.getBool('sessize_al') ?? false;
     });
   }
 
@@ -55,6 +60,13 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       await prefs.setBool('bildirim_$vakit', _bildirimAcik[vakit]!);
       await prefs.setInt('erken_$vakit', _erkenBildirim[vakit]!);
     }
+    await prefs.setBool('sessize_al', _sessizeAl);
+
+    if (_sessizeAl) {
+      await DndService.schedulePrayerDnd();
+    } else {
+      await DndService.cancelPrayerDnd();
+    }
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -64,6 +76,73 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
         ),
       );
     }
+  }
+
+  Future<void> _toggleSessizeAl(bool value) async {
+    if (value) {
+      final hasAccess = await DndService.hasPolicyAccess();
+      if (!hasAccess) {
+        final openSettings = await _showDndPermissionDialog();
+        if (openSettings == true) {
+          await DndService.openPolicySettings();
+        }
+        if (mounted) {
+          setState(() {
+            _sessizeAl = false;
+          });
+        }
+        return;
+      }
+
+      final scheduled = await DndService.schedulePrayerDnd();
+      if (!scheduled && mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Sessize alma planlanamadı. Konum seçimi gerekli.'),
+            backgroundColor: Colors.orange,
+          ),
+        );
+        setState(() {
+          _sessizeAl = false;
+        });
+        return;
+      }
+    } else {
+      await DndService.cancelPrayerDnd();
+    }
+
+    if (mounted) {
+      setState(() {
+        _sessizeAl = value;
+      });
+    }
+  }
+
+  Future<bool?> _showDndPermissionDialog() {
+    return showDialog<bool>(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: const Color(0xFF2B3151),
+          title: const Text('Sessize Alma İzni', style: TextStyle(color: Colors.white)),
+          content: const Text(
+            'Vakitlerde sessize almak için sistem izni gerekiyor. İzin vermek ister misiniz?',
+            style: TextStyle(color: Colors.white70),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context, false),
+              child: const Text('Vazgeç', style: TextStyle(color: Colors.white70)),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(context, true),
+              style: ElevatedButton.styleFrom(backgroundColor: Colors.orangeAccent),
+              child: const Text('İzin Ver', style: TextStyle(color: Colors.black)),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   @override
@@ -102,6 +181,48 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                   child: Text(
                     'Her vakit için bildirimi açıp kapatabilir ve erken hatırlatma süresi belirleyebilirsiniz.',
                     style: TextStyle(color: Colors.white70, fontSize: 13),
+                  ),
+                ),
+              ],
+            ),
+          ),
+
+          // Vakitlerde sessize al seçeneği
+          Container(
+            margin: const EdgeInsets.only(bottom: 24),
+            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+            decoration: BoxDecoration(
+              color: Colors.white.withOpacity(0.05),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: Colors.white12),
+            ),
+            child: Column(
+              children: [
+                Row(
+                  children: [
+                    const Icon(Icons.volume_off, color: Colors.orangeAccent),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        'Vakitlerde sessize al',
+                        style: TextStyle(color: Colors.white, fontSize: 15, fontWeight: FontWeight.w500),
+                      ),
+                    ),
+                    Switch(
+                      value: _sessizeAl,
+                      onChanged: (value) async {
+                        await _toggleSessizeAl(value);
+                      },
+                      activeColor: Colors.orangeAccent,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 6),
+                const Padding(
+                  padding: EdgeInsets.only(left: 36, right: 12, bottom: 6),
+                  child: Text(
+                    'Öğle, ikindi, akşam ve yatsı vakitlerinde 30 dk sessize alınır. Cuma günü 60 dk uygulanır.',
+                    style: TextStyle(color: Colors.white54, fontSize: 12),
                   ),
                 ),
               ],

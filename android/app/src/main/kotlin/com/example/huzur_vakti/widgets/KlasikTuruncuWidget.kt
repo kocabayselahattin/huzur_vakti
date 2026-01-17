@@ -5,6 +5,8 @@ import android.appwidget.AppWidgetProvider
 import android.content.Context
 import android.content.Intent
 import android.graphics.Color
+import android.os.Bundle
+import android.util.TypedValue
 import android.widget.RemoteViews
 import com.example.huzur_vakti.R
 import es.antonborri.home_widget.HomeWidgetPlugin
@@ -33,6 +35,15 @@ class KlasikTuruncuWidget : AppWidgetProvider() {
             onUpdate(context, appWidgetManager, appWidgetIds)
         }
     }
+
+    override fun onAppWidgetOptionsChanged(
+        context: Context,
+        appWidgetManager: AppWidgetManager,
+        appWidgetId: Int,
+        newOptions: Bundle
+    ) {
+        updateAppWidget(context, appWidgetManager, appWidgetId)
+    }
     
     companion object {
         internal fun updateAppWidget(
@@ -53,16 +64,35 @@ class KlasikTuruncuWidget : AppWidgetProvider() {
             // Sonraki vakit ve geri sayım
             val sonrakiVakit = widgetData.getString("sonraki_vakit", "Öğle") ?: "Öğle"
             val geriSayim = widgetData.getString("geri_sayim", "02:30:00") ?: "02:30:00"
+            val mevcutVakit = widgetData.getString("mevcut_vakit", "İmsak") ?: "İmsak"
             val hicriTarih = widgetData.getString("hicri_tarih", "1 Muharrem 1447") ?: "1 Muharrem 1447"
             val konum = widgetData.getString("konum", "İSTANBUL") ?: "İSTANBUL"
+
             
             // Renk ayarlarını al
             val arkaPlanKey = widgetData.getString("arkaplan_key", "orange") ?: "orange"
             val yaziRengiHex = widgetData.getString("yazi_rengi_hex", "FFFFFF") ?: "FFFFFF"
-            val yaziRengi = Color.parseColor("#$yaziRengiHex")
+            val yaziRengi = WidgetUtils.parseColorSafe(yaziRengiHex, Color.WHITE)
             val yaziRengiSecondary = Color.argb(180, Color.red(yaziRengi), Color.green(yaziRengi), Color.blue(yaziRengi))
             
             val views = RemoteViews(context.packageName, R.layout.widget_klasik_turuncu)
+
+
+            val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
+            val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
+            val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
+
+            if (minWidth < 260 || minHeight < 120) {
+                views.setTextViewTextSize(R.id.tv_countdown, TypedValue.COMPLEX_UNIT_SP, 28f)
+                views.setTextViewTextSize(R.id.tv_sonraki_vakit_adi, TypedValue.COMPLEX_UNIT_SP, 9f)
+                views.setTextViewTextSize(R.id.tv_hicri_tarih, TypedValue.COMPLEX_UNIT_SP, 9f)
+                views.setTextViewTextSize(R.id.tv_konum, TypedValue.COMPLEX_UNIT_SP, 9f)
+            } else {
+                views.setTextViewTextSize(R.id.tv_countdown, TypedValue.COMPLEX_UNIT_SP, 36f)
+                views.setTextViewTextSize(R.id.tv_sonraki_vakit_adi, TypedValue.COMPLEX_UNIT_SP, 10f)
+                views.setTextViewTextSize(R.id.tv_hicri_tarih, TypedValue.COMPLEX_UNIT_SP, 11f)
+                views.setTextViewTextSize(R.id.tv_konum, TypedValue.COMPLEX_UNIT_SP, 10f)
+            }
             
             // Arka plan ayarla
             val bgDrawable = when(arkaPlanKey) {
@@ -84,21 +114,28 @@ class KlasikTuruncuWidget : AppWidgetProvider() {
             views.setInt(R.id.widget_root, "setBackgroundResource", bgDrawable)
             
             // Vakit saatlerini ayarla (renk ile)
+            val imsakColor = if (mevcutVakit == "İmsak") yaziRengi else yaziRengiSecondary
+            val gunesColor = if (mevcutVakit == "Güneş") yaziRengi else yaziRengiSecondary
+            val ogleColor = if (mevcutVakit == "Öğle") yaziRengi else yaziRengiSecondary
+            val ikindiColor = if (mevcutVakit == "İkindi") yaziRengi else yaziRengiSecondary
+            val aksamColor = if (mevcutVakit == "Akşam") yaziRengi else yaziRengiSecondary
+            val yatsiColor = if (mevcutVakit == "Yatsı") yaziRengi else yaziRengiSecondary
+
             views.setTextViewText(R.id.tv_imsak, imsak)
-            views.setTextColor(R.id.tv_imsak, yaziRengi)
+            views.setTextColor(R.id.tv_imsak, imsakColor)
             views.setTextViewText(R.id.tv_gunes, gunes)
-            views.setTextColor(R.id.tv_gunes, yaziRengi)
+            views.setTextColor(R.id.tv_gunes, gunesColor)
             views.setTextViewText(R.id.tv_ogle, ogle)
-            views.setTextColor(R.id.tv_ogle, yaziRengi)
+            views.setTextColor(R.id.tv_ogle, ogleColor)
             views.setTextViewText(R.id.tv_ikindi, ikindi)
-            views.setTextColor(R.id.tv_ikindi, yaziRengi)
+            views.setTextColor(R.id.tv_ikindi, ikindiColor)
             views.setTextViewText(R.id.tv_aksam, aksam)
-            views.setTextColor(R.id.tv_aksam, yaziRengi)
+            views.setTextColor(R.id.tv_aksam, aksamColor)
             views.setTextViewText(R.id.tv_yatsi, yatsi)
-            views.setTextColor(R.id.tv_yatsi, yaziRengi)
+            views.setTextColor(R.id.tv_yatsi, yatsiColor)
             
             // Geri sayım ve bilgiler (renk ile)
-            views.setTextViewText(R.id.tv_countdown, geriSayim)
+            WidgetUtils.applyCountdown(views, R.id.tv_countdown, geriSayim)
             views.setTextColor(R.id.tv_countdown, yaziRengi)
             views.setTextViewText(R.id.tv_sonraki_vakit_adi, "$sonrakiVakit Vaktine Kalan Süre")
             views.setTextColor(R.id.tv_sonraki_vakit_adi, yaziRengiSecondary)
@@ -106,6 +143,8 @@ class KlasikTuruncuWidget : AppWidgetProvider() {
             views.setTextColor(R.id.tv_hicri_tarih, yaziRengiSecondary)
             views.setTextViewText(R.id.tv_konum, konum.uppercase())
             views.setTextColor(R.id.tv_konum, yaziRengi)
+
+            views.setOnClickPendingIntent(R.id.widget_root, WidgetUtils.createLaunchPendingIntent(context))
             
             appWidgetManager.updateAppWidget(appWidgetId, views)
         }

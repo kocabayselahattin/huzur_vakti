@@ -15,4 +15,32 @@
     <style name="NormalTheme" parent="@android:style/Theme.Light.NoTitleBar">
         <item name="android:windowBackground">?android:colorBackground</item>
     </style>
+
+    <style name="WidgetTextModern">
+        <item name="android:fontFamily">sans-serif</item>
+    </style>
+
+    <style name="WidgetTextCondensed">
+        <item name="android:fontFamily">sans-serif-condensed</item>
+    </style>
+
+    <style name="WidgetTextMedium">
+        <item name="android:fontFamily">sans-serif-medium</item>
+    </style>
+
+    <style name="WidgetTextLight">
+        <item name="android:fontFamily">sans-serif-light</item>
+    </style>
+
+    <style name="WidgetTextBlack">
+        <item name="android:fontFamily">sans-serif-black</item>
+    </style>
+
+    <style name="WidgetTextSerif">
+        <item name="android:fontFamily">serif</item>
+    </style>
+
+    <style name="WidgetTextMono">
+        <item name="android:fontFamily">monospace</item>
+    </style>
 </resources>

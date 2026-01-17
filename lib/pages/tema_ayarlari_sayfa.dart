@@ -18,11 +18,20 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
   Color _ozelKartArkaPlan = const Color(0xFF2B3151);
   Color _ozelVurgu = const Color(0xFF00BCD4);
   Color _ozelVurguSecondary = const Color(0xFF26C6DA);
+  Color _ozelYaziPrimary = Colors.white;
+  Color _ozelYaziSecondary = const Color(0xFFB0BEC5);
 
   @override
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    final mevcut = _temaService.renkler;
+    _ozelArkaPlan = mevcut.arkaPlan;
+    _ozelKartArkaPlan = mevcut.kartArkaPlan;
+    _ozelVurgu = mevcut.vurgu;
+    _ozelVurguSecondary = mevcut.vurguSecondary;
+    _ozelYaziPrimary = mevcut.yaziPrimary;
+    _ozelYaziSecondary = mevcut.yaziSecondary;
     _temaService.addListener(_onTemaChanged);
   }
 
@@ -72,6 +81,7 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
   Widget _buildHazirTemalar(TemaRenkleri renkler) {
     return Column(
       children: [
+        _buildFontSecimi(renkler),
         // Önizleme
         _buildOnizleme(renkler),
         // Tema listesi
@@ -252,6 +262,8 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          _buildFontSecimi(renkler),
+          const SizedBox(height: 16),
           // Özel tema önizleme
           Container(
             padding: const EdgeInsets.all(20),
@@ -277,10 +289,10 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
                     children: [
                       Icon(Icons.access_time, color: _ozelVurgu),
                       const SizedBox(width: 12),
-                      Text('Örnek Vakit',
-                          style: TextStyle(color: _ozelVurgu, fontWeight: FontWeight.bold)),
+                        Text('Örnek Vakit',
+                          style: TextStyle(color: _ozelYaziPrimary, fontWeight: FontWeight.bold)),
                       const Spacer(),
-                      Text('12:00', style: TextStyle(color: _ozelVurguSecondary)),
+                        Text('12:00', style: TextStyle(color: _ozelYaziSecondary)),
                     ],
                   ),
                 ),
@@ -397,6 +409,16 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
               _ozelVurguSecondary = Color.lerp(color, Colors.white, 0.3)!;
             });
           }),
+          _buildRenkSecici('Yazı Rengi', _ozelYaziPrimary, (color) {
+            setState(() {
+              _ozelYaziPrimary = color;
+            });
+          }),
+          _buildRenkSecici('Yazı İkincil', _ozelYaziSecondary, (color) {
+            setState(() {
+              _ozelYaziSecondary = color;
+            });
+          }),
 
           const SizedBox(height: 24),
 
@@ -420,6 +442,8 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
                   kartArkaPlan: _ozelKartArkaPlan,
                   vurgu: _ozelVurgu,
                   vurguSecondary: _ozelVurguSecondary,
+                  yaziPrimary: _ozelYaziPrimary,
+                  yaziSecondary: _ozelYaziSecondary,
                 );
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
@@ -471,6 +495,41 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
                 borderRadius: BorderRadius.circular(8),
                 border: Border.all(color: Colors.white24),
               ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildFontSecimi(TemaRenkleri renkler) {
+    return Container(
+      margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: renkler.kartArkaPlan,
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Text('Yazı Tipi', style: TextStyle(color: renkler.yaziPrimary)),
+          const Spacer(),
+          DropdownButtonHideUnderline(
+            child: DropdownButton<String>(
+              value: _temaService.fontFamily,
+              dropdownColor: renkler.kartArkaPlan,
+              style: TextStyle(color: renkler.yaziPrimary),
+              items: TemaService.fontFamilies
+                  .map((font) => DropdownMenuItem(
+                        value: font,
+                        child: Text(font),
+                      ))
+                  .toList(),
+              onChanged: (value) {
+                if (value != null) {
+                  _temaService.fontuDegistir(value);
+                }
+              },
             ),
           ),
         ],

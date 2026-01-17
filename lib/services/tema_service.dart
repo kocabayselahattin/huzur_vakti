@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:google_fonts/google_fonts.dart';
 
 enum AppTema {
   gece,         // Varsayılan koyu mavi
@@ -84,8 +85,27 @@ class TemaService extends ChangeNotifier {
 
   AppTema _mevcutTema = AppTema.gece;
   TemaRenkleri? _ozelTema;
+  String _fontFamily = 'Poppins';
+
+  static const List<String> fontFamilies = [
+    'Poppins',
+    'Inter',
+    'Lato',
+    'Nunito',
+    'Roboto',
+    'Montserrat',
+    'Rubik',
+    'Manrope',
+    'Ubuntu',
+    'Oswald',
+    'Merriweather',
+    'Playfair Display',
+    'Source Sans Pro',
+    'DM Sans',
+  ];
   
   AppTema get mevcutTema => _mevcutTema;
+  String get fontFamily => _fontFamily;
 
   static const Map<AppTema, TemaRenkleri> temalar = {
     // 1. Gece - Varsayılan
@@ -347,6 +367,7 @@ class TemaService extends ChangeNotifier {
     if (temaIndex < AppTema.values.length) {
       _mevcutTema = AppTema.values[temaIndex];
     }
+    _fontFamily = prefs.getString('font_family') ?? _fontFamily;
     await _ozelTemayiYukle();
     notifyListeners();
   }
@@ -357,6 +378,8 @@ class TemaService extends ChangeNotifier {
     final kartArkaPlan = prefs.getInt('ozel_tema_kartArkaPlan');
     final vurgu = prefs.getInt('ozel_tema_vurgu');
     final vurguSecondary = prefs.getInt('ozel_tema_vurguSecondary');
+    final yaziPrimary = prefs.getInt('ozel_tema_yaziPrimary');
+    final yaziSecondary = prefs.getInt('ozel_tema_yaziSecondary');
     
     if (arkaPlan != null && vurgu != null) {
       _ozelTema = TemaRenkleri(
@@ -364,14 +387,21 @@ class TemaService extends ChangeNotifier {
         kartArkaPlan: Color(kartArkaPlan ?? arkaPlan),
         vurgu: Color(vurgu),
         vurguSecondary: Color(vurguSecondary ?? vurgu),
-        yaziPrimary: Colors.white,
-        yaziSecondary: const Color(0xFFB0BEC5),
+        yaziPrimary: Color(yaziPrimary ?? Colors.white.value),
+        yaziSecondary: Color(yaziSecondary ?? const Color(0xFFB0BEC5).value),
         ayirac: Color(kartArkaPlan ?? arkaPlan).withOpacity(0.5),
         isim: 'Özel Tema',
         aciklama: 'Sizin seçtiğiniz renkler',
         ikon: Icons.palette,
       );
     }
+  }
+
+  Future<void> fontuDegistir(String yeniFont) async {
+    _fontFamily = yeniFont;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('font_family', yeniFont);
+    notifyListeners();
   }
 
   Future<void> temayiDegistir(AppTema yeniTema) async {
@@ -386,20 +416,24 @@ class TemaService extends ChangeNotifier {
     required Color kartArkaPlan,
     required Color vurgu,
     required Color vurguSecondary,
+    required Color yaziPrimary,
+    required Color yaziSecondary,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('ozel_tema_arkaPlan', arkaPlan.value);
     await prefs.setInt('ozel_tema_kartArkaPlan', kartArkaPlan.value);
     await prefs.setInt('ozel_tema_vurgu', vurgu.value);
     await prefs.setInt('ozel_tema_vurguSecondary', vurguSecondary.value);
+    await prefs.setInt('ozel_tema_yaziPrimary', yaziPrimary.value);
+    await prefs.setInt('ozel_tema_yaziSecondary', yaziSecondary.value);
     
     _ozelTema = TemaRenkleri(
       arkaPlan: arkaPlan,
       kartArkaPlan: kartArkaPlan,
       vurgu: vurgu,
       vurguSecondary: vurguSecondary,
-      yaziPrimary: Colors.white,
-      yaziSecondary: const Color(0xFFB0BEC5),
+      yaziPrimary: yaziPrimary,
+      yaziSecondary: yaziSecondary,
       ayirac: kartArkaPlan.withOpacity(0.5),
       isim: 'Özel Tema',
       aciklama: 'Sizin seçtiğiniz renkler',
@@ -460,16 +494,26 @@ class TemaService extends ChangeNotifier {
 
   ThemeData buildThemeData() {
     final r = renkler;
+    final fontTextTheme = GoogleFonts.getTextTheme(_fontFamily);
+    final textTheme = fontTextTheme.copyWith(
+      bodyLarge: fontTextTheme.bodyLarge?.copyWith(color: r.yaziPrimary),
+      bodyMedium: fontTextTheme.bodyMedium?.copyWith(color: r.yaziPrimary),
+      bodySmall: fontTextTheme.bodySmall?.copyWith(color: r.yaziSecondary),
+      titleLarge: fontTextTheme.titleLarge?.copyWith(color: r.yaziPrimary),
+      titleMedium: fontTextTheme.titleMedium?.copyWith(color: r.yaziPrimary),
+      titleSmall: fontTextTheme.titleSmall?.copyWith(color: r.yaziSecondary),
+    );
     return ThemeData(
       useMaterial3: true,
       scaffoldBackgroundColor: r.arkaPlan,
+      fontFamily: _fontFamily,
       appBarTheme: AppBarTheme(
         backgroundColor: Colors.transparent,
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
           color: r.yaziPrimary,
-          fontSize: 16,
+          fontSize: 20,
           fontWeight: FontWeight.w600,
           letterSpacing: 1.5,
         ),
@@ -480,11 +524,7 @@ class TemaService extends ChangeNotifier {
         secondary: r.vurguSecondary,
         surface: r.kartArkaPlan,
       ),
-      textTheme: TextTheme(
-        bodyLarge: TextStyle(color: r.yaziPrimary),
-        bodyMedium: TextStyle(color: r.yaziPrimary),
-        bodySmall: TextStyle(color: r.yaziSecondary),
-      ),
+      textTheme: textTheme,
       iconTheme: IconThemeData(color: r.vurgu),
       dividerColor: r.ayirac,
       cardColor: r.kartArkaPlan,

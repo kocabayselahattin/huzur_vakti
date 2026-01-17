@@ -15,6 +15,7 @@ import 'ayarlar_sayfa.dart';
 import 'zikir_matik_sayfa.dart';
 import 'kirk_hadis_sayfa.dart';
 import 'kuran_sayfa.dart';
+import 'ibadet_sayfa.dart';
 
 class AnaSayfa extends StatefulWidget {
   const AnaSayfa({super.key});
@@ -287,6 +288,22 @@ class _AnaSayfaState extends State<AnaSayfa> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => const ZikirMatikSayfa(),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.mosque, color: renkler.vurgu),
+                title: Text(
+                  'İbadet',
+                  style: TextStyle(color: renkler.yaziPrimary),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const IbadetSayfa(),
                     ),
                   );
                 },
