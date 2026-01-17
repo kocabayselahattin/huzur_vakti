@@ -286,25 +286,26 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
               ),
             ),
           Padding(
-            padding: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
               children: [
                 Text(
                   'Önizleme',
                   style: TextStyle(
                     color: Color.fromRGBO(yaziRengi.red, yaziRengi.green, yaziRengi.blue, 0.7),
-                    fontSize: 12,
+                    fontSize: 10,
                   ),
                 ),
-                const SizedBox(height: 4),
+                const SizedBox(height: 2),
                 Row(
                   children: [
                     Text(
                       'Öğle Namazına',
                       style: TextStyle(
                         color: yaziRengi,
-                        fontSize: 16,
+                        fontSize: 14,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
@@ -313,17 +314,17 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
                       'İstanbul',
                       style: TextStyle(
                         color: Color.fromRGBO(yaziRengi.red, yaziRengi.green, yaziRengi.blue, 0.8),
-                        fontSize: 14,
+                        fontSize: 12,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 4),
                 Text(
                   '02:30:45',
                   style: TextStyle(
                     color: yaziRengi,
-                    fontSize: 32,
+                    fontSize: 28,
                     fontWeight: FontWeight.bold,
                   ),
                 ),
