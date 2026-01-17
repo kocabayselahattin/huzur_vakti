@@ -167,7 +167,8 @@ class IbadetSayfa extends StatelessWidget {
           items: [
             'Cuma namazı, öğle vaktinde cemaatle kılınır.',
             'Hutbe dinlemek farzdır.',
-            'İki rekât farz + hutbe vardır.',
+            'Cuma Namazı 10 Rekattır 4 Rekat  İlk Sünnet, 2 Rekat Farz, 4 Rekat Son Sünnet.',
+            'Ayrıca 4 Rekat Zuhre Ahir, 2 Rekatta Vaktin Sünneti Niyeti İle Kılınır Toplamda 16 Rekat olur'
           ],
         ),
         _IbadetSection(

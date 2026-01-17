@@ -2,11 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import '../services/diyanet_api_service.dart';
 import '../services/konum_service.dart';
+import '../data/il_ilce_data.dart';
 
 class IlIlceSecSayfa extends StatefulWidget {
   final bool ilkKurulum;
+  final bool otomatikKonumTespit;
 
-  const IlIlceSecSayfa({super.key, this.ilkKurulum = false});
+  const IlIlceSecSayfa({super.key, this.ilkKurulum = false, this.otomatikKonumTespit = false});
 
   @override
   State<IlIlceSecSayfa> createState() => _IlIlceSecSayfaState();
@@ -32,7 +34,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
   void initState() {
     super.initState();
     _illeriYukle();
-    if (widget.ilkKurulum) {
+    if (widget.ilkKurulum && widget.otomatikKonumTespit) {
       _konumuTespitEt();
     }
   }
@@ -48,6 +50,20 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
     setState(() {
       yukleniyor = true;
     });
+    
+    // Önce yerel veriden yükle (daha hızlı ve güvenilir)
+    final yerelIller = IlIlceData.getIller();
+    if (yerelIller.isNotEmpty) {
+      setState(() {
+        iller = yerelIller;
+        filtrelenmisIller = iller;
+        yukleniyor = false;
+      });
+      print('✅ ${iller.length} il yerel veriden yüklendi');
+      return;
+    }
+    
+    // Yerel veri yoksa API'den dene
     final illerData = await DiyanetApiService.getIller();
     setState(() {
       iller = illerData;
@@ -60,6 +76,21 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
     setState(() {
       yukleniyor = true;
     });
+    
+    // Önce yerel veriden yükle
+    final yerelIlceler = IlIlceData.getIlceler(ilId);
+    if (yerelIlceler.isNotEmpty) {
+      setState(() {
+        ilceler = yerelIlceler;
+        filtrelenmisIlceler = ilceler;
+        _ilceAramaController.clear();
+        yukleniyor = false;
+      });
+      print('✅ ${ilceler.length} ilçe yerel veriden yüklendi');
+      return;
+    }
+    
+    // Yerel veri yoksa API'den dene
     final ilcelerData = await DiyanetApiService.getIlceler(ilId);
     setState(() {
       ilceler = ilcelerData;
@@ -352,63 +383,88 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
         ),
         body: Column(
           children: [
-            // İlk kurulum - GPS butonu
-            if (widget.ilkKurulum)
-              Container(
-                width: double.infinity,
-                padding: const EdgeInsets.all(16),
-                margin: const EdgeInsets.all(16),
-                decoration: BoxDecoration(
-                  color: Colors.cyanAccent.withOpacity(0.1),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: Colors.cyanAccent.withOpacity(0.3)),
-                ),
-                child: Column(
-                  children: [
-                    if (konumTespit)
-                      const Row(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          SizedBox(
-                            width: 20,
-                            height: 20,
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              valueColor:
-                                  AlwaysStoppedAnimation(Colors.cyanAccent),
-                            ),
-                          ),
-                          SizedBox(width: 12),
-                          Text(
-                            'Konum tespit ediliyor...',
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ],
-                      )
-                    else
-                      Row(
-                        children: [
-                          const Icon(Icons.info_outline, color: Colors.cyanAccent),
-                          const SizedBox(width: 12),
-                          const Expanded(
-                            child: Text(
-                              'Konumunuzu otomatik tespit edebilir veya manuel seçebilirsiniz.',
-                              style:
-                                  TextStyle(color: Colors.white, fontSize: 14),
-                            ),
-                          ),
-                          const SizedBox(width: 8),
-                          IconButton(
-                            onPressed: _konumuTespitEt,
-                            icon: const Icon(Icons.my_location,
-                                color: Colors.cyanAccent),
-                            tooltip: 'Konumu Tespit Et',
-                          ),
-                        ],
-                      ),
-                  ],
-                ),
+            // GPS ile konum tespit butonu (her zaman göster)
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.cyanAccent.withOpacity(0.1),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.cyanAccent.withOpacity(0.3)),
               ),
+              child: Column(
+                children: [
+                  if (konumTespit)
+                    const Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          height: 20,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2,
+                            valueColor:
+                                AlwaysStoppedAnimation(Colors.cyanAccent),
+                          ),
+                        ),
+                        SizedBox(width: 12),
+                        Text(
+                          'Konum tespit ediliyor...',
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ],
+                    )
+                  else
+                    InkWell(
+                      onTap: _konumuTespitEt,
+                      borderRadius: BorderRadius.circular(8),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 8),
+                        child: Row(
+                          children: [
+                            Container(
+                              padding: const EdgeInsets.all(10),
+                              decoration: BoxDecoration(
+                                color: Colors.cyanAccent.withOpacity(0.2),
+                                shape: BoxShape.circle,
+                              ),
+                              child: const Icon(Icons.my_location,
+                                  color: Colors.cyanAccent, size: 24),
+                            ),
+                            const SizedBox(width: 16),
+                            const Expanded(
+                              child: Column(
+                                crossAxisAlignment: CrossAxisAlignment.start,
+                                children: [
+                                  Text(
+                                    'Konumu Otomatik Bul',
+                                    style: TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                  SizedBox(height: 4),
+                                  Text(
+                                    'GPS ile il ve ilçenizi tespit edin',
+                                    style: TextStyle(
+                                      color: Colors.white70,
+                                      fontSize: 12,
+                                    ),
+                                  ),
+                                ],
+                              ),
+                            ),
+                            const Icon(Icons.arrow_forward_ios,
+                                color: Colors.cyanAccent, size: 18),
+                          ],
+                        ),
+                      ),
+                    ),
+                ],
+              ),
+            ),
 
             // İl Arama ve Seçimi
             Padding(

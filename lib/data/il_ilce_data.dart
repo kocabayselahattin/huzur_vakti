@@ -1484,4 +1484,40 @@ class IlIlceData {
     }
     return const <Map<String, String>>[];
   }
+
+  /// İl listesini döndürür (DiyanetApiService formatında)
+  static List<Map<String, dynamic>> getIller() {
+    return _veriler.map((il) => <String, dynamic>{
+      'SehirID': il['SehirID'],
+      'SehirAdi': il['SehirAdi'],
+    }).toList();
+  }
+
+  /// Belirtilen il ID'sine göre ilçe listesini döndürür
+  static List<Map<String, dynamic>> getIlceler(String sehirId) {
+    final il = _veriler.firstWhere(
+      (element) => element['SehirID'] == sehirId,
+      orElse: () => const <String, Object>{},
+    );
+    final ilcelerList = il['Ilceler'];
+    if (ilcelerList is List<Map<String, String>>) {
+      return ilcelerList.map((ilce) => <String, dynamic>{
+        'IlceID': ilce['IlceID'],
+        'IlceAdi': ilce['IlceAdi'],
+      }).toList();
+    }
+    return const <Map<String, dynamic>>[];
+  }
+
+  /// İl adından il ID'sini bul
+  static String? getIlIdByName(String ilAdi) {
+    final normalizedIlAdi = ilAdi.toLowerCase();
+    for (final il in _veriler) {
+      final sehirAdi = (il['SehirAdi'] as String).toLowerCase();
+      if (sehirAdi == normalizedIlAdi || sehirAdi.contains(normalizedIlAdi) || normalizedIlAdi.contains(sehirAdi)) {
+        return il['SehirID'] as String;
+      }
+    }
+    return null;
+  }
 }

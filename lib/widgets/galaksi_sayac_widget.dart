@@ -338,32 +338,34 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.calendar_today, size: 10, color: renkler.yaziSecondary.withValues(alpha: 0.7)),
+            Icon(Icons.calendar_today, size: 14, color: renkler.yaziSecondary.withValues(alpha: 0.8)),
             const SizedBox(width: 4),
             Text(
               miladiTarih,
               style: TextStyle(
-                color: renkler.yaziSecondary.withValues(alpha: 0.8),
-                fontSize: 9,
+                color: renkler.yaziSecondary.withValues(alpha: 0.9),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],
         ),
         Padding(
-          padding: const EdgeInsets.symmetric(horizontal: 8),
-          child: Text('•', style: TextStyle(color: renkler.vurgu.withValues(alpha: 0.5), fontSize: 8)),
+          padding: const EdgeInsets.symmetric(horizontal: 10),
+          child: Text('•', style: TextStyle(color: renkler.vurgu.withValues(alpha: 0.6), fontSize: 12)),
         ),
         // Hicri
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.brightness_3, size: 10, color: renkler.vurgu.withValues(alpha: 0.7)),
+            Icon(Icons.brightness_3, size: 14, color: renkler.vurgu.withValues(alpha: 0.8)),
             const SizedBox(width: 4),
             Text(
               hicriTarih,
               style: TextStyle(
-                color: renkler.vurgu.withValues(alpha: 0.8),
-                fontSize: 9,
+                color: renkler.vurgu.withValues(alpha: 0.9),
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
               ),
             ),
           ],

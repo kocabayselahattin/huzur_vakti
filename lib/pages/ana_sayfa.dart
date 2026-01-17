@@ -27,14 +27,14 @@ class AnaSayfa extends StatefulWidget {
 class _AnaSayfaState extends State<AnaSayfa> {
   String konumBasligi = "KONUM SEÇİLMEDİ";
   final TemaService _temaService = TemaService();
-  late PageController _sayacController;
+  PageController? _sayacController;
   int _currentSayacIndex = 0;
   final int _sayacCount = 5; // Toplam sayaç sayısı
+  bool _sayacYuklendi = false;
 
   @override
   void initState() {
     super.initState();
-    _sayacController = PageController(viewportFraction: 0.95);
     _loadSayacIndex();
     _konumYukle();
     _temaService.addListener(_onTemaChanged);
@@ -43,10 +43,13 @@ class _AnaSayfaState extends State<AnaSayfa> {
   Future<void> _loadSayacIndex() async {
     final prefs = await SharedPreferences.getInstance();
     final index = prefs.getInt('secili_sayac_index') ?? 0;
-    setState(() {
-      _currentSayacIndex = index;
-      _sayacController = PageController(viewportFraction: 0.95, initialPage: index);
-    });
+    if (mounted) {
+      setState(() {
+        _currentSayacIndex = index;
+        _sayacController = PageController(viewportFraction: 0.95, initialPage: index);
+        _sayacYuklendi = true;
+      });
+    }
   }
 
   Future<void> _saveSayacIndex(int index) async {
@@ -56,7 +59,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
 
   @override
   void dispose() {
-    _sayacController.dispose();
+    _sayacController?.dispose();
     _temaService.removeListener(_onTemaChanged);
     super.dispose();
   }
@@ -109,31 +112,33 @@ class _AnaSayfaState extends State<AnaSayfa> {
               // --- SAYAÇ SLIDER BÖLÜMÜ ---
               SizedBox(
                 height: 260,
-                child: Column(
-                  children: [
-                    Expanded(
-                      child: PageView(
-                        controller: _sayacController,
-                        onPageChanged: (index) {
-                          setState(() {
-                            _currentSayacIndex = index;
-                          });
-                          _saveSayacIndex(index);
-                        },
-                        children: const [
-                          DijitalSayacWidget(),
-                          PremiumSayacWidget(),
-                          GalaksiSayacWidget(),
-                          NeonSayacWidget(),
-                          OkyanusSayacWidget(),
+                child: _sayacYuklendi && _sayacController != null
+                    ? Column(
+                        children: [
+                          Expanded(
+                            child: PageView(
+                              controller: _sayacController,
+                              onPageChanged: (index) {
+                                setState(() {
+                                  _currentSayacIndex = index;
+                                });
+                                _saveSayacIndex(index);
+                              },
+                              children: const [
+                                DijitalSayacWidget(),
+                                PremiumSayacWidget(),
+                                GalaksiSayacWidget(),
+                                NeonSayacWidget(),
+                                OkyanusSayacWidget(),
+                              ],
+                            ),
+                          ),
+                          const SizedBox(height: 8),
+                          // Sayaç page indicator
+                          _buildPageIndicator(renkler),
                         ],
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    // Sayaç page indicator
-                    _buildPageIndicator(renkler),
-                  ],
-                ),
+                      )
+                    : const Center(child: CircularProgressIndicator()),
               ),
 
               const SizedBox(height: 10),
@@ -175,7 +180,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
         GestureDetector(
           onTap: () {
             if (_currentSayacIndex > 0) {
-              _sayacController.previousPage(
+              _sayacController?.previousPage(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
               );
@@ -195,7 +200,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
           final isActive = index == _currentSayacIndex;
           return GestureDetector(
             onTap: () {
-              _sayacController.animateToPage(
+              _sayacController?.animateToPage(
                 index,
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
@@ -227,7 +232,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
         GestureDetector(
           onTap: () {
             if (_currentSayacIndex < 4) {
-              _sayacController.nextPage(
+              _sayacController?.nextPage(
                 duration: const Duration(milliseconds: 300),
                 curve: Curves.easeInOut,
               );

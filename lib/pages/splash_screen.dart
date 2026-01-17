@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
 import 'ana_sayfa.dart';
 import 'il_ilce_sec_sayfa.dart';
 import '../services/konum_service.dart';
-import '../services/diyanet_api_service.dart';
+import '../services/permission_service.dart';
 
 class SplashScreen extends StatefulWidget {
   const SplashScreen({super.key});
@@ -12,6 +13,8 @@ class SplashScreen extends StatefulWidget {
 }
 
 class _SplashScreenState extends State<SplashScreen> {
+  String _durum = 'Başlatılıyor...';
+
   @override
   void initState() {
     super.initState();
@@ -19,61 +22,21 @@ class _SplashScreenState extends State<SplashScreen> {
   }
 
   Future<void> _kontrolVeYonlendir() async {
-    // 3 saniye splash screen göster
-    await Future.delayed(const Duration(seconds: 3));
+    // 2 saniye splash screen göster
+    await Future.delayed(const Duration(seconds: 2));
 
     if (!mounted) return;
 
-    // Kaydedilmiş il/ilçe kontrolü
+    // Önce kaydedilmiş konum var mı kontrol et
     final ilceId = await KonumService.getIlceId();
+    final ilId = await KonumService.getIlId();
     
-    bool ilceGecerli = false;
-    
-    if (ilceId != null && ilceId.isNotEmpty) {
-      // API'den ilçe verisi alınabiliyor mu kontrol et
-      try {
-        final vakitler = await DiyanetApiService.getVakitler(ilceId);
-        // Eğer vakitler başarıyla alındıysa ve içinde gerçek tarih varsa geçerli
-        if (vakitler != null && vakitler.containsKey('vakitler')) {
-          final vakitList = vakitler['vakitler'] as List;
-          if (vakitList.isNotEmpty) {
-            // İlk vaktin tarihini kontrol et - eğer doğru formatsa API çalışıyor demektir
-            final ilkVakit = vakitList[0];
-            final tarih = ilkVakit['MiladiTarihKisa'] ?? '';
-            // Format: DD.MM.YYYY - 2026 yılı içermeli
-            if (tarih.contains('.') && tarih.contains('2026')) {
-              ilceGecerli = true;
-              print('✅ Mevcut ilçe ID geçerli: $ilceId');
-            }
-          }
-        }
-      } catch (e) {
-        print('⚠️ İlçe doğrulama hatası: $e');
-      }
+    // Eğer konum daha önce kaydedilmişse, direkt ana sayfaya git
+    if (ilceId != null && ilceId.isNotEmpty && ilId != null && ilId.isNotEmpty) {
+      print('✅ Kayıtlı konum bulundu, ana sayfaya yönlendiriliyor...');
       
-      // Eğer ilçe geçersizse, eski verileri temizle
-      if (!ilceGecerli) {
-        print('🔄 Eski ilçe ID geçersiz, veriler temizleniyor: $ilceId');
-        await KonumService.clearKonum();
-        DiyanetApiService.clearCache();
-      }
-    }
-
-    if (!ilceGecerli) {
-      // İl/İlçe seçilmemişse veya geçersizse önce seçim sayfasına yönlendir
-      Navigator.pushReplacement(
-        context,
-        PageRouteBuilder(
-          pageBuilder: (context, animation, secondaryAnimation) =>
-              const IlIlceSecOnboarding(),
-          transitionsBuilder: (context, animation, secondaryAnimation, child) {
-            return FadeTransition(opacity: animation, child: child);
-          },
-          transitionDuration: const Duration(milliseconds: 800),
-        ),
-      );
-    } else {
-      // İl/İlçe seçiliyse direkt ana sayfaya git
+      if (!mounted) return;
+      
       Navigator.pushReplacement(
         context,
         PageRouteBuilder(
@@ -85,6 +48,71 @@ class _SplashScreenState extends State<SplashScreen> {
           transitionDuration: const Duration(milliseconds: 800),
         ),
       );
+      return;
+    }
+
+    // Konum kaydedilmemişse (ilk açılış) izinleri iste
+    setState(() => _durum = 'İzinler kontrol ediliyor...');
+
+    // Bildirim izinlerini iste
+    await PermissionService.requestAllPermissions();
+    
+    await Future.delayed(const Duration(milliseconds: 300));
+
+    if (!mounted) return;
+
+    setState(() => _durum = 'Konum kontrol ediliyor...');
+
+    // Konum iznini kontrol et ve iste (sadece ilk açılışta)
+    final konumIzniVar = await _konumIzniKontrolEt();
+
+    if (!mounted) return;
+
+    // İlk açılış: İl/İlçe seçim sayfasına yönlendir
+    Navigator.pushReplacement(
+      context,
+      PageRouteBuilder(
+        pageBuilder: (context, animation, secondaryAnimation) =>
+            IlIlceSecOnboarding(konumIzniVar: konumIzniVar),
+        transitionsBuilder: (context, animation, secondaryAnimation, child) {
+          return FadeTransition(opacity: animation, child: child);
+        },
+        transitionDuration: const Duration(milliseconds: 800),
+      ),
+    );
+  }
+
+  Future<bool> _konumIzniKontrolEt() async {
+    try {
+      // Konum servisi açık mı kontrol et
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        print('⚠️ Konum servisi kapalı');
+        return false;
+      }
+
+      // İzin durumunu kontrol et
+      LocationPermission permission = await Geolocator.checkPermission();
+      
+      if (permission == LocationPermission.denied) {
+        // İzin iste
+        permission = await Geolocator.requestPermission();
+        if (permission == LocationPermission.denied) {
+          print('⚠️ Konum izni reddedildi');
+          return false;
+        }
+      }
+
+      if (permission == LocationPermission.deniedForever) {
+        print('⚠️ Konum izni kalıcı olarak reddedildi');
+        return false;
+      }
+
+      print('✅ Konum izni verildi');
+      return true;
+    } catch (e) {
+      print('⚠️ Konum izni kontrolü hatası: $e');
+      return false;
     }
   }
 
@@ -151,6 +179,26 @@ class _SplashScreenState extends State<SplashScreen> {
                 letterSpacing: 1,
               ),
             ),
+            const SizedBox(height: 30),
+            // Durum göstergesi
+            Text(
+              _durum,
+              style: TextStyle(
+                color: const Color(0xFF95D5B2).withOpacity(0.5),
+                fontSize: 12,
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: 30,
+              height: 30,
+              child: CircularProgressIndicator(
+                strokeWidth: 2,
+                valueColor: AlwaysStoppedAnimation(
+                  const Color(0xFF74C69D).withOpacity(0.5),
+                ),
+              ),
+            ),
           ],
         ),
       ),
@@ -160,7 +208,9 @@ class _SplashScreenState extends State<SplashScreen> {
 
 // İlk kullanım için Onboarding Sayfası
 class IlIlceSecOnboarding extends StatelessWidget {
-  const IlIlceSecOnboarding({super.key});
+  final bool konumIzniVar;
+  
+  const IlIlceSecOnboarding({super.key, this.konumIzniVar = false});
 
   @override
   Widget build(BuildContext context) {
@@ -206,7 +256,9 @@ class IlIlceSecOnboarding extends StatelessWidget {
 
               // Açıklama
               Text(
-                'Huzur Vakti uygulamasına hoş geldiniz!\n\nDevam etmek için lütfen il ve ilçenizi seçin.',
+                konumIzniVar
+                    ? 'Huzur Vakti uygulamasına hoş geldiniz!\n\nKonumunuz tespit edilecek veya manuel olarak il ve ilçenizi seçebilirsiniz.'
+                    : 'Huzur Vakti uygulamasına hoş geldiniz!\n\nKonum izni verilmedi. Lütfen il ve ilçenizi manuel olarak seçin.',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.8),
                   fontSize: 16,
@@ -223,7 +275,7 @@ class IlIlceSecOnboarding extends StatelessWidget {
                     context,
                     MaterialPageRoute(
                       builder: (context) =>
-                          const IlIlceSecSayfa(ilkKurulum: true),
+                          IlIlceSecSayfa(ilkKurulum: true, otomatikKonumTespit: konumIzniVar),
                     ),
                   );
 
@@ -247,18 +299,18 @@ class IlIlceSecOnboarding extends StatelessWidget {
                   ),
                   elevation: 5,
                 ),
-                child: const Row(
+                child: Row(
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Konum Seç',
-                      style: TextStyle(
+                      konumIzniVar ? 'Otomatik Tespit Et' : 'Manuel Seç',
+                      style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
                       ),
                     ),
-                    SizedBox(width: 10),
-                    Icon(Icons.arrow_forward, size: 24),
+                    const SizedBox(width: 10),
+                    const Icon(Icons.arrow_forward, size: 24),
                   ],
                 ),
               ),

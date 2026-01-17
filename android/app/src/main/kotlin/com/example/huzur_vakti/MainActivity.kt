@@ -1,20 +1,31 @@
 package com.example.huzur_vakti
 
+import android.Manifest
+import android.app.AlarmManager
 import android.app.NotificationManager
 import android.content.Intent
+import android.content.pm.PackageManager
+import android.net.Uri
+import android.os.Build
+import android.os.PowerManager
 import android.provider.Settings
+import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.example.huzur_vakti.dnd.PrayerDndScheduler
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
-	private val channelName = "huzur_vakti/dnd"
+	private val dndChannelName = "huzur_vakti/dnd"
+	private val permissionsChannelName = "huzur_vakti/permissions"
+	private val NOTIFICATION_PERMISSION_CODE = 1001
 
 	override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
 		super.configureFlutterEngine(flutterEngine)
 
-		MethodChannel(flutterEngine.dartExecutor.binaryMessenger, channelName)
+		// DND Channel
+		MethodChannel(flutterEngine.dartExecutor.binaryMessenger, dndChannelName)
 			.setMethodCallHandler { call, result ->
 				when (call.method) {
 					"hasPolicyAccess" -> {
@@ -46,6 +57,70 @@ class MainActivity : FlutterActivity() {
 					}
 					"cancelDnd" -> {
 						PrayerDndScheduler.cancelAll(this)
+						result.success(true)
+					}
+					else -> result.notImplemented()
+				}
+			}
+
+		// Permissions Channel
+		MethodChannel(flutterEngine.dartExecutor.binaryMessenger, permissionsChannelName)
+			.setMethodCallHandler { call, result ->
+				when (call.method) {
+					"requestNotificationPermission" -> {
+						if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+							if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) 
+								!= PackageManager.PERMISSION_GRANTED) {
+								ActivityCompat.requestPermissions(
+									this,
+									arrayOf(Manifest.permission.POST_NOTIFICATIONS),
+									NOTIFICATION_PERMISSION_CODE
+								)
+								result.success(false)
+							} else {
+								result.success(true)
+							}
+						} else {
+							result.success(true)
+						}
+					}
+					"hasOverlayPermission" -> {
+						result.success(Settings.canDrawOverlays(this))
+					}
+					"openOverlaySettings" -> {
+						val intent = Intent(
+							Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+							Uri.parse("package:$packageName")
+						)
+						intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+						startActivity(intent)
+						result.success(true)
+					}
+					"hasExactAlarmPermission" -> {
+						if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+							val alarmManager = getSystemService(AlarmManager::class.java)
+							result.success(alarmManager.canScheduleExactAlarms())
+						} else {
+							result.success(true)
+						}
+					}
+					"openExactAlarmSettings" -> {
+						if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+							val intent = Intent(Settings.ACTION_REQUEST_SCHEDULE_EXACT_ALARM)
+							intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+							startActivity(intent)
+						}
+						result.success(true)
+					}
+					"isBatteryOptimizationDisabled" -> {
+						val powerManager = getSystemService(PowerManager::class.java)
+						result.success(powerManager.isIgnoringBatteryOptimizations(packageName))
+					}
+					"openBatteryOptimizationSettings" -> {
+						val intent = Intent(Settings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS)
+						intent.data = Uri.parse("package:$packageName")
+						intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+						startActivity(intent)
 						result.success(true)
 					}
 					else -> result.notImplemented()

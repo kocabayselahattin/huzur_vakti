@@ -21,9 +21,9 @@ class HomeWidgetService {
     await _loadWidgetColors();
     await updateAllWidgets();
     
-    // Her dakika güncelle
+    // Her 30 saniyede bir güncelle
     _updateTimer?.cancel();
-    _updateTimer = Timer.periodic(const Duration(minutes: 1), (_) {
+    _updateTimer = Timer.periodic(const Duration(seconds: 30), (_) {
       updateAllWidgets();
     });
   }
@@ -115,7 +115,12 @@ class HomeWidgetService {
     await HomeWidget.saveWidgetData<String>('kalan_sure', vakitBilgisi['kalanSure'] ?? '');
     await HomeWidget.saveWidgetData<String>('kalan_kisa', vakitBilgisi['kalanKisa'] ?? '');
     await HomeWidget.saveWidgetData<String>('geri_sayim', vakitBilgisi['geriSayim'] ?? '');
-    await HomeWidget.saveWidgetData<int>('ilerleme', int.tryParse(vakitBilgisi['ilerleme'] ?? '0') ?? 0);
+    // İlerleme değeri 0-100 arası clamp ve log
+    int ilerleme = int.tryParse(vakitBilgisi['ilerleme'] ?? '0') ?? 0;
+    if (ilerleme < 0) ilerleme = 0;
+    if (ilerleme > 100) ilerleme = 100;
+    print('[MiniSunsetWidget] İlerleme: $ilerleme');
+    await HomeWidget.saveWidgetData<int>('ilerleme', ilerleme);
     
     await HomeWidget.saveWidgetData<String>('tarih', miladiTarih);
     await HomeWidget.saveWidgetData<String>('miladi_tarih', miladiKisa);
