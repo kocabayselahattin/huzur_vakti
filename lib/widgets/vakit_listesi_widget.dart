@@ -3,6 +3,8 @@ import 'dart:async';
 import '../services/konum_service.dart';
 import '../services/diyanet_api_service.dart';
 import '../services/tema_service.dart';
+import '../services/notification_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class VakitListesiWidget extends StatefulWidget {
   const VakitListesiWidget({super.key});
@@ -109,7 +111,7 @@ class _VakitListesiWidgetState extends State<VakitListesiWidget> {
     }
   }
 
-  void _aktifVaktiGuncelle() {
+  Future<void> _aktifVaktiGuncelle() async {
     final now = DateTime.now();
     final nowMinutes = now.hour * 60 + now.minute;
 
@@ -139,7 +141,6 @@ class _VakitListesiWidgetState extends State<VakitListesiWidget> {
           if (i > 0) {
             yeniAktif = vakitListesi[i - 1]['adi'] as String;
           } else {
-            // Eğer ilk vakitten önceyse, önceki günün son vakti aktif
             yeniAktif = vakitListesi.last['adi'] as String;
           }
           break;
@@ -149,10 +150,25 @@ class _VakitListesiWidgetState extends State<VakitListesiWidget> {
       }
     }
 
-    // Eğer tüm vakitler geçtiyse, yatsı aktif ve imsak sonraki
     if (yeniSonraki == null) {
       yeniAktif = vakitListesi.last['adi'] as String;
       yeniSonraki = vakitListesi.first['adi'] as String;
+    }
+
+    // Bildirim tetikleme: aktif vakit değiştiyse bildir
+    if (yeniAktif != aktifVakit && yeniAktif != null) {
+      // Kullanıcı ayarlarını oku
+      final prefs = await SharedPreferences.getInstance();
+      final key = yeniAktif.toLowerCase();
+      final bildirimAcik = prefs.getBool('bildirim_$key') ?? true;
+      final ses = prefs.getString('bildirim_sesi_$key') ?? 'ezan.mp3';
+      if (bildirimAcik) {
+        await NotificationService.showVakitNotification(
+          title: 'Vakit Girdi',
+          body: '$yeniAktif vakti başladı.',
+          soundAsset: ses,
+        );
+      }
     }
 
     if (yeniAktif != aktifVakit || yeniSonraki != sonrakiVakit) {

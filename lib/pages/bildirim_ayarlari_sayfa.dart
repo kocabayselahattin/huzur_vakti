@@ -9,7 +9,6 @@ class BildirimAyarlariSayfa extends StatefulWidget {
   State<BildirimAyarlariSayfa> createState() => _BildirimAyarlariSayfaState();
 }
 
-class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
   // Bildirim açık/kapalı durumları
   Map<String, bool> _bildirimAcik = {
     'imsak': true,
@@ -33,7 +32,28 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     'yatsi': 15,
   };
 
+  // Bildirim sesi seçimi (her vakit için)
+  Map<String, String> _bildirimSesi = {
+    'imsak': 'ezan.mp3',
+    'gunes': 'bip.mp3',
+    'ogle': 'ezan.mp3',
+    'ikindi': 'tekbir.mp3',
+    'aksam': 'dua.mp3',
+    'yatsi': 'ezan.mp3',
+  };
+
   final List<int> _erkenSureler = [0, 5, 10, 15, 20, 30, 45, 60];
+  final List<Map<String, String>> _sesSecenekleri = [
+    {'ad': '2015 Best', 'dosya': '2015_best.mp3'},
+    {'ad': 'Arriving', 'dosya': 'arriving.mp3'},
+    {'ad': 'Corner', 'dosya': 'Corner.mp3'},
+    {'ad': 'Ding Dong', 'dosya': 'Ding_Dong.mp3'},
+    {'ad': 'Echo', 'dosya': 'Echo.mp3'},
+    {'ad': 'iPhone SMS', 'dosya': 'iphone_sms_original.mp3'},
+    {'ad': 'Sweet Favour', 'dosya': 'Sweet_Favour.mp3'},
+    {'ad': 'Violet', 'dosya': 'Violet.mp3'},
+    {'ad': 'Woodpecker', 'dosya': 'Woodpecker.mp3'},
+  ];
 
   @override
   void initState() {
@@ -48,6 +68,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       for (final vakit in _bildirimAcik.keys) {
         _bildirimAcik[vakit] = prefs.getBool('bildirim_$vakit') ?? _bildirimAcik[vakit]!;
         _erkenBildirim[vakit] = prefs.getInt('erken_$vakit') ?? _erkenBildirim[vakit]!;
+        _bildirimSesi[vakit] = prefs.getString('bildirim_sesi_$vakit') ?? _bildirimSesi[vakit]!;
       }
       _sessizeAl = prefs.getBool('sessize_al') ?? false;
     });
@@ -59,6 +80,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     for (final vakit in _bildirimAcik.keys) {
       await prefs.setBool('bildirim_$vakit', _bildirimAcik[vakit]!);
       await prefs.setInt('erken_$vakit', _erkenBildirim[vakit]!);
+      await prefs.setString('bildirim_sesi_$vakit', _bildirimSesi[vakit]!);
     }
     await prefs.setBool('sessize_al', _sessizeAl);
 
@@ -324,6 +346,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
   ) {
     final acik = _bildirimAcik[key]!;
     final erkenDakika = _erkenBildirim[key]!;
+    final seciliSes = _bildirimSesi[key]!;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -381,61 +404,114 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
 
           // Alt kısım - Erken bildirim seçimi
           if (acik)
-            Container(
+            Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-              child: Row(
+              child: Column(
                 children: [
-                  const Icon(
-                    Icons.timer,
-                    color: Colors.white54,
-                    size: 18,
-                  ),
-                  const SizedBox(width: 8),
-                  const Text(
-                    'Erken hatırlatma:',
-                    style: TextStyle(color: Colors.white54, fontSize: 13),
-                  ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Container(
-                      height: 36,
-                      decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(8),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.timer,
+                        color: Colors.white54,
+                        size: 18,
                       ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<int>(
-                          value: erkenDakika,
-                          isExpanded: true,
-                          dropdownColor: const Color(0xFF2B3151),
-                          icon: const Icon(Icons.arrow_drop_down,
-                              color: Colors.cyanAccent),
-                          padding: const EdgeInsets.symmetric(horizontal: 12),
-                          style: const TextStyle(color: Colors.white),
-                          items: _erkenSureler.map((dakika) {
-                            String label;
-                            if (dakika == 0) {
-                              label = 'Zamanında';
-                            } else if (dakika < 60) {
-                              label = '$dakika dk önce';
-                            } else {
-                              label = '${dakika ~/ 60} saat önce';
-                            }
-                            return DropdownMenuItem(
-                              value: dakika,
-                              child: Text(label),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            if (value != null) {
-                              setState(() {
-                                _erkenBildirim[key] = value;
-                              });
-                            }
-                          },
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Erken hatırlatma:',
+                        style: TextStyle(color: Colors.white54, fontSize: 13),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<int>(
+                              value: erkenDakika,
+                              isExpanded: true,
+                              dropdownColor: const Color(0xFF2B3151),
+                              icon: const Icon(Icons.arrow_drop_down,
+                                  color: Colors.cyanAccent),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              style: const TextStyle(color: Colors.white),
+                              items: _erkenSureler.map((dakika) {
+                                String label;
+                                if (dakika == 0) {
+                                  label = 'Zamanında';
+                                } else if (dakika < 60) {
+                                  label = '$dakika dk önce';
+                                } else {
+                                  label = '${dakika ~/ 60} saat önce';
+                                }
+                                return DropdownMenuItem(
+                                  value: dakika,
+                                  child: Text(label),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setState(() {
+                                    _erkenBildirim[key] = value;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                    ],
+                  ),
+                  const SizedBox(height: 10),
+                  Row(
+                    children: [
+                      const Icon(
+                        Icons.music_note,
+                        color: Colors.white54,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Bildirim sesi:',
+                        style: TextStyle(color: Colors.white54, fontSize: 13),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Container(
+                          height: 36,
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.1),
+                            borderRadius: BorderRadius.circular(8),
+                          ),
+                          child: DropdownButtonHideUnderline(
+                            child: DropdownButton<String>(
+                              value: seciliSes,
+                              isExpanded: true,
+                              dropdownColor: const Color(0xFF2B3151),
+                              icon: const Icon(Icons.arrow_drop_down,
+                                  color: Colors.cyanAccent),
+                              padding: const EdgeInsets.symmetric(horizontal: 12),
+                              style: const TextStyle(color: Colors.white),
+                              items: _sesSecenekleri.map((ses) {
+                                return DropdownMenuItem(
+                                  value: ses['dosya'],
+                                  child: Text(ses['ad']!),
+                                );
+                              }).toList(),
+                              onChanged: (value) {
+                                if (value != null) {
+                                  setState(() {
+                                    _bildirimSesi[key] = value;
+                                  });
+                                }
+                              },
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
                   ),
                 ],
               ),

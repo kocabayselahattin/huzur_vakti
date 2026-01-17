@@ -5,6 +5,7 @@ import 'services/tema_service.dart';
 import 'services/home_widget_service.dart';
 import 'services/dnd_service.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'services/notification_service.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -25,6 +26,9 @@ void main() async {
   if (sessizeAl) {
     await DndService.schedulePrayerDnd();
   }
+
+  // Bildirim altyapısını başlat
+  await NotificationService.initialize(null);
   
   runApp(const HuzurVaktiApp());
 }

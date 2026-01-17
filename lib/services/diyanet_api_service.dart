@@ -130,12 +130,20 @@ class DiyanetApiService {
       final yilStr = tarih.year.toString();
 
       final yilGunu = tarih.difference(DateTime(tarih.year, 1, 1)).inDays;
-      final imsakDakika = 20 + (yilGunu % 40);
-      final gunesDakika = 45 + (yilGunu % 30);
-      final ogleDakika = 50 + (yilGunu % 20);
-      final ikindiDakika = 30 + (yilGunu % 35);
-      final aksamDakika = 10 + (yilGunu % 30);
-      final yatsiDakika = 35 + (yilGunu % 30);
+      int imsakDakika = 20 + (yilGunu % 40);
+      int gunesDakika = 45 + (yilGunu % 30);
+      int ogleDakika = 50 + (yilGunu % 20);
+      int ikindiDakika = 30 + (yilGunu % 35);
+      int aksamDakika = 10 + (yilGunu % 30);
+      int yatsiDakika = 35 + (yilGunu % 30);
+
+      // Dakika değerlerini 59 ile sınırla
+      imsakDakika = imsakDakika.clamp(0, 59);
+      gunesDakika = gunesDakika.clamp(0, 59);
+      ogleDakika = ogleDakika.clamp(0, 59);
+      ikindiDakika = ikindiDakika.clamp(0, 59);
+      aksamDakika = aksamDakika.clamp(0, 59);
+      yatsiDakika = yatsiDakika.clamp(0, 59);
 
       vakitler.add({
         'MiladiTarihKisa': '$gun2.$ay2.$yilStr',
@@ -355,12 +363,20 @@ class DiyanetApiService {
 
         // Yılın gününe göre vakit saatlerini değiştir (gerçekçi olsun)
         final yilGunu = tarih.difference(DateTime(tarih.year, 1, 1)).inDays;
-        final imsakDakika = 20 + (yilGunu % 40); // 20-60 arası
-        final gunesDakika = 45 + (yilGunu % 30); // 45-75 arası
-        final ogleDakika = 50 + (yilGunu % 20); // 50-70 arası
-        final ikindiDakika = 30 + (yilGunu % 35); // 30-65 arası
-        final aksamDakika = 10 + (yilGunu % 30); // 10-40 arası
-        final yatsiDakika = 35 + (yilGunu % 30); // 35-65 arası
+        int imsakDakika = 20 + (yilGunu % 40); // 20-60 arası
+        int gunesDakika = 45 + (yilGunu % 30); // 45-75 arası
+        int ogleDakika = 50 + (yilGunu % 20); // 50-70 arası
+        int ikindiDakika = 30 + (yilGunu % 35); // 30-65 arası
+        int aksamDakika = 10 + (yilGunu % 30); // 10-40 arası
+        int yatsiDakika = 35 + (yilGunu % 30); // 35-65 arası
+
+        // Dakika değerlerini 59 ile sınırla
+        imsakDakika = imsakDakika.clamp(0, 59);
+        gunesDakika = gunesDakika.clamp(0, 59);
+        ogleDakika = ogleDakika.clamp(0, 59);
+        ikindiDakika = ikindiDakika.clamp(0, 59);
+        aksamDakika = aksamDakika.clamp(0, 59);
+        yatsiDakika = yatsiDakika.clamp(0, 59);
 
         vakitler.add({
           'MiladiTarihKisa': '$gun2.$ay2.$yil',
