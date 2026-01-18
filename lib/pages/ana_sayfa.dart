@@ -18,6 +18,8 @@ import 'kirk_hadis_sayfa.dart';
 import 'kuran_sayfa.dart';
 import 'ibadet_sayfa.dart';
 import 'ozel_gunler_sayfa.dart';
+import 'kible_sayfa.dart';
+import 'yakin_camiler_sayfa.dart';
 
 class AnaSayfa extends StatefulWidget {
   const AnaSayfa({super.key});
@@ -394,6 +396,38 @@ class _AnaSayfaState extends State<AnaSayfa> {
                     context,
                     MaterialPageRoute(
                       builder: (context) => const IbadetSayfa(),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.explore, color: renkler.vurgu),
+                title: Text(
+                  'Kıble Yönü',
+                  style: TextStyle(color: renkler.yaziPrimary),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const KibleSayfa(),
+                    ),
+                  );
+                },
+              ),
+              ListTile(
+                leading: Icon(Icons.place, color: renkler.vurgu),
+                title: Text(
+                  'Yakındaki Camiler',
+                  style: TextStyle(color: renkler.yaziPrimary),
+                ),
+                onTap: () {
+                  Navigator.pop(context);
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => const YakinCamilerSayfa(),
                     ),
                   );
                 },

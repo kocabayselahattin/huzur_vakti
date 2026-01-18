@@ -63,9 +63,9 @@
                     android:id="@+id/tv_sonraki_label_grid"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Akşam Vaktine Kalan"
+                    android:text="Sonraki Vakit"
                     android:textColor="#AAB3C2"
-                    android:textSize="10sp" />
+                    android:textSize="11sp" />
 
                 <TextView
                     android:id="@+id/tv_sonraki_adi_grid"
@@ -73,25 +73,39 @@
                     android:layout_height="wrap_content"
                     android:text="AKŞAM"
                     android:textColor="#FFFFFF"
-                    android:textSize="22sp"
+                    android:textSize="20sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
-            <Chronometer
-                android:id="@+id/tv_countdown_grid"
+            <LinearLayout
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="20:36"
-                android:textColor="#FFFFFF"
-                android:textSize="22sp"
-                android:textStyle="bold"
-                android:format="%s" />
+                android:orientation="vertical"
+                android:gravity="end">
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="Kalan Süre"
+                    android:textColor="#AAB3C2"
+                    android:textSize="11sp" />
+
+                <Chronometer
+                    android:id="@+id/tv_countdown_grid"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="20:36"
+                    android:textColor="#FFFFFF"
+                    android:textSize="20sp"
+                    android:textStyle="bold"
+                    android:format="%s" />
+            </LinearLayout>
         </LinearLayout>
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="6dp"
             android:orientation="horizontal">
 
             <LinearLayout
@@ -100,9 +114,10 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:background="@drawable/widget_vakit_inactive_dark"
-                android:padding="6dp"
+                android:padding="8dp"
                 android:layout_marginEnd="4dp"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:gravity="center">
 
                 <TextView
                     android:id="@+id/label_imsak_grid"
@@ -110,15 +125,17 @@
                     android:layout_height="wrap_content"
                     android:text="İMSAK"
                     android:textColor="#C9D2E3"
-                    android:textSize="9sp" />
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tv_imsak_grid"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
                     android:text="06:50"
                     android:textColor="#FFFFFF"
-                    android:textSize="14sp"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -128,9 +145,10 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:background="@drawable/widget_vakit_inactive_dark"
-                android:padding="6dp"
+                android:padding="8dp"
                 android:layout_marginEnd="4dp"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:gravity="center">
 
                 <TextView
                     android:id="@+id/label_gunes_grid"
@@ -138,15 +156,17 @@
                     android:layout_height="wrap_content"
                     android:text="GÜNEŞ"
                     android:textColor="#C9D2E3"
-                    android:textSize="9sp" />
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tv_gunes_grid"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
                     android:text="08:20"
                     android:textColor="#FFFFFF"
-                    android:textSize="14sp"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -156,8 +176,9 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:background="@drawable/widget_vakit_inactive_dark"
-                android:padding="6dp"
-                android:orientation="vertical">
+                android:padding="8dp"
+                android:orientation="vertical"
+                android:gravity="center">
 
                 <TextView
                     android:id="@+id/label_ogle_grid"
@@ -165,15 +186,17 @@
                     android:layout_height="wrap_content"
                     android:text="ÖĞLE"
                     android:textColor="#C9D2E3"
-                    android:textSize="9sp" />
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tv_ogle_grid"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
                     android:text="13:20"
                     android:textColor="#FFFFFF"
-                    android:textSize="14sp"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>
@@ -181,7 +204,7 @@
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="4dp"
+            android:layout_marginTop="6dp"
             android:orientation="horizontal">
 
             <LinearLayout
@@ -190,9 +213,10 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:background="@drawable/widget_vakit_inactive_dark"
-                android:padding="6dp"
+                android:padding="8dp"
                 android:layout_marginEnd="4dp"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:gravity="center">
 
                 <TextView
                     android:id="@+id/label_ikindi_grid"
@@ -200,15 +224,17 @@
                     android:layout_height="wrap_content"
                     android:text="İKİNDİ"
                     android:textColor="#C9D2E3"
-                    android:textSize="9sp" />
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tv_ikindi_grid"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
                     android:text="15:47"
                     android:textColor="#FFFFFF"
-                    android:textSize="14sp"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -218,9 +244,10 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:background="@drawable/widget_vakit_inactive_dark"
-                android:padding="6dp"
+                android:padding="8dp"
                 android:layout_marginEnd="4dp"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:gravity="center">
 
                 <TextView
                     android:id="@+id/label_aksam_grid"
@@ -228,15 +255,17 @@
                     android:layout_height="wrap_content"
                     android:text="AKŞAM"
                     android:textColor="#C9D2E3"
-                    android:textSize="9sp" />
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tv_aksam_grid"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
                     android:text="18:10"
                     android:textColor="#FFFFFF"
-                    android:textSize="14sp"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
             </LinearLayout>
 
@@ -246,8 +275,9 @@
                 android:layout_height="wrap_content"
                 android:layout_weight="1"
                 android:background="@drawable/widget_vakit_inactive_dark"
-                android:padding="6dp"
-                android:orientation="vertical">
+                android:padding="8dp"
+                android:orientation="vertical"
+                android:gravity="center">
 
                 <TextView
                     android:id="@+id/label_yatsi_grid"
@@ -255,15 +285,17 @@
                     android:layout_height="wrap_content"
                     android:text="YATSI"
                     android:textColor="#C9D2E3"
-                    android:textSize="9sp" />
+                    android:textSize="10sp"
+                    android:textStyle="bold" />
 
                 <TextView
                     android:id="@+id/tv_yatsi_grid"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
+                    android:layout_marginTop="2dp"
                     android:text="19:34"
                     android:textColor="#FFFFFF"
-                    android:textSize="14sp"
+                    android:textSize="16sp"
                     android:textStyle="bold" />
             </LinearLayout>
         </LinearLayout>

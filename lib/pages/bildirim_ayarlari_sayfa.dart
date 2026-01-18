@@ -52,26 +52,26 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
 
   // Bildirim sesi seçimi (her vakit için)
   Map<String, String> _bildirimSesi = {
-    'imsak': 'ding_dong.mp3',
+    'imsak': 'Ding_Dong.mp3',
     'gunes': 'arriving.mp3',
-    'ogle': 'echo.mp3',
-    'ikindi': 'sweet_favour.mp3',
-    'aksam': 'violet.mp3',
-    'yatsi': 'woodpecker.mp3',
+    'ogle': 'Echo.mp3',
+    'ikindi': 'Sweet_Favour.mp3',
+    'aksam': 'Violet.mp3',
+    'yatsi': 'Woodpecker.mp3',
   };
 
   final List<int> _erkenSureler = [0, 5, 10, 15, 20, 30, 45, 60];
   final List<Map<String, String>> _sesSecenekleri = [
-    {'ad': 'Best 2015', 'dosya': 'best_2015.mp3'},
+    {'ad': 'Best 2015', 'dosya': '2015_best.mp3'},
     {'ad': 'Arriving', 'dosya': 'arriving.mp3'},
-    {'ad': 'Corner', 'dosya': 'corner.mp3'},
-    {'ad': 'Ding Dong', 'dosya': 'ding_dong.mp3'},
-    {'ad': 'Echo', 'dosya': 'echo.mp3'},
+    {'ad': 'Corner', 'dosya': 'Corner.mp3'},
+    {'ad': 'Ding Dong', 'dosya': 'Ding_Dong.mp3'},
+    {'ad': 'Echo', 'dosya': 'Echo.mp3'},
     {'ad': 'iPhone SMS', 'dosya': 'iphone_sms_original.mp3'},
     {'ad': 'Snaps', 'dosya': 'snaps.mp3'},
-    {'ad': 'Sweet Favour', 'dosya': 'sweet_favour.mp3'},
-    {'ad': 'Violet', 'dosya': 'violet.mp3'},
-    {'ad': 'Woodpecker', 'dosya': 'woodpecker.mp3'},
+    {'ad': 'Sweet Favour', 'dosya': 'Sweet_Favour.mp3'},
+    {'ad': 'Violet', 'dosya': 'Violet.mp3'},
+    {'ad': 'Woodpecker', 'dosya': 'Woodpecker.mp3'},
     {'ad': 'Özel Ses Seç', 'dosya': 'custom'},
   ];
   
@@ -194,9 +194,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
         // Özel ses çal
         await _audioPlayer.play(DeviceFileSource(_ozelSesDosyalari[key]!));
       } else if (sesDosyasi != 'custom') {
-        // Asset ses çal
-        final dosyaAdi = sesDosyasi.replaceAll('.mp3', '').replaceAll('_', '');
-        await _audioPlayer.play(AssetSource('sounds/$dosyaAdi.mp3'));
+        // Asset ses çal - dosya adını düzgün kullan
+        await _audioPlayer.play(AssetSource('sounds/$sesDosyasi'));
       }
     } catch (e) {
       if (mounted) {
@@ -237,6 +236,16 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
         
         // Seçilen sesi çal
         await _sesCal(key, 'custom');
+      } else {
+        // Kullanıcı iptal etti, önceki seçimi koru
+        if (mounted) {
+          setState(() {
+            // Eğer custom seçiliyse ve dosya yoksa, varsayılan sese dön
+            if (_bildirimSesi[key] == 'custom' && !_ozelSesDosyalari.containsKey(key)) {
+              _bildirimSesi[key] = _sesSecenekleri.first['dosya']!;
+            }
+          });
+        }
       }
     } catch (e) {
       if (mounted) {
