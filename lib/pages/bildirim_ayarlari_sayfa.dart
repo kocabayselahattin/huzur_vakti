@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:audioplayers/audioplayers.dart';
+import 'package:file_picker/file_picker.dart';
 import '../services/dnd_service.dart';
 
 class BildirimAyarlariSayfa extends StatefulWidget {
@@ -10,6 +12,8 @@ class BildirimAyarlariSayfa extends StatefulWidget {
 }
 
 class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
+  final AudioPlayer _audioPlayer = AudioPlayer();
+  
   // Bildirim açık/kapalı durumları
   Map<String, bool> _bildirimAcik = {
     'imsak': true,
@@ -20,8 +24,21 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     'yatsi': true,
   };
 
+  // Vaktinde bildirim (tam vakitte göster)
+  Map<String, bool> _vaktindeBildirim = {
+    'imsak': false,
+    'gunes': false,
+    'ogle': false,
+    'ikindi': false,
+    'aksam': false,
+    'yatsi': false,
+  };
+
   // Vakitlerde sessize al seçeneği
   bool _sessizeAl = false;
+  
+  // Değişiklik takibi
+  bool _degisiklikYapildi = false;
 
   // Erken bildirim süreleri (dakika)
   Map<String, int> _erkenBildirim = {
@@ -55,12 +72,22 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     {'ad': 'Sweet Favour', 'dosya': 'sweet_favour.mp3'},
     {'ad': 'Violet', 'dosya': 'violet.mp3'},
     {'ad': 'Woodpecker', 'dosya': 'woodpecker.mp3'},
+    {'ad': 'Özel Ses Seç', 'dosya': 'custom'},
   ];
+  
+  // Özel ses yolları
+  Map<String, String> _ozelSesDosyalari = {};
 
   @override
   void initState() {
     super.initState();
     _ayarlariYukle();
+  }
+  
+  @override
+  void dispose() {
+    _audioPlayer.dispose();
+    super.dispose();
   }
 
   Future<void> _ayarlariYukle() async {
@@ -69,8 +96,15 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     setState(() {
       for (final vakit in _bildirimAcik.keys) {
         _bildirimAcik[vakit] = prefs.getBool('bildirim_$vakit') ?? _bildirimAcik[vakit]!;
+        _vaktindeBildirim[vakit] = prefs.getBool('vaktinde_$vakit') ?? false;
         _erkenBildirim[vakit] = prefs.getInt('erken_$vakit') ?? _erkenBildirim[vakit]!;
         _bildirimSesi[vakit] = prefs.getString('bildirim_sesi_$vakit') ?? _bildirimSesi[vakit]!;
+        
+        // Özel ses yollarını yükle
+        final ozelSes = prefs.getString('ozel_ses_$vakit');
+        if (ozelSes != null) {
+          _ozelSesDosyalari[vakit] = ozelSes;
+        }
       }
       _sessizeAl = prefs.getBool('sessize_al') ?? false;
     });
@@ -81,8 +115,14 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
 
     for (final vakit in _bildirimAcik.keys) {
       await prefs.setBool('bildirim_$vakit', _bildirimAcik[vakit]!);
+      await prefs.setBool('vaktinde_$vakit', _vaktindeBildirim[vakit]!);
       await prefs.setInt('erken_$vakit', _erkenBildirim[vakit]!);
       await prefs.setString('bildirim_sesi_$vakit', _bildirimSesi[vakit]!);
+      
+      // Özel ses yollarını kaydet
+      if (_ozelSesDosyalari.containsKey(vakit)) {
+        await prefs.setString('ozel_ses_$vakit', _ozelSesDosyalari[vakit]!);
+      }
     }
     await prefs.setBool('sessize_al', _sessizeAl);
 
@@ -91,6 +131,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     } else {
       await DndService.cancelPrayerDnd();
     }
+
+    setState(() {
+      _degisiklikYapildi = false;
+    });
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -141,6 +185,70 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       });
     }
   }
+  
+  Future<void> _sesCal(String key, String sesDosyasi) async {
+    try {
+      await _audioPlayer.stop();
+      
+      if (sesDosyasi == 'custom' && _ozelSesDosyalari.containsKey(key)) {
+        // Özel ses çal
+        await _audioPlayer.play(DeviceFileSource(_ozelSesDosyalari[key]!));
+      } else if (sesDosyasi != 'custom') {
+        // Asset ses çal
+        final dosyaAdi = sesDosyasi.replaceAll('.mp3', '').replaceAll('_', '');
+        await _audioPlayer.play(AssetSource('sounds/$dosyaAdi.mp3'));
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ses çalınamadı: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
+  
+  Future<void> _ozelSesSec(String key) async {
+    try {
+      final result = await FilePicker.platform.pickFiles(
+        type: FileType.audio,
+        allowMultiple: false,
+      );
+      
+      if (result != null && result.files.single.path != null) {
+        final dosyaYolu = result.files.single.path!;
+        
+        setState(() {
+          _ozelSesDosyalari[key] = dosyaYolu;
+          _bildirimSesi[key] = 'custom';
+          _degisiklikYapildi = true;
+        });
+        
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            const SnackBar(
+              content: Text('Özel ses seçildi'),
+              backgroundColor: Colors.green,
+            ),
+          );
+        }
+        
+        // Seçilen sesi çal
+        await _sesCal(key, 'custom');
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Ses seçilemedi: $e'),
+            backgroundColor: Colors.red,
+          ),
+        );
+      }
+    }
+  }
 
   Future<bool?> _showDndPermissionDialog() {
     return showDialog<bool>(
@@ -171,25 +279,57 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: const Color(0xFF1B2741),
-      appBar: AppBar(
-        title: const Text('Bildirim Ayarları'),
-        backgroundColor: Colors.transparent,
-        elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.save),
-            onPressed: _ayarlariKaydet,
-            tooltip: 'Kaydet',
-          ),
-        ],
-      ),
-      body: ListView(
-        padding: const EdgeInsets.all(16),
-        children: [
-          // Bilgilendirme kartı
-          Container(
+    return WillPopScope(
+      onWillPop: () async {
+        if (_degisiklikYapildi) {
+          final kaydet = await showDialog<bool>(
+            context: context,
+            builder: (context) => AlertDialog(
+              backgroundColor: const Color(0xFF2B3151),
+              title: const Text('Değişiklikleri Kaydet?', style: TextStyle(color: Colors.white)),
+              content: const Text(
+                'Yaptığınız değişiklikler kaydedilsin mi?',
+                style: TextStyle(color: Colors.white70),
+              ),
+              actions: [
+                TextButton(
+                  onPressed: () => Navigator.pop(context, false),
+                  child: const Text('Kaydetme', style: TextStyle(color: Colors.white70)),
+                ),
+                ElevatedButton(
+                  onPressed: () => Navigator.pop(context, true),
+                  style: ElevatedButton.styleFrom(backgroundColor: Colors.cyanAccent),
+                  child: const Text('Kaydet', style: TextStyle(color: Colors.black)),
+                ),
+              ],
+            ),
+          );
+          
+          if (kaydet == true) {
+            await _ayarlariKaydet();
+          }
+        }
+        return true;
+      },
+      child: Scaffold(
+        backgroundColor: const Color(0xFF1B2741),
+        appBar: AppBar(
+          title: const Text('Bildirim Ayarları'),
+          backgroundColor: Colors.transparent,
+          elevation: 0,
+          actions: [
+            IconButton(
+              icon: const Icon(Icons.save),
+              onPressed: _ayarlariKaydet,
+              tooltip: 'Kaydet',
+            ),
+          ],
+        ),
+        body: ListView(
+          padding: const EdgeInsets.all(16),
+          children: [
+            // Bilgilendirme kartı
+            Container(
             padding: const EdgeInsets.all(16),
             margin: const EdgeInsets.only(bottom: 24),
             decoration: BoxDecoration(
@@ -235,6 +375,9 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                     Switch(
                       value: _sessizeAl,
                       onChanged: (value) async {
+                        setState(() {
+                          _degisiklikYapildi = true;
+                        });
                         await _toggleSessizeAl(value);
                       },
                       activeColor: Colors.orangeAccent,
@@ -252,6 +395,53 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
               ],
             ),
           ),
+
+          // Tümünü aç/kapat butonları
+          Row(
+            children: [
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      for (final key in _bildirimAcik.keys) {
+                        _bildirimAcik[key] = true;
+                      }
+                      _degisiklikYapildi = true;
+                    });
+                  },
+                  icon: const Icon(Icons.notifications_active),
+                  label: const Text('Tümünü Aç'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.cyanAccent,
+                    side: const BorderSide(color: Colors.cyanAccent),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () {
+                    setState(() {
+                      for (final key in _bildirimAcik.keys) {
+                        _bildirimAcik[key] = false;
+                      }
+                      _degisiklikYapildi = true;
+                    });
+                  },
+                  icon: const Icon(Icons.notifications_off),
+                  label: const Text('Tümünü Kapat'),
+                  style: OutlinedButton.styleFrom(
+                    foregroundColor: Colors.orange,
+                    side: const BorderSide(color: Colors.orange),
+                    padding: const EdgeInsets.symmetric(vertical: 12),
+                  ),
+                ),
+              ),
+            ],
+          ),
+
+          const SizedBox(height: 16),
 
           // Vakit bildirimleri
           _vakitBildirimKarti(
@@ -292,50 +482,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
           ),
 
           const SizedBox(height: 24),
-
-          // Tümünü aç/kapat
-          Row(
-            children: [
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      for (final key in _bildirimAcik.keys) {
-                        _bildirimAcik[key] = true;
-                      }
-                    });
-                  },
-                  icon: const Icon(Icons.notifications_active),
-                  label: const Text('Tümünü Aç'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.cyanAccent,
-                    side: const BorderSide(color: Colors.cyanAccent),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-              const SizedBox(width: 12),
-              Expanded(
-                child: OutlinedButton.icon(
-                  onPressed: () {
-                    setState(() {
-                      for (final key in _bildirimAcik.keys) {
-                        _bildirimAcik[key] = false;
-                      }
-                    });
-                  },
-                  icon: const Icon(Icons.notifications_off),
-                  label: const Text('Tümünü Kapat'),
-                  style: OutlinedButton.styleFrom(
-                    foregroundColor: Colors.orange,
-                    side: const BorderSide(color: Colors.orange),
-                    padding: const EdgeInsets.symmetric(vertical: 12),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
@@ -347,6 +495,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     String aciklama,
   ) {
     final acik = _bildirimAcik[key]!;
+    final vaktinde = _vaktindeBildirim[key]!;
     final erkenDakika = _erkenBildirim[key]!;
     final seciliSes = _bildirimSesi[key]!;
 
@@ -398,18 +547,39 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
               onChanged: (value) {
                 setState(() {
                   _bildirimAcik[key] = value;
+                  _degisiklikYapildi = true;
                 });
               },
               activeColor: Colors.cyanAccent,
             ),
           ),
 
-          // Alt kısım - Erken bildirim ve ses seçimi
+          // Alt kısım - Vaktinde, erken bildirim ve ses seçimi
           if (acik)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Column(
                 children: [
+                  // Vaktinde checkbox
+                  Row(
+                    children: [
+                      Checkbox(
+                        value: vaktinde,
+                        onChanged: (value) {
+                          setState(() {
+                            _vaktindeBildirim[key] = value ?? false;
+                            _degisiklikYapildi = true;
+                          });
+                        },
+                        activeColor: Colors.cyanAccent,
+                      ),
+                      const Text(
+                        'Vaktinde bildirim gönder',
+                        style: TextStyle(color: Colors.white70, fontSize: 14),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       const Icon(
@@ -442,7 +612,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                               items: _erkenSureler.map((dakika) {
                                 String label;
                                 if (dakika == 0) {
-                                  label = 'Zamanında';
+                                  label = 'Yok';
                                 } else if (dakika < 60) {
                                   label = '$dakika dk önce';
                                 } else {
@@ -457,6 +627,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                                 if (value != null) {
                                   setState(() {
                                     _erkenBildirim[key] = value;
+                                    _degisiklikYapildi = true;
                                   });
                                 }
                               },
@@ -504,19 +675,56 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                                   child: Text(ses['ad']!),
                                 );
                               }).toList(),
-                              onChanged: (value) {
+                              onChanged: (value) async {
                                 if (value != null) {
-                                  setState(() {
-                                    _bildirimSesi[key] = value;
-                                  });
+                                  if (value == 'custom') {
+                                    // Özel ses seç
+                                    await _ozelSesSec(key);
+                                  } else {
+                                    setState(() {
+                                      _bildirimSesi[key] = value;
+                                      _degisiklikYapildi = true;
+                                    });
+                                  }
                                 }
                               },
                             ),
                           ),
                         ),
                       ),
+                      const SizedBox(width: 8),
+                      // Ses önizleme butonu
+                      IconButton(
+                        onPressed: () => _sesCal(key, seciliSes),
+                        icon: const Icon(
+                          Icons.play_circle_outline,
+                          color: Colors.cyanAccent,
+                          size: 28,
+                        ),
+                        tooltip: 'Sesi dinle',
+                      ),
                     ],
                   ),
+                  // Özel ses seçildiyse dosya adını göster
+                  if (seciliSes == 'custom' && _ozelSesDosyalari.containsKey(key))
+                    Padding(
+                      padding: const EdgeInsets.only(top: 8),
+                      child: Row(
+                        children: [
+                          const SizedBox(width: 34),
+                          Expanded(
+                            child: Text(
+                              'Özel: ${_ozelSesDosyalari[key]!.split('/').last.split('\\').last}',
+                              style: const TextStyle(
+                                color: Colors.white38,
+                                fontSize: 11,
+                              ),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                 ],
               ),
             ),

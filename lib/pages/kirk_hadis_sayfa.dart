@@ -12,6 +12,7 @@ class _KirkHadisSayfaState extends State<KirkHadisSayfa> {
   final TemaService _temaService = TemaService();
   int _seciliIndex = 0;
   final PageController _pageController = PageController();
+  final ScrollController _numberScrollController = ScrollController();
 
   // 40 Hadis - Kaynak: Kırk Hadis (İmam Nevevi)
   final List<Map<String, String>> _hadisler = [
@@ -300,7 +301,21 @@ class _KirkHadisSayfaState extends State<KirkHadisSayfa> {
   @override
   void dispose() {
     _pageController.dispose();
+    _numberScrollController.dispose();
     super.dispose();
+  }
+
+  void _scrollToCenter(int index) {
+    // Her butonun genişliği 48 (40 + 2*4 margin)
+    const itemWidth = 48.0;
+    final screenWidth = MediaQuery.of(context).size.width;
+    final targetOffset = (index * itemWidth) - (screenWidth / 2) + (itemWidth / 2);
+    
+    _numberScrollController.animateTo(
+      targetOffset.clamp(0.0, _numberScrollController.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeInOut,
+    );
   }
 
   @override
@@ -337,6 +352,7 @@ class _KirkHadisSayfaState extends State<KirkHadisSayfa> {
               height: 50,
               margin: const EdgeInsets.symmetric(vertical: 8),
               child: ListView.builder(
+                controller: _numberScrollController,
                 scrollDirection: Axis.horizontal,
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 itemCount: 40,
@@ -345,6 +361,7 @@ class _KirkHadisSayfaState extends State<KirkHadisSayfa> {
                   return GestureDetector(
                     onTap: () {
                       setState(() => _seciliIndex = index);
+                      _scrollToCenter(index);
                       _pageController.animateToPage(
                         index,
                         duration: const Duration(milliseconds: 300),
@@ -397,6 +414,7 @@ class _KirkHadisSayfaState extends State<KirkHadisSayfa> {
                 itemCount: _hadisler.length,
                 onPageChanged: (index) {
                   setState(() => _seciliIndex = index);
+                  _scrollToCenter(index);
                 },
                 itemBuilder: (context, index) {
                   final hadis = _hadisler[index];

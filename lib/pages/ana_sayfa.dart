@@ -112,6 +112,28 @@ class _AnaSayfaState extends State<AnaSayfa> {
         centerTitle: true,
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          // Konum değiştir ikonu
+          IconButton(
+            icon: Icon(
+              Icons.location_on,
+              color: renkler.vurgu,
+              size: 28,
+            ),
+            tooltip: 'Konum Değiştir',
+            onPressed: () async {
+              final result = await Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const AyarlarSayfa(),
+                ),
+              );
+              if (result == true || result == null) {
+                _konumYukle();
+              }
+            },
+          ),
+        ],
       ),
       body: Container(
         decoration: renkler.arkaPlanGradient != null
@@ -120,6 +142,58 @@ class _AnaSayfaState extends State<AnaSayfa> {
         child: SingleChildScrollView(
           child: Column(
             children: [
+              // --- KONUM UYARISI (Eğer konum seçilmemişse) ---
+              if (konumBasligi == "KONUM SEÇİLMEDİ")
+                Container(
+                  margin: const EdgeInsets.all(16),
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.orange.withValues(alpha: 0.2),
+                    border: Border.all(color: Colors.orange, width: 2),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 30),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'Konum Seçilmedi',
+                              style: TextStyle(
+                                color: renkler.yaziPrimary,
+                                fontSize: 16,
+                                fontWeight: FontWeight.bold,
+                              ),
+                            ),
+                            const SizedBox(height: 4),
+                            Text(
+                              'Namaz vakitlerini görmek için ayarlardan il/ilçe seçin',
+                              style: TextStyle(
+                                color: renkler.yaziSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      IconButton(
+                        icon: const Icon(Icons.arrow_forward, color: Colors.orange),
+                        onPressed: () {
+                          Navigator.push(
+                            context,
+                            MaterialPageRoute(
+                              builder: (context) => const AyarlarSayfa(),
+                            ),
+                          ).then((_) => _konumYukle());
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              
               // --- SAYAÇ SLIDER BÖLÜMÜ ---
               SizedBox(
                 height: 260,

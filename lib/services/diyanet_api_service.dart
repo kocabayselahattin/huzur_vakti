@@ -1,6 +1,8 @@
 import 'dart:convert';
 
 import 'package:http/http.dart' as http;
+import 'namazvakti_api_service.dart';
+import 'aladhan_api_service.dart';
 
 class DiyanetApiService {
   static const _baseUrl = 'https://ezanvakti.emushaf.net';
@@ -27,12 +29,23 @@ class DiyanetApiService {
 
   /// Bugünün namaz vakitlerini döndürür (Imsak, Gunes, Ogle, Ikindi, Aksam, Yatsi)
   static Future<Map<String, String>?> getBugunVakitler(String ilceId) async {
+    // Geçersiz ID kontrolü - bazı ilçe ID'leri API'de çalışmıyor
+    if (ilceId.isEmpty || ilceId == '0') {
+      print('⚠️ Geçersiz ilçe ID, lütfen Ayarlar > Konum\'dan il/ilçe seçin');
+      return null;
+    }
+    
     final data = await getVakitler(ilceId);
-    if (data == null) return null;
+    if (data == null) {
+      // Diyanet API başarısız - 500 hatası muhtemelen geçersiz ID
+      print('⚠️ İlçe ID $ilceId için veri alınamadı. Ayarlar > Konum\'dan farklı bir ilçe seçmeyi deneyin.');
+      return await NamazVaktiApiService.getBugunVakitler(ilceId);
+    }
     
     final vakitler = data['vakitler'];
     if (vakitler == null || vakitler is! List || vakitler.isEmpty) {
-      return null;
+      // Yedek API'yi dene
+      return await NamazVaktiApiService.getBugunVakitler(ilceId);
     }
     
     // Bugünün tarihini al
@@ -57,7 +70,10 @@ class DiyanetApiService {
       print('⚠️ Bugünün vakti bulunamadı, ilk kayıt kullanılıyor');
     }
     
-    if (bugunVakit == null) return null;
+    if (bugunVakit == null) {
+      // Yedek API'yi dene
+      return await NamazVaktiApiService.getBugunVakitler(ilceId);
+    }
     
     return {
       'Imsak': bugunVakit['Imsak']?.toString() ?? '05:30',
@@ -87,14 +103,10 @@ class DiyanetApiService {
     }
 
     try {
-      // Ayın ilk ve son gününü hesapla
-      final baslangic = DateTime(yil, ay, 1);
-      final bitis = DateTime(yil, ay + 1, 0); // Ayın son günü
+      // API bugünden itibaren veri döndürüyor, parametreler kullanılacak
+      // Çözüm: parametresiz çağrı yap ve tüm ayları lokalde parse et
+      final uri = Uri.parse('$_baseUrl/vakitler/$ilceId');
       
-      final baslangicStr = '${baslangic.day.toString().padLeft(2, '0')}.${baslangic.month.toString().padLeft(2, '0')}.${baslangic.year}';
-      final bitisStr = '${bitis.day.toString().padLeft(2, '0')}.${bitis.month.toString().padLeft(2, '0')}.${bitis.year}';
-      
-      final uri = Uri.parse('$_baseUrl/vakitler/$ilceId?baslangic=$baslangicStr&bitis=$bitisStr');
       final response = await http.get(uri, headers: {
         'Accept': 'application/json',
         'User-Agent': _userAgent,
@@ -103,61 +115,69 @@ class DiyanetApiService {
       if (response.statusCode == 200) {
         final body = utf8.decode(response.bodyBytes);
         final decoded = jsonDecode(body);
+        
+        // API direkt liste döndürüyor
         if (decoded is List) {
-          final vakitler = decoded
+          final tumVakitler = decoded
               .whereType<Map<String, dynamic>>()
               .map(_normalizeVakitEntry)
-              .where((v) {
-                // Sadece istenen aya ait verileri filtrele
-                final tarih = v['MiladiTarihKisa'] ?? '';
-                try {
-                  final parts = tarih.split('.');
-                  if (parts.length == 3) {
-                    final ayNum = int.parse(parts[1]);
-                    final yilNum = int.parse(parts[2]);
-                    return yilNum == yil && ayNum == ay;
-                  }
-                } catch (e) {}
-                return false;
-              })
               .toList();
           
-          if (vakitler.isNotEmpty) {
-            _aylikVakitCache[cacheKey] = vakitler;
-            print('✅ Aylık vakitler alındı: $cacheKey (${vakitler.length} gün)');
-            return vakitler;
+          // Tüm vakitleri ay ay grupla ve cache'le
+          final Map<String, List<Map<String, dynamic>>> ayGruplari = {};
+          
+          for (var vakit in tumVakitler) {
+            final tarih = vakit['MiladiTarihKisa'] ?? '';
+            try {
+              final parts = tarih.split('.');
+              if (parts.length == 3) {
+                final ayNum = int.parse(parts[1]);
+                final yilNum = int.parse(parts[2]);
+                final key = '$ilceId-$yilNum-$ayNum';
+                
+                if (!ayGruplari.containsKey(key)) {
+                  ayGruplari[key] = [];
+                }
+                ayGruplari[key]!.add(vakit);
+              }
+            } catch (e) {
+              // Tarih parse hatası
+            }
+          }
+          
+          // Tüm ayları cache'le
+          ayGruplari.forEach((key, vakitler) {
+            _aylikVakitCache[key] = vakitler;
+          });
+          
+          // İstenen ayı döndür
+          if (ayGruplari.containsKey(cacheKey)) {
+            print('✅ Aylık vakitler alındı: $cacheKey (${ayGruplari[cacheKey]!.length} gün)');
+            return ayGruplari[cacheKey]!;
           }
         }
+      } else if (response.statusCode == 500 || response.statusCode == 400) {
+        print('⚠️ İlçe ID "$ilceId" API\'de desteklenmiyor. Lütfen farklı bir il/ilçe seçin.');
       }
     } catch (e) {
       print('⚠️ Aylık vakit alınamadı ($cacheKey): $e');
     }
 
-    // Alternatif: Normal vakit endpoint'inden dene
+    // Diyanet başarısız olursa Aladhan API'yi dene (Her ay için çalışır!)
+    print('! Diyanet API yetersiz, Aladhan API deneniyor...');
     try {
-      final data = await getVakitler(ilceId);
-      if (data != null && data.containsKey('vakitler')) {
-        final tumVakitler = data['vakitler'] as List;
-        final ayVakitleri = tumVakitler.where((v) {
-          final tarih = v['MiladiTarihKisa'] ?? '';
-          try {
-            final parts = tarih.split('.');
-            if (parts.length == 3) {
-              final ayNum = int.parse(parts[1]);
-              final yilNum = int.parse(parts[2]);
-              return yilNum == yil && ayNum == ay;
-            }
-          } catch (e) {}
-          return false;
-        }).map((v) => Map<String, dynamic>.from(v)).toList();
-        
-        if (ayVakitleri.isNotEmpty) {
-          _aylikVakitCache[cacheKey] = ayVakitleri;
-          return ayVakitleri;
-        }
+      final aladhanVakitler = await AladhanApiService.getAylikVakitler(
+        yil: yil,
+        ay: ay,
+        city: 'Istanbul', // TODO: İlçe ID'sine göre şehir belirle
+        country: 'Turkey',
+      );
+      if (aladhanVakitler.isNotEmpty) {
+        _aylikVakitCache[cacheKey] = aladhanVakitler;
+        return aladhanVakitler;
       }
     } catch (e) {
-      print('⚠️ Fallback vakit alınamadı: $e');
+      print('⚠️ Aladhan API de başarısız: $e');
     }
 
     // API'den veri alınamadıysa boş liste döndür
@@ -309,7 +329,11 @@ class DiyanetApiService {
         .timeout(const Duration(seconds: 10));
 
     if (response.statusCode != 200) {
-      print('⚠️ Vakit isteği başarısız (${response.statusCode}): $ilceId');
+      if (response.statusCode == 500) {
+        print('❌ İlçe ID "$ilceId" API\'de desteklenmiyor. Lütfen farklı bir il/ilçe seçin.');
+      } else {
+        print('⚠️ Vakit isteği başarısız (${response.statusCode}): $ilceId');
+      }
       return null;
     }
 

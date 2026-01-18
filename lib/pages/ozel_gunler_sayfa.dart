@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/ozel_gunler_service.dart';
 import '../services/tema_service.dart';
+import 'ozel_gun_detay_sayfa.dart';
 
 class OzelGunlerSayfa extends StatefulWidget {
   const OzelGunlerSayfa({super.key});
@@ -119,26 +120,39 @@ class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
     final renk = _getRenk(ozelGun.tur, renkler);
     final bugunMu = kalanGun == 0;
     
-    return Container(
-      margin: const EdgeInsets.only(bottom: 12),
-      decoration: BoxDecoration(
-        color: bugunMu 
-            ? renk.withValues(alpha: 0.2)
-            : renkler.kartArkaPlan,
-        borderRadius: BorderRadius.circular(16),
-        border: bugunMu 
-            ? Border.all(color: renk, width: 2)
-            : null,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
+    return InkWell(
+      onTap: () {
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => OzelGunDetaySayfa(
+              ozelGun: ozelGun,
+              tarih: tarih,
+              hicriTarih: hicriTarih,
+            ),
           ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
+        );
+      },
+      child: Container(
+        margin: const EdgeInsets.only(bottom: 12),
+        decoration: BoxDecoration(
+          color: bugunMu 
+              ? renk.withValues(alpha: 0.2)
+              : renkler.kartArkaPlan,
+          borderRadius: BorderRadius.circular(16),
+          border: bugunMu 
+              ? Border.all(color: renk, width: 2)
+              : null,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.1),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16),
         child: Row(
           children: [
             // İkon
@@ -252,6 +266,7 @@ class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
             ),
           ],
         ),
+      ),
       ),
     );
   }

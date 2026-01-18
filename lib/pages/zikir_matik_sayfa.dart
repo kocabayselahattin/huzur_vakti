@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 
 class ZikirMatikSayfa extends StatefulWidget {
@@ -14,6 +15,7 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
   int _sayac = 0;
   int _hedef = 33;
   int _toplamTur = 0;
+  bool _titresimAcik = true;
 
   late AnimationController _pulseController;
   late AnimationController _rippleController;
@@ -49,6 +51,28 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
     _rippleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _rippleController, curve: Curves.easeOut),
     );
+    
+    _verileriYukle();
+  }
+
+  Future<void> _verileriYukle() async {
+    final prefs = await SharedPreferences.getInstance();
+    setState(() {
+      _sayac = prefs.getInt('zikir_sayac') ?? 0;
+      _hedef = prefs.getInt('zikir_hedef') ?? 33;
+      _toplamTur = prefs.getInt('zikir_toplam_tur') ?? 0;
+      _secilenZikirIndex = prefs.getInt('zikir_secilen_index') ?? 0;
+      _titresimAcik = prefs.getBool('zikir_titresim') ?? true;
+    });
+  }
+
+  Future<void> _verileriKaydet() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('zikir_sayac', _sayac);
+    await prefs.setInt('zikir_hedef', _hedef);
+    await prefs.setInt('zikir_toplam_tur', _toplamTur);
+    await prefs.setInt('zikir_secilen_index', _secilenZikirIndex);
+    await prefs.setBool('zikir_titresim', _titresimAcik);
   }
 
   @override
@@ -59,7 +83,13 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
   }
 
   void _artir() {
-    HapticFeedback.lightImpact();
+    if (_titresimAcik) {
+      HapticFeedback.lightImpact();
+      // 3 saliselik (milisaniye) titreşim için tekrar çağır
+      Future.delayed(const Duration(milliseconds: 3), () {
+        if (mounted) HapticFeedback.lightImpact();
+      });
+    }
     _pulseController.forward().then((_) => _pulseController.reverse());
     _rippleController.forward(from: 0.0);
 
@@ -68,24 +98,33 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
       if (_sayac >= _hedef) {
         _toplamTur++;
         _sayac = 0;
-        HapticFeedback.heavyImpact();
+        if (_titresimAcik) {
+          HapticFeedback.heavyImpact();
+        }
       }
     });
+    _verileriKaydet();
   }
 
   void _sifirla() {
-    HapticFeedback.mediumImpact();
+    if (_titresimAcik) {
+      HapticFeedback.mediumImpact();
+    }
     setState(() {
       _sayac = 0;
     });
+    _verileriKaydet();
   }
 
   void _tamSifirla() {
-    HapticFeedback.heavyImpact();
+    if (_titresimAcik) {
+      HapticFeedback.heavyImpact();
+    }
     setState(() {
       _sayac = 0;
       _toplamTur = 0;
     });
+    _verileriKaydet();
   }
 
   @override
@@ -112,6 +151,7 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
                 _hedef = value;
                 _sayac = 0;
               });
+              _verileriKaydet();
             },
             itemBuilder: (context) => _hedefler
                 .map((h) => PopupMenuItem(
@@ -145,6 +185,7 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
                     setState(() {
                       _secilenZikirIndex = index;
                     });
+                    _verileriKaydet();
                   },
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
@@ -201,6 +242,64 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
                 _infoChip(Icons.loop, '$_toplamTur Tur'),
                 const SizedBox(width: 16),
                 _infoChip(Icons.flag, 'Hedef: $_hedef'),
+              ],
+            ),
+          ),
+
+          // Titreşim kontrol butonu
+          Padding(
+            padding: const EdgeInsets.only(bottom: 8),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 24),
+                  child: GestureDetector(
+                    onTap: () {
+                      setState(() {
+                        _titresimAcik = !_titresimAcik;
+                      });
+                      _verileriKaydet();
+                      if (_titresimAcik) {
+                        HapticFeedback.lightImpact();
+                      }
+                    },
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                      decoration: BoxDecoration(
+                        color: _titresimAcik 
+                            ? Colors.cyanAccent.withOpacity(0.2)
+                            : Colors.white.withOpacity(0.05),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: _titresimAcik 
+                              ? Colors.cyanAccent 
+                              : Colors.white24,
+                          width: 1.5,
+                        ),
+                      ),
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            _titresimAcik ? Icons.vibration : Icons.vibration_outlined,
+                            color: _titresimAcik ? Colors.cyanAccent : Colors.white54,
+                            size: 18,
+                          ),
+                          const SizedBox(width: 6),
+                          Text(
+                            _titresimAcik ? 'Titreşim Açık' : 'Titreşim Kapalı',
+                            style: TextStyle(
+                              color: _titresimAcik ? Colors.cyanAccent : Colors.white54,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w500,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                ),
               ],
             ),
           ),
@@ -315,8 +414,11 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
                   icon: Icons.remove,
                   onTap: () {
                     if (_sayac > 0) {
-                      HapticFeedback.lightImpact();
+                      if (_titresimAcik) {
+                        HapticFeedback.lightImpact();
+                      }
                       setState(() => _sayac--);
+                      _verileriKaydet();
                     }
                   },
                 ),

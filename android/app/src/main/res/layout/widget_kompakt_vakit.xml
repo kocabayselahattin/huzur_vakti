@@ -38,7 +38,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Akşam Vaktine Kalan"
-                android:textColor="#2E3F5E"
+                android:textColor="#000000"
                 android:textSize="10sp" />
         </LinearLayout>
 
@@ -62,7 +62,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="17 Ocak 2026"
-                android:textColor="#5B6B85"
+                android:textColor="#000000"
                 android:textSize="10sp" />
 
             <TextView
@@ -70,7 +70,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="28 Recep 1447"
-                android:textColor="#5B6B85"
+                android:textColor="#000000"
                 android:textSize="10sp" />
         </LinearLayout>
     </LinearLayout>
@@ -98,7 +98,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="İmsak"
-                android:textColor="#5B6B85"
+                android:textColor="#000000"
                 android:textSize="8sp" />
 
             <TextView
@@ -126,7 +126,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Güneş"
-                android:textColor="#5B6B85"
+                android:textColor="#000000"
                 android:textSize="8sp" />
 
             <TextView
@@ -154,7 +154,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Öğle"
-                android:textColor="#5B6B85"
+                android:textColor="#000000"
                 android:textSize="8sp" />
 
             <TextView
@@ -182,7 +182,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="İkindi"
-                android:textColor="#5B6B85"
+                android:textColor="#000000"
                 android:textSize="8sp" />
 
             <TextView
@@ -210,7 +210,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Akşam"
-                android:textColor="#5B6B85"
+                android:textColor="#000000"
                 android:textSize="8sp" />
 
             <TextView
@@ -237,7 +237,7 @@
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Yatsı"
-                android:textColor="#5B6B85"
+                android:textColor="#000000"
                 android:textSize="8sp" />
 
             <TextView

@@ -60,51 +60,19 @@ class _VakitListesiWidgetState extends State<VakitListesiWidget> {
     if (ilceId == null) return;
 
     try {
-      final data = await DiyanetApiService.getVakitler(ilceId);
-      if (data != null && data.containsKey('vakitler')) {
-        final vakitler = data['vakitler'] as List;
-
-        if (vakitler.isNotEmpty) {
-          // Bugünün vakitlerini bul
-          final bugun = DateTime.now();
-
-          final bugunVakit =
-              vakitler.firstWhere(
-                    (v) {
-                      final tarih = v['MiladiTarihKisa'] ?? '';
-                      try {
-                        final parts = tarih.split('.');
-                        if (parts.length == 3) {
-                          final gun = int.parse(parts[0]);
-                          final ay = int.parse(parts[1]);
-                          final yil = int.parse(parts[2]);
-                          return gun == bugun.day &&
-                              ay == bugun.month &&
-                              yil == bugun.year;
-                        }
-                      } catch (e) {
-                        // Parse hatası
-                      }
-                      return false;
-                    },
-                    orElse: () => vakitler.isNotEmpty
-                        ? Map<String, dynamic>.from(vakitler[0])
-                        : <String, dynamic>{},
-                  )
-                  as Map<String, dynamic>;
-
-          setState(() {
-            vakitSaatleri = {
-              'Imsak': bugunVakit['Imsak'] ?? '—:—',
-              'Gunes': bugunVakit['Gunes'] ?? '—:—',
-              'Ogle': bugunVakit['Ogle'] ?? '—:—',
-              'Ikindi': bugunVakit['Ikindi'] ?? '—:—',
-              'Aksam': bugunVakit['Aksam'] ?? '—:—',
-              'Yatsi': bugunVakit['Yatsi'] ?? '—:—',
-            };
-          });
-          _aktifVaktiGuncelle();
-        }
+      final vakitler = await DiyanetApiService.getBugunVakitler(ilceId);
+      if (vakitler != null) {
+        setState(() {
+          vakitSaatleri = {
+            'Imsak': vakitler['Imsak'] ?? '—:—',
+            'Gunes': vakitler['Gunes'] ?? '—:—',
+            'Ogle': vakitler['Ogle'] ?? '—:—',
+            'Ikindi': vakitler['Ikindi'] ?? '—:—',
+            'Aksam': vakitler['Aksam'] ?? '—:—',
+            'Yatsi': vakitler['Yatsi'] ?? '—:—',
+          };
+        });
+        _aktifVaktiGuncelle();
       }
     } catch (e) {
       // Hata durumunda varsayılan değerler kalacak
@@ -161,12 +129,26 @@ class _VakitListesiWidgetState extends State<VakitListesiWidget> {
       final prefs = await SharedPreferences.getInstance();
       final key = yeniAktif.toLowerCase();
       final bildirimAcik = prefs.getBool('bildirim_$key') ?? true;
-      final ses = prefs.getString('bildirim_sesi_$key') ?? 'ezan.mp3';
+      final ses = prefs.getString('bildirim_sesi_$key');
+      // Eğer dosya yoksa varsayılan olarak 'ding_dong.mp3' kullan
+      final rawSes = [
+        'arriving.mp3',
+        'best_2015.mp3',
+        'corner.mp3',
+        'ding_dong.mp3',
+        'echo.mp3',
+        'iphone_sms_original.mp3',
+        'snaps.mp3',
+        'sweet_favour.mp3',
+        'violet.mp3',
+        'woodpecker.mp3',
+      ];
+      final sesDosyasi = (ses != null && rawSes.contains(ses)) ? ses : 'ding_dong.mp3';
       if (bildirimAcik) {
         await NotificationService.showVakitNotification(
           title: 'Vakit Girdi',
           body: '$yeniAktif vakti başladı.',
-          soundAsset: ses,
+          soundAsset: sesDosyasi,
         );
       }
     }

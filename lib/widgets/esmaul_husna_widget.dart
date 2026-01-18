@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import '../services/tema_service.dart';
+import '../pages/esmaul_husna_sayfa.dart';
 
 class EsmaulHusnaWidget extends StatefulWidget {
   const EsmaulHusnaWidget({super.key});
@@ -305,6 +306,28 @@ class _EsmaulHusnaWidgetState extends State<EsmaulHusnaWidget>
                         ],
                       ),
                     ],
+                  ),
+                ),
+
+                // Tüm Liste butonu
+                InkWell(
+                  onTap: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(builder: (context) => const EsmaulHusnaSayfa()),
+                    );
+                  },
+                  child: Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: renkler.vurgu.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Icon(
+                      Icons.list,
+                      color: renkler.vurgu,
+                      size: 24,
+                    ),
                   ),
                 ),
               ],

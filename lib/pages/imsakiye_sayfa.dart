@@ -16,12 +16,7 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
   String? secilenIlce;
   String? secilenIlceId;
 
-  final PageController _pageController = PageController(initialPage: 500);
-  int _currentPage = 500; // Ortadan başla (geriye ve ileriye scroll için)
-  DateTime _currentMonth = DateTime.now();
-
-  final Map<String, List<dynamic>> _vakitCache = {}; // Ay bazında cache
-  final Set<String> _yukleniyorAylar = {}; // Şu anda yüklenen aylar
+  List<dynamic> vakitler = [];
   bool yukleniyor = false;
 
   @override
@@ -32,7 +27,6 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
 
   @override
   void dispose() {
-    _pageController.dispose();
     super.dispose();
   }
 
@@ -40,100 +34,44 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
     final il = await KonumService.getIl();
     final ilce = await KonumService.getIlce();
     final ilceId = await KonumService.getIlceId();
+    
     setState(() {
       secilenIl = il;
       secilenIlce = ilce;
       secilenIlceId = ilceId;
     });
-    // Konum yüklenince ön yüklemeyi başlat
+    
+    // Konum yüklenince vakitleri çek
     if (ilceId != null) {
-      _preloadMonths(_currentPage);
+      _vakitleriYukle();
     }
   }
 
-  String _getAyKey(DateTime tarih) {
-    return '${tarih.year}-${tarih.month}';
-  }
-
-  // Önceki ve sonraki ayları arka planda yükle
-  Future<void> _preloadMonths(int currentIndex) async {
-    if (secilenIlceId == null) return;
-
-    // Mevcut ay + önceki 2 ay + sonraki 4 ay yükle (toplam 7 ay)
-    for (int offset = -2; offset <= 4; offset++) {
-      final ay = DateTime(
-        DateTime.now().year,
-        DateTime.now().month + (currentIndex - 500) + offset,
-      );
-      final key = _getAyKey(ay);
-      
-      // Zaten cache'de veya yükleniyor ise atla
-      if (_vakitCache.containsKey(key) || _yukleniyorAylar.contains(key)) {
-        continue;
-      }
-      
-      // Arka planda yükle (await yok, paralel çalışır)
-      _loadMonthData(ay);
-    }
-  }
-
-  Future<void> _loadMonthData(DateTime ay) async {
+  Future<void> _vakitleriYukle() async {
     if (secilenIlceId == null) return;
     
-    final key = _getAyKey(ay);
-    if (_vakitCache.containsKey(key) || _yukleniyorAylar.contains(key)) {
-      return;
-    }
-
-    _yukleniyorAylar.add(key);
+    setState(() {
+      yukleniyor = true;
+    });
 
     try {
-      // Yeni aylık API metodunu kullan
-      final ayVakitleri = await DiyanetApiService.getAylikVakitler(
-        secilenIlceId!,
-        ay.year,
-        ay.month,
-      );
-
-      if (mounted && ayVakitleri.isNotEmpty) {
+      final data = await DiyanetApiService.getVakitler(secilenIlceId!);
+      if (data != null && data.containsKey('vakitler')) {
         setState(() {
-          _vakitCache[key] = ayVakitleri;
+          vakitler = data['vakitler'] as List;
+          yukleniyor = false;
+        });
+      } else {
+        setState(() {
+          yukleniyor = false;
         });
       }
     } catch (e) {
-      print('Ön yükleme hatası ($key): $e');
-    } finally {
-      _yukleniyorAylar.remove(key);
+      print('Vakitler yüklenemedi: $e');
+      setState(() {
+        yukleniyor = false;
+      });
     }
-  }
-
-  Future<List<dynamic>> _getVakitlerForMonth(DateTime ay) async {
-    if (secilenIlceId == null) return [];
-
-    final key = _getAyKey(ay);
-
-    // Cache'de varsa kullan
-    if (_vakitCache.containsKey(key)) {
-      return _vakitCache[key]!;
-    }
-
-    try {
-      // Yeni aylık API metodunu kullan
-      final ayVakitleri = await DiyanetApiService.getAylikVakitler(
-        secilenIlceId!,
-        ay.year,
-        ay.month,
-      );
-
-      if (ayVakitleri.isNotEmpty) {
-        _vakitCache[key] = ayVakitleri;
-        return ayVakitleri;
-      }
-    } catch (e) {
-      print('Vakitler alınırken hata: $e');
-    }
-
-    return [];
   }
 
   @override
@@ -144,170 +82,38 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
         title: const Text('İmsakiye'),
         backgroundColor: Colors.transparent,
         elevation: 0,
-        actions: [
-          IconButton(
-            icon: const Icon(Icons.location_city),
-            onPressed: () async {
-              final result = await Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const IlIlceSecSayfa()),
-              );
-              if (result == true) {
-                _konumBilgileriniYukle();
-                setState(() {
-                  _vakitCache.clear(); // Cache'i temizle
-                });
-              }
-            },
-          ),
-        ],
       ),
       body: secilenIl == null || secilenIlce == null
           ? _konumSeciliDegil()
-          : Column(
-              children: [
-                // Konum bilgisi
-                Container(
-                  padding: const EdgeInsets.all(16),
-                  margin: const EdgeInsets.all(16),
-                  decoration: BoxDecoration(
-                    color: const Color(0xFF2B3151),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      const Icon(
-                        Icons.location_on,
-                        color: Colors.cyanAccent,
-                        size: 20,
+          : yukleniyor
+              ? const Center(child: CircularProgressIndicator())
+              : vakitler.isEmpty
+                  ? Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          const Icon(
+                            Icons.calendar_today,
+                            size: 60,
+                            color: Colors.white38,
+                          ),
+                          const SizedBox(height: 16),
+                          const Text(
+                            'Veri bulunamadı',
+                            textAlign: TextAlign.center,
+                            style: TextStyle(color: Colors.white70, fontSize: 16),
+                          ),
+                        ],
                       ),
-                      const SizedBox(width: 8),
-                      Text(
-                        '$secilenIl / $secilenIlce',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Ay göstergesi ve navigasyon
-                Container(
-                  margin: const EdgeInsets.symmetric(horizontal: 16),
-                  padding: const EdgeInsets.symmetric(vertical: 8),
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      IconButton(
-                        icon: const Icon(
-                          Icons.chevron_left,
-                          color: Colors.cyanAccent,
-                        ),
-                        onPressed: () {
-                          _pageController.previousPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        },
-                      ),
-                      Text(
-                        DateFormat('MMMM yyyy', 'tr_TR').format(_currentMonth),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.chevron_right,
-                          color: Colors.cyanAccent,
-                        ),
-                        onPressed: () {
-                          _pageController.nextPage(
-                            duration: const Duration(milliseconds: 300),
-                            curve: Curves.easeInOut,
-                          );
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-
-                // Aylık imsakiye - PageView ile
-                Expanded(
-                  child: PageView.builder(
-                    controller: _pageController,
-                    onPageChanged: (index) {
-                      setState(() {
-                        _currentPage = index;
-                        final ayFark = index - 500;
-                        _currentMonth = DateTime(
-                          DateTime.now().year,
-                          DateTime.now().month + ayFark,
-                        );
-                      });
-                      // Sayfa değiştiğinde sonraki ayları ön yükle
-                      _preloadMonths(index);
-                    },
-                    itemBuilder: (context, index) {
-                      final ayFark = index - 500;
-                      final ay = DateTime(
-                        DateTime.now().year,
-                        DateTime.now().month + ayFark,
-                      );
-                      return _buildMonthView(ay);
-                    },
-                  ),
-                ),
-              ],
-            ),
-    );
-  }
-
-  Widget _buildMonthView(DateTime ay) {
-    return FutureBuilder<List<dynamic>>(
-      future: _getVakitlerForMonth(ay),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-
-        if (!snapshot.hasData || snapshot.data!.isEmpty) {
-          return Center(
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                const Icon(
-                  Icons.calendar_today,
-                  size: 60,
-                  color: Colors.white38,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  '${DateFormat('MMMM yyyy', 'tr_TR').format(ay)}\niçin veri bulunamadı',
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(color: Colors.white70, fontSize: 16),
-                ),
-              ],
-            ),
-          );
-        }
-
-        final vakitler = snapshot.data!;
-        return ListView.builder(
-          padding: const EdgeInsets.symmetric(horizontal: 16),
-          itemCount: vakitler.length,
-          itemBuilder: (context, index) {
-            final vakit = vakitler[index];
-            return _imsakiyeSatiri(vakit);
-          },
-        );
-      },
+                    )
+                  : ListView.builder(
+                      padding: const EdgeInsets.all(16),
+                      itemCount: vakitler.length,
+                      itemBuilder: (context, index) {
+                        final vakit = vakitler[index];
+                        return _imsakiyeSatiri(vakit);
+                      },
+                    ),
     );
   }
 
@@ -359,6 +165,15 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
   Widget _imsakiyeSatiri(dynamic vakit) {
     final tarih = vakit['MiladiTarihKisa'] ?? '';
     final hicriTarih = vakit['HicriTarihUzun'] ?? '';
+    
+    // Debug: İlk ve son satırda tarih yazdır
+    if (tarih.isNotEmpty) {
+      // İlk günü debug için yazdır (sadece 1. gün)
+      final parts = tarih.split('.');
+      if (parts.length == 3 && parts[0] == '01') {
+        print('🗓️ İmsakiye satırı: $tarih');
+      }
+    }
 
     DateTime? tarihObj;
     bool bugun = false;

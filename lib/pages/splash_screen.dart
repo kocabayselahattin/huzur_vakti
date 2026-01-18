@@ -31,8 +31,11 @@ class _SplashScreenState extends State<SplashScreen> {
     final ilceId = await KonumService.getIlceId();
     final ilId = await KonumService.getIlId();
     
-    // Eğer konum daha önce kaydedilmişse, direkt ana sayfaya git
-    if (ilceId != null && ilceId.isNotEmpty && ilId != null && ilId.isNotEmpty) {
+    // Konum validasyonu - geçersiz ID varsa temizle
+    final isValid = await KonumService.validateAndClearIfInvalid();
+    
+    // Eğer geçerli konum varsa, direkt ana sayfaya git
+    if (isValid && ilceId != null && ilceId.isNotEmpty && ilId != null && ilId.isNotEmpty) {
       print('✅ Kayıtlı konum bulundu, ana sayfaya yönlendiriliyor...');
       
       if (!mounted) return;

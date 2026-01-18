@@ -49,40 +49,12 @@ class _DijitalSayacWidgetState extends State<DijitalSayacWidget> {
     }
 
     try {
-      final data = await DiyanetApiService.getVakitler(ilceId);
-      if (data != null && data.containsKey('vakitler')) {
-        final vakitler = data['vakitler'] as List;
-        if (vakitler.isNotEmpty) {
-          // Bugünün vakitlerini bul
-          final bugun = DateTime.now();
-          final bugunVakit = vakitler.firstWhere((v) {
-            final tarih = v['MiladiTarihKisa'] ?? '';
-            try {
-              final parts = tarih.split('.');
-              if (parts.length == 3) {
-                final gun = int.parse(parts[0]);
-                final ay = int.parse(parts[1]);
-                final yil = int.parse(parts[2]);
-                return gun == bugun.day && ay == bugun.month && yil == bugun.year;
-              }
-            } catch (e) {
-              // Parse error
-            }
-            return false;
-          }, orElse: () => vakitler.isNotEmpty ? Map<String, dynamic>.from(vakitler[0]) : <String, dynamic>{}) as Map<String, dynamic>;
-
-          setState(() {
-            _vakitSaatleri = {
-              'Imsak': bugunVakit['Imsak'] ?? '06:12',
-              'Gunes': bugunVakit['Gunes'] ?? '07:45',
-              'Ogle': bugunVakit['Ogle'] ?? '13:22',
-              'Ikindi': bugunVakit['Ikindi'] ?? '15:58',
-              'Aksam': bugunVakit['Aksam'] ?? '18:25',
-              'Yatsi': bugunVakit['Yatsi'] ?? '19:50',
-            };
-          });
-          _hesaplaKalanSure();
-        }
+      final vakitler = await DiyanetApiService.getBugunVakitler(ilceId);
+      if (vakitler != null) {
+        setState(() {
+          _vakitSaatleri = vakitler;
+        });
+        _hesaplaKalanSure();
       } else {
         _varsayilanVakitleriKullan();
       }
@@ -94,12 +66,12 @@ class _DijitalSayacWidgetState extends State<DijitalSayacWidget> {
   void _varsayilanVakitleriKullan() {
     setState(() {
       _vakitSaatleri = {
-        'Imsak': '06:12',
-        'Gunes': '07:45',
-        'Ogle': '13:22',
-        'Ikindi': '15:58',
-        'Aksam': '18:25',
-        'Yatsi': '19:50',
+        'Imsak': '05:30',
+        'Gunes': '07:00',
+        'Ogle': '12:30',
+        'Ikindi': '15:30',
+        'Aksam': '18:00',
+        'Yatsi': '19:30',
       };
     });
     _hesaplaKalanSure();

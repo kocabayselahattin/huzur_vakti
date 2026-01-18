@@ -3,8 +3,9 @@ import 'package:flutter/services.dart';
 import 'bildirim_ayarlari_sayfa.dart';
 import 'il_ilce_sec_sayfa.dart';
 import 'tema_ayarlari_sayfa.dart';
-import 'widget_ayarlari_sayfa.dart';
+import 'hakkinda_sayfa.dart';
 import '../services/tema_service.dart';
+import 'widget_ayarlari_sayfa.dart';
 
 class AyarlarSayfa extends StatefulWidget {
   const AyarlarSayfa({super.key});
@@ -153,18 +154,11 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
             baslik: 'Hakkında',
             altBaslik: 'Uygulama bilgileri',
             onTap: () {
-              showAboutDialog(
-                context: context,
-                applicationName: 'Huzur Vakti',
-                applicationVersion: '1.0.0',
-                applicationLegalese: '© 2026 Tüm hakları saklıdır.',
-                children: [
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Namaz vakitlerini takip etmenizi ve günlük ibadetlerinizi kolaylaştırmanızı sağlayan bir uygulama.',
-                    textAlign: TextAlign.center,
-                  ),
-                ],
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const HakkindaSayfa(),
+                ),
               );
             },
             renkler: renkler,

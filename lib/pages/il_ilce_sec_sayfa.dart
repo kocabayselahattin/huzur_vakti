@@ -51,25 +51,30 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
       yukleniyor = true;
     });
     
-    // Önce yerel veriden yükle (daha hızlı ve güvenilir)
-    final yerelIller = IlIlceData.getIller();
-    if (yerelIller.isNotEmpty) {
-      setState(() {
-        iller = yerelIller;
-        filtrelenmisIller = iller;
-        yukleniyor = false;
-      });
-      print('✅ ${iller.length} il yerel veriden yüklendi');
-      return;
+    // Önce API'den dene (güncel ve doğru veriler için)
+    try {
+      final illerData = await DiyanetApiService.getIller();
+      if (illerData.isNotEmpty) {
+        setState(() {
+          iller = illerData;
+          filtrelenmisIller = iller;
+          yukleniyor = false;
+        });
+        print('✅ ${iller.length} il API\'den yüklendi');
+        return;
+      }
+    } catch (e) {
+      print('⚠️ API\'den il yüklenemedi, yerel veriye geçiliyor: $e');
     }
     
-    // Yerel veri yoksa API'den dene
-    final illerData = await DiyanetApiService.getIller();
+    // API başarısız olursa yerel veriye fallback
+    final yerelIller = IlIlceData.getIller();
     setState(() {
-      iller = illerData;
+      iller = yerelIller;
       filtrelenmisIller = iller;
       yukleniyor = false;
     });
+    print('✅ ${iller.length} il yerel veriden yüklendi (fallback)');
   }
 
   Future<void> _ilceleriYukle(String ilId) async {
@@ -77,27 +82,32 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
       yukleniyor = true;
     });
     
-    // Önce yerel veriden yükle
-    final yerelIlceler = IlIlceData.getIlceler(ilId);
-    if (yerelIlceler.isNotEmpty) {
-      setState(() {
-        ilceler = yerelIlceler;
-        filtrelenmisIlceler = ilceler;
-        _ilceAramaController.clear();
-        yukleniyor = false;
-      });
-      print('✅ ${ilceler.length} ilçe yerel veriden yüklendi');
-      return;
+    // Önce API'den dene (güncel ve doğru veriler için)
+    try {
+      final ilcelerData = await DiyanetApiService.getIlceler(ilId);
+      if (ilcelerData.isNotEmpty) {
+        setState(() {
+          ilceler = ilcelerData;
+          filtrelenmisIlceler = ilceler;
+          _ilceAramaController.clear();
+          yukleniyor = false;
+        });
+        print('✅ ${ilceler.length} ilçe API\'den yüklendi');
+        return;
+      }
+    } catch (e) {
+      print('⚠️ API\'den ilçe yüklenemedi, yerel veriye geçiliyor: $e');
     }
     
-    // Yerel veri yoksa API'den dene
-    final ilcelerData = await DiyanetApiService.getIlceler(ilId);
+    // API başarısız olursa yerel veriye fallback
+    final yerelIlceler = IlIlceData.getIlceler(ilId);
     setState(() {
-      ilceler = ilcelerData;
+      ilceler = yerelIlceler;
       filtrelenmisIlceler = ilceler;
       _ilceAramaController.clear();
       yukleniyor = false;
     });
+    print('✅ ${ilceler.length} ilçe yerel veriden yüklendi (fallback)');
   }
 
   void _ilAra(String aranan) {
