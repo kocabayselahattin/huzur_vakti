@@ -24,11 +24,13 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
   void initState() {
     super.initState();
     _temaService.addListener(_onTemaChanged);
+    _languageService.addListener(_onTemaChanged);
   }
 
   @override
   void dispose() {
     _temaService.removeListener(_onTemaChanged);
+    _languageService.removeListener(_onTemaChanged);
     super.dispose();
   }
 
@@ -43,7 +45,7 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
     return Scaffold(
       backgroundColor: renkler.arkaPlan,
       appBar: AppBar(
-        title: Text('Ayarlar', style: TextStyle(color: renkler.yaziPrimary)),
+        title: Text(_languageService['settings'], style: TextStyle(color: renkler.yaziPrimary)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: renkler.yaziPrimary),
@@ -55,8 +57,8 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
           _ayarSatiri(
             icon: Icons.notifications,
             iconColor: renkler.vurgu,
-            baslik: 'Bildirimler',
-            altBaslik: 'Vakit bildirimlerini ayarla',
+            baslik: _languageService['notifications'],
+            altBaslik: _languageService['notification_settings'],
             onTap: () {
               Navigator.push(
                 context,
@@ -73,8 +75,8 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
           _ayarSatiri(
             icon: Icons.location_on,
             iconColor: renkler.vurgu,
-            baslik: 'Konum',
-            altBaslik: 'İl ve ilçe seçimi',
+            baslik: _languageService['location'],
+            altBaslik: _languageService['select_location'],
             onTap: () {
               Navigator.push(
                 context,
@@ -115,7 +117,7 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
           _ayarSatiri(
             icon: Icons.palette,
             iconColor: renkler.vurgu,
-            baslik: 'Tema',
+            baslik: _languageService['theme'],
             altBaslik: '${renkler.isim} - ${renkler.aciklama}',
             onTap: () {
               Navigator.push(
@@ -148,8 +150,8 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
           _ayarSatiri(
             icon: Icons.widgets,
             iconColor: renkler.vurgu,
-            baslik: 'Widget Ayarları',
-            altBaslik: 'Ana ekran widget renkleri',
+            baslik: _languageService['widget_settings'],
+            altBaslik: _languageService['background_color'],
             onTap: () {
               Navigator.push(
                 context,
@@ -177,8 +179,8 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
           _ayarSatiri(
             icon: Icons.info,
             iconColor: renkler.vurgu,
-            baslik: 'Hakkında',
-            altBaslik: 'Uygulama bilgileri',
+            baslik: _languageService['about'],
+            altBaslik: _languageService['about_app'],
             onTap: () {
               Navigator.push(
                 context,

@@ -49,18 +49,24 @@ class KompaktVakitWidget : AppWidgetProvider() {
             appWidgetId: Int
         ) {
             val widgetData = HomeWidgetPlugin.getData(context)
-            val sonrakiVakit = widgetData.getString("sonraki_vakit", "Öğle") ?: "Öğle"
-            val geriSayim = widgetData.getString("geri_sayim", "02:30:00") ?: "02:30:00"
-            val konum = widgetData.getString("konum", "İstanbul") ?: "İstanbul"
-            val miladiTarih = widgetData.getString("miladi_tarih", "17 Ocak 2026") ?: "17 Ocak 2026"
-            val hicriTarih = widgetData.getString("hicri_tarih", "28 Recep 1447") ?: "28 Recep 1447"
-            val mevcutVakit = widgetData.getString("mevcut_vakit", "İmsak") ?: "İmsak"
+            
+            // Vakit saatlerini al
             val imsak = widgetData.getString("imsak_saati", "05:30") ?: "05:30"
             val gunes = widgetData.getString("gunes_saati", "07:00") ?: "07:00"
             val ogle = widgetData.getString("ogle_saati", "12:30") ?: "12:30"
             val ikindi = widgetData.getString("ikindi_saati", "15:30") ?: "15:30"
             val aksam = widgetData.getString("aksam_saati", "18:00") ?: "18:00"
             val yatsi = widgetData.getString("yatsi_saati", "19:30") ?: "19:30"
+            
+            // Geri sayımı Android tarafında hesapla (uygulama kapalıyken de çalışır)
+            val vakitBilgisi = WidgetUtils.hesaplaVakitBilgisi(imsak, gunes, ogle, ikindi, aksam, yatsi)
+            val sonrakiVakit = vakitBilgisi["sonrakiVakit"] ?: "Öğle"
+            val geriSayim = vakitBilgisi["geriSayim"] ?: "02:30:00"
+            val mevcutVakit = vakitBilgisi["mevcutVakit"] ?: "İmsak"
+            
+            val konum = widgetData.getString("konum", "İstanbul") ?: "İstanbul"
+            val miladiTarih = widgetData.getString("miladi_tarih", "17 Ocak 2026") ?: "17 Ocak 2026"
+            val hicriTarih = widgetData.getString("hicri_tarih", "28 Recep 1447") ?: "28 Recep 1447"
             val arkaPlanKey = widgetData.getString("arkaplan_key", "light") ?: "light"
             val yaziRengiHex = widgetData.getString("yazi_rengi_hex", "444444") ?: "444444"
             val yaziRengi = WidgetUtils.parseColorSafe(yaziRengiHex, Color.parseColor("#444444"))

@@ -46,9 +46,9 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
             backgroundColor: renkler.vurgu,
             iconTheme: const IconThemeData(color: Colors.white),
             flexibleSpace: FlexibleSpaceBar(
-              title: const Text(
-                'Hakkında',
-                style: TextStyle(
+              title: Text(
+                _languageService['about'],
+                style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
                 ),
@@ -88,8 +88,8 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
 
                   // Açıklama
                   _baslikVeMetin(
-                    'Huzur Vakti Nedir?',
-                    'Huzur Vakti, Müslümanların günlük ibadetlerini kolaylaştırmak ve namaz vakitlerini doğru bir şekilde takip etmek için geliştirilmiş kapsamlı bir mobil uygulamadır. Uygulamamız, konumunuza göre kesin vakit bilgileri sunarken, aynı zamanda manevi yaşamınızı zenginleştiren birçok özelliği bir arada barındırır.',
+                    _languageService['what_is_huzur_vakti'],
+                    _languageService['about_desc'],
                     renkler,
                   ),
                   const SizedBox(height: 24),
@@ -172,7 +172,7 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
           ),
           const SizedBox(height: 4),
           Text(
-            'Versiyon 2.1.0',
+            'Versiyon 2.2.0',
             style: TextStyle(
               color: renkler.yaziSecondary.withValues(alpha: 0.7),
               fontSize: 12,
@@ -320,7 +320,7 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'Özellikler',
+          _languageService['features'],
           style: TextStyle(
             color: renkler.yaziPrimary,
             fontSize: 20,
@@ -445,8 +445,20 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
           ),
           const SizedBox(height: 16),
           
+          // v2.2.0
+          _surumBaslik('v2.2.0', '20 Ocak 2026', renkler),
+          const SizedBox(height: 8),
+          _surumMaddesi('📱 Widget geri sayım döngüsü sorunu tamamen çözüldü', renkler, duzeltme: true),
+          _surumMaddesi('🌙 Gece 12 sonrası vakit listesi ve ikon animasyonu düzeltildi', renkler, duzeltme: true),
+          _surumMaddesi('📳 Zikirmatik: Her tıklamada hafif titreşim, tur tamamında 2 kez kesik titreşim', renkler, iyilestirme: true),
+          _surumMaddesi('🔊 Bildirim sesleri audioplayer ile yeniden düzenlendi', renkler, duzeltme: true),
+          _surumMaddesi('🌍 Çeviri dosyaları genişletildi (130+ kelime)', renkler, iyilestirme: true),
+          _surumMaddesi('⚡ Widget güncelleme performansı optimize edildi', renkler, iyilestirme: true),
+          
+          const SizedBox(height: 16),
+          
           // v2.1.0
-          _surumBaslik('v2.1.0', '20 Ocak 2026', renkler),
+          _surumBaslik('v2.1.0', '19 Ocak 2026', renkler),
           const SizedBox(height: 8),
           _surumMaddesi('🌍 Çoklu dil desteği (Türkçe, İngilizce, Almanca, Fransızca)', renkler, yeni: true),
           _surumMaddesi('🎨 Dil değişimi ile tüm UI güncelleniyor', renkler, yeni: true),
@@ -460,7 +472,7 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
           const SizedBox(height: 16),
           
           // v2.0.0
-          _surumBaslik('v2.0.0', '19 Ocak 2026', renkler),
+          _surumBaslik('v2.0.0', '18 Ocak 2026', renkler),
           const SizedBox(height: 8),
           _surumMaddesi('🏙️ Çoklu konum desteği', renkler, yeni: true),
           _surumMaddesi('🔔 Bildirim sistemi tamamen yenilendi', renkler, iyilestirme: true),

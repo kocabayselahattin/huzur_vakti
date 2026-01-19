@@ -21,7 +21,7 @@ class WidgetUpdateReceiver : BroadcastReceiver() {
     companion object {
         private const val TAG = "WidgetUpdateReceiver"
         private const val ACTION_UPDATE_WIDGETS = "com.example.huzur_vakti.UPDATE_WIDGETS"
-        private const val UPDATE_INTERVAL = 5_000L // 5 saniye - sürekli güncelleme için
+        private const val UPDATE_INTERVAL = 30_000L // 30 saniye - pil optimizasyonu için
         
         /**
          * Periyodik widget güncellemesini başlat

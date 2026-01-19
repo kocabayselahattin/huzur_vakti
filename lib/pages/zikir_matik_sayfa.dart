@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'dart:math' as math;
 import '../services/vibration_service.dart';
+import '../services/language_service.dart';
 
 class ZikirMatikSayfa extends StatefulWidget {
   const ZikirMatikSayfa({super.key});
@@ -13,6 +14,7 @@ class ZikirMatikSayfa extends StatefulWidget {
 
 class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
     with TickerProviderStateMixin {
+  final LanguageService _languageService = LanguageService();
   int _sayac = 0;
   int _hedef = 33;
   int _toplamTur = 0;
@@ -24,19 +26,21 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
   late Animation<double> _rippleAnimation;
 
   final List<int> _hedefler = [33, 99, 100, 500, 1000];
-  final List<Map<String, String>> _zikirler = [
-    {'isim': 'Sübhanallah', 'anlam': 'Allah\'ı tenzih ederim'},
-    {'isim': 'Elhamdülillah', 'anlam': 'Allah\'a hamd olsun'},
-    {'isim': 'Allahu Ekber', 'anlam': 'Allah en büyüktür'},
-    {'isim': 'La ilahe illallah', 'anlam': 'Allah\'tan başka ilah yoktur'},
-    {'isim': 'Estağfirullah', 'anlam': 'Allah\'tan bağışlanma dilerim'},
-    {'isim': 'La havle vela kuvvete illa billah', 'anlam': 'Güç ve kuvvet ancak Allah\'tandır'},
+  
+  List<Map<String, String>> get _zikirler => [
+    {'isim': _languageService['subhanallah'], 'anlam': _languageService['subhanallah_meaning']},
+    {'isim': _languageService['alhamdulillah'], 'anlam': _languageService['alhamdulillah_meaning']},
+    {'isim': _languageService['allahu_akbar'], 'anlam': _languageService['allahu_akbar_meaning']},
+    {'isim': _languageService['la_ilaha_illallah'], 'anlam': _languageService['la_ilaha_illallah_meaning']},
+    {'isim': _languageService['astaghfirullah'], 'anlam': _languageService['astaghfirullah_meaning']},
+    {'isim': _languageService['la_hawla'], 'anlam': _languageService['la_hawla_meaning']},
   ];
   int _secilenZikirIndex = 0;
 
   @override
   void initState() {
     super.initState();
+    _languageService.addListener(_onLanguageChanged);
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 150),
       vsync: this,
@@ -54,6 +58,10 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
     );
     
     _verileriYukle();
+  }
+  
+  void _onLanguageChanged() {
+    if (mounted) setState(() {});
   }
 
   Future<void> _verileriYukle() async {
@@ -78,16 +86,18 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
 
   @override
   void dispose() {
+    _languageService.removeListener(_onLanguageChanged);
     _pulseController.dispose();
     _rippleController.dispose();
     super.dispose();
   }
 
   void _artir() async {
+    // Önce tıklama titreşimi (her tıklamada)
     if (_titresimAcik) {
-      // VibrationService ile daha güvenilir titreşim
-      await VibrationService.medium();
+      await VibrationService.light();
     }
+    
     _pulseController.forward().then((_) => _pulseController.reverse());
     _rippleController.forward(from: 0.0);
 
@@ -97,12 +107,21 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
         _toplamTur++;
         _sayac = 0;
         if (_titresimAcik) {
-          // Başarı titreşimi - daha belirgin
-          VibrationService.success();
+          // Tur tamamlandığında 2 kez kesik kesik titreşim
+          _turTamamTitresim();
         }
       }
     });
     _verileriKaydet();
+  }
+  
+  /// Tur tamamlandığında kesik kesik 2 kez titreşim
+  Future<void> _turTamamTitresim() async {
+    // İlk titreşim
+    await VibrationService.heavy();
+    await Future.delayed(const Duration(milliseconds: 150));
+    // İkinci titreşim
+    await VibrationService.heavy();
   }
 
   void _sifirla() async {

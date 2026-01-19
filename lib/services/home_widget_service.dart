@@ -12,6 +12,7 @@ class HomeWidgetService {
   
   static Timer? _updateTimer;
   static Map<String, String> _vakitSaatleri = {};
+  static String? _lastGeriSayim; // Son gönderilen geri sayım değeri
   
   /// Servisi başlat
   static Future<void> initialize() async {
@@ -20,9 +21,9 @@ class HomeWidgetService {
     await _loadWidgetColors();
     await updateAllWidgets();
     
-    // Her 5 saniyede bir güncelle (Chronometer zaten kendi geri sayıyor)
+    // Her 1 saniyede bir güncelle (gerçek geri sayım için)
     _updateTimer?.cancel();
-    _updateTimer = Timer.periodic(const Duration(seconds: 5), (_) {
+    _updateTimer = Timer.periodic(const Duration(seconds: 1), (_) {
       updateAllWidgets();
     });
   }
@@ -95,6 +96,13 @@ class HomeWidgetService {
     final now = DateTime.now();
     final vakitBilgisi = _hesaplaVakitBilgisi(now);
     
+    // Geri sayım değişmediyse widget'ları güncelleme (gereksiz güncellemeyi önle)
+    final yeniGeriSayim = vakitBilgisi['geriSayim'] ?? '';
+    if (_lastGeriSayim == yeniGeriSayim) {
+      return; // Değişiklik yok, güncelleme yapma
+    }
+    _lastGeriSayim = yeniGeriSayim;
+    
     // Tarih bilgileri
     final miladiTarih = DateFormat('dd MMMM yyyy', 'tr_TR').format(now);
     final miladiKisa = DateFormat('dd MMM yyyy', 'tr_TR').format(now);
@@ -113,12 +121,11 @@ class HomeWidgetService {
     await HomeWidget.saveWidgetData<String>('mevcut_vakit_saati', vakitBilgisi['mevcutSaat'] ?? '');
     await HomeWidget.saveWidgetData<String>('kalan_sure', vakitBilgisi['kalanSure'] ?? '');
     await HomeWidget.saveWidgetData<String>('kalan_kisa', vakitBilgisi['kalanKisa'] ?? '');
-    await HomeWidget.saveWidgetData<String>('geri_sayim', vakitBilgisi['geriSayim'] ?? '');
-    // İlerleme değeri 0-100 arası clamp ve log
+    await HomeWidget.saveWidgetData<String>('geri_sayim', yeniGeriSayim);
+    // İlerleme değeri 0-100 arası clamp
     int ilerleme = int.tryParse(vakitBilgisi['ilerleme'] ?? '0') ?? 0;
     if (ilerleme < 0) ilerleme = 0;
     if (ilerleme > 100) ilerleme = 100;
-    print('[MiniSunsetWidget] İlerleme: $ilerleme');
     await HomeWidget.saveWidgetData<int>('ilerleme', ilerleme);
     
     await HomeWidget.saveWidgetData<String>('tarih', miladiTarih);
@@ -151,7 +158,7 @@ class HomeWidgetService {
     // Kıble derecesi (örnek değer - gerçek hesaplama için konum gerekli)
     await HomeWidget.saveWidgetData<double>('kible_derece', 156.7);
     
-    // Widget'ları güncelle - Android için sadece sınıf adı, iOS için qualifiedAndroidName gerekli
+    // Widget'ları güncelle
     try {
       await HomeWidget.updateWidget(
         name: 'KlasikTuruncuWidget',
@@ -174,7 +181,7 @@ class HomeWidgetService {
         qualifiedAndroidName: 'com.example.huzur_vakti.widgets.KompaktVakitWidget',
       );
     } catch (e) {
-      // Widget güncellenemezse devam et (widget henüz ekranda olmayabilir)
+      // Widget güncellenemezse devam et
       print('Widget güncelleme hatası: $e');
     }
   }

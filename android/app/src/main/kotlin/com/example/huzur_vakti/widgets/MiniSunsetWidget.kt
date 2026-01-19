@@ -59,16 +59,19 @@ class MiniSunsetWidget : AppWidgetProvider() {
             val aksam = widgetData.getString("aksam_saati", "18:00") ?: "18:00"
             val yatsi = widgetData.getString("yatsi_saati", "19:30") ?: "19:30"
             
+            // Geri sayımı Android tarafında hesapla (uygulama kapalıyken de çalışır)
+            val vakitBilgisi = WidgetUtils.hesaplaVakitBilgisi(imsak, gunes, ogle, ikindi, aksam, yatsi)
+            val sonrakiVakit = vakitBilgisi["sonrakiVakit"] ?: "Öğle"
+            val geriSayim = vakitBilgisi["geriSayim"] ?: "02:30:00"
+            val mevcutVakit = vakitBilgisi["mevcutVakit"] ?: "İmsak"
+            val mevcutSaat = vakitBilgisi["mevcutSaat"] ?: "05:30"
+            val sonrakiSaat = vakitBilgisi["sonrakiSaat"] ?: "06:30"
+            val ilerleme = vakitBilgisi["ilerleme"]?.toIntOrNull() ?: 0
+            
             // Diğer bilgiler
-            val sonrakiVakit = widgetData.getString("sonraki_vakit", "Öğle") ?: "Öğle"
-            val geriSayim = widgetData.getString("geri_sayim", "02:30:00") ?: "02:30:00"
-            val mevcutVakit = widgetData.getString("mevcut_vakit", "İmsak") ?: "İmsak"
-            val mevcutSaat = widgetData.getString("mevcut_vakit_saati", "05:30") ?: "05:30"
-            val sonrakiSaat = widgetData.getString("sonraki_vakit_saati", "06:30") ?: "06:30"
             val miladiTarih = widgetData.getString("miladi_tarih", "17 Ocak 2026") ?: "17 Ocak 2026"
             val hicriTarih = widgetData.getString("hicri_tarih", "28 Recep 1447") ?: "28 Recep 1447"
             val konum = widgetData.getString("konum", "İstanbul") ?: "İstanbul"
-            val ilerleme = widgetData.getInt("ilerleme", 0)
 
             
             // Renk ayarlarını al

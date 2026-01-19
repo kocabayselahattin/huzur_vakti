@@ -104,21 +104,30 @@ class _VakitListesiWidgetState extends State<VakitListesiWidget> {
     String? yeniAktif;
     String? yeniSonraki;
 
-    // İlk önce İmsak dakikasını al
+    // İmsak ve Yatsı dakikalarını al
     int? imsakMinutes;
+    int? yatsiMinutes;
     try {
       final imsakParts = vakitSaatleri['Imsak']!.split(':');
       imsakMinutes = int.parse(imsakParts[0]) * 60 + int.parse(imsakParts[1]);
+      final yatsiParts = vakitSaatleri['Yatsi']!.split(':');
+      yatsiMinutes = int.parse(yatsiParts[0]) * 60 + int.parse(yatsiParts[1]);
     } catch (e) {
-      // İmsak parse edilemezse devam et
+      // Parse edilemezse devam et
     }
 
-    // Eğer gece 00:00 ile İmsak arası ise (örn: 02:30 ve İmsak 05:30)
-    if (imsakMinutes != null && nowMinutes < imsakMinutes && now.hour < 6) {
-      // Gece yarısı sonrası: Yatsı aktif, İmsak sonraki
+    // Gece yarısı ile İmsak arası: Yatsı aktif, İmsak sonraki
+    // (Örn: saat 02:30, İmsak 05:30 ise Yatsı hala aktif)
+    if (imsakMinutes != null && nowMinutes < imsakMinutes) {
       yeniAktif = 'Yatsi';
       yeniSonraki = 'Imsak';
-    } else {
+    } 
+    // Yatsı sonrası gece yarısına kadar: Yatsı aktif, İmsak sonraki
+    else if (yatsiMinutes != null && nowMinutes >= yatsiMinutes) {
+      yeniAktif = 'Yatsi';
+      yeniSonraki = 'Imsak';
+    }
+    else {
       // Normal durum: vakitleri sırayla kontrol et
       for (int i = 0; i < vakitListesi.length; i++) {
         final vakit = vakitListesi[i];
@@ -143,8 +152,8 @@ class _VakitListesiWidgetState extends State<VakitListesiWidget> {
 
       // Hiçbir vakit bulunamadıysa (tüm vakitler geçmişse)
       if (yeniSonraki == null) {
-        yeniAktif = 'Yatsi'; // Son vakit Yatsı
-        yeniSonraki = 'Imsak'; // Yarının ilk vakti İmsak
+        yeniAktif = 'Yatsi';
+        yeniSonraki = 'Imsak';
       }
     }
 
@@ -207,42 +216,42 @@ class _VakitListesiWidgetState extends State<VakitListesiWidget> {
       child: Column(
         children: [
           _vakitSatiri(
-            _languageService['imsak'] ?? "İmsak",
+            _languageService['imsak'],
             vakitSaatleri['Imsak']!,
             Icons.nightlight_round,
             'Imsak',
             renkler,
           ),
           _vakitSatiri(
-            _languageService['gunes'] ?? "Güneş",
+            _languageService['gunes'],
             vakitSaatleri['Gunes']!,
             Icons.wb_sunny,
             'Gunes',
             renkler,
           ),
           _vakitSatiri(
-            _languageService['ogle'] ?? "Öğle",
+            _languageService['ogle'],
             vakitSaatleri['Ogle']!,
             Icons.light_mode,
             'Ogle',
             renkler,
           ),
           _vakitSatiri(
-            _languageService['ikindi'] ?? "İkindi",
+            _languageService['ikindi'],
             vakitSaatleri['Ikindi']!,
             Icons.brightness_6,
             'Ikindi',
             renkler,
           ),
           _vakitSatiri(
-            _languageService['aksam'] ?? "Akşam",
+            _languageService['aksam'],
             vakitSaatleri['Aksam']!,
             Icons.wb_twilight,
             'Aksam',
             renkler,
           ),
           _vakitSatiri(
-            _languageService['yatsi'] ?? "Yatsı",
+            _languageService['yatsi'],
             vakitSaatleri['Yatsi']!,
             Icons.nights_stay,
             'Yatsi',

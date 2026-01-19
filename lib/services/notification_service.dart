@@ -1,10 +1,15 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter/foundation.dart';
+import 'package:audioplayers/audioplayers.dart';
 
 class NotificationService {
   static final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  static final AudioPlayer _audioPlayer = AudioPlayer();
+  static bool _initialized = false;
 
   static Future<void> initialize([dynamic context]) async {
+    if (_initialized) return;
+    
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
     const InitializationSettings initializationSettings = InitializationSettings(
@@ -18,22 +23,20 @@ class NotificationService {
       },
     );
     
-    // Android bildirim kanalını oluştur
-    const AndroidNotificationChannel channel = AndroidNotificationChannel(
-      'vakit_channel',
-      'Vakit Bildirimleri',
-      description: 'Namaz vakitleri için bildirimler',
-      importance: Importance.max,
-      playSound: true,
-      enableVibration: true,
-      enableLights: true,
-      showBadge: true,
-      sound: RawResourceAndroidNotificationSound('ding_dong'), // Varsayılan ses
-    );
-    
     final androidImplementation = _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
     
     if (androidImplementation != null) {
+      // Varsayılan kanal oluştur
+      const AndroidNotificationChannel channel = AndroidNotificationChannel(
+        'vakit_channel',
+        'Vakit Bildirimleri',
+        description: 'Namaz vakitleri için bildirimler',
+        importance: Importance.max,
+        playSound: false, // Sesi kendimiz çalacağız
+        enableVibration: true,
+        enableLights: true,
+        showBadge: true,
+      );
       await androidImplementation.createNotificationChannel(channel);
       
       // Bildirim iznini kontrol et ve logla
@@ -46,34 +49,41 @@ class NotificationService {
         debugPrint('📱 Bildirim izni sonucu: $granted');
       }
     }
+    
+    _initialized = true;
   }
 
   static Future<void> showVakitNotification({
     required String title,
     required String body,
-    String? soundAsset, // ör: 'Ding_Dong.mp3' veya 'ding_dong.mp3'
+    String? soundAsset,
   }) async {
     try {
-      // Android raw resource formatına dönüştür: küçük harf, tire yerine alt çizgi, uzantı yok
-      String? androidSound;
-      if (soundAsset != null) {
-        androidSound = soundAsset
-            .replaceAll('.mp3', '')
-            .replaceAll('.wav', '')
-            .toLowerCase()
-            .replaceAll('-', '_');
+      // Önce sesi çal (asset'ten)
+      if (soundAsset != null && soundAsset.isNotEmpty) {
+        try {
+          await _audioPlayer.stop();
+          // Asset dosya adını düzelt
+          String assetPath = soundAsset;
+          if (!assetPath.startsWith('sounds/')) {
+            assetPath = 'sounds/$soundAsset';
+          }
+          await _audioPlayer.setVolume(1.0);
+          await _audioPlayer.play(AssetSource(assetPath));
+          debugPrint('🔊 Ses çalındı: $assetPath');
+        } catch (e) {
+          debugPrint('⚠️ Ses çalınamadı: $e');
+        }
       }
       
-      final androidPlatformChannelSpecifics = AndroidNotificationDetails(
+      // Bildirim göster (ses olmadan)
+      const androidPlatformChannelSpecifics = AndroidNotificationDetails(
         'vakit_channel',
         'Vakit Bildirimleri',
         channelDescription: 'Namaz vakitleri için bildirimler',
         importance: Importance.max,
         priority: Priority.high,
-        sound: androidSound != null
-            ? RawResourceAndroidNotificationSound(androidSound)
-            : null,
-        playSound: true,
+        playSound: false, // Sesi kendimiz çalıyoruz
         enableVibration: true,
         enableLights: true,
         fullScreenIntent: true,
@@ -82,9 +92,9 @@ class NotificationService {
         autoCancel: true,
         ongoing: false,
         ticker: 'Vakit bildirimi',
-        largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+        largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
       );
-      final notificationDetails = NotificationDetails(
+      const notificationDetails = NotificationDetails(
         android: androidPlatformChannelSpecifics,
       );
       
@@ -101,5 +111,26 @@ class NotificationService {
       debugPrint('❌ Bildirim gönderilemedi: $e');
       rethrow;
     }
+  }
+  
+  /// Sesi test et
+  static Future<void> testSound(String soundAsset) async {
+    try {
+      await _audioPlayer.stop();
+      String assetPath = soundAsset;
+      if (!assetPath.startsWith('sounds/')) {
+        assetPath = 'sounds/$soundAsset';
+      }
+      await _audioPlayer.setVolume(1.0);
+      await _audioPlayer.play(AssetSource(assetPath));
+      debugPrint('🔊 Test sesi çalındı: $assetPath');
+    } catch (e) {
+      debugPrint('⚠️ Test sesi çalınamadı: $e');
+    }
+  }
+  
+  /// Sesi durdur
+  static Future<void> stopSound() async {
+    await _audioPlayer.stop();
   }
 }
