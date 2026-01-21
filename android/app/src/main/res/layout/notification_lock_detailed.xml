@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 🌙 Kilit Ekranı Bildirimi - Detaylı Stil -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/notification_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="12dp">
+    android:padding="12dp"
+    android:background="@android:color/transparent">
 
     <!-- Üst Satır: Başlık ve Konum -->
     <LinearLayout
@@ -20,13 +22,18 @@
             android:contentDescription="@null" />
 
         <TextView
+            android:id="@+id/tv_app_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="6dp"
             android:text="Huzur Vakti"
             android:textSize="12sp"
-            android:textColor="#FFFFFF"
-            android:textStyle="bold" />
+            android:textColor="#212121"
+            android:textStyle="bold"
+            android:shadowColor="#FFFFFF"
+            android:shadowDx="0"
+            android:shadowDy="0"
+            android:shadowRadius="2" />
 
         <FrameLayout
             android:layout_width="0dp"
@@ -39,7 +46,11 @@
             android:layout_height="wrap_content"
             android:text="İstanbul"
             android:textSize="10sp"
-            android:textColor="#80FFFFFF" />
+            android:textColor="#757575"
+            android:shadowColor="#FFFFFF"
+            android:shadowDx="0"
+            android:shadowDy="0"
+            android:shadowRadius="1" />
 
     </LinearLayout>
 
@@ -69,16 +80,25 @@
                     android:layout_height="wrap_content"
                     android:text="İKİNDİ"
                     android:textSize="16sp"
-                    android:textColor="#FF7043"
-                    android:textStyle="bold" />
+                    android:textColor="#E65100"
+                    android:textStyle="bold"
+                    android:shadowColor="#FFFFFF"
+                    android:shadowDx="0"
+                    android:shadowDy="0"
+                    android:shadowRadius="2" />
 
                 <TextView
+                    android:id="@+id/tv_time_to_label"
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:layout_marginStart="8dp"
                     android:text="vaktine"
                     android:textSize="12sp"
-                    android:textColor="#AAAAAA" />
+                    android:textColor="#757575"
+                    android:shadowColor="#FFFFFF"
+                    android:shadowDx="0"
+                    android:shadowDy="0"
+                    android:shadowRadius="1" />
 
             </LinearLayout>
 
@@ -88,8 +108,12 @@
                 android:layout_height="wrap_content"
                 android:text="2 saat 34 dakika"
                 android:textSize="22sp"
-                android:textColor="#FFFFFF"
-                android:textStyle="bold" />
+                android:textColor="#212121"
+                android:textStyle="bold"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="2" />
 
         </LinearLayout>
 
@@ -99,8 +123,12 @@
             android:layout_height="wrap_content"
             android:text="15:52"
             android:textSize="24sp"
-            android:textColor="#FF7043"
-            android:textStyle="bold" />
+            android:textColor="#E65100"
+            android:textStyle="bold"
+            android:shadowColor="#FFFFFF"
+            android:shadowDx="0"
+            android:shadowDy="0"
+            android:shadowRadius="2" />
 
     </LinearLayout>
 
@@ -139,11 +167,16 @@
             android:padding="4dp">
 
             <TextView
+                android:id="@+id/tv_imsak_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="İmsak"
                 android:textSize="8sp"
-                android:textColor="#80FFFFFF" />
+                android:textColor="#757575"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="1" />
 
             <TextView
                 android:id="@+id/tv_imsak"
@@ -151,7 +184,11 @@
                 android:layout_height="wrap_content"
                 android:text="05:30"
                 android:textSize="11sp"
-                android:textColor="#FFFFFF" />
+                android:textColor="#212121"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="1" />
 
         </LinearLayout>
 
@@ -166,11 +203,16 @@
             android:padding="4dp">
 
             <TextView
+                android:id="@+id/tv_gunes_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Güneş"
                 android:textSize="8sp"
-                android:textColor="#80FFFFFF" />
+                android:textColor="#757575"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="1" />
 
             <TextView
                 android:id="@+id/tv_gunes"
@@ -178,7 +220,11 @@
                 android:layout_height="wrap_content"
                 android:text="07:00"
                 android:textSize="11sp"
-                android:textColor="#FFFFFF" />
+                android:textColor="#212121"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="1" />
 
         </LinearLayout>
 
@@ -193,11 +239,16 @@
             android:padding="4dp">
 
             <TextView
+                android:id="@+id/tv_ogle_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Öğle"
                 android:textSize="8sp"
-                android:textColor="#80FFFFFF" />
+                android:textColor="#757575"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="1" />
 
             <TextView
                 android:id="@+id/tv_ogle"
@@ -205,7 +256,11 @@
                 android:layout_height="wrap_content"
                 android:text="12:30"
                 android:textSize="11sp"
-                android:textColor="#FFFFFF" />
+                android:textColor="#212121"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="1" />
 
         </LinearLayout>
 
@@ -220,11 +275,16 @@
             android:padding="4dp">
 
             <TextView
+                android:id="@+id/tv_ikindi_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="İkindi"
                 android:textSize="8sp"
-                android:textColor="#80FFFFFF" />
+                android:textColor="#757575"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="1" />
 
             <TextView
                 android:id="@+id/tv_ikindi"
@@ -232,7 +292,11 @@
                 android:layout_height="wrap_content"
                 android:text="15:30"
                 android:textSize="11sp"
-                android:textColor="#FFFFFF" />
+                android:textColor="#212121"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="1" />
 
         </LinearLayout>
 
@@ -247,11 +311,16 @@
             android:padding="4dp">
 
             <TextView
+                android:id="@+id/tv_aksam_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Akşam"
                 android:textSize="8sp"
-                android:textColor="#80FFFFFF" />
+                android:textColor="#757575"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="1" />
 
             <TextView
                 android:id="@+id/tv_aksam"
@@ -259,7 +328,11 @@
                 android:layout_height="wrap_content"
                 android:text="18:00"
                 android:textSize="11sp"
-                android:textColor="#FFFFFF" />
+                android:textColor="#212121"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="1" />
 
         </LinearLayout>
 
@@ -274,11 +347,16 @@
             android:padding="4dp">
 
             <TextView
+                android:id="@+id/tv_yatsi_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Yatsı"
                 android:textSize="8sp"
-                android:textColor="#80FFFFFF" />
+                android:textColor="#757575"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="1" />
 
             <TextView
                 android:id="@+id/tv_yatsi"
@@ -286,7 +364,11 @@
                 android:layout_height="wrap_content"
                 android:text="19:30"
                 android:textSize="11sp"
-                android:textColor="#FFFFFF" />
+                android:textColor="#212121"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="1" />
 
         </LinearLayout>
 

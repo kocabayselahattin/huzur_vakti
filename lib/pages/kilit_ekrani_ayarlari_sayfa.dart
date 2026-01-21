@@ -29,6 +29,74 @@ class _KilitEkraniAyarlariSayfaState extends State<KilitEkraniAyarlariSayfa> {
   bool _ecirBariGoster = true;
   int _secilenStilIndex = 0;
   bool _yukleniyor = true;
+  
+  // Renk ve tema ayarları (widget_ayarlari_sayfa.dart gibi)
+  int _secilenArkaPlanIndex = 2; // Koyu Mavi varsayılan
+  int _secilenYaziRengiIndex = 0; // Beyaz varsayılan
+  double _seffaflik = 1.0;
+  
+  // Arka plan renkleri
+  final List<Map<String, dynamic>> _arkaPlanSecenekleri = [
+    {
+      'isim': 'Koyu Mavi',
+      'renk1': Color(0xFF1A3A5C),
+      'renk2': Color(0xFF051525),
+      'key': 'dark_blue',
+    },
+    {
+      'isim': 'Siyah',
+      'renk1': Color(0xFF1A1F3D),
+      'renk2': Color(0xFF0D1025),
+      'key': 'black',
+    },
+    {
+      'isim': 'Koyu Gri',
+      'renk1': Color(0xFF2D2D2D),
+      'renk2': Color(0xFF1A1A1A),
+      'key': 'dark_gray',
+    },
+    {
+      'isim': 'Mor',
+      'renk1': Color(0xFF4A148C),
+      'renk2': Color(0xFF311B92),
+      'key': 'purple',
+    },
+    {
+      'isim': 'Yeşil',
+      'renk1': Color(0xFF1B5E20),
+      'renk2': Color(0xFF0D3F12),
+      'key': 'green',
+    },
+    {
+      'isim': 'Kırmızı',
+      'renk1': Color(0xFFB71C1C),
+      'renk2': Color(0xFF7F0000),
+      'key': 'red',
+    },
+    {
+      'isim': 'Turuncu',
+      'renk1': Color(0xFFFF8C42),
+      'renk2': Color(0xFFCC5522),
+      'key': 'orange',
+    },
+    {
+      'isim': 'Şeffaf',
+      'renk1': Colors.transparent,
+      'renk2': Colors.transparent,
+      'key': 'transparent',
+    },
+  ];
+
+  final List<Map<String, dynamic>> _yaziRengiSecenekleri = [
+    {'isim': 'Beyaz', 'renk': Colors.white, 'hex': 'FFFFFF'},
+    {'isim': 'Açık Gri', 'renk': Color(0xFFE0E0E0), 'hex': 'E0E0E0'},
+    {'isim': 'Turuncu', 'renk': Color(0xFFFF7043), 'hex': 'FF7043'},
+    {'isim': 'Altın', 'renk': Color(0xFFFFD700), 'hex': 'FFD700'},
+    {'isim': 'Açık Mavi', 'renk': Color(0xFFAADDFF), 'hex': 'AADDFF'},
+    {'isim': 'Yeşil', 'renk': Color(0xFF4CAF50), 'hex': '4CAF50'},
+    {'isim': 'Pembe', 'renk': Color(0xFFE91E63), 'hex': 'E91E63'},
+    {'isim': 'Cyan', 'renk': Color(0xFF00BCD4), 'hex': '00BCD4'},
+  ];
 
   // Stil seçenekleri
   final List<Map<String, dynamic>> _stilSecenekleri = [
@@ -88,6 +156,12 @@ class _KilitEkraniAyarlariSayfaState extends State<KilitEkraniAyarlariSayfa> {
         (s) => s['key'] == stilKey,
       );
       if (_secilenStilIndex < 0) _secilenStilIndex = 0;
+      
+      // Renk ayarlarını yükle
+      _secilenArkaPlanIndex = prefs.getInt('kilit_arkaplan_index') ?? 1;
+      _secilenYaziRengiIndex = prefs.getInt('kilit_yazi_rengi_index') ?? 0;
+      _seffaflik = (prefs.getDouble('kilit_seffaflik') ?? 1.0).clamp(0.3, 1.0);
+      
       _yukleniyor = false;
     });
 
@@ -108,6 +182,17 @@ class _KilitEkraniAyarlariSayfaState extends State<KilitEkraniAyarlariSayfa> {
       'kilit_ekrani_stili',
       _stilSecenekleri[_secilenStilIndex]['key'],
     );
+    
+    // Renk ayarlarını kaydet
+    await prefs.setInt('kilit_arkaplan_index', _secilenArkaPlanIndex);
+    await prefs.setInt('kilit_yazi_rengi_index', _secilenYaziRengiIndex);
+    await prefs.setDouble('kilit_seffaflik', _seffaflik);
+    
+    // Native servise renk bilgilerini gönder
+    final arkaPlan = _arkaPlanSecenekleri[_secilenArkaPlanIndex];
+    final yaziRengi = _yaziRengiSecenekleri[_secilenYaziRengiIndex];
+    await prefs.setString('kilit_arkaplan_key', arkaPlan['key']);
+    await prefs.setString('kilit_yazi_rengi_hex', yaziRengi['hex']);
 
     if (_kilitEkraniBildirimiAktif) {
       await _bildirimiGuncelle();
@@ -307,8 +392,68 @@ class _KilitEkraniAyarlariSayfaState extends State<KilitEkraniAyarlariSayfa> {
 
             // Stil seçimi
             _stilSecimKarti(renkler),
+            const SizedBox(height: 20),
+            
+            // Arka plan rengi seçimi
+            _arkaPlanSecimKarti(renkler),
+            const SizedBox(height: 20),
+            
+            // Yazı rengi seçimi
+            _yaziRengiSecimKarti(renkler),
+            const SizedBox(height: 20),
+            
+            // Şeffaflık ayarı
+            _seffaflikKarti(renkler),
+            const SizedBox(height: 20),
+            
+            // Varsayılana Dön butonu
+            _varsayilanaaDonButonu(renkler),
           ],
         ],
+      ),
+    );
+  }
+
+  // Varsayılana dön fonksiyonu
+  Future<void> _varsayilanaDon() async {
+    setState(() {
+      _secilenStilIndex = 0; // Kompakt
+      _secilenArkaPlanIndex = 1; // Siyah
+      _secilenYaziRengiIndex = 0; // Beyaz
+      _seffaflik = 1.0; // Tam opak
+    });
+    await _ayarlariKayDet();
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_languageService['reset_to_default'] ?? 'Varsayılan ayarlara dönüldü'),
+          backgroundColor: Colors.green,
+          duration: const Duration(seconds: 2),
+        ),
+      );
+    }
+  }
+
+  // Varsayılana dön butonu
+  Widget _varsayilanaaDonButonu(TemaRenkleri renkler) {
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: OutlinedButton.icon(
+        onPressed: _varsayilanaDon,
+        icon: Icon(Icons.restore, color: renkler.vurgu),
+        label: Text(
+          _languageService['reset_to_default'] ?? 'Varsayılana Dön',
+          style: TextStyle(color: renkler.vurgu),
+        ),
+        style: OutlinedButton.styleFrom(
+          padding: const EdgeInsets.symmetric(vertical: 14),
+          side: BorderSide(color: renkler.vurgu),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
       ),
     );
   }
@@ -506,6 +651,254 @@ class _KilitEkraniAyarlariSayfaState extends State<KilitEkraniAyarlariSayfa> {
     );
   }
 
+  // Arka plan rengi seçimi
+  Widget _arkaPlanSecimKarti(TemaRenkleri renkler) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: renkler.kartArkaPlan,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _languageService['background_color'] ?? 'Arka Plan Rengi',
+            style: TextStyle(
+              color: renkler.yaziPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 4,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 1,
+            ),
+            itemCount: _arkaPlanSecenekleri.length,
+            itemBuilder: (context, index) {
+              final secenek = _arkaPlanSecenekleri[index];
+              final isSelected = _secilenArkaPlanIndex == index;
+              final isTransparent = secenek['key'] == 'transparent';
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _secilenArkaPlanIndex = index;
+                  });
+                  _ayarlariKayDet();
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    gradient: isTransparent
+                        ? null
+                        : LinearGradient(
+                            colors: [secenek['renk1'], secenek['renk2']],
+                            begin: Alignment.topLeft,
+                            end: Alignment.bottomRight,
+                          ),
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(
+                      color: isSelected ? renkler.vurgu : Colors.grey.shade300,
+                      width: isSelected ? 3 : 1,
+                    ),
+                  ),
+                  child: Stack(
+                    children: [
+                      if (isTransparent)
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(10),
+                          child: CustomPaint(
+                            painter: _CheckerboardPainter(),
+                            child: const SizedBox.expand(),
+                          ),
+                        ),
+                      Center(
+                        child: Text(
+                          secenek['isim'].split(' ').first,
+                          style: TextStyle(
+                            color: isTransparent ||
+                                    (secenek['renk1'] as Color).computeLuminance() > 0.5
+                                ? Colors.black
+                                : Colors.white,
+                            fontSize: 9,
+                            fontWeight: FontWeight.bold,
+                          ),
+                          textAlign: TextAlign.center,
+                        ),
+                      ),
+                      if (isSelected)
+                        Positioned(
+                          top: 4,
+                          right: 4,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: renkler.vurgu,
+                              shape: BoxShape.circle,
+                            ),
+                            child: const Icon(Icons.check, color: Colors.white, size: 10),
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Yazı rengi seçimi
+  Widget _yaziRengiSecimKarti(TemaRenkleri renkler) {
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: renkler.kartArkaPlan,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            _languageService['text_color'] ?? 'Yazı Rengi',
+            style: TextStyle(
+              color: renkler.yaziPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 16),
+          GridView.builder(
+            shrinkWrap: true,
+            physics: const NeverScrollableScrollPhysics(),
+            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+              crossAxisCount: 8,
+              crossAxisSpacing: 8,
+              mainAxisSpacing: 8,
+              childAspectRatio: 1,
+            ),
+            itemCount: _yaziRengiSecenekleri.length,
+            itemBuilder: (context, index) {
+              final secenek = _yaziRengiSecenekleri[index];
+              final isSelected = _secilenYaziRengiIndex == index;
+
+              return GestureDetector(
+                onTap: () {
+                  setState(() {
+                    _secilenYaziRengiIndex = index;
+                  });
+                  _ayarlariKayDet();
+                },
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: secenek['renk'],
+                    shape: BoxShape.circle,
+                    border: Border.all(
+                      color: isSelected ? renkler.vurgu : Colors.grey.shade300,
+                      width: isSelected ? 3 : 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black12,
+                        blurRadius: 4,
+                        offset: const Offset(0, 2),
+                      ),
+                    ],
+                  ),
+                  child: isSelected
+                      ? Icon(
+                          Icons.check,
+                          color: (secenek['renk'] as Color).computeLuminance() > 0.5
+                              ? Colors.black
+                              : Colors.white,
+                          size: 16,
+                        )
+                      : null,
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Şeffaflık ayarı
+  Widget _seffaflikKarti(TemaRenkleri renkler) {
+    final isTransparent = _arkaPlanSecenekleri[_secilenArkaPlanIndex]['key'] == 'transparent';
+    
+    if (isTransparent) {
+      return const SizedBox.shrink(); // Şeffaf seçiliyse gösterme
+    }
+    
+    return Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: renkler.kartArkaPlan,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.05),
+            blurRadius: 10,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${_languageService['opacity'] ?? 'Şeffaflık'}: ${(_seffaflik * 100).toInt()}%',
+            style: TextStyle(
+              color: renkler.yaziPrimary,
+              fontSize: 16,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Slider(
+            value: _seffaflik.clamp(0.3, 1.0),
+            min: 0.3,
+            max: 1.0,
+            divisions: 7,
+            label: '${(_seffaflik * 100).toInt()}%',
+            activeColor: renkler.vurgu,
+            onChanged: (value) {
+              setState(() {
+                _seffaflik = value;
+              });
+            },
+            onChangeEnd: (value) {
+              _ayarlariKayDet();
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
   Widget _ecirBariKarti(TemaRenkleri renkler) {
     return Container(
       padding: const EdgeInsets.all(16),
@@ -616,86 +1009,129 @@ class _KilitEkraniAyarlariSayfaState extends State<KilitEkraniAyarlariSayfa> {
   }
 
   Widget _buildStilOnizleme(String stilKey) {
+    // Seçilen renkleri al
+    final arkaPlan = _arkaPlanSecenekleri[_secilenArkaPlanIndex];
+    final yaziRengi = _yaziRengiSecenekleri[_secilenYaziRengiIndex]['renk'] as Color;
+    final isTransparent = arkaPlan['key'] == 'transparent';
+    
+    final Color bgColor1 = isTransparent
+        ? Colors.transparent
+        : Color.fromRGBO(
+            (arkaPlan['renk1'] as Color).red,
+            (arkaPlan['renk1'] as Color).green,
+            (arkaPlan['renk1'] as Color).blue,
+            _seffaflik,
+          );
+    final Color bgColor2 = isTransparent
+        ? Colors.transparent
+        : Color.fromRGBO(
+            (arkaPlan['renk2'] as Color).red,
+            (arkaPlan['renk2'] as Color).green,
+            (arkaPlan['renk2'] as Color).blue,
+            _seffaflik,
+          );
+    
     switch (stilKey) {
       case 'compact':
-        return _buildCompactOnizleme();
+        return _buildCompactOnizleme(bgColor1, bgColor2, yaziRengi, isTransparent);
       case 'detailed':
-        return _buildDetailedOnizleme();
+        return _buildDetailedOnizleme(bgColor1, bgColor2, yaziRengi, isTransparent);
       case 'minimal':
-        return _buildMinimalOnizleme();
+        return _buildMinimalOnizleme(bgColor1, bgColor2, yaziRengi, isTransparent);
       case 'full':
-        return _buildFullOnizleme();
+        return _buildFullOnizleme(bgColor1, bgColor2, yaziRengi, isTransparent);
       default:
-        return _buildCompactOnizleme();
+        return _buildCompactOnizleme(bgColor1, bgColor2, yaziRengi, isTransparent);
     }
   }
 
   // Kompakt Stil Önizleme
-  Widget _buildCompactOnizleme() {
+  Widget _buildCompactOnizleme(Color bgColor1, Color bgColor2, Color yaziRengi, bool isTransparent) {
+    final vurguRengi = Color(0xFFFF7043);
+    
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1F3D),
+        gradient: isTransparent ? null : LinearGradient(
+          colors: [bgColor1, bgColor2],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade600),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          // Üst: Başlık satırı
-          Row(
-            children: [
-              Image.asset('assets/icon/app_icon.png', width: 18, height: 18),
-              const SizedBox(width: 6),
-              const Text(
-                'Huzur Vakti',
-                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+          if (isTransparent)
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: CustomPaint(painter: _CheckerboardPainter()),
               ),
-              const Spacer(),
-              Text(
-                'İstanbul',
-                style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11),
-              ),
-            ],
-          ),
-          const SizedBox(height: 8),
-          Row(
+            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              // Sol: Vakit bilgisi
-              Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
+              // Üst: Başlık satırı
+              Row(
                 children: [
+                  Image.asset('assets/icon/app_icon.png', width: 18, height: 18),
+                  const SizedBox(width: 6),
                   Text(
-                    'Sonraki Vakit',
-                    style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
+                    'Huzur Vakti',
+                    style: TextStyle(color: yaziRengi, fontWeight: FontWeight.bold, fontSize: 13),
                   ),
-                  const Text(
-                    'İKİNDİ',
-                    style: TextStyle(color: Color(0xFFFF7043), fontWeight: FontWeight.bold, fontSize: 16),
+                  const Spacer(),
+                  Text(
+                    'İstanbul',
+                    style: TextStyle(color: yaziRengi.withOpacity(0.5), fontSize: 11),
                   ),
-                  const Text('15:52', style: TextStyle(color: Colors.white, fontSize: 13)),
                 ],
               ),
-              const Spacer(),
-              // Sağ: Geri sayım kutusu
-              Container(
-                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-                decoration: BoxDecoration(
-                  color: const Color(0xFF2A2F4F),
-                  borderRadius: BorderRadius.circular(10),
-                  border: Border.all(color: const Color(0xFF3D4266)),
-                ),
-                child: Column(
-                  children: [
-                    Text(
-                      'Kalan Süre',
-                      style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 9),
+              const SizedBox(height: 8),
+              Row(
+                children: [
+                  // Sol: Vakit bilgisi
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'Sonraki Vakit',
+                          style: TextStyle(color: yaziRengi.withOpacity(0.5), fontSize: 10),
+                        ),
+                        Text(
+                          'İKİNDİ',
+                          style: TextStyle(color: vurguRengi, fontWeight: FontWeight.bold, fontSize: 16),
+                        ),
+                        Text('15:52', style: TextStyle(color: yaziRengi, fontSize: 13)),
+                      ],
                     ),
-                    const Text(
-                      '2s 34dk',
-                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                  ),
+                  // Sağ: Geri sayım kutusu
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                    decoration: BoxDecoration(
+                      color: isTransparent 
+                          ? Colors.black.withOpacity(0.3) 
+                          : bgColor2.withOpacity(0.8),
+                      borderRadius: BorderRadius.circular(10),
+                      border: Border.all(color: Colors.grey.shade600),
                     ),
-                  ],
-                ),
+                    child: Column(
+                      children: [
+                        Text(
+                          'Kalan Süre',
+                          style: TextStyle(color: yaziRengi.withOpacity(0.5), fontSize: 9),
+                        ),
+                        Text(
+                          '2s 34dk',
+                          style: TextStyle(color: yaziRengi, fontWeight: FontWeight.bold, fontSize: 18),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
               ),
             ],
           ),
@@ -705,28 +1141,142 @@ class _KilitEkraniAyarlariSayfaState extends State<KilitEkraniAyarlariSayfa> {
   }
 
   // Detaylı Stil Önizleme
-  Widget _buildDetailedOnizleme() {
+  Widget _buildDetailedOnizleme(Color bgColor1, Color bgColor2, Color yaziRengi, bool isTransparent) {
+    final vurguRengi = const Color(0xFFFF7043);
+    
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1F3D),
+        gradient: isTransparent ? null : LinearGradient(
+          colors: [bgColor1, bgColor2],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade600),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          // Üst satır
-          Row(
+          if (isTransparent)
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: CustomPaint(painter: _CheckerboardPainter()),
+              ),
+            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Image.asset('assets/icon/app_icon.png', width: 18, height: 18),
-              const SizedBox(width: 6),
-              const Text('Huzur Vakti', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-              const Spacer(),
-              Text('İstanbul', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
+              // Üst satır
+              Row(
+                children: [
+                  Image.asset('assets/icon/app_icon.png', width: 18, height: 18),
+                  const SizedBox(width: 6),
+                  Text('Huzur Vakti', style: TextStyle(color: yaziRengi, fontWeight: FontWeight.bold, fontSize: 12)),
+                  const Spacer(),
+                  Text('İstanbul', style: TextStyle(color: yaziRengi.withOpacity(0.5), fontSize: 10)),
+                ],
+              ),
+              const SizedBox(height: 10),
+              // Geri sayım
+              Row(
+                children: [
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Row(
+                          children: [
+                            Text('İKİNDİ', style: TextStyle(color: vurguRengi, fontWeight: FontWeight.bold, fontSize: 14)),
+                            const SizedBox(width: 8),
+                            Text('vaktine', style: TextStyle(color: yaziRengi.withOpacity(0.6), fontSize: 11)),
+                          ],
+                        ),
+                        Text('2 saat 34 dakika', style: TextStyle(color: yaziRengi, fontWeight: FontWeight.bold, fontSize: 18)),
+                      ],
+                    ),
+                  ),
+                  Text('15:52', style: TextStyle(color: vurguRengi, fontWeight: FontWeight.bold, fontSize: 20)),
+                ],
+              ),
+              const SizedBox(height: 8),
+              // Progress bar
+              Container(
+                height: 4,
+                decoration: BoxDecoration(
+                  color: isTransparent ? Colors.black.withOpacity(0.2) : bgColor2,
+                  borderRadius: BorderRadius.circular(2),
+                ),
+                child: FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: 0.6,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      gradient: LinearGradient(colors: [vurguRengi, vurguRengi.withOpacity(0.7)]),
+                      borderRadius: BorderRadius.circular(2),
+                    ),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 10),
+              // Tüm vakitler
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceAround,
+                children: [
+                  _vakitMiniDynamic('İmsak', '05:30', false, yaziRengi, vurguRengi),
+                  _vakitMiniDynamic('Güneş', '07:00', false, yaziRengi, vurguRengi),
+                  _vakitMiniDynamic('Öğle', '12:30', false, yaziRengi, vurguRengi),
+                  _vakitMiniDynamic('İkindi', '15:30', true, yaziRengi, vurguRengi),
+                  _vakitMiniDynamic('Akşam', '18:00', false, yaziRengi, vurguRengi),
+                  _vakitMiniDynamic('Yatsı', '19:30', false, yaziRengi, vurguRengi),
+                ],
+              ),
             ],
           ),
-          const SizedBox(height: 10),
-          // Geri sayım
+        ],
+      ),
+    );
+  }
+
+  Widget _vakitMiniDynamic(String isim, String saat, bool aktif, Color yaziRengi, Color vurguRengi) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+      decoration: aktif 
+          ? BoxDecoration(color: vurguRengi, borderRadius: BorderRadius.circular(4))
+          : null,
+      child: Column(
+        children: [
+          Text(isim, style: TextStyle(color: aktif ? Colors.black : yaziRengi.withOpacity(0.5), fontSize: 8)),
+          Text(saat, style: TextStyle(color: aktif ? Colors.black : yaziRengi, fontSize: 10, fontWeight: aktif ? FontWeight.bold : FontWeight.normal)),
+        ],
+      ),
+    );
+  }
+
+  // Minimal Stil Önizleme
+  Widget _buildMinimalOnizleme(Color bgColor1, Color bgColor2, Color yaziRengi, bool isTransparent) {
+    final vurguRengi = const Color(0xFFFF7043);
+    
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        gradient: isTransparent ? null : LinearGradient(
+          colors: [bgColor1, bgColor2],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade600),
+      ),
+      child: Stack(
+        children: [
+          if (isTransparent)
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: CustomPaint(painter: _CheckerboardPainter()),
+              ),
+            ),
           Row(
             children: [
               Expanded(
@@ -735,100 +1285,22 @@ class _KilitEkraniAyarlariSayfaState extends State<KilitEkraniAyarlariSayfa> {
                   children: [
                     Row(
                       children: [
-                        const Text('İKİNDİ', style: TextStyle(color: Color(0xFFFF7043), fontWeight: FontWeight.bold, fontSize: 14)),
+                        Image.asset('assets/icon/app_icon.png', width: 16, height: 16),
+                        const SizedBox(width: 6),
+                        Text('İKİNDİ', style: TextStyle(color: yaziRengi, fontWeight: FontWeight.bold, fontSize: 14)),
                         const SizedBox(width: 8),
-                        Text('vaktine', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11)),
+                        Text('15:52', style: TextStyle(color: vurguRengi, fontSize: 13)),
                       ],
                     ),
-                    const Text('2 saat 34 dakika', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                    Text('İstanbul', style: TextStyle(color: yaziRengi.withOpacity(0.5), fontSize: 10)),
                   ],
                 ),
               ),
-              const Text('15:52', style: TextStyle(color: Color(0xFFFF7043), fontWeight: FontWeight.bold, fontSize: 20)),
-            ],
-          ),
-          const SizedBox(height: 8),
-          // Progress bar
-          Container(
-            height: 4,
-            decoration: BoxDecoration(
-              color: const Color(0xFF3D4266),
-              borderRadius: BorderRadius.circular(2),
-            ),
-            child: FractionallySizedBox(
-              alignment: Alignment.centerLeft,
-              widthFactor: 0.6,
-              child: Container(
-                decoration: BoxDecoration(
-                  gradient: const LinearGradient(colors: [Color(0xFFFF7043), Color(0xFFFF5722)]),
-                  borderRadius: BorderRadius.circular(2),
-                ),
+              Text(
+                '2:34',
+                style: TextStyle(color: vurguRengi, fontWeight: FontWeight.bold, fontSize: 26),
               ),
-            ),
-          ),
-          const SizedBox(height: 10),
-          // Tüm vakitler
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceAround,
-            children: [
-              _vakitMini('İmsak', '05:30', false),
-              _vakitMini('Güneş', '07:00', false),
-              _vakitMini('Öğle', '12:30', false),
-              _vakitMini('İkindi', '15:30', true),
-              _vakitMini('Akşam', '18:00', false),
-              _vakitMini('Yatsı', '19:30', false),
             ],
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _vakitMini(String isim, String saat, bool aktif) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
-      decoration: aktif 
-          ? BoxDecoration(color: const Color(0xFFFF7043), borderRadius: BorderRadius.circular(4))
-          : null,
-      child: Column(
-        children: [
-          Text(isim, style: TextStyle(color: aktif ? Colors.black : Colors.white.withOpacity(0.5), fontSize: 8)),
-          Text(saat, style: TextStyle(color: aktif ? Colors.black : Colors.white, fontSize: 10, fontWeight: aktif ? FontWeight.bold : FontWeight.normal)),
-        ],
-      ),
-    );
-  }
-
-  // Minimal Stil Önizleme
-  Widget _buildMinimalOnizleme() {
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFF1A1F3D),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Row(
-        children: [
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Image.asset('assets/icon/app_icon.png', width: 16, height: 16),
-                    const SizedBox(width: 6),
-                    const Text('İKİNDİ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
-                    const SizedBox(width: 8),
-                    const Text('15:52', style: TextStyle(color: Color(0xFFFF7043), fontSize: 13)),
-                  ],
-                ),
-                Text('İstanbul', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
-              ],
-            ),
-          ),
-          const Text(
-            '2:34',
-            style: TextStyle(color: Color(0xFFFF7043), fontWeight: FontWeight.bold, fontSize: 26),
           ),
         ],
       ),
@@ -836,90 +1308,110 @@ class _KilitEkraniAyarlariSayfaState extends State<KilitEkraniAyarlariSayfa> {
   }
 
   // Tam Vakit Stil Önizleme
-  Widget _buildFullOnizleme() {
+  Widget _buildFullOnizleme(Color bgColor1, Color bgColor2, Color yaziRengi, bool isTransparent) {
+    final vurguRengi = const Color(0xFFFF7043);
+    
     return Container(
       padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFF1A1F3D),
+        gradient: isTransparent ? null : LinearGradient(
+          colors: [bgColor1, bgColor2],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
         borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.grey.shade600),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Stack(
         children: [
-          // Üst satır
-          Row(
-            children: [
-              Image.asset('assets/icon/app_icon.png', width: 18, height: 18),
-              const SizedBox(width: 6),
-              const Text('Huzur Vakti', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
-              const Spacer(),
-              const Text('28 Recep 1447', style: TextStyle(color: Color(0xFFFF7043), fontSize: 10)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Text('📍 İstanbul', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
-              const Spacer(),
-              Text('21 Ocak 2026', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
-            ],
-          ),
-          const SizedBox(height: 10),
-          // Geri sayım kutusu
-          Container(
-            padding: const EdgeInsets.all(10),
-            decoration: BoxDecoration(
-              color: const Color(0xFF2A2F4F),
-              borderRadius: BorderRadius.circular(10),
-              border: Border.all(color: const Color(0xFF3D4266)),
+          if (isTransparent)
+            Positioned.fill(
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(10),
+                child: CustomPaint(painter: _CheckerboardPainter()),
+              ),
             ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text('Sonraki Vakit', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
-                      Row(
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              // Üst satır
+              Row(
+                children: [
+                  Image.asset('assets/icon/app_icon.png', width: 18, height: 18),
+                  const SizedBox(width: 6),
+                  Text('Huzur Vakti', style: TextStyle(color: yaziRengi, fontWeight: FontWeight.bold, fontSize: 12)),
+                  const Spacer(),
+                  Text('28 Recep 1447', style: TextStyle(color: vurguRengi, fontSize: 10)),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Text('📍 İstanbul', style: TextStyle(color: yaziRengi.withOpacity(0.5), fontSize: 10)),
+                  const Spacer(),
+                  Text('21 Ocak 2026', style: TextStyle(color: yaziRengi.withOpacity(0.5), fontSize: 10)),
+                ],
+              ),
+              const SizedBox(height: 10),
+              // Geri sayım kutusu
+              Container(
+                padding: const EdgeInsets.all(10),
+                decoration: BoxDecoration(
+                  color: isTransparent 
+                      ? Colors.black.withOpacity(0.3) 
+                      : bgColor2.withOpacity(0.8),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: Colors.grey.shade600),
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const Text('İKİNDİ', style: TextStyle(color: Color(0xFFFF7043), fontWeight: FontWeight.bold, fontSize: 18)),
-                          const SizedBox(width: 12),
-                          const Text('15:52', style: TextStyle(color: Colors.white, fontSize: 16)),
+                          Text('Sonraki Vakit', style: TextStyle(color: yaziRengi.withOpacity(0.5), fontSize: 10)),
+                          Row(
+                            children: [
+                              Text('İKİNDİ', style: TextStyle(color: vurguRengi, fontWeight: FontWeight.bold, fontSize: 18)),
+                              const SizedBox(width: 12),
+                              Text('15:52', style: TextStyle(color: yaziRengi, fontSize: 16)),
+                            ],
+                          ),
                         ],
                       ),
-                    ],
-                  ),
-                ),
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.end,
-                  children: [
-                    Text('Kalan', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 9)),
-                    const Text('2:34:21', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22, fontFamily: 'monospace')),
+                    ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text('Kalan', style: TextStyle(color: yaziRengi.withOpacity(0.5), fontSize: 9)),
+                        Text('2:34:21', style: TextStyle(color: yaziRengi, fontWeight: FontWeight.bold, fontSize: 22, fontFamily: 'monospace')),
+                      ],
+                    ),
                   ],
                 ),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
-          // Grid vakitler
-          Row(
-            children: [
-              Expanded(child: _vakitSatir('🌙', 'İmsak', '05:30', false)),
-              Expanded(child: _vakitSatir('🌤️', 'İkindi', '15:30', true)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Expanded(child: _vakitSatir('🌅', 'Güneş', '07:00', false)),
-              Expanded(child: _vakitSatir('🌆', 'Akşam', '18:00', false)),
-            ],
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Expanded(child: _vakitSatir('☀️', 'Öğle', '12:30', false)),
-              Expanded(child: _vakitSatir('🌙', 'Yatsı', '19:30', false)),
+              ),
+              const SizedBox(height: 10),
+              // Grid vakitler
+              Row(
+                children: [
+                  Expanded(child: _vakitSatirDynamic('🌙', 'İmsak', '05:30', false, yaziRengi, vurguRengi, isTransparent, bgColor2)),
+                  Expanded(child: _vakitSatirDynamic('🌤️', 'İkindi', '15:30', true, yaziRengi, vurguRengi, isTransparent, bgColor2)),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(child: _vakitSatirDynamic('🌅', 'Güneş', '07:00', false, yaziRengi, vurguRengi, isTransparent, bgColor2)),
+                  Expanded(child: _vakitSatirDynamic('🌆', 'Akşam', '18:00', false, yaziRengi, vurguRengi, isTransparent, bgColor2)),
+                ],
+              ),
+              const SizedBox(height: 4),
+              Row(
+                children: [
+                  Expanded(child: _vakitSatirDynamic('☀️', 'Öğle', '12:30', false, yaziRengi, vurguRengi, isTransparent, bgColor2)),
+                  Expanded(child: _vakitSatirDynamic('🌙', 'Yatsı', '19:30', false, yaziRengi, vurguRengi, isTransparent, bgColor2)),
+                ],
+              ),
             ],
           ),
         ],
@@ -927,19 +1419,19 @@ class _KilitEkraniAyarlariSayfaState extends State<KilitEkraniAyarlariSayfa> {
     );
   }
 
-  Widget _vakitSatir(String emoji, String isim, String saat, bool aktif) {
+  Widget _vakitSatirDynamic(String emoji, String isim, String saat, bool aktif, Color yaziRengi, Color vurguRengi, bool isTransparent, Color bgColor2) {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
       decoration: aktif 
-          ? BoxDecoration(color: const Color(0xFFFF7043), borderRadius: BorderRadius.circular(6))
+          ? BoxDecoration(color: vurguRengi, borderRadius: BorderRadius.circular(6))
           : null,
       child: Row(
         children: [
           Text(emoji, style: const TextStyle(fontSize: 11)),
           const SizedBox(width: 4),
-          Text(isim, style: TextStyle(color: aktif ? Colors.black : Colors.white.withOpacity(0.6), fontSize: 10)),
+          Text(isim, style: TextStyle(color: aktif ? Colors.black : yaziRengi.withOpacity(0.6), fontSize: 10)),
           const Spacer(),
-          Text(saat, style: TextStyle(color: aktif ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+          Text(saat, style: TextStyle(color: aktif ? Colors.black : yaziRengi, fontWeight: FontWeight.bold, fontSize: 12)),
         ],
       ),
     );
@@ -965,4 +1457,27 @@ class _KilitEkraniAyarlariSayfaState extends State<KilitEkraniAyarlariSayfa> {
     // If no future prayer times, return the first prayer time of the next day
     return prayerTimes.first.add(const Duration(days: 1));
   }
+}
+
+/// Şeffaf arka plan göstermek için kareli desen
+class _CheckerboardPainter extends CustomPainter {
+  @override
+  void paint(Canvas canvas, Size size) {
+    const cellSize = 6.0;
+    final paint1 = Paint()..color = Colors.grey.shade400;
+    final paint2 = Paint()..color = Colors.grey.shade200;
+
+    for (double x = 0; x < size.width; x += cellSize) {
+      for (double y = 0; y < size.height; y += cellSize) {
+        final isEven = ((x / cellSize) + (y / cellSize)).toInt() % 2 == 0;
+        canvas.drawRect(
+          Rect.fromLTWH(x, y, cellSize, cellSize),
+          isEven ? paint1 : paint2,
+        );
+      }
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

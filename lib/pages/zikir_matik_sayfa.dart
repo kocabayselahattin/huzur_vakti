@@ -33,12 +33,12 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
   
   // Varsayılan zikirler
   List<Map<String, String>> get _varsayilanZikirler => [
-    {'isim': _languageService['subhanallah'], 'anlam': _languageService['subhanallah_meaning'], 'varsayilan': 'true'},
-    {'isim': _languageService['alhamdulillah'], 'anlam': _languageService['alhamdulillah_meaning'], 'varsayilan': 'true'},
-    {'isim': _languageService['allahu_akbar'], 'anlam': _languageService['allahu_akbar_meaning'], 'varsayilan': 'true'},
-    {'isim': _languageService['la_ilaha_illallah'], 'anlam': _languageService['la_ilaha_illallah_meaning'], 'varsayilan': 'true'},
-    {'isim': _languageService['astaghfirullah'], 'anlam': _languageService['astaghfirullah_meaning'], 'varsayilan': 'true'},
-    {'isim': _languageService['la_hawla'], 'anlam': _languageService['la_hawla_meaning'], 'varsayilan': 'true'},
+    {'isim': _languageService['subhanallah'] ?? 'Sübhanallah', 'anlam': _languageService['subhanallah_meaning'] ?? 'Allah her türlü eksiklikten uzaktır', 'varsayilan': 'true'},
+    {'isim': _languageService['alhamdulillah'] ?? 'Elhamdülillah', 'anlam': _languageService['alhamdulillah_meaning'] ?? 'Hamd Allah\'a mahsustur', 'varsayilan': 'true'},
+    {'isim': _languageService['allahu_akbar'] ?? 'Allahü Ekber', 'anlam': _languageService['allahu_akbar_meaning'] ?? 'Allah en büyüktür', 'varsayilan': 'true'},
+    {'isim': _languageService['la_ilaha_illallah'] ?? 'Lâ İlâhe İllallah', 'anlam': _languageService['la_ilaha_illallah_meaning'] ?? 'Allah\'tan başka ilah yoktur', 'varsayilan': 'true'},
+    {'isim': _languageService['astaghfirullah'] ?? 'Estağfirullah', 'anlam': _languageService['astaghfirullah_meaning'] ?? 'Allah\'tan bağışlanma dilerim', 'varsayilan': 'true'},
+    {'isim': _languageService['la_hawla'] ?? 'Lâ Havle Ve Lâ Kuvvete', 'anlam': _languageService['la_hawla_meaning'] ?? 'Güç ve kuvvet ancak Allah\'tandır', 'varsayilan': 'true'},
   ];
   
   // Kullanıcının özel zikirleri

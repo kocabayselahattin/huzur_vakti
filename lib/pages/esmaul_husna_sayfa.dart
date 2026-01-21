@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/tema_service.dart';
+import '../services/language_service.dart';
 
 class EsmaulHusnaSayfa extends StatefulWidget {
   const EsmaulHusnaSayfa({super.key});
@@ -10,6 +11,7 @@ class EsmaulHusnaSayfa extends StatefulWidget {
 
 class _EsmaulHusnaSayfaState extends State<EsmaulHusnaSayfa> {
   final TemaService _temaService = TemaService();
+  final LanguageService _languageService = LanguageService();
 
   static const List<Map<String, String>> _esmaulHusna = [
     {'arapca': 'الله', 'turkce': 'Allah', 'anlam': 'Bütün isimlerin vasıflarını içine alan öz adı'},
@@ -120,7 +122,7 @@ class _EsmaulHusnaSayfaState extends State<EsmaulHusnaSayfa> {
     return Scaffold(
       backgroundColor: renkler.arkaPlan,
       appBar: AppBar(
-        title: const Text('Esmaül Hüsna'),
+        title: Text(_languageService['esmaul_husna_title'] ?? 'Esmaül Hüsna'),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),

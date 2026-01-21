@@ -297,7 +297,7 @@ class IlIlceSecOnboarding extends StatelessWidget {
 
               // Hoşgeldin Başlık
               Text(
-                LanguageService().translate('welcome_title'),
+                LanguageService().translate('welcome_title') ?? 'Hoş Geldiniz',
                 style: const TextStyle(
                   color: Colors.white,
                   fontSize: 32,
@@ -311,8 +311,8 @@ class IlIlceSecOnboarding extends StatelessWidget {
               // Açıklama
               Text(
                 konumIzniVar
-                    ? LanguageService().translate('welcome_desc_location')
-                    : LanguageService().translate('welcome_desc_manual'),
+                    ? LanguageService().translate('welcome_desc_location') ?? 'Konumunuz otomatik tespit edilecek'
+                    : LanguageService().translate('welcome_desc_manual') ?? 'Konumunuzu manuel seçin',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.8),
                   fontSize: 16,
@@ -360,8 +360,8 @@ class IlIlceSecOnboarding extends StatelessWidget {
                   children: [
                     Text(
                       konumIzniVar
-                          ? LanguageService().translate('auto_detect')
-                          : LanguageService().translate('manual_select'),
+                          ? LanguageService().translate('auto_detect') ?? 'Otomatik Tespit'
+                          : LanguageService().translate('manual_select') ?? 'Manuel Seç',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -376,7 +376,7 @@ class IlIlceSecOnboarding extends StatelessWidget {
 
               // İpucu
               Text(
-                LanguageService().translate('settings_tip'),
+                LanguageService().translate('settings_tip') ?? 'İpucu: Ayarlardan dilediğiniz zaman değiştirebilirsiniz',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.5),
                   fontSize: 12,

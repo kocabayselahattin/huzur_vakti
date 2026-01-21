@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/tema_service.dart';
+import '../services/language_service.dart';
 
 class KirkHadisSayfa extends StatefulWidget {
   const KirkHadisSayfa({super.key});
@@ -11,6 +12,7 @@ class KirkHadisSayfa extends StatefulWidget {
 
 class _KirkHadisSayfaState extends State<KirkHadisSayfa> {
   final TemaService _temaService = TemaService();
+  final LanguageService _languageService = LanguageService();
   int _seciliIndex = 0;
   final PageController _pageController = PageController();
   final ScrollController _numberScrollController = ScrollController();
@@ -419,7 +421,7 @@ class _KirkHadisSayfaState extends State<KirkHadisSayfa> {
       backgroundColor: renkler.arkaPlan,
       appBar: AppBar(
         title: Text(
-          '40 HADİS',
+          _languageService['forty_hadith'] ?? '40 HADİS',
           style: TextStyle(
             letterSpacing: 2,
             fontSize: 14,
@@ -437,12 +439,12 @@ class _KirkHadisSayfaState extends State<KirkHadisSayfa> {
           IconButton(
             icon: const Icon(Icons.text_decrease),
             onPressed: _decreaseFontSize,
-            tooltip: 'Yazı Küçült',
+            tooltip: _languageService['font_decrease'] ?? 'Yazı Küçült',
           ),
           IconButton(
             icon: const Icon(Icons.text_increase),
             onPressed: _increaseFontSize,
-            tooltip: 'Yazı Büyüt',
+            tooltip: _languageService['font_increase'] ?? 'Yazı Büyüt',
           ),
         ],
       ),

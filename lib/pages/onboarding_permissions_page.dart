@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:io';
 import '../services/permission_service.dart';
+import '../services/language_service.dart';
 
 /// Uygulama ilk açılışta gerekli tüm izinleri sırayla ister
 class OnboardingPermissionsPage extends StatefulWidget {
@@ -12,6 +13,7 @@ class OnboardingPermissionsPage extends StatefulWidget {
 }
 
 class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
+  final LanguageService _languageService = LanguageService();
   int _currentStep = 0;
   bool _isProcessing = false;
 
@@ -22,48 +24,53 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
   bool _batteryOptDisabled = false;
   bool _exactAlarmGranted = false;
 
-  final List<_PermissionStep> _steps = [
-    _PermissionStep(
-      icon: Icons.location_on,
-      title: 'Konum İzni',
-      description:
-          'Bulunduğunuz konuma göre doğru namaz vakitlerini gösterebilmek için konum izni gereklidir.',
-      color: Colors.blue,
-    ),
-    _PermissionStep(
-      icon: Icons.notifications_active,
-      title: 'Bildirim İzni',
-      description:
-          'Namaz vakitlerinde sizi bilgilendirmek için bildirim izni gereklidir.',
-      color: Colors.orange,
-    ),
-    _PermissionStep(
-      icon: Icons.alarm,
-      title: 'Tam Zamanlı Alarm İzni',
-      description:
-          'Bildirimlerin tam vakitinde çalması için alarm izni gereklidir.',
-      color: Colors.purple,
-    ),
-    _PermissionStep(
-      icon: Icons.layers,
-      title: 'Üstünde Göster İzni',
-      description:
-          'Vakit girdiğinde ekranda bildirim gösterebilmek için bu izin gereklidir.',
-      color: Colors.teal,
-    ),
-    _PermissionStep(
-      icon: Icons.battery_charging_full,
-      title: 'Pil Optimizasyonu Muafiyeti',
-      description:
-          'Arka planda bildirimlerin düzgün çalışması için pil optimizasyonunun kapatılması gerekir.',
-      color: Colors.green,
-    ),
-  ];
+  late List<_PermissionStep> _steps;
 
   @override
   void initState() {
     super.initState();
+    _initSteps();
     _checkCurrentPermissions();
+  }
+
+  void _initSteps() {
+    _steps = [
+      _PermissionStep(
+        icon: Icons.location_on,
+        title: _languageService['location_permission'] ?? 'Konum İzni',
+        description: _languageService['location_permission_desc'] ??
+            'Bulunduğunuz konuma göre doğru namaz vakitlerini gösterebilmek için konum izni gereklidir.',
+        color: Colors.blue,
+      ),
+      _PermissionStep(
+        icon: Icons.notifications_active,
+        title: _languageService['notification_permission'] ?? 'Bildirim İzni',
+        description: _languageService['notification_permission_desc'] ??
+            'Namaz vakitlerinde sizi bilgilendirmek için bildirim izni gereklidir.',
+        color: Colors.orange,
+      ),
+      _PermissionStep(
+        icon: Icons.alarm,
+        title: _languageService['exact_alarm_permission'] ?? 'Tam Zamanlı Alarm İzni',
+        description: _languageService['exact_alarm_permission_desc'] ??
+            'Bildirimlerin tam vakitinde çalması için alarm izni gereklidir.',
+        color: Colors.purple,
+      ),
+      _PermissionStep(
+        icon: Icons.layers,
+        title: _languageService['overlay_permission'] ?? 'Üstünde Göster İzni',
+        description: _languageService['overlay_permission_desc'] ??
+            'Vakit girdiğinde ekranda bildirim gösterebilmek için bu izin gereklidir.',
+        color: Colors.teal,
+      ),
+      _PermissionStep(
+        icon: Icons.battery_charging_full,
+        title: _languageService['battery_permission'] ?? 'Pil Optimizasyonu Muafiyeti',
+        description: _languageService['battery_permission_desc'] ??
+            'Arka planda bildirimlerin düzgün çalışması için pil optimizasyonunun kapatılması gerekir.',
+        color: Colors.green,
+      ),
+    ];
   }
 
   Future<void> _checkCurrentPermissions() async {
@@ -135,9 +142,9 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                '${_steps[_currentStep].title} verilmedi. Yine de devam edebilirsiniz.',
+                '${_steps[_currentStep].title} ${_languageService['permission_not_granted_continue'] ?? 'verilmedi. Yine de devam edebilirsiniz.'}',
               ),
-              action: SnackBarAction(label: 'Devam', onPressed: _nextStep),
+              action: SnackBarAction(label: _languageService['continue_btn'] ?? 'Devam', onPressed: _nextStep),
               backgroundColor: Colors.orange,
             ),
           );
@@ -167,18 +174,18 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
       context: context,
       builder: (context) => AlertDialog(
         backgroundColor: const Color(0xFF2B3151),
-        title: const Text(
-          'İzinleri Atla?',
-          style: TextStyle(color: Colors.white),
+        title: Text(
+          _languageService['skip_permissions'] ?? 'İzinleri Atla?',
+          style: const TextStyle(color: Colors.white),
         ),
-        content: const Text(
-          'Bazı özellikler (bildirimler, konum tabanlı vakitler) düzgün çalışmayabilir.',
-          style: TextStyle(color: Colors.white70),
+        content: Text(
+          _languageService['skip_permissions_warning'] ?? 'Bazı özellikler (bildirimler, konum tabanlı vakitler) düzgün çalışmayabilir.',
+          style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: const Text('İptal', style: TextStyle(color: Colors.white70)),
+            child: Text(_languageService['cancel'] ?? 'İptal', style: const TextStyle(color: Colors.white70)),
           ),
           ElevatedButton(
             onPressed: () {
@@ -186,7 +193,7 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
               _completeOnboarding();
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: const Text('Atla', style: TextStyle(color: Colors.white)),
+            child: Text(_languageService['skip'] ?? 'Atla', style: const TextStyle(color: Colors.white)),
           ),
         ],
       ),
@@ -249,14 +256,14 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   Text(
-                    'Adım ${_currentStep + 1} / ${_steps.length}',
+                    '${_languageService['step'] ?? 'Adım'} ${_currentStep + 1} / ${_steps.length}',
                     style: const TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                   TextButton(
                     onPressed: _skipAll,
-                    child: const Text(
-                      'Tümünü Atla',
-                      style: TextStyle(color: Colors.white54),
+                    child: Text(
+                      _languageService['skip_all'] ?? 'Tümünü Atla',
+                      style: const TextStyle(color: Colors.white54),
                     ),
                   ),
                 ],
@@ -340,18 +347,18 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
                           color: Colors.green.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(20),
                         ),
-                        child: const Row(
+                        child: Row(
                           mainAxisSize: MainAxisSize.min,
                           children: [
-                            Icon(
+                            const Icon(
                               Icons.check_circle,
                               color: Colors.green,
                               size: 20,
                             ),
-                            SizedBox(width: 8),
+                            const SizedBox(width: 8),
                             Text(
-                              'İzin Verildi',
-                              style: TextStyle(
+                              _languageService['permission_granted'] ?? 'İzin Verildi',
+                              style: const TextStyle(
                                 color: Colors.green,
                                 fontWeight: FontWeight.bold,
                               ),
@@ -380,9 +387,9 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
                             borderRadius: BorderRadius.circular(12),
                           ),
                         ),
-                        child: const Text(
-                          'Geri',
-                          style: TextStyle(color: Colors.white70, fontSize: 16),
+                        child: Text(
+                          _languageService['back'] ?? 'Geri',
+                          style: const TextStyle(color: Colors.white70, fontSize: 16),
                         ),
                       ),
                     ),
@@ -412,9 +419,9 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
                           : Text(
                               isGranted
                                   ? (_currentStep < _steps.length - 1
-                                        ? 'Devam'
-                                        : 'Tamamla')
-                                  : 'İzin Ver',
+                                        ? (_languageService['continue_btn'] ?? 'Devam')
+                                        : (_languageService['complete'] ?? 'Tamamla'))
+                                  : (_languageService['grant_permission'] ?? 'İzin Ver'),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -431,8 +438,8 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
               // Alt bilgi
               Text(
                 _currentStep < _steps.length - 1
-                    ? 'Bu izni vermezseniz bazı özellikler çalışmayabilir'
-                    : 'Tüm izinler alındı, uygulamayı kullanmaya başlayabilirsiniz',
+                    ? (_languageService['permission_warning'] ?? 'Bu izni vermezseniz bazı özellikler çalışmayabilir')
+                    : (_languageService['all_permissions_granted'] ?? 'Tüm izinler alındı, uygulamayı kullanmaya başlayabilirsiniz'),
                 style: const TextStyle(color: Colors.white38, fontSize: 12),
                 textAlign: TextAlign.center,
               ),

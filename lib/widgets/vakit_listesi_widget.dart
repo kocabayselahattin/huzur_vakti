@@ -185,42 +185,42 @@ class _VakitListesiWidgetState extends State<VakitListesiWidget> {
       child: Column(
         children: [
           _vakitSatiri(
-            _languageService['imsak'],
+            _languageService['imsak'] ?? 'İmsak',
             vakitSaatleri['Imsak']!,
             Icons.nightlight_round,
             'Imsak',
             renkler,
           ),
           _vakitSatiri(
-            _languageService['gunes'],
+            _languageService['gunes'] ?? 'Güneş',
             vakitSaatleri['Gunes']!,
             Icons.wb_sunny,
             'Gunes',
             renkler,
           ),
           _vakitSatiri(
-            _languageService['ogle'],
+            _languageService['ogle'] ?? 'Öğle',
             vakitSaatleri['Ogle']!,
             Icons.light_mode,
             'Ogle',
             renkler,
           ),
           _vakitSatiri(
-            _languageService['ikindi'],
+            _languageService['ikindi'] ?? 'İkindi',
             vakitSaatleri['Ikindi']!,
             Icons.brightness_6,
             'Ikindi',
             renkler,
           ),
           _vakitSatiri(
-            _languageService['aksam'],
+            _languageService['aksam'] ?? 'Akşam',
             vakitSaatleri['Aksam']!,
             Icons.wb_twilight,
             'Aksam',
             renkler,
           ),
           _vakitSatiri(
-            _languageService['yatsi'],
+            _languageService['yatsi'] ?? 'Yatsı',
             vakitSaatleri['Yatsi']!,
             Icons.nights_stay,
             'Yatsi',

@@ -36,7 +36,7 @@ class AnaSayfa extends StatefulWidget {
 }
 
 class _AnaSayfaState extends State<AnaSayfa> {
-  String konumBasligi = "KONUM SEÇİLMEDİ";
+  String konumBasligi = "";
   final TemaService _temaService = TemaService();
   final LanguageService _languageService = LanguageService();
   PageController? _sayacController;
@@ -123,7 +123,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
         _aktifKonumIndex = aktifIndex < konumlar.length ? aktifIndex : 0;
 
         if (konumlar.isEmpty) {
-          konumBasligi = "KONUM SEÇİLMEDİ";
+          konumBasligi = _languageService['location_not_selected_upper'] ?? "KONUM SEÇİLMEDİ";
         } else {
           final aktifKonum = konumlar[_aktifKonumIndex];
           konumBasligi = "${aktifKonum.ilAdi} / ${aktifKonum.ilceAdi}";
@@ -167,14 +167,14 @@ class _AnaSayfaState extends State<AnaSayfa> {
         return AlertDialog(
           backgroundColor: renkler.kartArkaPlan,
           title: Text(
-            'Kayıtlı Konumlar',
+            _languageService['saved_locations'] ?? 'Kayıtlı Konumlar',
             style: TextStyle(color: renkler.yaziPrimary),
           ),
           content: SizedBox(
             width: double.maxFinite,
             child: _konumlar.isEmpty
                 ? Text(
-                    'Henüz kayıtlı konum yok',
+                    _languageService['no_saved_locations'] ?? 'Henüz kayıtlı konum yok',
                     style: TextStyle(color: renkler.yaziSecondary),
                   )
                 : ListView.builder(
@@ -206,7 +206,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
                           ),
                           subtitle: isAktif
                               ? Text(
-                                  'Aktif Konum',
+                                  _languageService['active_location'] ?? 'Aktif Konum',
                                   style: TextStyle(
                                     color: renkler.vurgu,
                                     fontSize: 12,
@@ -225,13 +225,13 @@ class _AnaSayfaState extends State<AnaSayfa> {
                                       builder: (ctx) => AlertDialog(
                                         backgroundColor: renkler.kartArkaPlan,
                                         title: Text(
-                                          'Konumu Sil',
+                                          _languageService['delete_location'] ?? 'Konumu Sil',
                                           style: TextStyle(
                                             color: renkler.yaziPrimary,
                                           ),
                                         ),
                                         content: Text(
-                                          '${konum.tamAd} konumunu silmek istediğinize emin misiniz?',
+                                          '${konum.tamAd} ${_languageService['delete_location_confirm'] ?? 'konumunu silmek istediğinize emin misiniz?'}',
                                           style: TextStyle(
                                             color: renkler.yaziSecondary,
                                           ),
@@ -241,7 +241,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
                                             onPressed: () =>
                                                 Navigator.pop(ctx, false),
                                             child: Text(
-                                              'İptal',
+                                              _languageService['cancel'] ?? 'İptal',
                                               style: TextStyle(
                                                 color: renkler.yaziSecondary,
                                               ),
@@ -250,9 +250,9 @@ class _AnaSayfaState extends State<AnaSayfa> {
                                           TextButton(
                                             onPressed: () =>
                                                 Navigator.pop(ctx, true),
-                                            child: const Text(
-                                              'Sil',
-                                              style: TextStyle(
+                                            child: Text(
+                                              _languageService['delete'] ?? 'Sil',
+                                              style: const TextStyle(
                                                 color: Colors.red,
                                               ),
                                             ),
@@ -679,7 +679,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
           child: Column(
             children: [
               // --- KONUM UYARISI (Eğer konum seçilmemişse) ---
-              if (konumBasligi == "KONUM SEÇİLMEDİ")
+              if (_konumlar.isEmpty)
                 Container(
                   margin: const EdgeInsets.all(16),
                   padding: const EdgeInsets.all(12),
@@ -701,7 +701,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              'Konum Seçilmedi',
+                              _languageService['location_not_selected'] ?? 'Konum Seçilmedi',
                               style: TextStyle(
                                 color: renkler.yaziPrimary,
                                 fontSize: 16,
@@ -710,7 +710,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              'Namaz vakitlerini görmek için ayarlardan il/ilçe seçin',
+                              _languageService['select_location_hint'] ?? 'Namaz vakitlerini görmek için ayarlardan il/ilçe seçin',
                               style: TextStyle(
                                 color: renkler.yaziSecondary,
                                 fontSize: 12,

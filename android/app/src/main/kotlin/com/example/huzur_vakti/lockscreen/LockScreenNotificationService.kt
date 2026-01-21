@@ -25,13 +25,42 @@ class LockScreenNotificationService : Service() {
         
         // Vakitlerin sıralanması
         private val VAKIT_SIRASI = listOf("Imsak", "Gunes", "Ogle", "Ikindi", "Aksam", "Yatsi")
-        private val VAKIT_ISIMLERI = mapOf(
+        
+        // Çoklu dil desteği için vakit isimleri
+        private val VAKIT_ISIMLERI_TR = mapOf(
             "Imsak" to "İMSAK",
             "Gunes" to "GÜNEŞ",
             "Ogle" to "ÖĞLE",
             "Ikindi" to "İKİNDİ",
             "Aksam" to "AKŞAM",
             "Yatsi" to "YATSI"
+        )
+        
+        private val VAKIT_ISIMLERI_EN = mapOf(
+            "Imsak" to "FAJR",
+            "Gunes" to "SUNRISE",
+            "Ogle" to "DHUHR",
+            "Ikindi" to "ASR",
+            "Aksam" to "MAGHRIB",
+            "Yatsi" to "ISHA"
+        )
+        
+        private val VAKIT_ISIMLERI_DE = mapOf(
+            "Imsak" to "FADSCHR",
+            "Gunes" to "SONNENAUFGANG",
+            "Ogle" to "DHUHR",
+            "Ikindi" to "ASR",
+            "Aksam" to "MAGHRIB",
+            "Yatsi" to "ISCHA"
+        )
+        
+        private val VAKIT_ISIMLERI_FR = mapOf(
+            "Imsak" to "FAJR",
+            "Gunes" to "LEVER DU SOLEIL",
+            "Ogle" to "DHUHR",
+            "Ikindi" to "ASR",
+            "Aksam" to "MAGHRIB",
+            "Yatsi" to "ISHA"
         )
 
         fun start(context: Context) {
@@ -46,6 +75,213 @@ class LockScreenNotificationService : Service() {
         fun stop(context: Context) {
             context.stopService(Intent(context, LockScreenNotificationService::class.java))
         }
+    }
+    
+    // Dil ayarlarını al
+    private fun getCurrentLanguage(): String {
+        val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        return prefs.getString("flutter.language", "tr") ?: "tr"
+    }
+    
+    // Dile göre vakit isimlerini al
+    private fun getVakitIsimleri(): Map<String, String> {
+        return when (getCurrentLanguage()) {
+            "en" -> VAKIT_ISIMLERI_EN
+            "de" -> VAKIT_ISIMLERI_DE
+            "fr" -> VAKIT_ISIMLERI_FR
+            else -> VAKIT_ISIMLERI_TR
+        }
+    }
+    
+    // Dile göre çeviriler
+    private fun getString(key: String): String {
+        val lang = getCurrentLanguage()
+        return when (key) {
+            "app_name" -> when (lang) {
+                "en" -> "Huzur Vakti"
+                "de" -> "Huzur Vakti"
+                "fr" -> "Huzur Vakti"
+                else -> "Huzur Vakti"
+            }
+            "next_prayer" -> when (lang) {
+                "en" -> "Next Prayer"
+                "de" -> "Nächstes Gebet"
+                "fr" -> "Prochaine prière"
+                else -> "Sonraki Vakit"
+            }
+            "remaining" -> when (lang) {
+                "en" -> "Remaining"
+                "de" -> "Verbleibend"
+                "fr" -> "Restant"
+                else -> "Kalan"
+            }
+            "remaining_time" -> when (lang) {
+                "en" -> "Remaining Time"
+                "de" -> "Verbleibende Zeit"
+                "fr" -> "Temps restant"
+                else -> "Kalan Süre"
+            }
+            "time_to" -> when (lang) {
+                "en" -> "until"
+                "de" -> "bis"
+                "fr" -> "jusqu'à"
+                else -> "vaktine"
+            }
+            "imsak" -> getVakitIsimleri()["Imsak"] ?: "İMSAK"
+            "gunes" -> getVakitIsimleri()["Gunes"] ?: "GÜNEŞ"
+            "ogle" -> getVakitIsimleri()["Ogle"] ?: "ÖĞLE"
+            "ikindi" -> getVakitIsimleri()["Ikindi"] ?: "İKİNDİ"
+            "aksam" -> getVakitIsimleri()["Aksam"] ?: "AKŞAM"
+            "yatsi" -> getVakitIsimleri()["Yatsi"] ?: "YATSI"
+            else -> key
+        }
+    }
+    
+    // Renk ayarlarını al
+    private fun getTextColor(): Int {
+        val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        val hex = prefs.getString("flutter.kilit_yazi_rengi_hex", "FFFFFF") ?: "FFFFFF"
+        Log.d(TAG, "📱 Kilit yazı rengi hex: $hex")
+        return try {
+            android.graphics.Color.parseColor("#$hex")
+        } catch (e: Exception) {
+            Log.e(TAG, "Renk parse hatası: $hex", e)
+            android.graphics.Color.WHITE
+        }
+    }
+    
+    private fun getSecondaryTextColor(): Int {
+        val textColor = getTextColor()
+        // Ana yazı renginin %60 opaklıkta versiyonu
+        return android.graphics.Color.argb(
+            (255 * 0.6).toInt(),
+            android.graphics.Color.red(textColor),
+            android.graphics.Color.green(textColor),
+            android.graphics.Color.blue(textColor)
+        )
+    }
+    
+    private fun getAccentColor(): Int {
+        // Turuncu vurgu rengi (sabit)
+        return android.graphics.Color.parseColor("#FF7043")
+    }
+    
+    // Arka plan rengini al
+    private fun getBackgroundColor(): Int {
+        val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        val index = prefs.getLong("flutter.kilit_arkaplan_index", 0L).toInt()
+        
+        // Flutter double değerleri String olarak saklar, güvenli okuma
+        val opacity = try {
+            val opacityStr = prefs.getString("flutter.kilit_seffaflik", "1.0")
+            opacityStr?.toDoubleOrNull() ?: 1.0
+        } catch (e: Exception) {
+            try {
+                prefs.getFloat("flutter.kilit_seffaflik", 1.0f).toDouble()
+            } catch (e2: Exception) {
+                1.0
+            }
+        }
+        
+        // Arka plan renk seçenekleri (Flutter'daki ile aynı sıra)
+        val colors = listOf(
+            0x000000, // Siyah
+            0x1A1A2E, // Koyu Lacivert
+            0x16213E, // Gece Mavisi
+            0x1B1B1B, // Antrasit
+            0x2D2D2D, // Koyu Gri
+            0x3D3D3D, // Orta Gri
+            0xFFFFFF, // Beyaz
+            0xF5F5F5  // Açık Gri
+        )
+        
+        val colorIndex = index.coerceIn(0, colors.size - 1)
+        val baseColor = colors[colorIndex]
+        val alpha = (255 * opacity).toInt().coerceIn(0, 255)
+        
+        Log.d(TAG, "📱 Kilit arka plan index: $index, opacity: $opacity, alpha: $alpha")
+        
+        return android.graphics.Color.argb(
+            alpha,
+            (baseColor shr 16) and 0xFF,
+            (baseColor shr 8) and 0xFF,
+            baseColor and 0xFF
+        )
+    }
+    
+    // RemoteViews'a renkleri uygula
+    private fun applyColors(views: RemoteViews) {
+        val textColor = getTextColor()
+        val secondaryColor = getSecondaryTextColor()
+        val accentColor = getAccentColor()
+        val backgroundColor = getBackgroundColor()
+        
+        // Arka plan rengini uygula
+        try {
+            views.setInt(R.id.notification_root, "setBackgroundColor", backgroundColor)
+        } catch (e: Exception) { 
+            Log.e(TAG, "Arka plan rengi uygulanamadı: ${e.message}")
+        }
+        
+        // Ana yazı renkleri - tüm metin alanlarına uygulanır
+        try {
+            // App name
+            views.setTextColor(R.id.tv_app_name, textColor)
+        } catch (e: Exception) { }
+        
+        try {
+            views.setTextColor(R.id.tv_location, secondaryColor)
+        } catch (e: Exception) { }
+        
+        try {
+            views.setTextColor(R.id.tv_next_prayer_name, accentColor)
+        } catch (e: Exception) { }
+        
+        try {
+            views.setTextColor(R.id.tv_next_prayer_time, textColor)
+        } catch (e: Exception) { }
+        
+        try {
+            views.setTextColor(R.id.tv_countdown, textColor)
+        } catch (e: Exception) { }
+        
+        try {
+            views.setTextColor(R.id.tv_next_prayer_label, secondaryColor)
+        } catch (e: Exception) { }
+        
+        try {
+            views.setTextColor(R.id.tv_remaining_label, secondaryColor)
+        } catch (e: Exception) { }
+        
+        try {
+            views.setTextColor(R.id.tv_time_to_label, secondaryColor)
+        } catch (e: Exception) { }
+        
+        // Vakit saatleri
+        try {
+            views.setTextColor(R.id.tv_imsak, textColor)
+            views.setTextColor(R.id.tv_gunes, textColor)
+            views.setTextColor(R.id.tv_ogle, textColor)
+            views.setTextColor(R.id.tv_ikindi, textColor)
+            views.setTextColor(R.id.tv_aksam, textColor)
+            views.setTextColor(R.id.tv_yatsi, textColor)
+        } catch (e: Exception) { }
+        
+        // Vakit etiketleri
+        try {
+            views.setTextColor(R.id.tv_imsak_label, secondaryColor)
+            views.setTextColor(R.id.tv_gunes_label, secondaryColor)
+            views.setTextColor(R.id.tv_ogle_label, secondaryColor)
+            views.setTextColor(R.id.tv_ikindi_label, secondaryColor)
+            views.setTextColor(R.id.tv_aksam_label, secondaryColor)
+            views.setTextColor(R.id.tv_yatsi_label, secondaryColor)
+        } catch (e: Exception) { }
+        
+        // Tarihler
+        try {
+            views.setTextColor(R.id.tv_hijri_date, accentColor)
+            views.setTextColor(R.id.tv_date, secondaryColor)
+        } catch (e: Exception) { }
     }
 
     private val handler = Handler(Looper.getMainLooper())
@@ -158,11 +394,20 @@ class LockScreenNotificationService : Service() {
         kalanSure: String
     ): RemoteViews {
         val views = RemoteViews(packageName, R.layout.notification_lock_compact)
+        val vakitIsimleri = getVakitIsimleri()
         
         views.setTextViewText(R.id.tv_location, konum)
-        views.setTextViewText(R.id.tv_next_prayer_name, VAKIT_ISIMLERI[sonrakiVakit?.first] ?: "")
+        views.setTextViewText(R.id.tv_next_prayer_name, vakitIsimleri[sonrakiVakit?.first] ?: "")
         views.setTextViewText(R.id.tv_next_prayer_time, sonrakiVakit?.second ?: "--:--")
         views.setTextViewText(R.id.tv_countdown, kalanSure)
+        
+        // Dil çevirilerini uygula
+        views.setTextViewText(R.id.tv_app_name, getString("app_name"))
+        views.setTextViewText(R.id.tv_next_prayer_label, getString("next_prayer"))
+        views.setTextViewText(R.id.tv_remaining_label, getString("remaining_time"))
+        
+        // Renkleri uygula
+        applyColors(views)
         
         return views
     }
@@ -174,13 +419,17 @@ class LockScreenNotificationService : Service() {
         kalanSure: String
     ): RemoteViews {
         val views = RemoteViews(packageName, R.layout.notification_lock_minimal)
+        val vakitIsimleri = getVakitIsimleri()
         
         views.setTextViewText(R.id.tv_location, konum)
-        views.setTextViewText(R.id.tv_next_prayer_name, VAKIT_ISIMLERI[sonrakiVakit?.first] ?: "")
+        views.setTextViewText(R.id.tv_next_prayer_name, vakitIsimleri[sonrakiVakit?.first] ?: "")
         views.setTextViewText(R.id.tv_next_prayer_time, sonrakiVakit?.second ?: "--:--")
         
         // Minimal stilde "Xs Ydk" formatı (saniye yok)
         views.setTextViewText(R.id.tv_countdown, kalanSure)
+        
+        // Renkleri uygula
+        applyColors(views)
         
         return views
     }
@@ -192,11 +441,24 @@ class LockScreenNotificationService : Service() {
         kalanSure: String
     ): RemoteViews {
         val views = RemoteViews(packageName, R.layout.notification_lock_detailed)
+        val vakitIsimleri = getVakitIsimleri()
         
         views.setTextViewText(R.id.tv_location, konum)
-        views.setTextViewText(R.id.tv_next_prayer_name, VAKIT_ISIMLERI[sonrakiVakit?.first] ?: "")
+        views.setTextViewText(R.id.tv_next_prayer_name, vakitIsimleri[sonrakiVakit?.first] ?: "")
         views.setTextViewText(R.id.tv_next_prayer_time, sonrakiVakit?.second ?: "--:--")
         views.setTextViewText(R.id.tv_countdown, kalanSure)
+        
+        // Dil çevirilerini uygula
+        views.setTextViewText(R.id.tv_app_name, getString("app_name"))
+        views.setTextViewText(R.id.tv_time_to_label, getString("time_to"))
+        
+        // Vakit etiketlerini çevir
+        views.setTextViewText(R.id.tv_imsak_label, vakitIsimleri["Imsak"])
+        views.setTextViewText(R.id.tv_gunes_label, vakitIsimleri["Gunes"])
+        views.setTextViewText(R.id.tv_ogle_label, vakitIsimleri["Ogle"])
+        views.setTextViewText(R.id.tv_ikindi_label, vakitIsimleri["Ikindi"])
+        views.setTextViewText(R.id.tv_aksam_label, vakitIsimleri["Aksam"])
+        views.setTextViewText(R.id.tv_yatsi_label, vakitIsimleri["Yatsi"])
         
         // Tüm vakitleri göster
         views.setTextViewText(R.id.tv_imsak, vakitler["Imsak"] ?: "--:--")
@@ -208,6 +470,9 @@ class LockScreenNotificationService : Service() {
         
         // Aktif vakti vurgula
         highlightActiveVakit(views, sonrakiVakit?.first)
+        
+        // Renkleri uygula
+        applyColors(views)
         
         return views
     }
@@ -219,19 +484,33 @@ class LockScreenNotificationService : Service() {
         kalanSure: String
     ): RemoteViews {
         val views = RemoteViews(packageName, R.layout.notification_lock_full)
+        val vakitIsimleri = getVakitIsimleri()
         
         views.setTextViewText(R.id.tv_location, "📍 $konum")
-        views.setTextViewText(R.id.tv_next_prayer_name, VAKIT_ISIMLERI[sonrakiVakit?.first] ?: "")
+        views.setTextViewText(R.id.tv_next_prayer_name, vakitIsimleri[sonrakiVakit?.first] ?: "")
         views.setTextViewText(R.id.tv_next_prayer_time, sonrakiVakit?.second ?: "--:--")
         
         // "Xs Ydk" formatı (saniye yok - güncelleme her 30sn)
         views.setTextViewText(R.id.tv_countdown, kalanSure)
+        
+        // Dil çevirilerini uygula
+        views.setTextViewText(R.id.tv_app_name, getString("app_name"))
+        views.setTextViewText(R.id.tv_next_prayer_label, getString("next_prayer"))
+        views.setTextViewText(R.id.tv_remaining_label, getString("remaining"))
         
         // Tarihler
         val hicriTarih = HomeWidgetPlugin.getData(this).getString("hicriTarih", "") ?: ""
         val miladiTarih = SimpleDateFormat("dd MMMM yyyy", Locale("tr")).format(Date())
         views.setTextViewText(R.id.tv_hijri_date, hicriTarih)
         views.setTextViewText(R.id.tv_date, miladiTarih)
+        
+        // Vakit etiketlerini çevir
+        views.setTextViewText(R.id.tv_imsak_label, vakitIsimleri["Imsak"])
+        views.setTextViewText(R.id.tv_gunes_label, vakitIsimleri["Gunes"])
+        views.setTextViewText(R.id.tv_ogle_label, vakitIsimleri["Ogle"])
+        views.setTextViewText(R.id.tv_ikindi_label, vakitIsimleri["Ikindi"])
+        views.setTextViewText(R.id.tv_aksam_label, vakitIsimleri["Aksam"])
+        views.setTextViewText(R.id.tv_yatsi_label, vakitIsimleri["Yatsi"])
         
         // Tüm vakitleri göster
         views.setTextViewText(R.id.tv_imsak, vakitler["Imsak"] ?: "--:--")
@@ -243,6 +522,9 @@ class LockScreenNotificationService : Service() {
         
         // Aktif vakti vurgula
         highlightActiveVakit(views, sonrakiVakit?.first)
+        
+        // Renkleri uygula
+        applyColors(views)
         
         return views
     }

@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 🌙 Kilit Ekranı Bildirimi - Kompakt Stil -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/notification_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="12dp">
+    android:padding="12dp"
+    android:background="@android:color/transparent">
 
     <!-- Üst Satır: Başlık ve Konum -->
     <LinearLayout
@@ -20,13 +22,18 @@
             android:contentDescription="@null" />
 
         <TextView
+            android:id="@+id/tv_app_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="6dp"
             android:text="Huzur Vakti"
             android:textSize="13sp"
-            android:textColor="#FFFFFF"
-            android:textStyle="bold" />
+            android:textColor="#212121"
+            android:textStyle="bold"
+            android:shadowColor="#FFFFFF"
+            android:shadowDx="0"
+            android:shadowDy="0"
+            android:shadowRadius="2" />
 
         <FrameLayout
             android:layout_width="0dp"
@@ -39,7 +46,11 @@
             android:layout_height="wrap_content"
             android:text="İstanbul"
             android:textSize="11sp"
-            android:textColor="#80FFFFFF" />
+            android:textColor="#757575"
+            android:shadowColor="#FFFFFF"
+            android:shadowDx="0"
+            android:shadowDy="0"
+            android:shadowRadius="1" />
 
     </LinearLayout>
 
@@ -64,7 +75,11 @@
                 android:layout_height="wrap_content"
                 android:text="Sonraki Vakit"
                 android:textSize="10sp"
-                android:textColor="#80FFFFFF" />
+                android:textColor="#757575"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="1" />
 
             <TextView
                 android:id="@+id/tv_next_prayer_name"
@@ -72,8 +87,12 @@
                 android:layout_height="wrap_content"
                 android:text="İKİNDİ"
                 android:textSize="18sp"
-                android:textColor="#FF7043"
-                android:textStyle="bold" />
+                android:textColor="#E65100"
+                android:textStyle="bold"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="2" />
 
             <TextView
                 android:id="@+id/tv_next_prayer_time"
@@ -81,7 +100,11 @@
                 android:layout_height="wrap_content"
                 android:text="15:52"
                 android:textSize="14sp"
-                android:textColor="#FFFFFF" />
+                android:textColor="#212121"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="2" />
 
         </LinearLayout>
 
@@ -98,11 +121,12 @@
             android:paddingBottom="8dp">
 
             <TextView
+                android:id="@+id/tv_remaining_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Kalan Süre"
                 android:textSize="9sp"
-                android:textColor="#80FFFFFF" />
+                android:textColor="#CCCCCC" />
 
             <TextView
                 android:id="@+id/tv_countdown"

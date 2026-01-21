@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import '../services/tema_service.dart';
+import '../services/language_service.dart';
 
 class TemaAyarlariSayfa extends StatefulWidget {
   const TemaAyarlariSayfa({super.key});
@@ -11,6 +12,7 @@ class TemaAyarlariSayfa extends StatefulWidget {
 class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
     with SingleTickerProviderStateMixin {
   final TemaService _temaService = TemaService();
+  final LanguageService _languageService = LanguageService();
   late TabController _tabController;
 
   // Özel tema için seçilen renkler
@@ -54,7 +56,7 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
       backgroundColor: renkler.arkaPlan,
       appBar: AppBar(
         title: Text(
-          'Tema Ayarları',
+          _languageService['theme_settings'] ?? 'Tema Ayarları',
           style: TextStyle(color: renkler.yaziPrimary),
         ),
         backgroundColor: Colors.transparent,
@@ -65,9 +67,9 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
           indicatorColor: renkler.vurgu,
           labelColor: renkler.vurgu,
           unselectedLabelColor: renkler.yaziSecondary,
-          tabs: const [
-            Tab(text: 'Hazır Temalar', icon: Icon(Icons.palette)),
-            Tab(text: 'Özel Tema', icon: Icon(Icons.color_lens)),
+          tabs: [
+            Tab(text: _languageService['preset_themes'] ?? 'Hazır Temalar', icon: const Icon(Icons.palette)),
+            Tab(text: _languageService['custom_theme'] ?? 'Özel Tema', icon: const Icon(Icons.color_lens)),
           ],
         ),
       ),
@@ -292,7 +294,7 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
             child: Column(
               children: [
                 Text(
-                  'Özel Tema Önizleme',
+                  _languageService['custom_theme_preview'] ?? 'Özel Tema Önizleme',
                   style: TextStyle(
                     color: _ozelVurgu,
                     fontSize: 18,
@@ -311,7 +313,7 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
                       Icon(Icons.access_time, color: _ozelVurgu),
                       const SizedBox(width: 12),
                       Text(
-                        'Örnek Vakit',
+                        _languageService['sample_time'] ?? 'Örnek Vakit',
                         style: TextStyle(
                           color: _ozelYaziPrimary,
                           fontWeight: FontWeight.bold,
@@ -333,7 +335,7 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
 
           // Hazır paletler
           Text(
-            'Hazır Paletler',
+            _languageService['preset_palettes'] ?? 'Hazır Paletler',
             style: TextStyle(
               color: renkler.yaziPrimary,
               fontSize: 16,
@@ -438,7 +440,7 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
 
           // Renk seçiciler
           Text(
-            'Renkleri Özelleştir',
+            _languageService['customize_colors'] ?? 'Renkleri Özelleştir',
             style: TextStyle(
               color: renkler.yaziPrimary,
               fontSize: 16,
@@ -447,24 +449,24 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
           ),
           const SizedBox(height: 16),
 
-          _buildRenkSecici('Arka Plan', _ozelArkaPlan, (color) {
+          _buildRenkSecici(_languageService['background'] ?? 'Arka Plan', _ozelArkaPlan, (color) {
             setState(() {
               _ozelArkaPlan = color;
               _ozelKartArkaPlan = Color.lerp(color, Colors.white, 0.08)!;
             });
           }),
-          _buildRenkSecici('Vurgu Rengi', _ozelVurgu, (color) {
+          _buildRenkSecici(_languageService['accent_color'] ?? 'Vurgu Rengi', _ozelVurgu, (color) {
             setState(() {
               _ozelVurgu = color;
               _ozelVurguSecondary = Color.lerp(color, Colors.white, 0.3)!;
             });
           }),
-          _buildRenkSecici('Yazı Rengi', _ozelYaziPrimary, (color) {
+          _buildRenkSecici(_languageService['text_color'] ?? 'Yazı Rengi', _ozelYaziPrimary, (color) {
             setState(() {
               _ozelYaziPrimary = color;
             });
           }),
-          _buildRenkSecici('Yazı İkincil', _ozelYaziSecondary, (color) {
+          _buildRenkSecici(_languageService['text_secondary'] ?? 'Yazı İkincil', _ozelYaziSecondary, (color) {
             setState(() {
               _ozelYaziSecondary = color;
             });
@@ -488,14 +490,14 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
                 if (mounted) {
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: const Text('Özel tema kaydedildi!'),
+                      content: Text(_languageService['custom_theme_saved'] ?? 'Özel tema kaydedildi!'),
                       backgroundColor: _ozelVurgu,
                     ),
                   );
                 }
               },
               icon: const Icon(Icons.save),
-              label: const Text('Özel Temayı Kaydet ve Uygula'),
+              label: Text(_languageService['save_custom_theme'] ?? 'Özel Temayı Kaydet ve Uygula'),
               style: ElevatedButton.styleFrom(
                 backgroundColor: _ozelVurgu,
                 foregroundColor: Colors.black,
@@ -561,7 +563,7 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
       ),
       child: Row(
         children: [
-          Text('Yazı Tipi', style: TextStyle(color: renkler.yaziPrimary)),
+          Text(_languageService['font_family'] ?? 'Yazı Tipi', style: TextStyle(color: renkler.yaziPrimary)),
           const Spacer(),
           DropdownButtonHideUnderline(
             child: DropdownButton<String>(
@@ -727,7 +729,7 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
                     ),
                   ),
                   Text(
-                    'Renk Seçin',
+                    _languageService['select_color'] ?? 'Renk Seçin',
                     style: TextStyle(
                       color: _temaService.renkler.yaziPrimary,
                       fontSize: 18,

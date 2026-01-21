@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/ozel_gunler_service.dart';
 import '../services/tema_service.dart';
+import '../services/language_service.dart';
 import 'ozel_gun_detay_sayfa.dart';
 
 class OzelGunlerSayfa extends StatefulWidget {
@@ -13,6 +14,7 @@ class OzelGunlerSayfa extends StatefulWidget {
 
 class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
   final TemaService _temaService = TemaService();
+  final LanguageService _languageService = LanguageService();
   List<Map<String, dynamic>> _yaklasanGunler = [];
   bool _yukleniyor = true;
 
@@ -54,7 +56,7 @@ class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
       backgroundColor: renkler.arkaPlan,
       appBar: AppBar(
         title: Text(
-          'Özel Gün ve Geceler',
+          _languageService['special_days_nights'] ?? 'Özel Gün ve Geceler',
           style: TextStyle(color: renkler.yaziPrimary),
         ),
         backgroundColor: Colors.transparent,
@@ -81,7 +83,7 @@ class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
           ),
           const SizedBox(height: 16),
           Text(
-            'Yaklaşan özel gün bulunamadı',
+            _languageService['no_upcoming_special_days'] ?? 'Yaklaşan özel gün bulunamadı',
             style: TextStyle(
               color: renkler.yaziSecondary,
               fontSize: 16,

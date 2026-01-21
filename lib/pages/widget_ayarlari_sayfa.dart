@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/home_widget_service.dart';
+import '../services/language_service.dart';
 
 class WidgetAyarlariSayfa extends StatefulWidget {
   const WidgetAyarlariSayfa({super.key});
@@ -10,6 +11,8 @@ class WidgetAyarlariSayfa extends StatefulWidget {
 }
 
 class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
+  final LanguageService _languageService = LanguageService();
+  
   // Arka plan renkleri
   int _secilenArkaPlanIndex = 0;
 
@@ -179,8 +182,8 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Widget ayarları tüm widgetlara uygulandı'),
+        SnackBar(
+          content: Text(_languageService['settings_applied'] ?? 'Widget ayarları tüm widgetlara uygulandı'),
           backgroundColor: Colors.green,
         ),
       );
@@ -202,8 +205,8 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Widget ayarları varsayılana döndürüldü'),
+        SnackBar(
+          content: Text(_languageService['reset_to_default'] ?? 'Varsayılana döndürüldü'),
           backgroundColor: Colors.orange,
         ),
       );
@@ -217,12 +220,12 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
 
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Widget Ayarları'),
+        title: Text(_languageService['widget_settings_title'] ?? 'Widget Ayarları'),
         actions: [
           IconButton(
             icon: const Icon(Icons.save),
             onPressed: _ayarlariKaydet,
-            tooltip: 'Kaydet',
+            tooltip: _languageService['save'] ?? 'Kaydet',
           ),
         ],
       ),
@@ -236,8 +239,8 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
           // Şeffaf Tema Switch
           Card(
             child: SwitchListTile(
-              title: const Text('Şeffaf Tema'),
-              subtitle: const Text('Arka planı tamamen şeffaf yapar'),
+              title: Text(_languageService['transparent_theme'] ?? 'Şeffaf Tema'),
+              subtitle: Text(_languageService['transparent_theme_description'] ?? 'Arka planı tamamen şeffaf yapar'),
               value: _seffafTema,
               onChanged: (value) {
                 setState(() {
@@ -260,7 +263,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
           // Arka Plan Rengi Seçimi
           if (!_seffafTema) ...[
             Text(
-              'Arka Plan Rengi',
+              _languageService['background_color'] ?? 'Arka Plan Rengi',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -271,7 +274,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
 
             // Şeffaflık Ayarı
             Text(
-              'Şeffaflık: ${(_seffaflik * 100).toInt()}%',
+              '${_languageService['opacity'] ?? 'Şeffaflık'}: ${(_seffaflik * 100).toInt()}%',
               style: theme.textTheme.titleMedium?.copyWith(
                 fontWeight: FontWeight.bold,
               ),
@@ -293,7 +296,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
 
           // Yazı Rengi Seçimi
           Text(
-            'Yazı Rengi',
+            _languageService['text_color'] ?? 'Yazı Rengi',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -304,7 +307,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
 
           // Yazı Tipi Seçimi
           Text(
-            'Yazı Tipi',
+            _languageService['font_style'] ?? 'Yazı Tipi',
             style: theme.textTheme.titleMedium?.copyWith(
               fontWeight: FontWeight.bold,
             ),
@@ -329,7 +332,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      'Bu ayarlar tüm widget türlerine uygulanır. Değişikliklerin görünmesi için widgetları ana ekranınızdan kaldırıp tekrar ekleyin.',
+                      _languageService['widget_info'] ?? 'Bu ayarlar tüm widget türlerine uygulanır. Değişikliklerin görünmesi için widgetları ana ekranınızdan kaldırıp tekrar ekleyin.',
                       style: theme.textTheme.bodySmall,
                     ),
                   ),
@@ -343,7 +346,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
           OutlinedButton.icon(
             onPressed: _varsayilanaGetir,
             icon: const Icon(Icons.restore),
-            label: const Text('Varsayılana Dön'),
+            label: Text(_languageService['reset_to_default'] ?? 'Varsayılana Dön'),
             style: OutlinedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               foregroundColor: Colors.orange,
@@ -356,7 +359,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> {
           ElevatedButton.icon(
             onPressed: _ayarlariKaydet,
             icon: const Icon(Icons.save),
-            label: const Text('Ayarları Kaydet'),
+            label: Text(_languageService['save_settings'] ?? 'Ayarları Kaydet'),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               backgroundColor: theme.colorScheme.primary,

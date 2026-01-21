@@ -5,6 +5,7 @@ import 'package:http/http.dart' as http;
 import '../services/diyanet_api_service.dart';
 import '../services/konum_service.dart';
 import '../services/home_widget_service.dart';
+import '../services/language_service.dart';
 import '../data/il_ilce_data.dart';
 import '../models/konum_model.dart';
 
@@ -23,6 +24,7 @@ class IlIlceSecSayfa extends StatefulWidget {
 }
 
 class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
+  final LanguageService _languageService = LanguageService();
   List<Map<String, dynamic>> iller = [];
   List<Map<String, dynamic>> filtrelenmisIller = [];
   List<Map<String, dynamic>> ilceler = [];
@@ -596,7 +598,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Konum kaydedildi ve güncelleniyor...')),
+          SnackBar(content: Text(_languageService['location_saved'] ?? 'Konum kaydedildi ve güncelleniyor...')),
         );
         // Ana sayfanın güncellemesi için true döndür
         Navigator.pop(context, true);
@@ -611,7 +613,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
       child: Scaffold(
         backgroundColor: const Color(0xFF1B2741),
         appBar: AppBar(
-          title: Text(widget.ilkKurulum ? 'Konum Seçimi' : 'İl/İlçe Seç'),
+          title: Text(widget.ilkKurulum ? _languageService['location_selection'] ?? 'Konum Seçimi' : _languageService['select_city_district'] ?? 'İl/İlçe Seç'),
           backgroundColor: Colors.transparent,
           elevation: 0,
           automaticallyImplyLeading: !widget.ilkKurulum,
@@ -635,8 +637,8 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                 children: [
                   const Icon(Icons.public, color: Colors.cyanAccent, size: 20),
                   const SizedBox(width: 12),
-                  const Text(
-                    'Ülke:',
+                  Text(
+                    _languageService['country'] ?? 'Ülke:',
                     style: TextStyle(color: Colors.white70, fontSize: 14),
                   ),
                   const SizedBox(width: 8),
@@ -874,7 +876,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                   onChanged: _ilAra,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
-                    hintText: 'İl ara...',
+                    hintText: _languageService['search_city'] ?? 'İl ara...',
                     hintStyle: const TextStyle(color: Colors.white54),
                     prefixIcon: const Icon(Icons.search, color: Colors.white54),
                     suffixIcon: _ilAramaController.text.isNotEmpty
@@ -909,9 +911,9 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
             if (secilenIlId == null)
               Expanded(
                 child: filtrelenmisIller.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
-                          'İl bulunamadı',
+                          _languageService['city_not_found'] ?? 'İl bulunamadı',
                           style: TextStyle(color: Colors.white54),
                         ),
                       )
@@ -1008,7 +1010,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                   onChanged: _ilceAra,
                   style: const TextStyle(color: Colors.white),
                   decoration: InputDecoration(
-                    hintText: 'İlçe ara...',
+                    hintText: _languageService['search_district'] ?? 'İlçe ara...',
                     hintStyle: const TextStyle(color: Colors.white54),
                     prefixIcon: const Icon(Icons.search, color: Colors.white54),
                     suffixIcon: _ilceAramaController.text.isNotEmpty
@@ -1042,9 +1044,9 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
               // İlçe Listesi
               Expanded(
                 child: filtrelenmisIlceler.isEmpty
-                    ? const Center(
+                    ? Center(
                         child: Text(
-                          'İlçe bulunamadı',
+                          _languageService['district_not_found'] ?? 'İlçe bulunamadı',
                           style: TextStyle(color: Colors.white54),
                         ),
                       )

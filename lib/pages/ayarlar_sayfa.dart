@@ -46,7 +46,7 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
     return Scaffold(
       backgroundColor: renkler.arkaPlan,
       appBar: AppBar(
-        title: Text(_languageService['settings'], style: TextStyle(color: renkler.yaziPrimary)),
+        title: Text(_languageService['settings'] ?? 'Ayarlar', style: TextStyle(color: renkler.yaziPrimary)),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: renkler.yaziPrimary),
@@ -58,8 +58,8 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
           _ayarSatiri(
             icon: Icons.notifications,
             iconColor: renkler.vurgu,
-            baslik: _languageService['notifications'],
-            altBaslik: _languageService['notification_settings'],
+            baslik: _languageService['notifications'] ?? 'Bildirimler',
+            altBaslik: _languageService['notification_settings'] ?? 'Bildirim ayarları',
             onTap: () {
               Navigator.push(
                 context,
@@ -76,8 +76,8 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
           _ayarSatiri(
             icon: Icons.location_on,
             iconColor: renkler.vurgu,
-            baslik: _languageService['location'],
-            altBaslik: _languageService['select_location'],
+            baslik: _languageService['location'] ?? 'Konum',
+            altBaslik: _languageService['select_location'] ?? 'Konum seç',
             onTap: () {
               Navigator.push(
                 context,
@@ -118,7 +118,7 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
           _ayarSatiri(
             icon: Icons.palette,
             iconColor: renkler.vurgu,
-            baslik: _languageService['theme'],
+            baslik: _languageService['theme'] ?? 'Tema',
             altBaslik: '${renkler.isim} - ${renkler.aciklama}',
             onTap: () {
               Navigator.push(
@@ -151,8 +151,8 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
           _ayarSatiri(
             icon: Icons.widgets,
             iconColor: renkler.vurgu,
-            baslik: _languageService['widget_settings'],
-            altBaslik: _languageService['background_color'],
+            baslik: _languageService['widget_settings'] ?? 'Widget Ayarları',
+            altBaslik: _languageService['background_color'] ?? 'Arka plan rengi',
             onTap: () {
               Navigator.push(
                 context,
@@ -187,8 +187,8 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
           _ayarSatiri(
             icon: Icons.battery_saver,
             iconColor: Colors.green,
-            baslik: 'Pil Optimizasyonu',
-            altBaslik: 'Arka plan işlemleri için izin ver',
+            baslik: _languageService['battery_optimization'] ?? 'Pil Optimizasyonu',
+            altBaslik: _languageService['battery_optimization_desc'] ?? 'Arka plan işlemleri için izin ver',
             onTap: () => _pilOptimizasyonuAc(),
             renkler: renkler,
           ),
@@ -198,8 +198,8 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
           _ayarSatiri(
             icon: Icons.info,
             iconColor: renkler.vurgu,
-            baslik: _languageService['about'],
-            altBaslik: _languageService['about_app'],
+            baslik: _languageService['about'] ?? 'Hakkında',
+            altBaslik: _languageService['about_app'] ?? 'Uygulama hakkında',
             onTap: () {
               Navigator.push(
                 context,
@@ -227,7 +227,7 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
               const Icon(Icons.language, color: Colors.blue),
               const SizedBox(width: 12),
               Text(
-                'Dil Seçin / Select Language',
+                _languageService['select_language'] ?? 'Dil Seçin / Select Language',
                 style: TextStyle(color: renkler.yaziPrimary, fontSize: 18),
               ),
             ],
@@ -261,7 +261,7 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
                   setState(() {});
                   ScaffoldMessenger.of(context).showSnackBar(
                     SnackBar(
-                      content: Text('${lang['flag']} ${lang['name']} seçildi'),
+                      content: Text('${lang['flag']} ${lang['name']} ${_languageService['selected'] ?? 'seçildi'}'),
                       duration: const Duration(seconds: 2),
                     ),
                   );
@@ -272,7 +272,7 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context),
-              child: Text('Kapat', style: TextStyle(color: renkler.vurgu)),
+              child: Text(_languageService['close'] ?? 'Kapat', style: TextStyle(color: renkler.vurgu)),
             ),
           ],
         );
@@ -308,7 +308,7 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Pil ayarları açılamadı: ${e.message}'),
+            content: Text('${_languageService['battery_settings_error'] ?? 'Pil ayarları açılamadı'}: ${e.message}'),
             backgroundColor: Colors.red,
           ),
         );

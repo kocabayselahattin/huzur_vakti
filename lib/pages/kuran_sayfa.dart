@@ -3,6 +3,7 @@ import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/tema_service.dart';
+import '../services/language_service.dart';
 
 class KuranSayfa extends StatefulWidget {
   const KuranSayfa({super.key});
@@ -13,6 +14,7 @@ class KuranSayfa extends StatefulWidget {
 
 class _KuranSayfaState extends State<KuranSayfa> {
   final TemaService _temaService = TemaService();
+  final LanguageService _languageService = LanguageService();
   List<Sure> _sureler = [];
   bool _yukleniyor = true;
 
@@ -38,7 +40,7 @@ class _KuranSayfaState extends State<KuranSayfa> {
       backgroundColor: renkler.arkaPlan,
       appBar: AppBar(
         title: Text(
-          'KUR\'AN-I KERİM',
+          _languageService['quran'] ?? 'KUR\'AN-I KERİM',
           style: TextStyle(
             letterSpacing: 2,
             fontSize: 14,
@@ -988,6 +990,7 @@ class SureDetaySayfa extends StatefulWidget {
 
 class _SureDetaySayfaState extends State<SureDetaySayfa> {
   final TemaService _temaService = TemaService();
+  final LanguageService _languageService = LanguageService();
   List<Ayet> _ayetler = [];
   bool _yukleniyor = true;
   String _hata = '';
@@ -1176,7 +1179,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: renkler.vurgu,
                         ),
-                        child: const Text('Tekrar Dene'),
+                        child: Text(_languageService['try_again'] ?? 'Tekrar Dene'),
                       ),
                     ],
                   ),

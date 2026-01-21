@@ -1,11 +1,13 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 🌙 Kilit Ekranı Bildirimi - Minimal Stil -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/notification_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="horizontal"
     android:padding="12dp"
-    android:gravity="center_vertical">
+    android:gravity="center_vertical"
+    android:background="@android:color/transparent">
 
     <!-- Sol: İkon ve Başlık -->
     <LinearLayout
@@ -33,8 +35,12 @@
                 android:layout_marginStart="6dp"
                 android:text="İKİNDİ"
                 android:textSize="16sp"
-                android:textColor="#FFFFFF"
-                android:textStyle="bold" />
+                android:textColor="#212121"
+                android:textStyle="bold"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="2" />
 
             <TextView
                 android:id="@+id/tv_next_prayer_time"
@@ -43,7 +49,11 @@
                 android:layout_marginStart="8dp"
                 android:text="15:52"
                 android:textSize="14sp"
-                android:textColor="#FF7043" />
+                android:textColor="#E65100"
+                android:shadowColor="#FFFFFF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="2" />
 
         </LinearLayout>
 
@@ -54,7 +64,11 @@
             android:layout_marginTop="2dp"
             android:text="İstanbul"
             android:textSize="10sp"
-            android:textColor="#80FFFFFF" />
+            android:textColor="#757575"
+            android:shadowColor="#FFFFFF"
+            android:shadowDx="0"
+            android:shadowDy="0"
+            android:shadowRadius="1" />
 
     </LinearLayout>
 
@@ -65,7 +79,11 @@
         android:layout_height="wrap_content"
         android:text="2:34"
         android:textSize="28sp"
-        android:textColor="#FF7043"
-        android:textStyle="bold" />
+        android:textColor="#E65100"
+        android:textStyle="bold"
+        android:shadowColor="#FFFFFF"
+        android:shadowDx="0"
+        android:shadowDy="0"
+        android:shadowRadius="3" />
 
 </LinearLayout>

@@ -5,6 +5,7 @@ import 'package:file_picker/file_picker.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import '../services/dnd_service.dart';
 import '../services/scheduled_notification_service.dart';
+import '../services/language_service.dart';
 
 class BildirimAyarlariSayfa extends StatefulWidget {
   const BildirimAyarlariSayfa({super.key});
@@ -15,6 +16,7 @@ class BildirimAyarlariSayfa extends StatefulWidget {
 
 class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
   final AudioPlayer _audioPlayer = AudioPlayer();
+  final LanguageService _languageService = LanguageService();
 
   // Bildirim açık/kapalı durumları
   Map<String, bool> _bildirimAcik = {
@@ -145,18 +147,18 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
           final shouldRequest = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
-              title: const Text('Bildirim İzni Gerekli'),
-              content: const Text(
-                'Vakit bildirimleri için bildirim izni vermeniz gerekiyor.',
+              title: Text(_languageService['notification_permission_required'] ?? 'Bildirim İzni Gerekli'),
+              content: Text(
+                _languageService['notification_permission_message'] ?? 'Vakit bildirimleri için bildirim izni vermeniz gerekiyor.',
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Vazgeç'),
+                  child: Text(_languageService['give_up'] ?? 'Vazgeç'),
                 ),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context, true),
-                  child: const Text('İzin Ver'),
+                  child: Text(_languageService['allow'] ?? 'İzin Ver'),
                 ),
               ],
             ),
@@ -167,9 +169,9 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
             if (granted != true) {
               if (mounted) {
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(
+                  SnackBar(
                     content: Text(
-                      'Bildirim izni verilmedi. Bildirimler çalışmayacak.',
+                      _languageService['notification_permission_denied'] ?? 'Bildirim izni verilmedi. Bildirimler çalışmayacak.',
                     ),
                     backgroundColor: Colors.red,
                   ),
@@ -191,18 +193,18 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
           final shouldRequest = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
-              title: const Text('Tam Zamanlı Alarm İzni Gerekli'),
-              content: const Text(
-                'Vakit bildirimlerinin tam zamanında çalması için alarm izni vermeniz gerekiyor.',
+              title: Text(_languageService['exact_alarm_permission_required'] ?? 'Tam Zamanlı Alarm İzni Gerekli'),
+              content: Text(
+                _languageService['exact_alarm_permission_message'] ?? 'Vakit bildirimlerinin tam zamanında çalması için alarm izni vermeniz gerekiyor.',
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text('Vazgeç'),
+                  child: Text(_languageService['give_up'] ?? 'Vazgeç'),
                 ),
                 ElevatedButton(
                   onPressed: () => Navigator.pop(context, true),
-                  child: const Text('İzin Ver'),
+                  child: Text(_languageService['allow'] ?? 'İzin Ver'),
                 ),
               ],
             ),
@@ -244,8 +246,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Bildirim ayarları kaydedildi'),
+        SnackBar(
+          content: Text(_languageService['notification_settings_saved'] ?? 'Bildirim ayarları kaydedildi'),
           backgroundColor: Colors.green,
         ),
       );
@@ -271,8 +273,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       final scheduled = await DndService.schedulePrayerDnd();
       if (!scheduled && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(
-            content: Text('Sessize alma planlanamadı. Konum seçimi gerekli.'),
+          SnackBar(
+            content: Text(_languageService['dnd_scheduling_failed'] ?? 'Sessize alma planlanamadı. Konum seçimi gerekli.'),
             backgroundColor: Colors.orange,
           ),
         );
@@ -320,9 +322,9 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     final devam = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text('Özel Ses Seçimi'),
-        content: const Text(
-          'Önemli: Ses dosyanızın adı rakamla başlamamalıdır.\n\n'
+        title: Text(_languageService['custom_sound_title'] ?? 'Özel Ses Seçimi'),
+        content: Text(
+          _languageService['custom_sound_warning'] ?? 'Önemli: Ses dosyanızın adı rakamla başlamamalıdır.\n\n'
           'Android sisteminde ses dosyası isimleri harfle başlamalıdır.\n\n'
           'Örnek:\n'
           '✓ vakit_sesi.mp3\n'
@@ -333,11 +335,11 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context, false),
-            child: const Text('İptal'),
+            child: Text(_languageService['cancel'] ?? 'İptal'),
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: const Text('Anladım, Devam Et'),
+            child: Text(_languageService['understood'] ?? 'Anladım, Devam Et'),
           ),
         ],
       ),
@@ -362,8 +364,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text('Özel ses seçildi'),
+            SnackBar(
+              content: Text(_languageService['custom_sound_selected'] ?? 'Özel ses seçildi'),
               backgroundColor: Colors.green,
             ),
           );
@@ -401,20 +403,20 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       builder: (context) {
         return AlertDialog(
           backgroundColor: const Color(0xFF2B3151),
-          title: const Text(
-            'Sessize Alma İzni',
-            style: TextStyle(color: Colors.white),
+          title: Text(
+            _languageService['dnd_permission_title'] ?? 'Sessize Alma İzni',
+            style: const TextStyle(color: Colors.white),
           ),
-          content: const Text(
-            'Vakitlerde sessize almak için sistem izni gerekiyor. İzin vermek ister misiniz?',
-            style: TextStyle(color: Colors.white70),
+          content: Text(
+            _languageService['dnd_permission_message'] ?? 'Vakitlerde sessize almak için sistem izni gerekiyor. İzin vermek ister misiniz?',
+            style: const TextStyle(color: Colors.white70),
           ),
           actions: [
             TextButton(
               onPressed: () => Navigator.pop(context, false),
-              child: const Text(
-                'Vazgeç',
-                style: TextStyle(color: Colors.white70),
+              child: Text(
+                _languageService['give_up'] ?? 'Vazgeç',
+                style: const TextStyle(color: Colors.white70),
               ),
             ),
             ElevatedButton(
@@ -422,9 +424,9 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: Colors.orangeAccent,
               ),
-              child: const Text(
-                'İzin Ver',
-                style: TextStyle(color: Colors.black),
+              child: Text(
+                _languageService['allow'] ?? 'İzin Ver',
+                style: const TextStyle(color: Colors.black),
               ),
             ),
           ],
@@ -442,20 +444,20 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
             context: context,
             builder: (context) => AlertDialog(
               backgroundColor: const Color(0xFF2B3151),
-              title: const Text(
-                'Değişiklikleri Kaydet?',
-                style: TextStyle(color: Colors.white),
+              title: Text(
+                _languageService['save_changes_title'] ?? 'Değişiklikleri Kaydet?',
+                style: const TextStyle(color: Colors.white),
               ),
-              content: const Text(
-                'Yaptığınız değişiklikler kaydedilsin mi?',
-                style: TextStyle(color: Colors.white70),
+              content: Text(
+                _languageService['save_changes_message'] ?? 'Yaptığınız değişiklikler kaydedilsin mi?',
+                style: const TextStyle(color: Colors.white70),
               ),
               actions: [
                 TextButton(
                   onPressed: () => Navigator.pop(context, false),
-                  child: const Text(
-                    'Kaydetme',
-                    style: TextStyle(color: Colors.white70),
+                  child: Text(
+                    _languageService['dont_save'] ?? 'Kaydetme',
+                    style: const TextStyle(color: Colors.white70),
                   ),
                 ),
                 ElevatedButton(
@@ -463,9 +465,9 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                   style: ElevatedButton.styleFrom(
                     backgroundColor: Colors.cyanAccent,
                   ),
-                  child: const Text(
-                    'Kaydet',
-                    style: TextStyle(color: Colors.black),
+                  child: Text(
+                    _languageService['save'] ?? 'Kaydet',
+                    style: const TextStyle(color: Colors.black),
                   ),
                 ),
               ],
@@ -481,14 +483,14 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       child: Scaffold(
         backgroundColor: const Color(0xFF1B2741),
         appBar: AppBar(
-          title: const Text('Bildirim Ayarları'),
+          title: Text(_languageService['notification_settings_title'] ?? 'Bildirim Ayarları'),
           backgroundColor: Colors.transparent,
           elevation: 0,
           actions: [
             IconButton(
               icon: const Icon(Icons.save),
               onPressed: _ayarlariKaydet,
-              tooltip: 'Kaydet',
+              tooltip: _languageService['save'] ?? 'Kaydet',
             ),
           ],
         ),
@@ -504,16 +506,16 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.cyanAccent.withOpacity(0.3)),
               ),
-              child: const Column(
+              child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Row(
                     children: [
-                      Icon(Icons.info_outline, color: Colors.cyanAccent),
-                      SizedBox(width: 12),
+                      const Icon(Icons.info_outline, color: Colors.cyanAccent),
+                      const SizedBox(width: 12),
                       Text(
-                        'Bildirim ve Alarm Sistemi',
-                        style: TextStyle(
+                        _languageService['notification_alarm_system'] ?? 'Bildirim ve Alarm Sistemi',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
                           fontSize: 14,
@@ -521,14 +523,14 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                       ),
                     ],
                   ),
-                  SizedBox(height: 12),
+                  const SizedBox(height: 12),
                   Text(
-                    '• Her vakit için bildirimi açıp kapatabilirsiniz\n'
+                    _languageService['notification_info_text'] ?? '• Her vakit için bildirimi açıp kapatabilirsiniz\n'
                     '• "Vaktinde Hatırlat" ile sesli alarm kurabilirsiniz\n'
                     '• Erken hatırlatma ile vakitten önce uyarı alabilirsiniz\n'
                     '• Alarmlar 7 gün önceden otomatik zamanlanır\n'
                     '• Uygulama arka planda alarmları günceller',
-                    style: TextStyle(color: Colors.white70, fontSize: 13),
+                    style: const TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                 ],
               ),
@@ -549,10 +551,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                     children: [
                       const Icon(Icons.volume_off, color: Colors.orangeAccent),
                       const SizedBox(width: 12),
-                      const Expanded(
+                      Expanded(
                         child: Text(
-                          'Vakitlerde sessize al',
-                          style: TextStyle(
+                          _languageService['mute_during_prayer'] ?? 'Vakitlerde sessize al',
+                          style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,
                             fontWeight: FontWeight.w500,
@@ -572,11 +574,11 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                     ],
                   ),
                   const SizedBox(height: 6),
-                  const Padding(
-                    padding: EdgeInsets.only(left: 36, right: 12, bottom: 6),
+                  Padding(
+                    padding: const EdgeInsets.only(left: 36, right: 12, bottom: 6),
                     child: Text(
-                      'Öğle, ikindi, akşam ve yatsı vakitlerinde 30 dk sessize alınır. Cuma günü 60 dk uygulanır.',
-                      style: TextStyle(color: Colors.white54, fontSize: 12),
+                      _languageService['mute_during_prayer_desc'] ?? 'Öğle, ikindi, akşam ve yatsı vakitlerinde 30 dk sessize alınır. Cuma günü 60 dk uygulanır.',
+                      style: const TextStyle(color: Colors.white54, fontSize: 12),
                     ),
                   ),
                 ],
@@ -597,7 +599,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                       });
                     },
                     icon: const Icon(Icons.notifications_active),
-                    label: const Text('Tümünü Aç'),
+                    label: Text(_languageService['enable_all_notifications'] ?? 'Tümünü Aç'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.cyanAccent,
                       side: const BorderSide(color: Colors.cyanAccent),
@@ -617,7 +619,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                       });
                     },
                     icon: const Icon(Icons.notifications_off),
-                    label: const Text('Tümünü Kapat'),
+                    label: Text(_languageService['disable_all_notifications'] ?? 'Tümünü Kapat'),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.orange,
                       side: const BorderSide(color: Colors.orange),
@@ -632,40 +634,40 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
 
             // Vakit bildirimleri
             _vakitBildirimKarti(
-              'İmsak',
+              _languageService['imsak'] ?? 'İmsak',
               'imsak',
               Icons.nightlight_round,
-              'Sahur için uyanma vakti',
+              _languageService['imsak_desc'] ?? 'Sahur için uyanma vakti',
             ),
             _vakitBildirimKarti(
-              'Güneş',
+              _languageService['gunes'] ?? 'Güneş',
               'gunes',
               Icons.wb_sunny,
-              'Güneşin doğuş vakti',
+              _languageService['gunes_desc'] ?? 'Güneşin doğuş vakti',
             ),
             _vakitBildirimKarti(
-              'Öğle',
+              _languageService['ogle'] ?? 'Öğle',
               'ogle',
               Icons.light_mode,
-              'Öğle namazı vakti',
+              _languageService['ogle_desc'] ?? 'Öğle namazı vakti',
             ),
             _vakitBildirimKarti(
-              'İkindi',
+              _languageService['ikindi'] ?? 'İkindi',
               'ikindi',
               Icons.brightness_6,
-              'İkindi namazı vakti',
+              _languageService['ikindi_desc'] ?? 'İkindi namazı vakti',
             ),
             _vakitBildirimKarti(
-              'Akşam',
+              _languageService['aksam'] ?? 'Akşam',
               'aksam',
               Icons.wb_twilight,
-              'Akşam namazı ve iftar vakti',
+              _languageService['aksam_desc'] ?? 'Akşam namazı ve iftar vakti',
             ),
             _vakitBildirimKarti(
-              'Yatsı',
+              _languageService['yatsi'] ?? 'Yatsı',
               'yatsi',
               Icons.nights_stay,
-              'Yatsı namazı vakti',
+              _languageService['yatsi_desc'] ?? 'Yatsı namazı vakti',
             ),
 
             const SizedBox(height: 24),
@@ -774,7 +776,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                'Vaktinde Hatırlat',
+                                _languageService['notify_at_prayer'] ?? 'Vaktinde Hatırlat',
                                 style: TextStyle(
                                   color: alarmAcik ? Colors.orangeAccent : Colors.white,
                                   fontSize: 15,
@@ -783,8 +785,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                               ),
                               Text(
                                 alarmAcik
-                                    ? 'Kilit ekranında bile sesli uyarı alacaksınız'
-                                    : 'Açık olunca kilit ekranında alarm çalar',
+                                    ? _languageService['alarm_enabled_desc'] ?? 'Kilit ekranında bile sesli uyarı alacaksınız'
+                                    : _languageService['alarm_disabled_desc'] ?? 'Açık olunca kilit ekranında alarm çalar',
                                 style: const TextStyle(
                                   color: Colors.white54,
                                   fontSize: 11,
@@ -811,9 +813,9 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                     children: [
                       const Icon(Icons.timer, color: Colors.white54, size: 18),
                       const SizedBox(width: 8),
-                      const Text(
-                        'Erken hatırlatma:',
-                        style: TextStyle(color: Colors.white54, fontSize: 13),
+                      Text(
+                        _languageService['early_reminder'] ?? 'Erken hatırlatma:',
+                        style: const TextStyle(color: Colors.white54, fontSize: 13),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -839,11 +841,11 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                               items: _erkenSureler.map((dakika) {
                                 String label;
                                 if (dakika == 0) {
-                                  label = 'Yok';
+                                  label = _languageService['none'] ?? 'Yok';
                                 } else if (dakika < 60) {
-                                  label = '$dakika dk önce';
+                                  label = '$dakika ${_languageService['minutes_before'] ?? 'dk önce'}';
                                 } else {
-                                  label = '${dakika ~/ 60} saat önce';
+                                  label = '${dakika ~/ 60} ${_languageService['hours_before'] ?? 'saat önce'}';
                                 }
                                 return DropdownMenuItem(
                                   value: dakika,
@@ -873,9 +875,9 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                         size: 18,
                       ),
                       const SizedBox(width: 8),
-                      const Text(
-                        'Bildirim sesi:',
-                        style: TextStyle(color: Colors.white54, fontSize: 13),
+                      Text(
+                        _languageService['notification_sound'] ?? 'Bildirim sesi:',
+                        style: const TextStyle(color: Colors.white54, fontSize: 13),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -935,7 +937,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                           color: Colors.cyanAccent,
                           size: 28,
                         ),
-                        tooltip: 'Sesi dinle',
+                        tooltip: _languageService['listen_sound'] ?? 'Sesi dinle',
                       ),
                     ],
                   ),
@@ -949,7 +951,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                           const SizedBox(width: 34),
                           Expanded(
                             child: Text(
-                              'Özel: ${_ozelSesDosyalari[key]!.split('/').last.split('\\').last}',
+                              '${_languageService['custom'] ?? 'Özel'}: ${_ozelSesDosyalari[key]!.split('/').last.split('\\').last}',
                               style: const TextStyle(
                                 color: Colors.white38,
                                 fontSize: 11,

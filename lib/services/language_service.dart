@@ -51,9 +51,9 @@ class LanguageService extends ChangeNotifier {
     await load(languageCode);
   }
 
-  String translate(String key) {
-    return _localizedStrings[key] ?? key;
+  String? translate(String key) {
+    return _localizedStrings[key] as String?;
   }
 
-  String operator [](String key) => translate(key);
+  String? operator [](String key) => translate(key);
 }

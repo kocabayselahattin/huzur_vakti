@@ -47,7 +47,7 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
             iconTheme: const IconThemeData(color: Colors.white),
             flexibleSpace: FlexibleSpaceBar(
               title: Text(
-                _languageService['about'],
+                _languageService['about'] ?? 'Hakkında',
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
@@ -92,8 +92,8 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
 
                   // Açıklama
                   _baslikVeMetin(
-                    _languageService['what_is_huzur_vakti'],
-                    _languageService['about_desc'],
+                    _languageService['what_is_huzur_vakti'] ?? 'Huzur Vakti Nedir?',
+                    _languageService['about_desc'] ?? 'Huzur Vakti, namaz vakitlerini takip etmenizi sağlayan bir uygulamadır.',
                     renkler,
                   ),
                   const SizedBox(height: 24),
@@ -361,7 +361,7 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          _languageService['features'],
+          _languageService['features'] ?? 'Özellikler',
           style: TextStyle(
             color: renkler.yaziPrimary,
             fontSize: 20,

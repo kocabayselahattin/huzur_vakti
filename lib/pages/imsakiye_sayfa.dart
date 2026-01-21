@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import '../services/konum_service.dart';
 import '../services/diyanet_api_service.dart';
+import '../services/language_service.dart';
 import 'il_ilce_sec_sayfa.dart';
 
 class ImsakiyeSayfa extends StatefulWidget {
@@ -12,6 +13,8 @@ class ImsakiyeSayfa extends StatefulWidget {
 }
 
 class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
+  final LanguageService _languageService = LanguageService();
+  
   String? secilenIl;
   String? secilenIlce;
   String? secilenIlceId;
@@ -79,7 +82,7 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
     return Scaffold(
       backgroundColor: const Color(0xFF1B2741),
       appBar: AppBar(
-        title: const Text('İmsakiye'),
+        title: Text(_languageService['imsakiye_title'] ?? 'İmsakiye'),
         backgroundColor: Colors.transparent,
         elevation: 0,
       ),
@@ -124,19 +127,19 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
         children: [
           const Icon(Icons.location_off, size: 80, color: Colors.white38),
           const SizedBox(height: 20),
-          const Text(
-            'Konum Seçilmedi',
-            style: TextStyle(
+          Text(
+            _languageService['location_not_selected'] ?? 'Konum Seçilmedi',
+            style: const TextStyle(
               color: Colors.white,
               fontSize: 20,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 10),
-          const Text(
-            'Vakitleri görmek için önce\nil ve ilçe seçmeniz gerekiyor',
+          Text(
+            _languageService['select_city_first'] ?? 'Vakitleri görmek için önce\nil ve ilçe seçmeniz gerekiyor',
             textAlign: TextAlign.center,
-            style: TextStyle(color: Colors.white70, fontSize: 14),
+            style: const TextStyle(color: Colors.white70, fontSize: 14),
           ),
           const SizedBox(height: 30),
           ElevatedButton.icon(
@@ -150,7 +153,7 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
               }
             },
             icon: const Icon(Icons.location_city),
-            label: const Text('İl/İlçe Seç'),
+            label: Text(_languageService['select_city_district'] ?? 'İl/İlçe Seç'),
             style: ElevatedButton.styleFrom(
               backgroundColor: Colors.cyanAccent,
               foregroundColor: Colors.black,
@@ -264,6 +267,7 @@ class ExpansibleTile extends StatefulWidget {
 
 class _ExpansibleTileState extends State<ExpansibleTile> {
   bool expanded = false;
+  final LanguageService _languageService = LanguageService();
 
   @override
   void initState() {
@@ -309,12 +313,12 @@ class _ExpansibleTileState extends State<ExpansibleTile> {
               children: [
                 const Divider(color: Colors.white24),
                 const SizedBox(height: 8),
-                _vakitRow('İmsak', widget.imsak, Icons.nightlight_round),
-                _vakitRow('Güneş', widget.gunes, Icons.wb_sunny),
-                _vakitRow('Öğle', widget.ogle, Icons.light_mode),
-                _vakitRow('İkindi', widget.ikindi, Icons.brightness_6),
-                _vakitRow('Akşam', widget.aksam, Icons.wb_twilight),
-                _vakitRow('Yatsı', widget.yatsi, Icons.nights_stay),
+                _vakitRow(_languageService['imsak'] ?? 'İmsak', widget.imsak, Icons.nightlight_round),
+                _vakitRow(_languageService['gunes'] ?? 'Güneş', widget.gunes, Icons.wb_sunny),
+                _vakitRow(_languageService['ogle'] ?? 'Öğle', widget.ogle, Icons.light_mode),
+                _vakitRow(_languageService['ikindi'] ?? 'İkindi', widget.ikindi, Icons.brightness_6),
+                _vakitRow(_languageService['aksam'] ?? 'Akşam', widget.aksam, Icons.wb_twilight),
+                _vakitRow(_languageService['yatsi'] ?? 'Yatsı', widget.yatsi, Icons.nights_stay),
               ],
             ),
           ),

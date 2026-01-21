@@ -1,10 +1,12 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- 🌙 Kilit Ekranı Bildirimi - Tam Vakit Stili (Genişletilmiş) -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:id="@+id/notification_root"
     android:layout_width="match_parent"
     android:layout_height="wrap_content"
     android:orientation="vertical"
-    android:padding="12dp">
+    android:padding="12dp"
+    android:background="@android:color/transparent">
 
     <!-- Üst Satır: Başlık, Tarih ve Konum -->
     <LinearLayout
@@ -20,13 +22,18 @@
             android:contentDescription="@null" />
 
         <TextView
+            android:id="@+id/tv_app_name"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:layout_marginStart="6dp"
             android:text="Huzur Vakti"
             android:textSize="12sp"
-            android:textColor="#FFFFFF"
-            android:textStyle="bold" />
+            android:textColor="#212121"
+            android:textStyle="bold"
+            android:shadowColor="#FFFFFF"
+            android:shadowDx="0"
+            android:shadowDy="0"
+            android:shadowRadius="2" />
 
         <FrameLayout
             android:layout_width="0dp"
@@ -39,7 +46,11 @@
             android:layout_height="wrap_content"
             android:text="28 Recep 1447"
             android:textSize="10sp"
-            android:textColor="#FF7043" />
+            android:textColor="#E65100"
+            android:shadowColor="#FFFFFF"
+            android:shadowDx="0"
+            android:shadowDy="0"
+            android:shadowRadius="1" />
 
     </LinearLayout>
 
@@ -56,7 +67,11 @@
             android:layout_height="wrap_content"
             android:text="📍 İstanbul"
             android:textSize="10sp"
-            android:textColor="#80FFFFFF" />
+            android:textColor="#757575"
+            android:shadowColor="#FFFFFF"
+            android:shadowDx="0"
+            android:shadowDy="0"
+            android:shadowRadius="1" />
 
         <FrameLayout
             android:layout_width="0dp"
@@ -69,7 +84,11 @@
             android:layout_height="wrap_content"
             android:text="21 Ocak 2026"
             android:textSize="10sp"
-            android:textColor="#80FFFFFF" />
+            android:textColor="#757575"
+            android:shadowColor="#FFFFFF"
+            android:shadowDx="0"
+            android:shadowDy="0"
+            android:shadowRadius="1" />
 
     </LinearLayout>
 
@@ -90,11 +109,12 @@
             android:orientation="vertical">
 
             <TextView
+                android:id="@+id/tv_next_prayer_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Sonraki Vakit"
                 android:textSize="10sp"
-                android:textColor="#80FFFFFF" />
+                android:textColor="#CCCCCC" />
 
             <LinearLayout
                 android:layout_width="wrap_content"
@@ -132,11 +152,12 @@
             android:gravity="end">
 
             <TextView
+                android:id="@+id/tv_remaining_label"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Kalan"
                 android:textSize="9sp"
-                android:textColor="#80FFFFFF" />
+                android:textColor="#CCCCCC" />
 
             <TextView
                 android:id="@+id/tv_countdown"
@@ -182,13 +203,14 @@
                     android:textSize="12sp" />
 
                 <TextView
+                    android:id="@+id/tv_imsak_label"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
                     android:text="İmsak"
                     android:textSize="11sp"
-                    android:textColor="#AAAAAA" />
+                    android:textColor="#CCCCCC" />
 
                 <TextView
                     android:id="@+id/tv_imsak"
@@ -217,13 +239,14 @@
                     android:textSize="12sp" />
 
                 <TextView
+                    android:id="@+id/tv_gunes_label"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
                     android:text="Güneş"
                     android:textSize="11sp"
-                    android:textColor="#AAAAAA" />
+                    android:textColor="#CCCCCC" />
 
                 <TextView
                     android:id="@+id/tv_gunes"
@@ -252,13 +275,14 @@
                     android:textSize="12sp" />
 
                 <TextView
+                    android:id="@+id/tv_ogle_label"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
                     android:text="Öğle"
                     android:textSize="11sp"
-                    android:textColor="#AAAAAA" />
+                    android:textColor="#CCCCCC" />
 
                 <TextView
                     android:id="@+id/tv_ogle"
@@ -296,13 +320,14 @@
                     android:textSize="12sp" />
 
                 <TextView
+                    android:id="@+id/tv_ikindi_label"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
                     android:text="İkindi"
                     android:textSize="11sp"
-                    android:textColor="#AAAAAA" />
+                    android:textColor="#CCCCCC" />
 
                 <TextView
                     android:id="@+id/tv_ikindi"
@@ -331,13 +356,14 @@
                     android:textSize="12sp" />
 
                 <TextView
+                    android:id="@+id/tv_aksam_label"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
                     android:text="Akşam"
                     android:textSize="11sp"
-                    android:textColor="#AAAAAA" />
+                    android:textColor="#CCCCCC" />
 
                 <TextView
                     android:id="@+id/tv_aksam"
@@ -366,13 +392,14 @@
                     android:textSize="12sp" />
 
                 <TextView
+                    android:id="@+id/tv_yatsi_label"
                     android:layout_width="0dp"
                     android:layout_height="wrap_content"
                     android:layout_weight="1"
                     android:layout_marginStart="6dp"
                     android:text="Yatsı"
                     android:textSize="11sp"
-                    android:textColor="#AAAAAA" />
+                    android:textColor="#CCCCCC" />
 
                 <TextView
                     android:id="@+id/tv_yatsi"
