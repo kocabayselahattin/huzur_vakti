@@ -498,53 +498,37 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
             // Bilgilendirme kartı
             Container(
               padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.only(bottom: 16),
+              margin: const EdgeInsets.only(bottom: 24),
               decoration: BoxDecoration(
                 color: Colors.cyanAccent.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
                 border: Border.all(color: Colors.cyanAccent.withOpacity(0.3)),
               ),
-              child: const Row(
-                children: [
-                  Icon(Icons.info_outline, color: Colors.cyanAccent),
-                  SizedBox(width: 12),
-                  Expanded(
-                    child: Text(
-                      'Her vakit için bildirimi açıp kapatabilir ve erken hatırlatma süresi belirleyebilirsiniz.',
-                      style: TextStyle(color: Colors.white70, fontSize: 13),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-
-            // Bilgilendirme
-            Container(
-              padding: const EdgeInsets.all(12),
-              margin: const EdgeInsets.only(bottom: 24),
-              decoration: BoxDecoration(
-                color: Colors.blue.withOpacity(0.1),
-                borderRadius: BorderRadius.circular(8),
-                border: Border.all(color: Colors.blue.withOpacity(0.3)),
-              ),
               child: const Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Text(
-                    '📱 Nasıl Çalışır?',
-                    style: TextStyle(
-                      color: Colors.white,
-                      fontWeight: FontWeight.bold,
-                      fontSize: 13,
-                    ),
+                  Row(
+                    children: [
+                      Icon(Icons.info_outline, color: Colors.cyanAccent),
+                      SizedBox(width: 12),
+                      Text(
+                        'Bildirim ve Alarm Sistemi',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
+                      ),
+                    ],
                   ),
-                  SizedBox(height: 8),
+                  SizedBox(height: 12),
                   Text(
-                    '• Vakit girdiğinde her zaman bildirim alırsınız\n'
-                    '• "Vaktinde Hatırlat" açıksa kilit ekranında sesli alarm çalar\n'
-                    '• Alarmı ses/güç tuşuyla susturabilirsiniz\n'
-                    '• Erken hatırlatma ile vakitten önce de uyarı alabilirsiniz',
-                    style: TextStyle(color: Colors.white70, fontSize: 12),
+                    '• Her vakit için bildirimi açıp kapatabilirsiniz\n'
+                    '• "Vaktinde Hatırlat" ile sesli alarm kurabilirsiniz\n'
+                    '• Erken hatırlatma ile vakitten önce uyarı alabilirsiniz\n'
+                    '• Alarmlar 7 gün önceden otomatik zamanlanır\n'
+                    '• Uygulama arka planda alarmları günceller',
+                    style: TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                 ],
               ),

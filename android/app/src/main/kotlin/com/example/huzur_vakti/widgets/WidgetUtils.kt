@@ -112,14 +112,17 @@ object WidgetUtils {
             mevcutVakitCal = vakitCalendars.find { it.first == mevcutVakit }?.second ?: now
         }
         
-        // Geri sayım hesapla (saniye dahil - Flutter ile senkron)
+        // Geri sayım hesapla (saniye YOK - widget'lar her 30sn güncellenir)
         val kalanMs = sonrakiVakitCal.timeInMillis - now.timeInMillis
         val kalanSaat = (kalanMs / (1000 * 60 * 60)).toInt()
         val kalanDakika = ((kalanMs / (1000 * 60)) % 60).toInt()
-        val kalanSaniye = ((kalanMs / 1000) % 60).toInt()
         
-        // HH:mm:ss formatı (Flutter ile aynı)
-        val geriSayim = String.format("%02d:%02d:%02d", kalanSaat, kalanDakika, kalanSaniye)
+        // "Xs Ydk" formatı (saniye yok - widget güncelleme sıklığına uygun)
+        val geriSayim = if (kalanSaat > 0) {
+            "${kalanSaat}s ${kalanDakika}dk"
+        } else {
+            "${kalanDakika} dk"
+        }
         
         // İlerleme hesapla
         val toplamMs = sonrakiVakitCal.timeInMillis - mevcutVakitCal.timeInMillis

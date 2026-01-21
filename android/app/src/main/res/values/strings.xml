@@ -2,21 +2,36 @@
 <resources>
     <string name="app_name">Huzur Vakti</string>
     
-    <!-- Yeni Widget Names -->
+    <!-- Widget Names - Widget Picker'da Görünür -->
     <string name="widget_klasik_turuncu_name">Klasik Namaz Vakti</string>
     <string name="widget_klasik_desc">Büyük geri sayım ve tüm vakitler</string>
     
     <string name="widget_mini_sunset_name">Mini Sunset</string>
     <string name="widget_mini_desc">Sonraki iki vakit gösterimi</string>
     
+    <string name="widget_glassmorphism_name">Cam Efekt Widget</string>
     <string name="widget_glassmorphism_description">Buzlu cam efekti ile şık tasarım - Ecir barı ile ilerleme</string>
+    
+    <string name="widget_neon_name">Neon Glow Widget</string>
     <string name="widget_neon_glow_description">Parlayan neon efektli modern tasarım - Ecir barı ile ilerleme</string>
+    
     <string name="widget_gradient_card_description">Aurora Gece Gökyüzü - Kuzey ışıkları efekti</string>
+    
+    <string name="widget_timeline_name">Timeline Widget</string>
     <string name="widget_timeline_description">Kompakt timeline görünümü - Tüm vakitler tek bakışta</string>
+    
+    <string name="widget_circular_name">Dairesel İlerleme</string>
     <string name="widget_circular_progress_description">Dairesel ecir göstergesi - Modern minimalist tasarım</string>
+    
+    <string name="widget_zen_name">Zen Minimalist</string>
     <string name="widget_zen_description">Minimalist Zen tasarımı - Sade ve huzur verici</string>
+    
+    <string name="widget_cosmic_name">Kozmik Galaksi</string>
     <string name="widget_cosmic_description">Kozmik galaksi tasarımı - Yıldızlar ve nebula efekti</string>
+    
+    <string name="widget_origami_name">Origami Kağıt</string>
     <string name="widget_origami_description">Origami kağıt sanatı - Zarif Japon estetiği</string>
+    
     <string name="widget_retro_description">Retro Dijital LCD - Nostaljik yeşil terminal görünümü</string>
     
     <!-- Vakit Names -->

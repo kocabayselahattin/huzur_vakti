@@ -101,7 +101,7 @@
         <receiver 
             android:name=".widgets.GlassmorphismWidget"
             android:exported="true"
-            android:label="Glassmorphism">
+            android:label="@string/widget_glassmorphism_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
@@ -115,7 +115,7 @@
         <receiver 
             android:name=".widgets.NeonGlowWidget"
             android:exported="true"
-            android:label="Neon Glow">
+            android:label="@string/widget_neon_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
@@ -129,7 +129,7 @@
         <receiver 
             android:name=".widgets.CosmicWidget"
             android:exported="true"
-            android:label="Cosmic Galaxy">
+            android:label="@string/widget_cosmic_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
@@ -143,7 +143,7 @@
         <receiver 
             android:name=".widgets.TimelineWidget"
             android:exported="true"
-            android:label="Timeline">
+            android:label="@string/widget_timeline_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
@@ -157,7 +157,7 @@
         <receiver 
             android:name=".widgets.CircularProgressWidget"
             android:exported="true"
-            android:label="Circular Progress">
+            android:label="@string/widget_circular_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
@@ -171,7 +171,7 @@
         <receiver 
             android:name=".widgets.ZenWidget"
             android:exported="true"
-            android:label="Zen Minimalist">
+            android:label="@string/widget_zen_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
@@ -185,7 +185,7 @@
         <receiver 
             android:name=".widgets.OrigamiWidget"
             android:exported="true"
-            android:label="Origami Paper">
+            android:label="@string/widget_origami_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
                 <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
@@ -222,6 +222,12 @@
             android:name=".alarm.AlarmService"
             android:exported="false"
             android:foregroundServiceType="mediaPlayback" />
+
+        <!-- Kilit Ekranı Bildirim Servisi - Kilit ekranında vakit bilgisi gösterir -->
+        <service
+            android:name=".lockscreen.LockScreenNotificationService"
+            android:exported="false"
+            android:foregroundServiceType="dataSync" />
 
         <!-- Kilit Ekranı Alarm Activity -->
         <activity

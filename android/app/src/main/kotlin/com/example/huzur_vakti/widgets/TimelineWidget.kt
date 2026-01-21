@@ -61,6 +61,7 @@ class TimelineWidget : AppWidgetProvider() {
             
             val konum = widgetData.getString("konum", "İstanbul") ?: "İstanbul"
             val hicriTarih = widgetData.getString("hicri_tarih", "28 Recep 1447") ?: "28 Recep 1447"
+            val miladiTarih = widgetData.getString("miladi_tarih", "21 Ocak 2026") ?: "21 Ocak 2026"
             
             // Renk ayarlarını al
             val arkaPlanKey = widgetData.getString("arkaplan_key", "dark") ?: "dark"
@@ -94,6 +95,10 @@ class TimelineWidget : AppWidgetProvider() {
             views.setTextColor(R.id.tv_konum, yaziRengi)
             views.setTextViewText(R.id.tv_hicri, hicriTarih)
             views.setTextColor(R.id.tv_hicri, yaziRengiSecondary)
+            
+            // Miladi tarih
+            views.setTextViewText(R.id.tv_miladi, miladiTarih)
+            views.setTextColor(R.id.tv_miladi, yaziRengiSecondary)
             
             // Ana geri sayım
             views.setTextViewText(R.id.tv_sonraki_vakit, "$sonrakiVakit'e")

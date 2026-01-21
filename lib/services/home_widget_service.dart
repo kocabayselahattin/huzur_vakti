@@ -259,12 +259,6 @@ class HomeWidgetService {
         qualifiedAndroidName: 'com.example.huzur_vakti.widgets.NeonGlowWidget',
       );
       await HomeWidget.updateWidget(
-        name: 'GradientCardWidget',
-        androidName: 'GradientCardWidget',
-        qualifiedAndroidName:
-            'com.example.huzur_vakti.widgets.GradientCardWidget',
-      );
-      await HomeWidget.updateWidget(
         name: 'TimelineWidget',
         androidName: 'TimelineWidget',
         qualifiedAndroidName: 'com.example.huzur_vakti.widgets.TimelineWidget',
@@ -306,7 +300,7 @@ class HomeWidgetService {
         'mevcutSaat': '07:00',
         'kalanSure': '2s 30dk kaldı',
         'kalanKisa': '2s 30dk',
-        'geriSayim': '02:30:00',
+        'geriSayim': '2s 30dk',
         'ilerleme': '50',
       };
     }
@@ -404,23 +398,27 @@ class HomeWidgetService {
 
     final kalanSaat = kalanToplamSaniye ~/ 3600;
     final kalanDk = (kalanToplamSaniye % 3600) ~/ 60;
-    final kalanSaniye = kalanToplamSaniye % 60;
 
     int ilerleme = toplamSaniye > 0
         ? ((gecenSaniye / toplamSaniye) * 100).round()
         : 0;
     ilerleme = ilerleme.clamp(0, 100);
 
+    // Geri sayım formatı: saniye YOK (widget'lar her 30sn güncellenir)
+    final geriSayimStr = kalanSaat > 0 
+        ? '${kalanSaat}s ${kalanDk}dk' 
+        : '${kalanDk} dk';
+
     return {
       'sonrakiVakit': sonrakiVakit,
       'sonrakiSaat': sonrakiSaat,
       'mevcutVakit': mevcutVakit,
       'mevcutSaat': mevcutSaat,
-      'kalanSure': '${kalanSaat}s ${kalanDk}dk ${kalanSaniye}sn kaldı',
-      'kalanKisa':
-          '${kalanSaat.toString().padLeft(2, '0')}:${kalanDk.toString().padLeft(2, '0')}:${kalanSaniye.toString().padLeft(2, '0')}',
-      'geriSayim':
-          '${kalanSaat.toString().padLeft(2, '0')}:${kalanDk.toString().padLeft(2, '0')}:${kalanSaniye.toString().padLeft(2, '0')}',
+      'kalanSure': kalanSaat > 0 
+          ? '${kalanSaat}s ${kalanDk}dk kaldı'
+          : '${kalanDk} dk kaldı',
+      'kalanKisa': geriSayimStr,
+      'geriSayim': geriSayimStr,
       'ilerleme': ilerleme.toString(),
     };
   }

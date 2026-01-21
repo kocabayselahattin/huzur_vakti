@@ -116,10 +116,10 @@ class ScheduledNotificationService {
     });
   }
 
-  /// Tüm vakit bildirimlerini zamanla
+  /// Tüm vakit bildirimlerini zamanla (7 günlük)
   static Future<void> scheduleAllPrayerNotifications() async {
     try {
-      debugPrint('🔔 Tüm vakit bildirimleri zamanlanıyor...');
+      debugPrint('🔔 7 günlük vakit bildirimleri zamanlanıyor...');
 
       // Önce mevcut bildirimleri iptal et
       await cancelAllNotifications();
@@ -131,163 +131,176 @@ class ScheduledNotificationService {
         return;
       }
 
-      // Bugünün vakitlerini al
-      final vakitler = await DiyanetApiService.getBugunVakitler(ilceId);
-      if (vakitler == null) {
+      // 7 günlük vakit bilgisi için aylık verileri al
+      final now = DateTime.now();
+      final aylikVakitler = await DiyanetApiService.getAylikVakitler(
+        ilceId,
+        now.year,
+        now.month,
+      );
+      
+      // Gelecek ay da lazım olabilir (ay sonundaysak)
+      List<Map<String, dynamic>> sonrakiAyVakitler = [];
+      if (now.day > 24) {
+        final sonrakiAy = now.month == 12 ? 1 : now.month + 1;
+        final sonrakiYil = now.month == 12 ? now.year + 1 : now.year;
+        sonrakiAyVakitler = await DiyanetApiService.getAylikVakitler(
+          ilceId,
+          sonrakiYil,
+          sonrakiAy,
+        );
+      }
+      
+      // Tüm vakitleri birleştir
+      final tumVakitler = [...aylikVakitler, ...sonrakiAyVakitler];
+      
+      if (tumVakitler.isEmpty) {
         debugPrint('⚠️ Vakit bilgisi alınamadı');
         return;
       }
 
-      debugPrint('📋 Alınan vakitler: $vakitler');
+      debugPrint('📋 Toplam ${tumVakitler.length} günlük veri alındı');
 
       // Kullanıcı ayarlarını yükle
       final prefs = await SharedPreferences.getInstance();
       int scheduledCount = 0;
-
-      // Her vakit için bildirim zamanla
-      for (int i = 0; i < _vakitler.length; i++) {
-        final vakitKey = _vakitler[i];
-        final vakitKeyLower = vakitKey.toLowerCase();
-
-        // Bildirim açık mı kontrol et
-        final bildirimAcik = prefs.getBool('bildirim_$vakitKeyLower') ?? true;
-        if (!bildirimAcik) {
-          debugPrint('🔇 $vakitKey bildirimi kapalı, atlanıyor');
-          continue;
-        }
-
-        final vakitSaati = vakitler[vakitKey];
-        if (vakitSaati == null || vakitSaati == '—:—' || vakitSaati.isEmpty) {
-          debugPrint('⚠️ $vakitKey saati boş veya geçersiz: $vakitSaati');
-          continue;
-        }
-
-        // Erken bildirim süresi (dakika)
-        final erkenDakika = prefs.getInt('erken_$vakitKeyLower') ?? 0;
-
-        // Ses dosyası
-        final sesDosyasi =
-            prefs.getString('bildirim_sesi_$vakitKeyLower') ?? 'Ding_Dong.mp3';
-
-        // Vakit saatini parse et
-        final parts = vakitSaati.split(':');
-        if (parts.length != 2) {
-          debugPrint('⚠️ $vakitKey saat formatı hatalı: $vakitSaati');
-          continue;
-        }
-
-        final saat = int.tryParse(parts[0]);
-        final dakika = int.tryParse(parts[1]);
-        if (saat == null || dakika == null) {
-          debugPrint('⚠️ $vakitKey saat parse edilemedi: $vakitSaati');
-          continue;
-        }
-
-        // Bildirim zamanını hesapla
-        final now = DateTime.now();
-        var bildirimZamani = DateTime(
-          now.year,
-          now.month,
-          now.day,
-          saat,
-          dakika,
+      int alarmCount = 0;
+      
+      // 7 gün için döngü
+      for (int gun = 0; gun < 7; gun++) {
+        final hedefTarih = now.add(Duration(days: gun));
+        final hedefTarihStr = '${hedefTarih.day.toString().padLeft(2, '0')}.${hedefTarih.month.toString().padLeft(2, '0')}.${hedefTarih.year}';
+        
+        // O güne ait vakitleri bul
+        final gunVakitler = tumVakitler.firstWhere(
+          (v) => v['MiladiTarihKisa'] == hedefTarihStr,
+          orElse: () => <String, dynamic>{},
         );
-
-        // Erken bildirim süresi varsa çıkar
-        if (erkenDakika > 0) {
-          bildirimZamani = bildirimZamani.subtract(
-            Duration(minutes: erkenDakika),
-          );
+        
+        if (gunVakitler.isEmpty) {
+          debugPrint('⚠️ $hedefTarihStr için vakit bulunamadı');
+          continue;
         }
 
-        // Eğer zaman geçmişse, bildirimi atla (yarına zamanla)
-        if (bildirimZamani.isBefore(now)) {
-          // Yarın için zamanla
-          bildirimZamani = bildirimZamani.add(const Duration(days: 1));
-          debugPrint(
-            '⏰ $vakitKey vakti geçmiş, yarına zamanlanıyor: ${bildirimZamani.hour}:${bildirimZamani.minute.toString().padLeft(2, '0')}',
-          );
-        }
+        // Her vakit için bildirim ve alarm zamanla
+        for (int i = 0; i < _vakitler.length; i++) {
+          final vakitKey = _vakitler[i];
+          final vakitKeyLower = vakitKey.toLowerCase();
 
-        // Bildirimi zamanla
-        await _scheduleNotification(
-          id: i + 1, // 1-6 arası ID
-          title:
-              '${_vakitTurkce[vakitKey]} Vakti ${erkenDakika > 0 ? "Yaklaşıyor" : "Girdi"}',
-          body: erkenDakika > 0
-              ? '${_vakitTurkce[vakitKey]} vaktine $erkenDakika dakika kaldı'
-              : '${_vakitTurkce[vakitKey]} vakti girdi. Hayırlı ibadetler!',
-          scheduledTime: bildirimZamani,
-          soundAsset: sesDosyasi,
-        );
-
-        scheduledCount++;
-        debugPrint(
-          '✅ $vakitKey bildirimi zamanlandı: ${bildirimZamani.day}/${bildirimZamani.month} ${bildirimZamani.hour}:${bildirimZamani.minute.toString().padLeft(2, '0')}',
-        );
-
-        // 🔔 ALARM: Alarm her zaman TAM VAKİT zamanında çalmalı (erken bildirimden bağımsız)
-        final alarmAcik = prefs.getBool('alarm_$vakitKeyLower') ?? false;
-        if (alarmAcik) {
-          // Alarm için tam vakit zamanını hesapla
-          var alarmZamani = DateTime(
-            now.year,
-            now.month,
-            now.day,
-            saat,
-            dakika,
-          );
+          // Bildirim açık mı kontrol et
+          final bildirimAcik = prefs.getBool('bildirim_$vakitKeyLower') ?? true;
           
-          // Eğer vakit geçtiyse yarına zamanla
-          if (alarmZamani.isBefore(now)) {
-            alarmZamani = alarmZamani.add(const Duration(days: 1));
+          final vakitSaati = gunVakitler[vakitKey]?.toString();
+          if (vakitSaati == null || vakitSaati == '—:—' || vakitSaati.isEmpty) {
+            continue;
           }
-          
-          final alarmId = AlarmService.generateAlarmId(
-            vakitKeyLower,
-            alarmZamani,
-          );
-          await AlarmService.scheduleAlarm(
-            prayerName: _vakitTurkce[vakitKey] ?? vakitKey,
-            triggerAtMillis: alarmZamani.millisecondsSinceEpoch,
-            soundPath: sesDosyasi,
-            useVibration: true,
-            alarmId: alarmId,
-          );
-          debugPrint(
-            '⏰ $vakitKey ALARMI zamanlandı: ${alarmZamani.day}/${alarmZamani.month} ${alarmZamani.hour}:${alarmZamani.minute.toString().padLeft(2, '0')}',
-          );
-        }
 
-        // Erken bildirim varsa, ayrıca vaktinde de bildirim gönder (vakit girdiğinde)
-        if (erkenDakika > 0) {
-          var tamVakitZamani = DateTime(
-            now.year,
-            now.month,
-            now.day,
+          // Erken bildirim süresi (dakika)
+          final erkenDakika = prefs.getInt('erken_$vakitKeyLower') ?? 0;
+
+          // Ses dosyası
+          final sesDosyasi =
+              prefs.getString('bildirim_sesi_$vakitKeyLower') ?? 'Ding_Dong.mp3';
+
+          // Vakit saatini parse et
+          final parts = vakitSaati.split(':');
+          if (parts.length != 2) continue;
+
+          final saat = int.tryParse(parts[0]);
+          final dakika = int.tryParse(parts[1]);
+          if (saat == null || dakika == null) continue;
+
+          // Bildirim zamanını hesapla (o günün tarihi ile)
+          var bildirimZamani = DateTime(
+            hedefTarih.year,
+            hedefTarih.month,
+            hedefTarih.day,
             saat,
             dakika,
           );
 
-          if (tamVakitZamani.isBefore(now)) {
-            tamVakitZamani = tamVakitZamani.add(const Duration(days: 1));
+          // Erken bildirim süresi varsa çıkar
+          if (erkenDakika > 0) {
+            bildirimZamani = bildirimZamani.subtract(
+              Duration(minutes: erkenDakika),
+            );
           }
 
-          await _scheduleNotification(
-            id: i + 10, // 10-16 arası ID (vaktinde bildirimler için)
-            title: '${_vakitTurkce[vakitKey]} Vakti Girdi',
-            body: '${_vakitTurkce[vakitKey]} vakti girdi. Hayırlı ibadetler!',
-            scheduledTime: tamVakitZamani,
-            soundAsset: sesDosyasi,
-          );
-          scheduledCount++;
-          debugPrint(
-            '✅ $vakitKey TAM VAKİT bildirimi zamanlandı: ${tamVakitZamani.day}/${tamVakitZamani.month} $saat:${dakika.toString().padLeft(2, '0')}',
-          );
+          // Eğer zaman geçmişse, bu bildirimi atla
+          if (bildirimZamani.isBefore(now)) {
+            continue;
+          }
+
+          // Benzersiz ID: gun * 100 + vakit index
+          final bildirimId = gun * 100 + i + 1;
+
+          // Bildirimi zamanla (eğer bildirim açıksa)
+          if (bildirimAcik) {
+            await _scheduleNotification(
+              id: bildirimId,
+              title:
+                  '${_vakitTurkce[vakitKey]} Vakti ${erkenDakika > 0 ? "Yaklaşıyor" : "Girdi"}',
+              body: erkenDakika > 0
+                  ? '${_vakitTurkce[vakitKey]} vaktine $erkenDakika dakika kaldı'
+                  : '${_vakitTurkce[vakitKey]} vakti girdi. Hayırlı ibadetler!',
+              scheduledTime: bildirimZamani,
+              soundAsset: sesDosyasi,
+            );
+            scheduledCount++;
+
+            // Erken bildirim varsa, ayrıca vaktinde de bildirim gönder
+            if (erkenDakika > 0) {
+              var tamVakitZamani = DateTime(
+                hedefTarih.year,
+                hedefTarih.month,
+                hedefTarih.day,
+                saat,
+                dakika,
+              );
+
+              if (tamVakitZamani.isAfter(now)) {
+                await _scheduleNotification(
+                  id: bildirimId + 50,
+                  title: '${_vakitTurkce[vakitKey]} Vakti Girdi',
+                  body: '${_vakitTurkce[vakitKey]} vakti girdi. Hayırlı ibadetler!',
+                  scheduledTime: tamVakitZamani,
+                  soundAsset: sesDosyasi,
+                );
+                scheduledCount++;
+              }
+            }
+          }
+
+          // 🔔 ALARM: Alarm her zaman TAM VAKİT zamanında çalmalı
+          final alarmAcik = prefs.getBool('alarm_$vakitKeyLower') ?? false;
+          if (alarmAcik) {
+            var alarmZamani = DateTime(
+              hedefTarih.year,
+              hedefTarih.month,
+              hedefTarih.day,
+              saat,
+              dakika,
+            );
+            
+            if (alarmZamani.isAfter(now)) {
+              final alarmId = AlarmService.generateAlarmId(
+                vakitKeyLower,
+                alarmZamani,
+              );
+              await AlarmService.scheduleAlarm(
+                prayerName: _vakitTurkce[vakitKey] ?? vakitKey,
+                triggerAtMillis: alarmZamani.millisecondsSinceEpoch,
+                soundPath: sesDosyasi,
+                useVibration: true,
+                alarmId: alarmId,
+              );
+              alarmCount++;
+            }
+          }
         }
       }
 
-      debugPrint('🔔 Toplam $scheduledCount bildirim zamanlandı');
+      debugPrint('🔔 7 günlük zamanlama tamamlandı: $scheduledCount bildirim, $alarmCount alarm');
     } catch (e, stackTrace) {
       debugPrint('❌ Bildirim zamanlama hatası: $e');
       debugPrint('📋 Stack trace: $stackTrace');
@@ -314,14 +327,13 @@ class ScheduledNotificationService {
           >();
 
       if (androidImplementation != null) {
-        // Ana bildirim kanalı oluştur (Android ses değişimi kısıtlaması nedeniyle tek kanal)
+        // Ana bildirim kanalı oluştur - varsayılan sistem bildirim sesi
         final channel = AndroidNotificationChannel(
           channelId,
           'Namaz Vakti Bildirimleri',
           description: 'Namaz vakitleri için zamanlanmış bildirimler',
           importance: Importance.max,
           playSound: true,
-          sound: RawResourceAndroidNotificationSound(soundResourceName),
           enableVibration: true,
           enableLights: true,
           showBadge: true,
@@ -337,7 +349,6 @@ class ScheduledNotificationService {
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
-        sound: RawResourceAndroidNotificationSound(soundResourceName),
         enableVibration: true,
         enableLights: true,
         showWhen: true,
@@ -345,7 +356,6 @@ class ScheduledNotificationService {
         category: AndroidNotificationCategory.alarm,
         fullScreenIntent: true,
         visibility: NotificationVisibility.public,
-        audioAttributesUsage: AudioAttributesUsage.alarm,
         ongoing: false,
         autoCancel: true,
         styleInformation: BigTextStyleInformation(body),

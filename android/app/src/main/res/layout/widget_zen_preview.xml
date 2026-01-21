@@ -48,10 +48,11 @@
 
     </LinearLayout>
 
-    <View
+    <ImageView
         android:layout_width="80dp"
         android:layout_height="2dp"
         android:layout_marginTop="8dp"
-        android:background="#2196F3" />
+        android:background="#2196F3"
+        android:contentDescription="@null" />
 
 </LinearLayout>

@@ -5,12 +5,13 @@
     android:background="@drawable/widget_bg_cosmic"
     android:padding="12dp">
 
-    <View
+    <ImageView
         android:layout_width="80dp"
         android:layout_height="80dp"
         android:layout_centerInParent="true"
         android:background="@drawable/glow_cosmic"
-        android:alpha="0.5" />
+        android:alpha="0.5"
+        android:contentDescription="@null" />
 
     <LinearLayout
         android:id="@+id/layout_top"

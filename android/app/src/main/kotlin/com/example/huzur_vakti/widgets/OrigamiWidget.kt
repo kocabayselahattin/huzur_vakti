@@ -99,6 +99,7 @@ class OrigamiWidget : AppWidgetProvider() {
             
             val konum = widgetData.getString("konum", "İstanbul") ?: "İstanbul"
             val hicriTarih = widgetData.getString("hicri_tarih", "28 Recep 1447") ?: "28 Recep 1447"
+            val miladiTarih = widgetData.getString("miladi_tarih", "21 Ocak 2026") ?: "21 Ocak 2026"
             
             val views = RemoteViews(context.packageName, R.layout.widget_origami)
             
@@ -113,6 +114,10 @@ class OrigamiWidget : AppWidgetProvider() {
             // Hicri tarihi Arapça olarak göster
             views.setTextViewText(R.id.tv_hicri, toArabicHicri(hicriTarih))
             views.setTextColor(R.id.tv_hicri, murekkepLight)
+            
+            // Miladi tarih
+            views.setTextViewText(R.id.tv_miladi, miladiTarih)
+            views.setTextColor(R.id.tv_miladi, murekkepLight)
             
             views.setTextViewText(R.id.tv_mevcut_vakit, "$mevcutVakit Vakti")
             views.setTextColor(R.id.tv_mevcut_vakit, murekkepLight)

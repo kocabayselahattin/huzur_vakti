@@ -61,6 +61,7 @@ class CosmicWidget : AppWidgetProvider() {
             
             val konum = widgetData.getString("konum", "İstanbul") ?: "İstanbul"
             val hicriTarih = widgetData.getString("hicri_tarih", "28 Recep 1447") ?: "28 Recep 1447"
+            val miladiTarih = widgetData.getString("miladi_tarih", "21 Ocak 2026") ?: "21 Ocak 2026"
             
             val views = RemoteViews(context.packageName, R.layout.widget_cosmic)
             
@@ -75,6 +76,9 @@ class CosmicWidget : AppWidgetProvider() {
             views.setTextColor(R.id.tv_konum, cosmicPink)
             
             views.setTextViewText(R.id.tv_hicri, hicriTarih)
+            
+            // Miladi tarih
+            views.setTextViewText(R.id.tv_miladi, miladiTarih)
             
             views.setTextViewText(R.id.tv_mevcut_vakit, "✦ $mevcutVakit ✦")
             views.setTextColor(R.id.tv_mevcut_vakit, cosmicPurple)

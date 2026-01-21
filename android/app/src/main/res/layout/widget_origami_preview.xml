@@ -5,13 +5,14 @@
     android:background="@drawable/widget_bg_origami"
     android:padding="14dp">
 
-    <View
+    <ImageView
         android:layout_width="20dp"
         android:layout_height="20dp"
         android:layout_alignParentTop="true"
         android:layout_alignParentStart="true"
         android:background="@drawable/origami_fold"
-        android:alpha="0.4" />
+        android:alpha="0.4"
+        android:contentDescription="@null" />
 
     <LinearLayout
         android:id="@+id/layout_top"
@@ -70,10 +71,12 @@
             android:orientation="horizontal"
             android:gravity="center_vertical">
 
-            <View
-                android:layout_width="20dp"
-                android:layout_height="1dp"
-                android:background="#B2BEC3"
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="───"
+                android:textColor="#B2BEC3"
+                android:textSize="8sp"
                 android:layout_marginEnd="8dp" />
 
             <TextView
@@ -85,10 +88,12 @@
                 android:fontFamily="serif"
                 android:textStyle="italic" />
 
-            <View
-                android:layout_width="20dp"
-                android:layout_height="1dp"
-                android:background="#B2BEC3"
+            <TextView
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="───"
+                android:textColor="#B2BEC3"
+                android:textSize="8sp"
                 android:layout_marginStart="8dp" />
 
         </LinearLayout>
@@ -116,12 +121,6 @@
         android:layout_height="wrap_content"
         android:layout_alignParentBottom="true"
         android:orientation="vertical">
-
-        <View
-            android:layout_width="match_parent"
-            android:layout_height="1dp"
-            android:background="#DDD5C8"
-            android:layout_marginBottom="8dp" />
 
         <ProgressBar
             style="?android:attr/progressBarStyleHorizontal"
@@ -205,13 +204,14 @@
 
     </LinearLayout>
 
-    <View
+    <ImageView
         android:layout_width="16dp"
         android:layout_height="16dp"
         android:layout_alignParentBottom="true"
         android:layout_alignParentEnd="true"
         android:rotation="180"
         android:background="@drawable/origami_fold"
-        android:alpha="0.3" />
+        android:alpha="0.3"
+        android:contentDescription="@null" />
 
 </RelativeLayout>

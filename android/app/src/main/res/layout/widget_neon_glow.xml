@@ -136,7 +136,23 @@
             android:layout_height="wrap_content"
             android:text="28 Recep 1447"
             android:textColor="#00FFFF"
-            android:textSize="9sp"
+            android:textSize="12sp"
+            android:alpha="0.9" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text=" ◆ "
+            android:textColor="#FF00FF"
+            android:textSize="9sp" />
+
+        <TextView
+            android:id="@+id/tv_miladi"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="21 Ocak 2026"
+            android:textColor="#FF00FF"
+            android:textSize="10sp"
             android:alpha="0.8" />
 
     </LinearLayout>

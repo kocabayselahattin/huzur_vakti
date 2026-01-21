@@ -94,10 +94,19 @@ class AlarmService : Service() {
                 val notification = createAlarmNotification(currentVakitName, currentVakitTime, isEarly, earlyMinutes)
                 startForeground(NOTIFICATION_ID, notification)
                 
-                // Alarm sesini çal
-                playAlarmSound(soundFile)
+                // Telefon sessiz modda mı kontrol et
+                val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                val isSilentMode = audioManager.ringerMode == AudioManager.RINGER_MODE_SILENT ||
+                                   audioManager.ringerMode == AudioManager.RINGER_MODE_VIBRATE
                 
-                // Titreşim başlat
+                // Sessiz modda değilse alarm sesini çal
+                if (!isSilentMode) {
+                    playAlarmSound(soundFile)
+                } else {
+                    Log.d(TAG, "📵 Telefon sessiz modda - sadece titreşim çalacak")
+                }
+                
+                // Titreşim her zaman başlat (sessiz modda da)
                 startVibration()
                 
                 // Kilit ekranı activity'sini başlat

@@ -13,6 +13,7 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.example.huzur_vakti.alarm.AlarmReceiver
 import com.example.huzur_vakti.dnd.PrayerDndScheduler
+import com.example.huzur_vakti.lockscreen.LockScreenNotificationService
 import com.example.huzur_vakti.widgets.WidgetUpdateReceiver
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
@@ -23,6 +24,7 @@ class MainActivity : FlutterActivity() {
 	private val permissionsChannelName = "huzur_vakti/permissions"
 	private val widgetsChannelName = "huzur_vakti/widgets"
 	private val alarmChannelName = "huzur_vakti/alarms"
+	private val lockScreenChannelName = "huzur_vakti/lockscreen"
 	private val NOTIFICATION_PERMISSION_CODE = 1001
 
 	override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
@@ -88,6 +90,22 @@ class MainActivity : FlutterActivity() {
 						val stopIntent = Intent(this, com.example.huzur_vakti.alarm.AlarmService::class.java)
 						stopIntent.action = com.example.huzur_vakti.alarm.AlarmService.ACTION_STOP_ALARM
 						startService(stopIntent)
+						result.success(true)
+					}
+					else -> result.notImplemented()
+				}
+			}
+
+		// Lock Screen Notification Channel
+		MethodChannel(flutterEngine.dartExecutor.binaryMessenger, lockScreenChannelName)
+			.setMethodCallHandler { call, result ->
+				when (call.method) {
+					"startLockScreenService" -> {
+						LockScreenNotificationService.start(this)
+						result.success(true)
+					}
+					"stopLockScreenService" -> {
+						LockScreenNotificationService.stop(this)
 						result.success(true)
 					}
 					else -> result.notImplemented()

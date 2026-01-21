@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/tema_service.dart';
 import '../services/language_service.dart';
@@ -20,6 +21,9 @@ class _KilitEkraniAyarlariSayfaState extends State<KilitEkraniAyarlariSayfa> {
   final LanguageService _languageService = LanguageService();
   final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
+  
+  // Native servis için method channel
+  static const _lockScreenChannel = MethodChannel('huzur_vakti/lockscreen');
 
   bool _kilitEkraniBildirimiAktif = false;
   bool _ecirBariGoster = true;
@@ -114,89 +118,29 @@ class _KilitEkraniAyarlariSayfaState extends State<KilitEkraniAyarlariSayfa> {
 
   Future<void> _bildirimiGuncelle() async {
     try {
-      // Konum ve vakit bilgilerini al
-      final ilceId = await KonumService.getIlceId();
-      final il = await KonumService.getIl();
-      final ilce = await KonumService.getIlce();
-
-      if (ilceId == null) {
-        _uyariGoster(
-          _languageService['location_not_found'] ?? 'Konum bilgisi bulunamadı',
-        );
-        return;
-      }
-
-      final vakitler = await DiyanetApiService.getBugunVakitler(ilceId);
-      if (vakitler == null) {
-        _uyariGoster(
-          _languageService['prayer_times_not_found'] ??
-              'Vakit bilgisi alınamadı',
-        );
-        return;
-      }
-
-      // Bildirim içeriğini oluştur
-      final stilKey = _stilSecenekleri[_secilenStilIndex]['key'];
-      final baslik = _olustrBaslik(stilKey, il, ilce);
-      final icerik = _olusturIcerik(stilKey, vakitler);
-
-      // Ongoing notification kanalı oluştur
-      final androidImplementation = _notificationsPlugin
-          .resolvePlatformSpecificImplementation<
-            AndroidFlutterLocalNotificationsPlugin
-          >();
-      if (androidImplementation != null) {
-        const channel = AndroidNotificationChannel(
-          'kilit_ekrani_channel',
-          'Kilit Ekranı Bildirimi',
-          description: 'Kilit ekranında namaz vakitlerini gösterir',
-          importance: Importance.low,
-          playSound: false,
-          enableVibration: false,
-          showBadge: false,
-        );
-        await androidImplementation.createNotificationChannel(channel);
-      }
-
-      // Bildirimi göster
-      final androidDetails = AndroidNotificationDetails(
-        'kilit_ekrani_channel',
-        'Kilit Ekranı Bildirimi',
-        channelDescription: 'Kilit ekranında namaz vakitlerini gösterir',
-        importance: Importance.low,
-        priority: Priority.low,
-        playSound: false,
-        enableVibration: false,
-        ongoing: true, // Sürekli bildirim
-        autoCancel: false,
-        showWhen: false,
-        visibility: NotificationVisibility.public, // Kilit ekranında görünür
-        category: AndroidNotificationCategory.service,
-        styleInformation: _ecirBariGoster
-            ? BigTextStyleInformation(
-                icerik,
-                contentTitle: baslik,
-                summaryText:
-                    _languageService['lock_screen_widget'] ??
-                    'Kilit Ekranı Widget',
-              )
-            : null,
-        largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
-      );
-
-      await _notificationsPlugin.show(
-        9999, // Sabit ID
-        baslik,
-        _ecirBariGoster ? null : icerik,
-        NotificationDetails(android: androidDetails),
-      );
+      // Önce widget verilerini güncelle (native servis bunları kullanacak)
+      await HomeWidgetService.updateAllWidgets();
+      
+      // Native kilit ekranı servisini başlat
+      await _lockScreenChannel.invokeMethod('startLockScreenService');
+      
+      debugPrint('✅ Kilit ekranı bildirimi servisi başlatıldı');
     } catch (e) {
-      debugPrint('Kilit ekranı bildirimi hatası: $e');
+      debugPrint('❌ Kilit ekranı bildirimi hatası: $e');
+      _uyariGoster('Kilit ekranı bildirimi başlatılamadı');
     }
   }
 
   Future<void> _bildirimiKapat() async {
-    await _notificationsPlugin.cancel(9999);
+    try {
+      // Native servisi durdur
+      await _lockScreenChannel.invokeMethod('stopLockScreenService');
+      // Eski bildirimi de kapat (varsa)
+      await _notificationsPlugin.cancel(9999);
+      debugPrint('✅ Kilit ekranı bildirimi kapatıldı');
+    } catch (e) {
+      debugPrint('❌ Kilit ekranı bildirimi kapatma hatası: $e');
+    }
   }
 
   String _olustrBaslik(String stilKey, String? il, String? ilce) {
@@ -637,12 +581,6 @@ class _KilitEkraniAyarlariSayfaState extends State<KilitEkraniAyarlariSayfa> {
 
   Widget _onizlemeKarti(TemaRenkleri renkler) {
     final stilKey = _stilSecenekleri[_secilenStilIndex]['key'] as String;
-    final now = DateTime.now();
-    final nextPrayerTime = _getNextPrayerTime();
-    final totalDuration = nextPrayerTime.difference(now).inSeconds;
-    final progress = totalDuration > 0
-        ? 1 - (totalDuration / (24 * 60 * 60))
-        : 0;
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -670,92 +608,341 @@ class _KilitEkraniAyarlariSayfaState extends State<KilitEkraniAyarlariSayfa> {
           ),
           const SizedBox(height: 16),
 
-          // Bildirim önizlemesi
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: Colors.grey[850],
-              borderRadius: BorderRadius.circular(12),
-            ),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
-                Container(
-                  width: 40,
-                  height: 40,
-                  decoration: BoxDecoration(
-                    color: renkler.vurgu,
-                    borderRadius: BorderRadius.circular(8),
+          // Stil bazlı önizleme
+          _buildStilOnizleme(stilKey),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStilOnizleme(String stilKey) {
+    switch (stilKey) {
+      case 'compact':
+        return _buildCompactOnizleme();
+      case 'detailed':
+        return _buildDetailedOnizleme();
+      case 'minimal':
+        return _buildMinimalOnizleme();
+      case 'full':
+        return _buildFullOnizleme();
+      default:
+        return _buildCompactOnizleme();
+    }
+  }
+
+  // Kompakt Stil Önizleme
+  Widget _buildCompactOnizleme() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1F3D),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Üst: Başlık satırı
+          Row(
+            children: [
+              Image.asset('assets/icon/app_icon.png', width: 18, height: 18),
+              const SizedBox(width: 6),
+              const Text(
+                'Huzur Vakti',
+                style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13),
+              ),
+              const Spacer(),
+              Text(
+                'İstanbul',
+                style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 11),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Row(
+            children: [
+              // Sol: Vakit bilgisi
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Sonraki Vakit',
+                    style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10),
                   ),
-                  child: const Icon(
-                    Icons.mosque,
-                    color: Colors.white,
-                    size: 24,
+                  const Text(
+                    'İKİNDİ',
+                    style: TextStyle(color: Color(0xFFFF7043), fontWeight: FontWeight.bold, fontSize: 16),
                   ),
+                  const Text('15:52', style: TextStyle(color: Colors.white, fontSize: 13)),
+                ],
+              ),
+              const Spacer(),
+              // Sağ: Geri sayım kutusu
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
+                decoration: BoxDecoration(
+                  color: const Color(0xFF2A2F4F),
+                  borderRadius: BorderRadius.circular(10),
+                  border: Border.all(color: const Color(0xFF3D4266)),
                 ),
-                const SizedBox(width: 12),
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _getOnizlemeBaslik(stilKey),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 14,
-                        ),
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        _getOnizlemeIcerik(stilKey),
-                        style: TextStyle(
-                          color: Colors.white.withOpacity(0.8),
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
+                child: Column(
+                  children: [
+                    Text(
+                      'Kalan Süre',
+                      style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 9),
+                    ),
+                    const Text(
+                      '2s 34dk',
+                      style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18),
+                    ),
+                  ],
                 ),
-              ],
-            ),
+              ),
+            ],
           ),
         ],
       ),
     );
   }
 
-  String _getOnizlemeBaslik(String stilKey) {
-    switch (stilKey) {
-      case 'minimal':
-        return _languageService['next_prayer'] ?? 'Sonraki Vakit';
-      case 'detailed':
-      case 'full':
-        return '📍 İstanbul / Kadıköy';
-      default:
-        return '🕌 ${_languageService['app_name'] ?? 'Huzur Vakti'}';
-    }
+  // Detaylı Stil Önizleme
+  Widget _buildDetailedOnizleme() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1F3D),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Üst satır
+          Row(
+            children: [
+              Image.asset('assets/icon/app_icon.png', width: 18, height: 18),
+              const SizedBox(width: 6),
+              const Text('Huzur Vakti', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+              const Spacer(),
+              Text('İstanbul', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Geri sayım
+          Row(
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        const Text('İKİNDİ', style: TextStyle(color: Color(0xFFFF7043), fontWeight: FontWeight.bold, fontSize: 14)),
+                        const SizedBox(width: 8),
+                        Text('vaktine', style: TextStyle(color: Colors.white.withOpacity(0.6), fontSize: 11)),
+                      ],
+                    ),
+                    const Text('2 saat 34 dakika', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 18)),
+                  ],
+                ),
+              ),
+              const Text('15:52', style: TextStyle(color: Color(0xFFFF7043), fontWeight: FontWeight.bold, fontSize: 20)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          // Progress bar
+          Container(
+            height: 4,
+            decoration: BoxDecoration(
+              color: const Color(0xFF3D4266),
+              borderRadius: BorderRadius.circular(2),
+            ),
+            child: FractionallySizedBox(
+              alignment: Alignment.centerLeft,
+              widthFactor: 0.6,
+              child: Container(
+                decoration: BoxDecoration(
+                  gradient: const LinearGradient(colors: [Color(0xFFFF7043), Color(0xFFFF5722)]),
+                  borderRadius: BorderRadius.circular(2),
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Tüm vakitler
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceAround,
+            children: [
+              _vakitMini('İmsak', '05:30', false),
+              _vakitMini('Güneş', '07:00', false),
+              _vakitMini('Öğle', '12:30', false),
+              _vakitMini('İkindi', '15:30', true),
+              _vakitMini('Akşam', '18:00', false),
+              _vakitMini('Yatsı', '19:30', false),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
-  String _getOnizlemeIcerik(String stilKey) {
-    final kalanSure = '2 sa 15 dk';
-    switch (stilKey) {
-      case 'minimal':
-        return '${_languageService['ogle'] ?? 'Öğle'}: 12:30 ($kalanSure ${_languageService['remaining'] ?? 'kaldı'})';
-      case 'compact':
-        return '⏰ ${_languageService['ogle'] ?? 'Öğle'} 12:30\n⏳ $kalanSure ${_languageService['remaining'] ?? 'kaldı'}';
-      case 'detailed':
-        return '⏰ ${_languageService['ogle'] ?? 'Öğle'}: 12:30 ($kalanSure)\n'
-            '🌅 İmsak: 05:30  ☀️ Güneş: 07:00\n'
-            '🌤️ Öğle: 12:30  🌇 İkindi: 15:30\n'
-            '🌆 Akşam: 18:00  🌙 Yatsı: 19:30';
-      case 'full':
-        return '⏰ Sonraki: ${_languageService['ogle'] ?? 'Öğle'} 12:30 ($kalanSure)\n'
-            'İmsak: 05:30 | Güneş: 07:00 | Öğle: 12:30\n'
-            'İkindi: 15:30 | Akşam: 18:00 | Yatsı: 19:30';
-      default:
-        return '${_languageService['ogle'] ?? 'Öğle'}: 12:30 ($kalanSure)';
-    }
+  Widget _vakitMini(String isim, String saat, bool aktif) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
+      decoration: aktif 
+          ? BoxDecoration(color: const Color(0xFFFF7043), borderRadius: BorderRadius.circular(4))
+          : null,
+      child: Column(
+        children: [
+          Text(isim, style: TextStyle(color: aktif ? Colors.black : Colors.white.withOpacity(0.5), fontSize: 8)),
+          Text(saat, style: TextStyle(color: aktif ? Colors.black : Colors.white, fontSize: 10, fontWeight: aktif ? FontWeight.bold : FontWeight.normal)),
+        ],
+      ),
+    );
+  }
+
+  // Minimal Stil Önizleme
+  Widget _buildMinimalOnizleme() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1F3D),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Image.asset('assets/icon/app_icon.png', width: 16, height: 16),
+                    const SizedBox(width: 6),
+                    const Text('İKİNDİ', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 14)),
+                    const SizedBox(width: 8),
+                    const Text('15:52', style: TextStyle(color: Color(0xFFFF7043), fontSize: 13)),
+                  ],
+                ),
+                Text('İstanbul', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
+              ],
+            ),
+          ),
+          const Text(
+            '2:34',
+            style: TextStyle(color: Color(0xFFFF7043), fontWeight: FontWeight.bold, fontSize: 26),
+          ),
+        ],
+      ),
+    );
+  }
+
+  // Tam Vakit Stil Önizleme
+  Widget _buildFullOnizleme() {
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: const Color(0xFF1A1F3D),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Üst satır
+          Row(
+            children: [
+              Image.asset('assets/icon/app_icon.png', width: 18, height: 18),
+              const SizedBox(width: 6),
+              const Text('Huzur Vakti', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+              const Spacer(),
+              const Text('28 Recep 1447', style: TextStyle(color: Color(0xFFFF7043), fontSize: 10)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Text('📍 İstanbul', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
+              const Spacer(),
+              Text('21 Ocak 2026', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
+            ],
+          ),
+          const SizedBox(height: 10),
+          // Geri sayım kutusu
+          Container(
+            padding: const EdgeInsets.all(10),
+            decoration: BoxDecoration(
+              color: const Color(0xFF2A2F4F),
+              borderRadius: BorderRadius.circular(10),
+              border: Border.all(color: const Color(0xFF3D4266)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text('Sonraki Vakit', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 10)),
+                      Row(
+                        children: [
+                          const Text('İKİNDİ', style: TextStyle(color: Color(0xFFFF7043), fontWeight: FontWeight.bold, fontSize: 18)),
+                          const SizedBox(width: 12),
+                          const Text('15:52', style: TextStyle(color: Colors.white, fontSize: 16)),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Text('Kalan', style: TextStyle(color: Colors.white.withOpacity(0.5), fontSize: 9)),
+                    const Text('2:34:21', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 22, fontFamily: 'monospace')),
+                  ],
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          // Grid vakitler
+          Row(
+            children: [
+              Expanded(child: _vakitSatir('🌙', 'İmsak', '05:30', false)),
+              Expanded(child: _vakitSatir('🌤️', 'İkindi', '15:30', true)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(child: _vakitSatir('🌅', 'Güneş', '07:00', false)),
+              Expanded(child: _vakitSatir('🌆', 'Akşam', '18:00', false)),
+            ],
+          ),
+          const SizedBox(height: 4),
+          Row(
+            children: [
+              Expanded(child: _vakitSatir('☀️', 'Öğle', '12:30', false)),
+              Expanded(child: _vakitSatir('🌙', 'Yatsı', '19:30', false)),
+            ],
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _vakitSatir(String emoji, String isim, String saat, bool aktif) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 4),
+      decoration: aktif 
+          ? BoxDecoration(color: const Color(0xFFFF7043), borderRadius: BorderRadius.circular(6))
+          : null,
+      child: Row(
+        children: [
+          Text(emoji, style: const TextStyle(fontSize: 11)),
+          const SizedBox(width: 4),
+          Text(isim, style: TextStyle(color: aktif ? Colors.black : Colors.white.withOpacity(0.6), fontSize: 10)),
+          const Spacer(),
+          Text(saat, style: TextStyle(color: aktif ? Colors.black : Colors.white, fontWeight: FontWeight.bold, fontSize: 12)),
+        ],
+      ),
+    );
   }
 
   DateTime _getNextPrayerTime() {

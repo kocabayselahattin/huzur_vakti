@@ -83,7 +83,7 @@
                 android:layout_height="wrap_content"
                 android:text="3 Rebiulahir 1436"
                 android:textColor="#FFFFFF"
-                android:textSize="10sp" />
+                android:textSize="13sp" />
 
             <TextView
                 android:id="@+id/tv_konum"

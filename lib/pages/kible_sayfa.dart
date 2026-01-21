@@ -8,6 +8,7 @@ import 'package:geomag/geomag.dart';
 import 'package:audioplayers/audioplayers.dart';
 import '../services/tema_service.dart';
 import '../services/language_service.dart';
+import '../services/vibration_service.dart';
 
 class KibleSayfa extends StatefulWidget {
   const KibleSayfa({super.key});
@@ -118,12 +119,8 @@ class _KibleSayfaState extends State<KibleSayfa> {
     _lastFeedbackTime = now;
 
     try {
-      // Titreşim
-      HapticFeedback.vibrate();
-      await Future.delayed(const Duration(milliseconds: 100));
-      HapticFeedback.mediumImpact();
-      await Future.delayed(const Duration(milliseconds: 100));
-      HapticFeedback.mediumImpact();
+      // Güçlü titreşim pattern'i
+      await VibrationService.vibratePattern([0, 150, 100, 150, 100, 200]);
 
       // Ses efekti
       await _audioPlayer?.play(AssetSource('sounds/Ding_Dong.mp3'));

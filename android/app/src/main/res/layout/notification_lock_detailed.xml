@@ -1,34 +1,32 @@
 <?xml version="1.0" encoding="utf-8"?>
-<RelativeLayout xmlns:android="http://schemas.android.com/apk/res/android"
-    android:id="@+id/widget_root"
+<!-- 🌙 Kilit Ekranı Bildirimi - Detaylı Stil -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
-    android:layout_height="match_parent"
-    android:background="@drawable/widget_bg_orange"
-    android:padding="4dp">
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="12dp">
 
-    <!-- Üst Kısım: Logo ve Başlık -->
+    <!-- Üst Satır: Başlık ve Konum -->
     <LinearLayout
-        android:id="@+id/header"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="NAMAZ"
-            android:textColor="#FFFFFF"
-            android:textSize="10sp"
-            android:textStyle="bold" />
+        <ImageView
+            android:layout_width="16dp"
+            android:layout_height="16dp"
+            android:src="@mipmap/ic_launcher"
+            android:contentDescription="@null" />
 
         <TextView
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="VAKTİ"
-            android:textColor="#FFE0B0"
-            android:textSize="10sp"
-            android:layout_marginStart="2dp" />
+            android:layout_marginStart="6dp"
+            android:text="Huzur Vakti"
+            android:textSize="12sp"
+            android:textColor="#FFFFFF"
+            android:textStyle="bold" />
 
         <FrameLayout
             android:layout_width="0dp"
@@ -36,215 +34,262 @@
             android:layout_weight="1" />
 
         <TextView
+            android:id="@+id/tv_location"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:text="Öğle Vaktine Kalan"
-            android:textColor="#FFFFFF"
-            android:textSize="9sp" />
+            android:text="İstanbul"
+            android:textSize="10sp"
+            android:textColor="#80FFFFFF" />
+
     </LinearLayout>
 
-    <!-- Orta Kısım: Büyük Sayaç ve Tarih -->
+    <!-- Geri Sayım Büyük -->
     <LinearLayout
-        android:id="@+id/middle"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/header"
-        android:layout_marginTop="1dp"
+        android:layout_marginTop="8dp"
         android:orientation="horizontal"
         android:gravity="center_vertical">
 
-        <!-- Sol: Büyük Sayaç -->
-        <TextView
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
-            android:text="02:45:30"
-            android:textColor="#FFFFFF"
-            android:textSize="28sp"
-            android:textStyle="bold"
-            android:fontFamily="sans-serif-condensed" />
+            android:orientation="vertical">
 
-        <!-- Sağ: Tarih ve Konum -->
-        <LinearLayout
+            <LinearLayout
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:gravity="center_vertical">
+
+                <TextView
+                    android:id="@+id/tv_next_prayer_name"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="İKİNDİ"
+                    android:textSize="16sp"
+                    android:textColor="#FF7043"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="8dp"
+                    android:text="vaktine"
+                    android:textSize="12sp"
+                    android:textColor="#AAAAAA" />
+
+            </LinearLayout>
+
+            <TextView
+                android:id="@+id/tv_countdown"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:text="2 saat 34 dakika"
+                android:textSize="22sp"
+                android:textColor="#FFFFFF"
+                android:textStyle="bold" />
+
+        </LinearLayout>
+
+        <TextView
+            android:id="@+id/tv_next_prayer_time"
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:orientation="vertical"
-            android:gravity="end">
+            android:text="15:52"
+            android:textSize="24sp"
+            android:textColor="#FF7043"
+            android:textStyle="bold" />
 
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="15 Şevval 1446"
-                android:textColor="#FFFFFF"
-                android:textSize="10sp" />
-
-            <TextView
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="İSTANBUL"
-                android:textColor="#FFE0B0"
-                android:textSize="9sp"
-                android:textStyle="bold" />
-        </LinearLayout>
     </LinearLayout>
 
-    <!-- Alt Kısım: Vakit Listesi -->
+    <!-- Progress Bar -->
+    <FrameLayout
+        android:layout_width="match_parent"
+        android:layout_height="4dp"
+        android:layout_marginTop="10dp"
+        android:background="@drawable/notification_progress_bg">
+
+        <ImageView
+            android:id="@+id/progress_fill"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:background="@drawable/notification_progress_fill"
+            android:scaleType="fitXY" />
+
+    </FrameLayout>
+
+    <!-- Alt Satır: Tüm Vakitler -->
     <LinearLayout
-        android:id="@+id/vakitler"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_below="@id/middle"
-        android:layout_marginTop="2dp"
+        android:layout_marginTop="10dp"
         android:orientation="horizontal"
         android:gravity="center">
 
         <!-- İmsak -->
         <LinearLayout
+            android:id="@+id/box_imsak"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:background="@drawable/widget_vakit_inactive_dark"
-            android:padding="2dp"
-            android:layout_marginEnd="2dp">
+            android:padding="4dp">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="İmsak"
-                android:textColor="#AAAAAA"
-                android:textSize="8sp" />
+                android:textSize="8sp"
+                android:textColor="#80FFFFFF" />
+
             <TextView
+                android:id="@+id/tv_imsak"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="05:45"
-                android:textColor="#AAAAAA"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:text="05:30"
+                android:textSize="11sp"
+                android:textColor="#FFFFFF" />
+
         </LinearLayout>
 
         <!-- Güneş -->
         <LinearLayout
+            android:id="@+id/box_gunes"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:background="@drawable/widget_vakit_inactive_dark"
-            android:padding="2dp"
-            android:layout_marginEnd="2dp">
+            android:padding="4dp">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Güneş"
-                android:textColor="#AAAAAA"
-                android:textSize="8sp" />
+                android:textSize="8sp"
+                android:textColor="#80FFFFFF" />
+
             <TextView
+                android:id="@+id/tv_gunes"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="07:15"
-                android:textColor="#AAAAAA"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:text="07:00"
+                android:textSize="11sp"
+                android:textColor="#FFFFFF" />
+
         </LinearLayout>
 
-        <!-- Öğle - Aktif -->
+        <!-- Öğle -->
         <LinearLayout
+            android:id="@+id/box_ogle"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:background="@drawable/widget_vakit_active_orange"
-            android:padding="2dp"
-            android:layout_marginEnd="2dp">
+            android:padding="4dp">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Öğle"
-                android:textColor="#FFFFFF"
-                android:textSize="8sp" />
+                android:textSize="8sp"
+                android:textColor="#80FFFFFF" />
+
             <TextView
+                android:id="@+id/tv_ogle"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="12:30"
-                android:textColor="#FFFFFF"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:textSize="11sp"
+                android:textColor="#FFFFFF" />
+
         </LinearLayout>
 
         <!-- İkindi -->
         <LinearLayout
+            android:id="@+id/box_ikindi"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:background="@drawable/widget_vakit_inactive_dark"
-            android:padding="2dp"
-            android:layout_marginEnd="2dp">
+            android:padding="4dp">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="İkindi"
-                android:textColor="#AAAAAA"
-                android:textSize="8sp" />
+                android:textSize="8sp"
+                android:textColor="#80FFFFFF" />
+
             <TextView
+                android:id="@+id/tv_ikindi"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="15:45"
-                android:textColor="#AAAAAA"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:text="15:30"
+                android:textSize="11sp"
+                android:textColor="#FFFFFF" />
+
         </LinearLayout>
 
         <!-- Akşam -->
         <LinearLayout
+            android:id="@+id/box_aksam"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:background="@drawable/widget_vakit_inactive_dark"
-            android:padding="2dp"
-            android:layout_marginEnd="2dp">
+            android:padding="4dp">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Akşam"
-                android:textColor="#AAAAAA"
-                android:textSize="8sp" />
+                android:textSize="8sp"
+                android:textColor="#80FFFFFF" />
+
             <TextView
+                android:id="@+id/tv_aksam"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="18:30"
-                android:textColor="#AAAAAA"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:text="18:00"
+                android:textSize="11sp"
+                android:textColor="#FFFFFF" />
+
         </LinearLayout>
 
         <!-- Yatsı -->
         <LinearLayout
+            android:id="@+id/box_yatsi"
             android:layout_width="0dp"
             android:layout_height="wrap_content"
             android:layout_weight="1"
             android:orientation="vertical"
             android:gravity="center"
-            android:background="@drawable/widget_vakit_inactive_dark"
-            android:padding="2dp">
+            android:padding="4dp">
+
             <TextView
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
                 android:text="Yatsı"
-                android:textColor="#AAAAAA"
-                android:textSize="8sp" />
+                android:textSize="8sp"
+                android:textColor="#80FFFFFF" />
+
             <TextView
+                android:id="@+id/tv_yatsi"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:text="20:00"
-                android:textColor="#AAAAAA"
-                android:textSize="10sp"
-                android:textStyle="bold" />
+                android:text="19:30"
+                android:textSize="11sp"
+                android:textColor="#FFFFFF" />
+
         </LinearLayout>
+
     </LinearLayout>
-</RelativeLayout>
+
+</LinearLayout>
