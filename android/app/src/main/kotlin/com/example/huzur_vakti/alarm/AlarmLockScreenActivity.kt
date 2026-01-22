@@ -143,11 +143,6 @@ class AlarmLockScreenActivity : Activity() {
             dismissAlarm()
         }
         
-        // Ertele butonu
-        findViewById<Button>(R.id.btn_snooze)?.setOnClickListener {
-            snoozeAlarm()
-        }
-        
         // Ekrana dokununca talimat göster
         findViewById<TextView>(R.id.tv_hint)?.text = 
             "Ses veya kilit tuşuna basarak kapatabilirsiniz"
@@ -178,16 +173,6 @@ class AlarmLockScreenActivity : Activity() {
      */
     private fun dismissAlarm() {
         AlarmService.stopAlarm(this)
-        finish()
-    }
-    
-    /**
-     * Alarmı 5 dakika ertele
-     */
-    private fun snoozeAlarm() {
-        val snoozeIntent = Intent(this, AlarmService::class.java)
-        snoozeIntent.action = AlarmService.ACTION_SNOOZE_ALARM
-        startService(snoozeIntent)
         finish()
     }
     

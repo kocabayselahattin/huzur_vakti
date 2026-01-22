@@ -8,6 +8,5 @@
     android:updatePeriodMillis="1800000"
     android:initialLayout="@layout/widget_cosmic"
     android:previewImage="@drawable/preview_widget_cosmic"
-    android:previewLayout="@layout/widget_cosmic_preview"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen" />

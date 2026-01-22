@@ -116,10 +116,13 @@ class ScheduledNotificationService {
     });
   }
 
-  /// Tüm vakit bildirimlerini zamanla (7 günlük)
+  /// Tüm vakit bildirimlerini zamanla (14 günlük - 2 hafta)
+  /// Bu sayede uygulama 1 hafta açılmasa bile bildirimler gelir
   static Future<void> scheduleAllPrayerNotifications() async {
     try {
-      debugPrint('🔔 7 günlük vakit bildirimleri zamanlanıyor...');
+      // 14 gün için zamanlama (2 hafta)
+      const int zamanlamaSuresi = 14;
+      debugPrint('🔔 $zamanlamaSuresi günlük vakit bildirimleri zamanlanıyor...');
 
       // Önce mevcut bildirimleri iptal et
       await cancelAllNotifications();
@@ -131,7 +134,7 @@ class ScheduledNotificationService {
         return;
       }
 
-      // 7 günlük vakit bilgisi için aylık verileri al
+      // 14 günlük vakit bilgisi için aylık verileri al
       final now = DateTime.now();
       final aylikVakitler = await DiyanetApiService.getAylikVakitler(
         ilceId,
@@ -139,9 +142,9 @@ class ScheduledNotificationService {
         now.month,
       );
       
-      // Gelecek ay da lazım olabilir (ay sonundaysak)
+      // Gelecek ay da lazım olabilir (ay sonundaysak veya 14 gün için)
       List<Map<String, dynamic>> sonrakiAyVakitler = [];
-      if (now.day > 24) {
+      if (now.day > 17) { // 14 gün için erken başla
         final sonrakiAy = now.month == 12 ? 1 : now.month + 1;
         final sonrakiYil = now.month == 12 ? now.year + 1 : now.year;
         sonrakiAyVakitler = await DiyanetApiService.getAylikVakitler(
@@ -166,8 +169,8 @@ class ScheduledNotificationService {
       int scheduledCount = 0;
       int alarmCount = 0;
       
-      // 7 gün için döngü
-      for (int gun = 0; gun < 7; gun++) {
+      // 14 gün için döngü (2 hafta)
+      for (int gun = 0; gun < zamanlamaSuresi; gun++) {
         final hedefTarih = now.add(Duration(days: gun));
         final hedefTarihStr = '${hedefTarih.day.toString().padLeft(2, '0')}.${hedefTarih.month.toString().padLeft(2, '0')}.${hedefTarih.year}';
         
@@ -200,7 +203,7 @@ class ScheduledNotificationService {
 
           // Ses dosyası
           final sesDosyasi =
-              prefs.getString('bildirim_sesi_$vakitKeyLower') ?? 'Ding_Dong.mp3';
+              prefs.getString('bildirim_sesi_$vakitKeyLower') ?? 'ding_dong.mp3';
 
           // Vakit saatini parse et
           final parts = vakitSaati.split(':');
@@ -273,6 +276,8 @@ class ScheduledNotificationService {
 
           // 🔔 ALARM: Alarm her zaman TAM VAKİT zamanında çalmalı
           final alarmAcik = prefs.getBool('alarm_$vakitKeyLower') ?? false;
+          debugPrint('🔔 Vakit: $vakitKey, Alarm açık: $alarmAcik');
+          
           if (alarmAcik) {
             var alarmZamani = DateTime(
               hedefTarih.year,
@@ -282,25 +287,42 @@ class ScheduledNotificationService {
               dakika,
             );
             
+            debugPrint('   Alarm zamanı: $alarmZamani, Şu an: $now');
+            
             if (alarmZamani.isAfter(now)) {
               final alarmId = AlarmService.generateAlarmId(
                 vakitKeyLower,
                 alarmZamani,
               );
-              await AlarmService.scheduleAlarm(
+              
+              debugPrint('   Alarm ID: $alarmId, Ses: $sesDosyasi');
+              
+              final success = await AlarmService.scheduleAlarm(
                 prayerName: _vakitTurkce[vakitKey] ?? vakitKey,
                 triggerAtMillis: alarmZamani.millisecondsSinceEpoch,
                 soundPath: sesDosyasi,
                 useVibration: true,
                 alarmId: alarmId,
               );
-              alarmCount++;
+              
+              if (success) {
+                alarmCount++;
+                debugPrint('   ✅ Alarm zamanlandı');
+              } else {
+                debugPrint('   ❌ Alarm zamanlanamadı');
+              }
+            } else {
+              debugPrint('   ⏭️ Alarm zamanı geçmiş, atlanıyor');
             }
           }
         }
       }
 
-      debugPrint('🔔 7 günlük zamanlama tamamlandı: $scheduledCount bildirim, $alarmCount alarm');
+      debugPrint('🔔 $zamanlamaSuresi günlük zamanlama tamamlandı: $scheduledCount bildirim, $alarmCount alarm');
+      
+      // Son zamanlama tarihini kaydet
+      await prefs.setString('last_schedule_date', now.toIso8601String());
+      await prefs.setInt('scheduled_days', zamanlamaSuresi);
     } catch (e, stackTrace) {
       debugPrint('❌ Bildirim zamanlama hatası: $e');
       debugPrint('📋 Stack trace: $stackTrace');
@@ -486,7 +508,7 @@ class ScheduledNotificationService {
     name = name.replaceAll(RegExp(r'[^a-z0-9_]'), '_');
 
     // Özel eşlemeler
-    if (name == '2015_best') name = 'best';
+    if (name == 'best_2015') name = 'best';
 
     return name;
   }

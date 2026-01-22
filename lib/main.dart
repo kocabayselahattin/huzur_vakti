@@ -57,6 +57,10 @@ void main() async {
   // Zamanlanmış bildirim servisini başlat
   await ScheduledNotificationService.initialize();
   
+  // 🔔 Uygulama başlatıldığında alarmları yeniden zamanla
+  // Bu boot sonrası veya uygulama güncellemesi sonrası alarmları geri yükler
+  await ScheduledNotificationService.scheduleAllPrayerNotifications();
+  
   runApp(const HuzurVaktiApp());
 }
 

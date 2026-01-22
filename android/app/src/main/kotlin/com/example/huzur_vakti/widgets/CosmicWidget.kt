@@ -65,9 +65,13 @@ class CosmicWidget : AppWidgetProvider() {
             val hicriTarih = widgetData.getString("hicri_tarih", "28 Recep 1447") ?: "28 Recep 1447"
             val miladiTarih = widgetData.getString("miladi_tarih", "21 Ocak 2026") ?: "21 Ocak 2026"
             
-            // Renk ayarlarını al
-            val arkaPlanKey = widgetData.getString("arkaplan_key", "purple") ?: "purple"
-            val yaziRengiHex = widgetData.getString("yazi_rengi_hex", "FFFFFF") ?: "FFFFFF"
+            // Önce widget'a özel ayarları kontrol et, yoksa varsayılanı kullan
+            val arkaPlanKey = widgetData.getString("cosmic_arkaplan_key", null) 
+                ?: widgetData.getString("arkaplan_key", "purple") 
+                ?: "purple"
+            val yaziRengiHex = widgetData.getString("cosmic_yazi_rengi_hex", null) 
+                ?: widgetData.getString("yazi_rengi_hex", "FFFFFF") 
+                ?: "FFFFFF"
             val yaziRengi = WidgetUtils.parseColorSafe(yaziRengiHex, Color.WHITE)
             val yaziRengiSecondary = Color.argb(180, Color.red(yaziRengi), Color.green(yaziRengi), Color.blue(yaziRengi))
             

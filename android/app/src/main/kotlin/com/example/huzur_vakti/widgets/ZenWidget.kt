@@ -63,9 +63,13 @@ class ZenWidget : AppWidgetProvider() {
             val konum = widgetData.getString("konum", "İstanbul") ?: "İstanbul"
             val sehir = konum.split("/").firstOrNull()?.trim()?.uppercase() ?: konum.uppercase()
             
-            // Renk ayarlarını al
-            val arkaPlanKey = widgetData.getString("arkaplan_key", "light") ?: "light"
-            val yaziRengiHex = widgetData.getString("yazi_rengi_hex", "212121") ?: "212121"
+            // Önce widget'a özel ayarları kontrol et, yoksa varsayılanı kullan
+            val arkaPlanKey = widgetData.getString("zen_arkaplan_key", null) 
+                ?: widgetData.getString("arkaplan_key", "light") 
+                ?: "light"
+            val yaziRengiHex = widgetData.getString("zen_yazi_rengi_hex", null) 
+                ?: widgetData.getString("yazi_rengi_hex", "212121") 
+                ?: "212121"
             val yaziRengi = WidgetUtils.parseColorSafe(yaziRengiHex, Color.parseColor("#212121"))
             val yaziRengiSecondary = Color.argb(180, Color.red(yaziRengi), Color.green(yaziRengi), Color.blue(yaziRengi))
             

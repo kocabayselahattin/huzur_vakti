@@ -65,9 +65,13 @@ class NeonGlowWidget : AppWidgetProvider() {
             val hicriTarih = widgetData.getString("hicri_tarih", "28 Recep 1447") ?: "28 Recep 1447"
             val miladiTarih = widgetData.getString("miladi_tarih", "21 Ocak 2026") ?: "21 Ocak 2026"
             
-            // Renk ayarlarını al
-            val arkaPlanKey = widgetData.getString("arkaplan_key", "dark") ?: "dark"
-            val yaziRengiHex = widgetData.getString("yazi_rengi_hex", "00FF88") ?: "00FF88"
+            // Önce widget'a özel ayarları kontrol et, yoksa varsayılanı kullan
+            val arkaPlanKey = widgetData.getString("neon_arkaplan_key", null) 
+                ?: widgetData.getString("arkaplan_key", "dark") 
+                ?: "dark"
+            val yaziRengiHex = widgetData.getString("neon_yazi_rengi_hex", null) 
+                ?: widgetData.getString("yazi_rengi_hex", "00FF88") 
+                ?: "00FF88"
             val yaziRengi = WidgetUtils.parseColorSafe(yaziRengiHex, Color.parseColor("#00FF88"))
             val yaziRengiSecondary = Color.argb(180, Color.red(yaziRengi), Color.green(yaziRengi), Color.blue(yaziRengi))
             

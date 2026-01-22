@@ -16,19 +16,27 @@
         </shape>
     </item>
     
-    <!-- Origami katı 2 -->
-    <item android:top="60dp" android:left="100dp" android:right="0dp" android:bottom="0dp">
+    <!-- Üst bar -->
+    <item android:top="12dp" android:left="16dp" android:right="16dp" android:bottom="70dp">
         <shape android:shape="rectangle">
-            <corners android:bottomRightRadius="20dp" />
-            <solid android:color="#FFE4B5" />
+            <corners android:radius="4dp" />
+            <solid android:color="#40455A64" />
         </shape>
     </item>
     
-    <!-- Merkez içerik -->
-    <item android:top="25dp" android:left="25dp" android:right="25dp" android:bottom="25dp">
+    <!-- Orta - sayaç -->
+    <item android:top="35dp" android:left="16dp" android:right="50dp" android:bottom="30dp">
         <shape android:shape="rectangle">
-            <corners android:radius="12dp" />
-            <solid android:color="#20D4A574" />
+            <corners android:radius="6dp" />
+            <solid android:color="#60263238" />
+        </shape>
+    </item>
+    
+    <!-- Alt bar -->
+    <item android:top="75dp" android:left="16dp" android:right="90dp" android:bottom="12dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="4dp" />
+            <solid android:color="#30607D8B" />
         </shape>
     </item>
 </layer-list>

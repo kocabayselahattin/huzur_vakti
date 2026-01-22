@@ -4,55 +4,30 @@
     android:layout_height="match_parent"
     android:background="@drawable/widget_bg_zen"
     android:orientation="vertical"
-    android:padding="16dp"
-    android:gravity="center">
+    android:gravity="center"
+    android:padding="12dp">
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="İSTANBUL"
-        android:textColor="#9E9E9E"
-        android:textSize="10sp"
-        android:letterSpacing="0.15" />
+        android:text="Öğle'ye kalan"
+        android:textColor="#2196F3"
+        android:textSize="12sp"
+        android:textStyle="bold" />
 
     <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:text="02:30"
+        android:text="02:30:00"
         android:textColor="#212121"
-        android:textSize="36sp"
-        android:fontFamily="sans-serif-thin"
-        android:layout_marginTop="4dp"
-        android:layout_marginBottom="4dp" />
+        android:textSize="28sp"
+        android:textStyle="bold" />
 
-    <LinearLayout
+    <TextView
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:orientation="horizontal"
-        android:gravity="center">
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Öğle"
-            android:textColor="#2196F3"
-            android:textSize="12sp"
-            android:textStyle="bold" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text=" vaktine"
-            android:textColor="#757575"
-            android:textSize="12sp" />
-
-    </LinearLayout>
-
-    <ImageView
-        android:layout_width="80dp"
-        android:layout_height="2dp"
-        android:layout_marginTop="8dp"
-        android:background="#2196F3"
-        android:contentDescription="@null" />
+        android:text="İstanbul"
+        android:textColor="#757575"
+        android:textSize="11sp" />
 
 </LinearLayout>

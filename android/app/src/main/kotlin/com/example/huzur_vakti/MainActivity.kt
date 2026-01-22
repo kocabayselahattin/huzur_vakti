@@ -3,6 +3,9 @@ package com.example.huzur_vakti
 import android.Manifest
 import android.app.AlarmManager
 import android.app.NotificationManager
+import android.app.PendingIntent
+import android.appwidget.AppWidgetManager
+import android.content.ComponentName
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -14,7 +17,7 @@ import androidx.core.content.ContextCompat
 import com.example.huzur_vakti.alarm.AlarmReceiver
 import com.example.huzur_vakti.dnd.PrayerDndScheduler
 import com.example.huzur_vakti.lockscreen.LockScreenNotificationService
-import com.example.huzur_vakti.widgets.WidgetUpdateReceiver
+import com.example.huzur_vakti.widgets.*
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -44,6 +47,20 @@ class MainActivity : FlutterActivity() {
 					"cancelWidgetUpdates" -> {
 						WidgetUpdateReceiver.cancelWidgetUpdates(this)
 						result.success(true)
+					}
+					"pinWidget" -> {
+						val widgetType = call.argument<String>("widgetType") ?: "klasik"
+						val pinResult = pinWidgetToHomeScreen(widgetType)
+						result.success(pinResult)
+					}
+					"canPinWidgets" -> {
+						val appWidgetManager = AppWidgetManager.getInstance(this)
+						val canPin = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+							appWidgetManager.isRequestPinAppWidgetSupported
+						} else {
+							false
+						}
+						result.success(canPin)
 					}
 					else -> result.notImplemented()
 				}
@@ -224,5 +241,41 @@ class MainActivity : FlutterActivity() {
 					else -> result.notImplemented()
 				}
 			}
+	}
+
+	private fun pinWidgetToHomeScreen(widgetType: String): Boolean {
+		if (Build.VERSION.SDK_INT < Build.VERSION_CODES.O) {
+			return false
+		}
+
+		val appWidgetManager = AppWidgetManager.getInstance(this)
+		if (!appWidgetManager.isRequestPinAppWidgetSupported) {
+			return false
+		}
+
+		val widgetClass = when (widgetType) {
+			"klasik" -> KlasikTuruncuWidget::class.java
+			"mini" -> MiniSunsetWidget::class.java
+			"glass" -> GlassmorphismWidget::class.java
+			"neon" -> NeonGlowWidget::class.java
+			"cosmic" -> CosmicWidget::class.java
+			"timeline" -> TimelineWidget::class.java
+			"zen" -> ZenWidget::class.java
+			"origami" -> OrigamiWidget::class.java
+			else -> KlasikTuruncuWidget::class.java
+		}
+
+		val provider = ComponentName(this, widgetClass)
+		
+		// Callback için PendingIntent (opsiyonel)
+		val callbackIntent = Intent(this, widgetClass)
+		val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+			PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_MUTABLE
+		} else {
+			PendingIntent.FLAG_UPDATE_CURRENT
+		}
+		val successCallback = PendingIntent.getBroadcast(this, 0, callbackIntent, flags)
+
+		return appWidgetManager.requestPinAppWidget(provider, null, successCallback)
 	}
 }

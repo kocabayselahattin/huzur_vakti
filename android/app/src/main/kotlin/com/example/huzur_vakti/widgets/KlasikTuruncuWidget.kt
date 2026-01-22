@@ -73,9 +73,13 @@ class KlasikTuruncuWidget : AppWidgetProvider() {
             val konum = widgetData.getString("konum", "İSTANBUL") ?: "İSTANBUL"
 
             
-            // Renk ayarlarını al
-            val arkaPlanKey = widgetData.getString("arkaplan_key", "orange") ?: "orange"
-            val yaziRengiHex = widgetData.getString("yazi_rengi_hex", "FFFFFF") ?: "FFFFFF"
+            // Önce widget'a özel ayarları kontrol et, yoksa varsayılanı kullan
+            val arkaPlanKey = widgetData.getString("klasik_arkaplan_key", null) 
+                ?: widgetData.getString("arkaplan_key", "orange") 
+                ?: "orange"
+            val yaziRengiHex = widgetData.getString("klasik_yazi_rengi_hex", null) 
+                ?: widgetData.getString("yazi_rengi_hex", "FFFFFF") 
+                ?: "FFFFFF"
             val yaziRengi = WidgetUtils.parseColorSafe(yaziRengiHex, Color.WHITE)
             val yaziRengiSecondary = Color.argb(180, Color.red(yaziRengi), Color.green(yaziRengi), Color.blue(yaziRengi))
             

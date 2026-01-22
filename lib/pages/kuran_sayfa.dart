@@ -1228,6 +1228,10 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
   }
 
   Widget _buildAyetKarti(Ayet ayet, TemaRenkleri renkler) {
+    // Arapça veya Farsça dil seçiliyse okunuş ve meal gizlenecek
+    final currentLang = _languageService.currentLanguage;
+    final hideTranslation = currentLang == 'ar' || currentLang == 'fa';
+    
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -1297,8 +1301,8 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
             ),
           ),
 
-          // Okunuş
-          if (ayet.okunus.isNotEmpty)
+          // Okunuş - Arapça/Farsça dışındaki dillerde göster
+          if (ayet.okunus.isNotEmpty && !hideTranslation)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -1328,32 +1332,33 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
               ),
             ),
 
-          // Meal
-          Padding(
-            padding: const EdgeInsets.all(16),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Meal',
-                  style: TextStyle(
-                    color: renkler.vurgu,
-                    fontSize: 10,
-                    fontWeight: FontWeight.w500,
+          // Meal - Arapça/Farsça dışındaki dillerde göster
+          if (!hideTranslation)
+            Padding(
+              padding: const EdgeInsets.all(16),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    'Meal',
+                    style: TextStyle(
+                      color: renkler.vurgu,
+                      fontSize: 10,
+                      fontWeight: FontWeight.w500,
+                    ),
                   ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  ayet.meal,
-                  style: TextStyle(
-                    color: renkler.yaziPrimary,
-                    fontSize: 15 * _fontScale,
-                    height: 1.6,
+                  const SizedBox(height: 4),
+                  Text(
+                    ayet.meal,
+                    style: TextStyle(
+                      color: renkler.yaziPrimary,
+                      fontSize: 15 * _fontScale,
+                      height: 1.6,
+                    ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
         ],
       ),
     );

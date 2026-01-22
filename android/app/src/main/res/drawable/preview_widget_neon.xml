@@ -4,7 +4,7 @@
     <item>
         <shape android:shape="rectangle">
             <corners android:radius="16dp" />
-            <solid android:color="#1A1A2E" />
+            <solid android:color="#0D1B2A" />
         </shape>
     </item>
     
@@ -14,25 +14,31 @@
             <corners android:radius="16dp" />
             <stroke
                 android:width="2dp"
-                android:color="#00F5FF" />
+                android:color="#00FFFF" />
         </shape>
     </item>
     
-    <!-- İç glow efekti -->
-    <item android:top="4dp" android:left="4dp" android:right="4dp" android:bottom="4dp">
+    <!-- Üst bar - cyan -->
+    <item android:top="12dp" android:left="14dp" android:right="14dp" android:bottom="70dp">
         <shape android:shape="rectangle">
-            <corners android:radius="12dp" />
-            <stroke
-                android:width="1dp"
-                android:color="#4000F5FF" />
+            <corners android:radius="4dp" />
+            <solid android:color="#4000FFFF" />
         </shape>
     </item>
     
-    <!-- Merkez içerik -->
-    <item android:top="16dp" android:left="16dp" android:right="16dp" android:bottom="16dp">
+    <!-- Orta - sayaç -->
+    <item android:top="35dp" android:left="14dp" android:right="40dp" android:bottom="30dp">
         <shape android:shape="rectangle">
-            <corners android:radius="8dp" />
-            <solid android:color="#2000F5FF" />
+            <corners android:radius="6dp" />
+            <solid android:color="#60FF00FF" />
+        </shape>
+    </item>
+    
+    <!-- Alt bar -->
+    <item android:top="75dp" android:left="14dp" android:right="80dp" android:bottom="12dp">
+        <shape android:shape="rectangle">
+            <corners android:radius="4dp" />
+            <solid android:color="#3000FFFF" />
         </shape>
     </item>
 </layer-list>

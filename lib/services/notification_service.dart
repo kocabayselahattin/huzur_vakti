@@ -24,7 +24,7 @@ class NotificationService {
     name = name.replaceAll(RegExp(r'[^a-z0-9_]'), '_');
     
     // Özel eşlemeler
-    if (name == '2015_best') name = 'best';
+    if (name == 'best_2015') name = 'best';
     
     return name;
   }

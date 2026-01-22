@@ -54,8 +54,17 @@ class LanguageService extends ChangeNotifier {
   }
 
   String? translate(String key) {
-    return _localizedStrings[key] as String?;
+    final value = _localizedStrings[key];
+    if (value is String) {
+      return value;
+    }
+    return null;
   }
 
-  String? operator [](String key) => translate(key);
+  /// String olmayan değerleri de (List, Map vb.) döndürmek için
+  dynamic get(String key) {
+    return _localizedStrings[key];
+  }
+
+  dynamic operator [](String key) => get(key);
 }

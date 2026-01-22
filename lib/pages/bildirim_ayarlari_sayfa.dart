@@ -1,8 +1,10 @@
+import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:path_provider/path_provider.dart';
 import '../services/dnd_service.dart';
 import '../services/scheduled_notification_service.dart';
 import '../services/language_service.dart';
@@ -20,8 +22,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
 
   // Bildirim açık/kapalı durumları
   Map<String, bool> _bildirimAcik = {
-    'imsak': true,
-    'gunes': false,
+    'imsak': false,
+    'gunes': true,
     'ogle': true,
     'ikindi': true,
     'aksam': true,
@@ -55,42 +57,121 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
   bool _degisiklikYapildi = false;
 
   // Erken bildirim süreleri (dakika)
+  // Varsayılan: 15 dakika önce (güneş 45 dakika)
   Map<String, int> _erkenBildirim = {
-    'imsak': 30,
-    'gunes': 0,
+    'imsak': 15,
+    'gunes': 45,
     'ogle': 15,
     'ikindi': 15,
     'aksam': 15,
     'yatsi': 15,
   };
 
-  // Bildirim sesi seçimi (her vakit için)
+  // Bildirim sesi seçimi (her vakit için) - default: Best
   Map<String, String> _bildirimSesi = {
-    'imsak': 'Ding_Dong.mp3',
-    'gunes': 'arriving.mp3',
-    'ogle': 'Echo.mp3',
-    'ikindi': 'Sweet_Favour.mp3',
-    'aksam': 'Violet.mp3',
-    'yatsi': 'Woodpecker.mp3',
+    'imsak': 'best_2015.mp3',
+    'gunes': 'best_2015.mp3',
+    'ogle': 'best_2015.mp3',
+    'ikindi': 'best_2015.mp3',
+    'aksam': 'best_2015.mp3',
+    'yatsi': 'best_2015.mp3',
   };
 
   final List<int> _erkenSureler = [0, 5, 10, 15, 20, 30, 45, 60];
   final List<Map<String, String>> _sesSecenekleri = [
-    {'ad': 'Best', 'dosya': '2015_best.mp3'},
+    {'ad': 'Best', 'dosya': 'best_2015.mp3'},
     {'ad': 'Arriving', 'dosya': 'arriving.mp3'},
-    {'ad': 'Corner', 'dosya': 'Corner.mp3'},
-    {'ad': 'Ding Dong', 'dosya': 'Ding_Dong.mp3'},
-    {'ad': 'Echo', 'dosya': 'Echo.mp3'},
+    {'ad': 'Corner', 'dosya': 'corner.mp3'},
+    {'ad': 'Ding Dong', 'dosya': 'ding_dong.mp3'},
+    {'ad': 'Echo', 'dosya': 'echo.mp3'},
     {'ad': 'iPhone SMS', 'dosya': 'iphone_sms_original.mp3'},
     {'ad': 'Snaps', 'dosya': 'snaps.mp3'},
-    {'ad': 'Sweet Favour', 'dosya': 'Sweet_Favour.mp3'},
-    {'ad': 'Violet', 'dosya': 'Violet.mp3'},
-    {'ad': 'Woodpecker', 'dosya': 'Woodpecker.mp3'},
+    {'ad': 'Sweet Favour', 'dosya': 'sweet_favour.mp3'},
+    {'ad': 'Violet', 'dosya': 'violet.mp3'},
+    {'ad': 'Woodpecker', 'dosya': 'woodpecker.mp3'},
     {'ad': 'Özel Ses Seç', 'dosya': 'custom'},
   ];
 
   // Özel ses yolları
   Map<String, String> _ozelSesDosyalari = {};
+
+  /// Dosya adını Android resource kurallarına uygun hale getirir
+  /// - Küçük harfe çevirir
+  /// - Türkçe karakterleri değiştirir
+  /// - Rakamla başlıyorsa önüne "sound_" ekler
+  /// - Geçersiz karakterleri alt çizgi ile değiştirir
+  String _normalizeFileName(String fileName) {
+    // Uzantıyı ayır
+    final lastDot = fileName.lastIndexOf('.');
+    String name = lastDot > 0 ? fileName.substring(0, lastDot) : fileName;
+    String ext = lastDot > 0 ? fileName.substring(lastDot) : '';
+
+    // Küçük harfe çevir
+    name = name.toLowerCase();
+    ext = ext.toLowerCase();
+
+    // Türkçe karakterleri değiştir
+    final turkceKarakterler = {
+      'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u',
+      'Ç': 'c', 'Ğ': 'g', 'İ': 'i', 'Ö': 'o', 'Ş': 's', 'Ü': 'u',
+    };
+    turkceKarakterler.forEach((key, value) {
+      name = name.replaceAll(key, value);
+    });
+
+    // Sadece harf, rakam ve alt çizgi bırak
+    name = name.replaceAll(RegExp(r'[^a-z0-9_]'), '_');
+
+    // Birden fazla alt çizgiyi teke indir
+    name = name.replaceAll(RegExp(r'_+'), '_');
+
+    // Baş ve sondaki alt çizgileri kaldır
+    name = name.replaceAll(RegExp(r'^_+|_+$'), '');
+
+    // Boşsa varsayılan isim ver
+    if (name.isEmpty) {
+      name = 'custom_sound';
+    }
+
+    // Rakamla başlıyorsa önüne "sound_" ekle
+    if (RegExp(r'^[0-9]').hasMatch(name)) {
+      name = 'sound_$name';
+    }
+
+    return '$name$ext';
+  }
+
+  /// Özel ses dosyasını uygulamanın dizinine güvenli isimle kopyalar
+  Future<String?> _copyCustomSoundFile(String sourcePath, String vakitKey) async {
+    try {
+      final appDir = await getApplicationDocumentsDirectory();
+      final soundsDir = Directory('${appDir.path}/custom_sounds');
+      
+      // Dizin yoksa oluştur
+      if (!await soundsDir.exists()) {
+        await soundsDir.create(recursive: true);
+      }
+
+      // Orijinal dosya adını al ve normalize et
+      final originalFileName = sourcePath.split('/').last.split('\\').last;
+      final safeFileName = _normalizeFileName(originalFileName);
+      
+      // Benzersiz isim oluştur (vakit key + zaman damgası)
+      final timestamp = DateTime.now().millisecondsSinceEpoch;
+      final uniqueFileName = '${vakitKey}_${timestamp}_$safeFileName';
+      
+      final destPath = '${soundsDir.path}/$uniqueFileName';
+      
+      // Dosyayı kopyala
+      final sourceFile = File(sourcePath);
+      await sourceFile.copy(destPath);
+      
+      return destPath;
+    } catch (e) {
+      debugPrint('Ses dosyası kopyalanamadı: $e');
+      return null;
+    }
+  }
 
   @override
   void initState() {
@@ -147,9 +228,13 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
           final shouldRequest = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
-              title: Text(_languageService['notification_permission_required'] ?? 'Bildirim İzni Gerekli'),
+              title: Text(
+                _languageService['notification_permission_required'] ??
+                    'Bildirim İzni Gerekli',
+              ),
               content: Text(
-                _languageService['notification_permission_message'] ?? 'Vakit bildirimleri için bildirim izni vermeniz gerekiyor.',
+                _languageService['notification_permission_message'] ??
+                    'Vakit bildirimleri için bildirim izni vermeniz gerekiyor.',
               ),
               actions: [
                 TextButton(
@@ -171,7 +256,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                 ScaffoldMessenger.of(context).showSnackBar(
                   SnackBar(
                     content: Text(
-                      _languageService['notification_permission_denied'] ?? 'Bildirim izni verilmedi. Bildirimler çalışmayacak.',
+                      _languageService['notification_permission_denied'] ??
+                          'Bildirim izni verilmedi. Bildirimler çalışmayacak.',
                     ),
                     backgroundColor: Colors.red,
                   ),
@@ -193,9 +279,13 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
           final shouldRequest = await showDialog<bool>(
             context: context,
             builder: (context) => AlertDialog(
-              title: Text(_languageService['exact_alarm_permission_required'] ?? 'Tam Zamanlı Alarm İzni Gerekli'),
+              title: Text(
+                _languageService['exact_alarm_permission_required'] ??
+                    'Tam Zamanlı Alarm İzni Gerekli',
+              ),
               content: Text(
-                _languageService['exact_alarm_permission_message'] ?? 'Vakit bildirimlerinin tam zamanında çalması için alarm izni vermeniz gerekiyor.',
+                _languageService['exact_alarm_permission_message'] ??
+                    'Vakit bildirimlerinin tam zamanında çalması için alarm izni vermeniz gerekiyor.',
               ),
               actions: [
                 TextButton(
@@ -247,7 +337,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_languageService['notification_settings_saved'] ?? 'Bildirim ayarları kaydedildi'),
+          content: Text(
+            _languageService['notification_settings_saved'] ??
+                'Bildirim ayarları kaydedildi',
+          ),
           backgroundColor: Colors.green,
         ),
       );
@@ -274,7 +367,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       if (!scheduled && mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text(_languageService['dnd_scheduling_failed'] ?? 'Sessize alma planlanamadı. Konum seçimi gerekli.'),
+            content: Text(
+              _languageService['dnd_scheduling_failed'] ??
+                  'Sessize alma planlanamadı. Konum seçimi gerekli.',
+            ),
             backgroundColor: Colors.orange,
           ),
         );
@@ -292,6 +388,69 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
         _sessizeAl = value;
       });
     }
+  }
+
+  /// Alarm izni kontrolü
+  Future<bool> _checkAlarmPermission() async {
+    final notificationsPlugin = FlutterLocalNotificationsPlugin();
+    final androidImpl = notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+
+    if (androidImpl == null) return true;
+
+    final canScheduleExact =
+        await androidImpl.canScheduleExactNotifications() ?? true;
+
+    if (!canScheduleExact) {
+      if (mounted) {
+        final shouldRequest = await showDialog<bool>(
+          context: context,
+          builder: (context) => AlertDialog(
+            title: Text(
+              _languageService['exact_alarm_permission_required'] ??
+                  'Alarm İzni Gerekli',
+            ),
+            content: Text(
+              _languageService['exact_alarm_permission_message'] ??
+                  'Namaz vakti alarmlarının tam zamanında çalması için "Alarm ve hatırlatıcı" iznini vermeniz gerekiyor. Ayarlar açılacak.',
+            ),
+            actions: [
+              TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: Text(_languageService['give_up'] ?? 'Vazgeç'),
+              ),
+              ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                child: Text(_languageService['open_settings'] ?? 'Ayarları Aç'),
+              ),
+            ],
+          ),
+        );
+
+        if (shouldRequest == true) {
+          await androidImpl.requestExactAlarmsPermission();
+          // Kullanıcı ayarlardan döndükten sonra tekrar kontrol et
+          final nowHasPermission =
+              await androidImpl.canScheduleExactNotifications() ?? true;
+          if (!nowHasPermission && mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  _languageService['alarm_permission_denied'] ??
+                      'Alarm izni verilmedi. Alarmlar çalışmayabilir.',
+                ),
+                backgroundColor: Colors.orange,
+              ),
+            );
+          }
+          return nowHasPermission;
+        }
+        return false;
+      }
+    }
+    return true;
   }
 
   Future<void> _sesCal(String key, String sesDosyasi) async {
@@ -322,15 +481,18 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     final devam = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(_languageService['custom_sound_title'] ?? 'Özel Ses Seçimi'),
+        title: Text(
+          _languageService['custom_sound_title'] ?? 'Özel Ses Seçimi',
+        ),
         content: Text(
-          _languageService['custom_sound_warning'] ?? 'Önemli: Ses dosyanızın adı rakamla başlamamalıdır.\n\n'
-          'Android sisteminde ses dosyası isimleri harfle başlamalıdır.\n\n'
-          'Örnek:\n'
-          '✓ vakit_sesi.mp3\n'
-          '✓ namaz_ezani.mp3\n'
-          '✗ 2024_ses.mp3\n'
-          '✗ 1_ezan.mp3',
+          _languageService['custom_sound_info'] ??
+              'Telefonunuzdan bir ses dosyası seçebilirsiniz.\n\n'
+                  'Desteklenen formatlar:\n'
+                  '• MP3\n'
+                  '• WAV\n'
+                  '• OGG\n'
+                  '• M4A\n\n'
+                  'Seçtiğiniz ses dosyası uygulama içine kopyalanacaktır.',
         ),
         actions: [
           TextButton(
@@ -339,7 +501,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
           ),
           ElevatedButton(
             onPressed: () => Navigator.pop(context, true),
-            child: Text(_languageService['understood'] ?? 'Anladım, Devam Et'),
+            child: Text(_languageService['select_file'] ?? 'Dosya Seç'),
           ),
         ],
       ),
@@ -354,25 +516,43 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       );
 
       if (result != null && result.files.single.path != null) {
-        final dosyaYolu = result.files.single.path!;
+        final secilenDosyaYolu = result.files.single.path!;
+        
+        // Dosyayı güvenli isimle uygulamanın dizinine kopyala
+        final guvenliDosyaYolu = await _copyCustomSoundFile(secilenDosyaYolu, key);
+        
+        if (guvenliDosyaYolu != null) {
+          setState(() {
+            _ozelSesDosyalari[key] = guvenliDosyaYolu;
+            _bildirimSesi[key] = 'custom';
+            _degisiklikYapildi = true;
+          });
 
-        setState(() {
-          _ozelSesDosyalari[key] = dosyaYolu;
-          _bildirimSesi[key] = 'custom';
-          _degisiklikYapildi = true;
-        });
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  _languageService['custom_sound_selected'] ?? 'Özel ses seçildi',
+                ),
+                backgroundColor: Colors.green,
+              ),
+            );
+          }
 
-        if (mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(_languageService['custom_sound_selected'] ?? 'Özel ses seçildi'),
-              backgroundColor: Colors.green,
-            ),
-          );
+          // Seçilen sesi çal
+          await _sesCal(key, 'custom');
+        } else {
+          if (mounted) {
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text(
+                  _languageService['custom_sound_copy_error'] ?? 'Ses dosyası kopyalanamadı',
+                ),
+                backgroundColor: Colors.red,
+              ),
+            );
+          }
         }
-
-        // Seçilen sesi çal
-        await _sesCal(key, 'custom');
       } else {
         // Kullanıcı iptal etti, önceki seçimi koru
         if (mounted) {
@@ -408,7 +588,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
             style: const TextStyle(color: Colors.white),
           ),
           content: Text(
-            _languageService['dnd_permission_message'] ?? 'Vakitlerde sessize almak için sistem izni gerekiyor. İzin vermek ister misiniz?',
+            _languageService['dnd_permission_message'] ??
+                'Vakitlerde sessize almak için sistem izni gerekiyor. İzin vermek ister misiniz?',
             style: const TextStyle(color: Colors.white70),
           ),
           actions: [
@@ -445,11 +626,13 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
             builder: (context) => AlertDialog(
               backgroundColor: const Color(0xFF2B3151),
               title: Text(
-                _languageService['save_changes_title'] ?? 'Değişiklikleri Kaydet?',
+                _languageService['save_changes_title'] ??
+                    'Değişiklikleri Kaydet?',
                 style: const TextStyle(color: Colors.white),
               ),
               content: Text(
-                _languageService['save_changes_message'] ?? 'Yaptığınız değişiklikler kaydedilsin mi?',
+                _languageService['save_changes_message'] ??
+                    'Yaptığınız değişiklikler kaydedilsin mi?',
                 style: const TextStyle(color: Colors.white70),
               ),
               actions: [
@@ -483,7 +666,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       child: Scaffold(
         backgroundColor: const Color(0xFF1B2741),
         appBar: AppBar(
-          title: Text(_languageService['notification_settings_title'] ?? 'Bildirim Ayarları'),
+          title: Text(
+            _languageService['notification_settings_title'] ??
+                'Bildirim Ayarları',
+          ),
           backgroundColor: Colors.transparent,
           elevation: 0,
           actions: [
@@ -514,7 +700,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                       const Icon(Icons.info_outline, color: Colors.cyanAccent),
                       const SizedBox(width: 12),
                       Text(
-                        _languageService['notification_alarm_system'] ?? 'Bildirim ve Alarm Sistemi',
+                        _languageService['notification_alarm_system'] ??
+                            'Bildirim ve Alarm Sistemi',
                         style: const TextStyle(
                           color: Colors.white,
                           fontWeight: FontWeight.bold,
@@ -525,11 +712,12 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                   ),
                   const SizedBox(height: 12),
                   Text(
-                    _languageService['notification_info_text'] ?? '• Her vakit için bildirimi açıp kapatabilirsiniz\n'
-                    '• "Vaktinde Hatırlat" ile sesli alarm kurabilirsiniz\n'
-                    '• Erken hatırlatma ile vakitten önce uyarı alabilirsiniz\n'
-                    '• Alarmlar 7 gün önceden otomatik zamanlanır\n'
-                    '• Uygulama arka planda alarmları günceller',
+                    _languageService['notification_info_text'] ??
+                        '• Her vakit için bildirimi açıp kapatabilirsiniz\n'
+                            '• "Vaktinde Hatırlat" ile sesli alarm kurabilirsiniz\n'
+                            '• Erken hatırlatma ile vakitten önce uyarı alabilirsiniz\n'
+                            '• Alarmlar 7 gün önceden otomatik zamanlanır\n'
+                            '• Uygulama arka planda alarmları günceller',
                     style: const TextStyle(color: Colors.white70, fontSize: 13),
                   ),
                 ],
@@ -553,7 +741,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
-                          _languageService['mute_during_prayer'] ?? 'Vakitlerde sessize al',
+                          _languageService['mute_during_prayer'] ??
+                              'Vakitlerde sessize al',
                           style: const TextStyle(
                             color: Colors.white,
                             fontSize: 15,
@@ -575,10 +764,18 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                   ),
                   const SizedBox(height: 6),
                   Padding(
-                    padding: const EdgeInsets.only(left: 36, right: 12, bottom: 6),
+                    padding: const EdgeInsets.only(
+                      left: 36,
+                      right: 12,
+                      bottom: 6,
+                    ),
                     child: Text(
-                      _languageService['mute_during_prayer_desc'] ?? 'Öğle, ikindi, akşam ve yatsı vakitlerinde 30 dk sessize alınır. Cuma günü 60 dk uygulanır.',
-                      style: const TextStyle(color: Colors.white54, fontSize: 12),
+                      _languageService['mute_during_prayer_desc'] ??
+                          'Öğle, ikindi, akşam ve yatsı vakitlerinde 30 dk sessize alınır. Cuma günü 60 dk uygulanır.',
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
                     ),
                   ),
                 ],
@@ -599,7 +796,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                       });
                     },
                     icon: const Icon(Icons.notifications_active),
-                    label: Text(_languageService['enable_all_notifications'] ?? 'Tümünü Aç'),
+                    label: Text(
+                      _languageService['enable_all_notifications'] ??
+                          'Tümünü Aç',
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.cyanAccent,
                       side: const BorderSide(color: Colors.cyanAccent),
@@ -619,7 +819,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                       });
                     },
                     icon: const Icon(Icons.notifications_off),
-                    label: Text(_languageService['disable_all_notifications'] ?? 'Tümünü Kapat'),
+                    label: Text(
+                      _languageService['disable_all_notifications'] ??
+                          'Tümünü Kapat',
+                    ),
                     style: OutlinedButton.styleFrom(
                       foregroundColor: Colors.orange,
                       side: const BorderSide(color: Colors.orange),
@@ -751,7 +954,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                 children: [
                   // Vaktinde Hatırlat - Ana switch
                   Container(
-                    padding: const EdgeInsets.symmetric(vertical: 8, horizontal: 12),
+                    padding: const EdgeInsets.symmetric(
+                      vertical: 8,
+                      horizontal: 12,
+                    ),
                     decoration: BoxDecoration(
                       color: alarmAcik
                           ? Colors.orangeAccent.withOpacity(0.15)
@@ -767,7 +973,9 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                       children: [
                         Icon(
                           Icons.alarm,
-                          color: alarmAcik ? Colors.orangeAccent : Colors.white54,
+                          color: alarmAcik
+                              ? Colors.orangeAccent
+                              : Colors.white54,
                           size: 24,
                         ),
                         const SizedBox(width: 12),
@@ -776,17 +984,22 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
-                                _languageService['notify_at_prayer'] ?? 'Vaktinde Hatırlat',
+                                _languageService['notify_at_prayer'] ??
+                                    'Vaktinde Hatırlat',
                                 style: TextStyle(
-                                  color: alarmAcik ? Colors.orangeAccent : Colors.white,
+                                  color: alarmAcik
+                                      ? Colors.orangeAccent
+                                      : Colors.white,
                                   fontSize: 15,
                                   fontWeight: FontWeight.bold,
                                 ),
                               ),
                               Text(
                                 alarmAcik
-                                    ? _languageService['alarm_enabled_desc'] ?? 'Kilit ekranında bile sesli uyarı alacaksınız'
-                                    : _languageService['alarm_disabled_desc'] ?? 'Açık olunca kilit ekranında alarm çalar',
+                                    ? _languageService['alarm_enabled_desc'] ??
+                                          'Kilit ekranında bile sesli uyarı alacaksınız'
+                                    : _languageService['alarm_disabled_desc'] ??
+                                          'Açık olunca kilit ekranında alarm çalar',
                                 style: const TextStyle(
                                   color: Colors.white54,
                                   fontSize: 11,
@@ -797,7 +1010,15 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                         ),
                         Switch(
                           value: alarmAcik,
-                          onChanged: (value) {
+                          onChanged: (value) async {
+                            if (value) {
+                              // Alarm açılırken izin kontrolü yap
+                              final hasPermission =
+                                  await _checkAlarmPermission();
+                              if (!hasPermission) {
+                                return;
+                              }
+                            }
                             setState(() {
                               _alarmAcik[key] = value;
                               _degisiklikYapildi = true;
@@ -814,8 +1035,12 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                       const Icon(Icons.timer, color: Colors.white54, size: 18),
                       const SizedBox(width: 8),
                       Text(
-                        _languageService['early_reminder'] ?? 'Erken hatırlatma:',
-                        style: const TextStyle(color: Colors.white54, fontSize: 13),
+                        _languageService['early_reminder'] ??
+                            'Erken hatırlatma:',
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 13,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -843,9 +1068,11 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                                 if (dakika == 0) {
                                   label = _languageService['none'] ?? 'Yok';
                                 } else if (dakika < 60) {
-                                  label = '$dakika ${_languageService['minutes_before'] ?? 'dk önce'}';
+                                  label =
+                                      '$dakika ${_languageService['minutes_before'] ?? 'dk önce'}';
                                 } else {
-                                  label = '${dakika ~/ 60} ${_languageService['hours_before'] ?? 'saat önce'}';
+                                  label =
+                                      '${dakika ~/ 60} ${_languageService['hours_before'] ?? 'saat önce'}';
                                 }
                                 return DropdownMenuItem(
                                   value: dakika,
@@ -876,8 +1103,12 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                       ),
                       const SizedBox(width: 8),
                       Text(
-                        _languageService['notification_sound'] ?? 'Bildirim sesi:',
-                        style: const TextStyle(color: Colors.white54, fontSize: 13),
+                        _languageService['notification_sound'] ??
+                            'Bildirim sesi:',
+                        style: const TextStyle(
+                          color: Colors.white54,
+                          fontSize: 13,
+                        ),
                       ),
                       const SizedBox(width: 12),
                       Expanded(
@@ -937,7 +1168,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                           color: Colors.cyanAccent,
                           size: 28,
                         ),
-                        tooltip: _languageService['listen_sound'] ?? 'Sesi dinle',
+                        tooltip:
+                            _languageService['listen_sound'] ?? 'Sesi dinle',
                       ),
                     ],
                   ),

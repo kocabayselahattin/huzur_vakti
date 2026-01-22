@@ -76,9 +76,13 @@ class MiniSunsetWidget : AppWidgetProvider() {
             val konum = widgetData.getString("konum", "İstanbul") ?: "İstanbul"
 
             
-            // Renk ayarlarını al
-            val arkaPlanKey = widgetData.getString("arkaplan_key", "sunset") ?: "sunset"
-            val yaziRengiHex = widgetData.getString("yazi_rengi_hex", "664422") ?: "664422"
+            // Önce widget'a özel ayarları kontrol et, yoksa varsayılanı kullan
+            val arkaPlanKey = widgetData.getString("mini_arkaplan_key", null) 
+                ?: widgetData.getString("arkaplan_key", "sunset") 
+                ?: "sunset"
+            val yaziRengiHex = widgetData.getString("mini_yazi_rengi_hex", null) 
+                ?: widgetData.getString("yazi_rengi_hex", "664422") 
+                ?: "664422"
             val yaziRengi = WidgetUtils.parseColorSafe(yaziRengiHex, Color.parseColor("#664422"))
             val yaziRengiSecondary = Color.argb(180, Color.red(yaziRengi), Color.green(yaziRengi), Color.blue(yaziRengi))
             

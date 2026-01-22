@@ -1,4 +1,5 @@
 import 'package:flutter/services.dart';
+import 'package:flutter/foundation.dart';
 
 /// Android alarm sistemi için Flutter servis sınıfı
 /// Bildirim ayarları ile senkronize çalışır
@@ -19,6 +20,19 @@ class AlarmService {
     int? alarmId,
   }) async {
     try {
+      final now = DateTime.now().millisecondsSinceEpoch;
+      final triggerTime = DateTime.fromMillisecondsSinceEpoch(triggerAtMillis);
+      
+      debugPrint('🔔 Alarm kurulacak: $prayerName');
+      debugPrint('   Zaman: $triggerTime');
+      debugPrint('   Ses: $soundPath');
+      debugPrint('   ID: ${alarmId ?? prayerName.hashCode}');
+      
+      if (triggerAtMillis <= now) {
+        debugPrint('⚠️ Alarm zamanı geçmiş, atlanıyor');
+        return false;
+      }
+      
       final result = await _channel.invokeMethod<bool>('scheduleAlarm', {
         'prayerName': prayerName,
         'triggerAtMillis': triggerAtMillis,
@@ -26,9 +40,11 @@ class AlarmService {
         'useVibration': useVibration,
         'alarmId': alarmId ?? prayerName.hashCode,
       });
+      
+      debugPrint('✅ Alarm kuruldu: $prayerName - Sonuç: $result');
       return result ?? false;
     } catch (e) {
-      print('Alarm kurma hatası: $e');
+      debugPrint('❌ Alarm kurma hatası: $e');
       return false;
     }
   }

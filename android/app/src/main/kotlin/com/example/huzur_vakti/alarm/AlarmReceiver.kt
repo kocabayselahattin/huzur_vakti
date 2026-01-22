@@ -38,12 +38,47 @@ class AlarmReceiver : BroadcastReceiver() {
         ) {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             
+            // Ses dosyası null veya boş ise SharedPreferences'tan al
+            var actualSoundPath = soundPath
+            if (actualSoundPath.isNullOrEmpty() || actualSoundPath == "ding_dong") {
+                val vakitKey = prayerName.lowercase()
+                    .replace("ı", "i").replace("ö", "o").replace("ü", "u")
+                    .replace("ş", "s").replace("ğ", "g").replace("ç", "c")
+                    .let { name ->
+                        when {
+                            name.contains("imsak") || name.contains("sahur") -> "imsak"
+                            name.contains("gunes") -> "gunes"
+                            name.contains("ogle") -> "ogle"
+                            name.contains("ikindi") -> "ikindi"
+                            name.contains("aksam") -> "aksam"
+                            name.contains("yatsi") -> "yatsi"
+                            else -> ""
+                        }
+                    }
+                
+                if (vakitKey.isNotEmpty()) {
+                    val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+                    val savedSound = prefs.getString("flutter.bildirim_sesi_$vakitKey", null)
+                    if (!savedSound.isNullOrEmpty()) {
+                        actualSoundPath = savedSound
+                        Log.d(TAG, "🔊 Ses dosyası SharedPreferences'tan alındı: $vakitKey -> $actualSoundPath")
+                    }
+                }
+            }
+            
+            // Hala null ise varsayılan ses
+            if (actualSoundPath.isNullOrEmpty()) {
+                actualSoundPath = "ding_dong.mp3"
+            }
+            
+            Log.d(TAG, "🔊 Alarm ses dosyası: $actualSoundPath (orijinal: $soundPath)")
+            
             val intent = Intent(context, AlarmReceiver::class.java).apply {
                 action = ACTION_PRAYER_ALARM
                 putExtra(EXTRA_ALARM_ID, alarmId)
                 putExtra(EXTRA_VAKIT_NAME, prayerName)
                 putExtra(EXTRA_VAKIT_TIME, "")
-                putExtra(EXTRA_SOUND_FILE, soundPath ?: "ding_dong")
+                putExtra(EXTRA_SOUND_FILE, actualSoundPath)
                 putExtra(EXTRA_IS_EARLY, false)
                 putExtra(EXTRA_EARLY_MINUTES, 0)
             }
@@ -55,35 +90,62 @@ class AlarmReceiver : BroadcastReceiver() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             
+            val triggerTime = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm:ss", java.util.Locale.getDefault())
+                .format(java.util.Date(triggerAtMillis))
+            Log.d(TAG, "🕐 Alarm zamanlanıyor: $prayerName - $triggerTime (ID: $alarmId, Ses: $actualSoundPath)")
+            
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                    if (alarmManager.canScheduleExactAlarms()) {
+                    val canScheduleExact = alarmManager.canScheduleExactAlarms()
+                    Log.d(TAG, "📋 Exact alarm izni: $canScheduleExact")
+                    
+                    if (canScheduleExact) {
                         alarmManager.setAlarmClock(
                             AlarmManager.AlarmClockInfo(triggerAtMillis, pendingIntent),
                             pendingIntent
                         )
+                        Log.d(TAG, "✅ setAlarmClock ile zamanlandı")
                     } else {
-                        // Fallback - inexact alarm
-                        alarmManager.setExactAndAllowWhileIdle(
+                        // Exact alarm izni yoksa setAndAllowWhileIdle kullan (daha az güvenilir ama çalışır)
+                        alarmManager.setAndAllowWhileIdle(
                             AlarmManager.RTC_WAKEUP,
                             triggerAtMillis,
                             pendingIntent
                         )
+                        Log.w(TAG, "⚠️ Exact alarm izni yok! setAndAllowWhileIdle kullanıldı (daha az güvenilir)")
                     }
                 } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     alarmManager.setAlarmClock(
                         AlarmManager.AlarmClockInfo(triggerAtMillis, pendingIntent),
                         pendingIntent
                     )
+                    Log.d(TAG, "✅ setAlarmClock ile zamanlandı (M+)")
                 } else {
                     alarmManager.setExact(
                         AlarmManager.RTC_WAKEUP,
                         triggerAtMillis,
                         pendingIntent
                     )
+                    Log.d(TAG, "✅ setExact ile zamanlandı")
                 }
                 
-                Log.d(TAG, "✅ Alarm zamanlandı: $prayerName - ID: $alarmId")
+                Log.d(TAG, "✅ Alarm başarıyla zamanlandı: $prayerName - ID: $alarmId")
+                
+                // Alarm ID'sini kaydet
+                saveAlarmId(context, alarmId)
+            } catch (e: SecurityException) {
+                Log.e(TAG, "❌ Alarm zamanlama SecurityException: ${e.message}")
+                // Güvenlik hatası - izin yok, yine de inexact alarm dene
+                try {
+                    alarmManager.set(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerAtMillis,
+                        pendingIntent
+                    )
+                    Log.w(TAG, "⚠️ Fallback: Inexact alarm kullanıldı")
+                } catch (e2: Exception) {
+                    Log.e(TAG, "❌ Fallback alarm da başarısız: ${e2.message}")
+                }
             } catch (e: Exception) {
                 Log.e(TAG, "❌ Alarm zamanlama hatası: ${e.message}")
             }
@@ -111,17 +173,48 @@ class AlarmReceiver : BroadcastReceiver() {
                 pendingIntent.cancel()
                 Log.d(TAG, "🔕 Alarm iptal edildi: ID $alarmId")
             }
+            
+            // Kayıtlı ID'yi sil
+            removeAlarmId(context, alarmId)
         }
         
         /**
          * Tüm alarmları iptal et
          */
         fun cancelAllAlarms(context: Context) {
-            // 1-100 arası tüm olası alarm ID'lerini iptal et
-            for (i in 1..100) {
-                cancelAlarm(context, i)
+            // SharedPreferences'dan kayıtlı alarm ID'lerini al
+            val prefs = context.getSharedPreferences("alarm_ids", Context.MODE_PRIVATE)
+            val alarmIds = prefs.getStringSet("active_alarms", emptySet()) ?: emptySet()
+            
+            for (idStr in alarmIds) {
+                val id = idStr.toIntOrNull() ?: continue
+                cancelAlarm(context, id)
             }
-            Log.d(TAG, "🔕 Tüm alarmlar iptal edildi")
+            
+            // Listeyi temizle
+            prefs.edit().remove("active_alarms").apply()
+            
+            Log.d(TAG, "🔕 Tüm alarmlar iptal edildi (${alarmIds.size} adet)")
+        }
+        
+        /**
+         * Alarm ID'sini kaydet
+         */
+        private fun saveAlarmId(context: Context, alarmId: Int) {
+            val prefs = context.getSharedPreferences("alarm_ids", Context.MODE_PRIVATE)
+            val alarmIds = prefs.getStringSet("active_alarms", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+            alarmIds.add(alarmId.toString())
+            prefs.edit().putStringSet("active_alarms", alarmIds).apply()
+        }
+        
+        /**
+         * Alarm ID'sini sil
+         */
+        private fun removeAlarmId(context: Context, alarmId: Int) {
+            val prefs = context.getSharedPreferences("alarm_ids", Context.MODE_PRIVATE)
+            val alarmIds = prefs.getStringSet("active_alarms", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
+            alarmIds.remove(alarmId.toString())
+            prefs.edit().putStringSet("active_alarms", alarmIds).apply()
         }
     }
     
@@ -142,11 +235,40 @@ class AlarmReceiver : BroadcastReceiver() {
                     val alarmId = intent.getIntExtra(EXTRA_ALARM_ID, 0)
                     val vakitName = intent.getStringExtra(EXTRA_VAKIT_NAME) ?: "Vakit"
                     val vakitTime = intent.getStringExtra(EXTRA_VAKIT_TIME) ?: ""
-                    val soundFile = intent.getStringExtra(EXTRA_SOUND_FILE) ?: "ding_dong"
+                    var soundFile = intent.getStringExtra(EXTRA_SOUND_FILE) ?: "ding_dong.mp3"
                     val isEarly = intent.getBooleanExtra(EXTRA_IS_EARLY, false)
                     val earlyMinutes = intent.getIntExtra(EXTRA_EARLY_MINUTES, 0)
                     
-                    Log.d(TAG, "🔔 Alarm tetiklendi: $vakitName - $vakitTime")
+                    Log.d(TAG, "🔔 Alarm tetiklendi: $vakitName - Ses: $soundFile")
+                    
+                    // Ses dosyası yoksa veya ding_dong ise SharedPreferences'tan al
+                    if (soundFile.isEmpty() || soundFile == "ding_dong") {
+                        val vakitKey = vakitName.lowercase()
+                            .replace("ı", "i").replace("ö", "o").replace("ü", "u")
+                            .replace("ş", "s").replace("ğ", "g").replace("ç", "c")
+                            .let { name ->
+                                when {
+                                    name.contains("imsak") || name.contains("sahur") -> "imsak"
+                                    name.contains("gunes") -> "gunes"
+                                    name.contains("ogle") -> "ogle"
+                                    name.contains("ikindi") -> "ikindi"
+                                    name.contains("aksam") -> "aksam"
+                                    name.contains("yatsi") -> "yatsi"
+                                    else -> ""
+                                }
+                            }
+                        
+                        if (vakitKey.isNotEmpty()) {
+                            val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+                            val savedSound = prefs.getString("flutter.bildirim_sesi_$vakitKey", null)
+                            if (!savedSound.isNullOrEmpty()) {
+                                soundFile = savedSound
+                                Log.d(TAG, "🔊 onReceive - Ses SharedPreferences'tan alındı: $vakitKey -> $soundFile")
+                            }
+                        }
+                    }
+                    
+                    Log.d(TAG, "🔔 AlarmService başlatılıyor: $vakitName - $vakitTime (Ses: $soundFile)")
                     
                     // AlarmService'i başlat
                     val serviceIntent = Intent(context, AlarmService::class.java).apply {

@@ -58,31 +58,41 @@ class HomeWidgetService {
     final arkaPlanKey = prefs.getString('widget_arkaplan_key') ?? 'orange';
     final yaziRengiHex = prefs.getString('widget_yazi_rengi_hex') ?? 'FFFFFF';
     final seffaflik = prefs.getDouble('widget_seffaflik') ?? 1.0;
-    final fontKey = prefs.getString('widget_font_key') ?? 'condensed';
 
     await HomeWidget.saveWidgetData<String>('arkaplan_key', arkaPlanKey);
     await HomeWidget.saveWidgetData<String>('yazi_rengi_hex', yaziRengiHex);
     await HomeWidget.saveWidgetData<double>('seffaflik', seffaflik);
-    await HomeWidget.saveWidgetData<String>('widget_font_key', fontKey);
   }
 
-  /// Widget renklerini güncelle
+  /// Widget renklerini güncelle (eski metod - tüm widgetlar için)
   static Future<void> updateWidgetColors({
     required String arkaPlanKey,
     required String yaziRengiHex,
     required double seffaflik,
-    required String fontKey,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString('widget_arkaplan_key', arkaPlanKey);
     await prefs.setString('widget_yazi_rengi_hex', yaziRengiHex);
     await prefs.setDouble('widget_seffaflik', seffaflik);
-    await prefs.setString('widget_font_key', fontKey);
 
     await HomeWidget.saveWidgetData<String>('arkaplan_key', arkaPlanKey);
     await HomeWidget.saveWidgetData<String>('yazi_rengi_hex', yaziRengiHex);
     await HomeWidget.saveWidgetData<double>('seffaflik', seffaflik);
-    await HomeWidget.saveWidgetData<String>('widget_font_key', fontKey);
+
+    await updateAllWidgets();
+  }
+
+  /// Belirli bir widget için renkleri güncelle
+  static Future<void> updateWidgetColorsForWidget({
+    required String widgetId,
+    required String arkaPlanKey,
+    required String yaziRengiHex,
+    required double seffaflik,
+  }) async {
+    // Widget'a özel renk ayarlarını kaydet
+    await HomeWidget.saveWidgetData<String>('${widgetId}_arkaplan_key', arkaPlanKey);
+    await HomeWidget.saveWidgetData<String>('${widgetId}_yazi_rengi_hex', yaziRengiHex);
+    await HomeWidget.saveWidgetData<double>('${widgetId}_seffaflik', seffaflik);
 
     await updateAllWidgets();
   }
@@ -248,6 +258,55 @@ class HomeWidgetService {
 
     // Kıble derecesi (örnek değer - gerçek hesaplama için konum gerekli)
     await HomeWidget.saveWidgetData<double>('kible_derece', 156.7);
+
+    // Widget çeviri string'lerini gönder
+    final lang = LanguageService();
+    await HomeWidget.saveWidgetData<String>(
+      'widget_time_remaining',
+      lang['widget_time_remaining'] ?? 'Vaktine Kalan Süre',
+    );
+    await HomeWidget.saveWidgetData<String>(
+      'widget_time_to',
+      lang['widget_time_to'] ?? 'vaktine',
+    );
+    await HomeWidget.saveWidgetData<String>(
+      'widget_current_time',
+      lang['widget_current_time'] ?? 'Vakti',
+    );
+    await HomeWidget.saveWidgetData<String>(
+      'widget_now_at',
+      lang['widget_now_at'] ?? 'Şu an',
+    );
+    await HomeWidget.saveWidgetData<String>(
+      'widget_now_in_time',
+      lang['widget_now_in_time'] ?? 'vaktinde',
+    );
+    
+    // Vakit isimlerinin çevirilerini de gönder
+    await HomeWidget.saveWidgetData<String>(
+      'label_imsak',
+      lang['imsak'] ?? 'İmsak',
+    );
+    await HomeWidget.saveWidgetData<String>(
+      'label_gunes',
+      lang['gunes'] ?? 'Güneş',
+    );
+    await HomeWidget.saveWidgetData<String>(
+      'label_ogle',
+      lang['ogle'] ?? 'Öğle',
+    );
+    await HomeWidget.saveWidgetData<String>(
+      'label_ikindi',
+      lang['ikindi'] ?? 'İkindi',
+    );
+    await HomeWidget.saveWidgetData<String>(
+      'label_aksam',
+      lang['aksam'] ?? 'Akşam',
+    );
+    await HomeWidget.saveWidgetData<String>(
+      'label_yatsi',
+      lang['yatsi'] ?? 'Yatsı',
+    );
 
     // Widget'ları güncelle
     try {

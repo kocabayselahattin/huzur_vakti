@@ -14,6 +14,7 @@ class ImsakiyeSayfa extends StatefulWidget {
 
 class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
   final LanguageService _languageService = LanguageService();
+  final ScrollController _scrollController = ScrollController();
   
   String? secilenIl;
   String? secilenIlce;
@@ -21,6 +22,7 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
 
   List<dynamic> vakitler = [];
   bool yukleniyor = false;
+  int _bugunIndex = -1;
 
   @override
   void initState() {
@@ -30,6 +32,7 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
 
   @override
   void dispose() {
+    _scrollController.dispose();
     super.dispose();
   }
 
@@ -66,7 +69,7 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
     }
   }
 
-  Future<void> _vakitleriYukle() async {
+  Future<void> _vakitleriYukle({bool forceRefresh = false}) async {
     if (secilenIlceId == null) return;
     
     setState(() {
@@ -74,12 +77,46 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
     });
 
     try {
+      // Zorla yenileme istenirse cache'i temizle
+      if (forceRefresh) {
+        DiyanetApiService.clearCache();
+      }
+      
       final data = await DiyanetApiService.getVakitler(secilenIlceId!);
       if (data != null && data.containsKey('vakitler')) {
+        final now = DateTime.now();
+        final today = DateTime(now.year, now.month, now.day);
+        final yeniVakitler = (data['vakitler'] as List)
+            .where((v) {
+              final tarihStr = v['MiladiTarihKisa'] as String?;
+              final dt = _parseMiladi(tarihStr);
+              if (dt == null) return true;
+              return !dt.isBefore(today);
+            })
+            .toList();
+
+        int bugunIdx = -1;
+        for (int i = 0; i < yeniVakitler.length; i++) {
+          final tarih = yeniVakitler[i]['MiladiTarihKisa'] ?? '';
+          final dt = _parseMiladi(tarih);
+          if (dt != null && !dt.isBefore(today) && dt.difference(today).inDays == 0) {
+            bugunIdx = i;
+            break;
+          }
+        }
+
         setState(() {
-          vakitler = data['vakitler'] as List;
+          vakitler = yeniVakitler;
+          _bugunIndex = bugunIdx;
           yukleniyor = false;
         });
+        
+        // Bugüne scroll yap (frame sonrası)
+        if (bugunIdx >= 0) {
+          WidgetsBinding.instance.addPostFrameCallback((_) {
+            _scrollToBugun();
+          });
+        }
       } else {
         setState(() {
           yukleniyor = false;
@@ -93,6 +130,62 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
     }
   }
 
+  DateTime? _parseMiladi(String? value) {
+    if (value == null || value.isEmpty) return null;
+    try {
+      return DateFormat('dd.MM.yyyy', _getLocale()).parse(value);
+    } catch (_) {
+      try {
+        return DateFormat('dd.MM.yyyy').parse(value);
+      } catch (_) {
+        return null;
+      }
+    }
+  }
+  
+  void _scrollToBugun() {
+    if (_bugunIndex < 0 || !_scrollController.hasClients) return;
+    
+    // Her satır yaklaşık 80 piksel yüksekliğinde (margin dahil)
+    const itemHeight = 88.0;
+    final targetOffset = _bugunIndex * itemHeight;
+    
+    // Ekranın ortasında görünsün
+    final screenHeight = MediaQuery.of(context).size.height;
+    final centeredOffset = targetOffset - (screenHeight / 2) + (itemHeight / 2);
+    
+    _scrollController.animateTo(
+      centeredOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+      duration: const Duration(milliseconds: 500),
+      curve: Curves.easeInOut,
+    );
+  }
+  
+  /// İmsakiyeyi yenile - cache temizleyerek API'den taze veri çek
+  Future<void> _yenile() async {
+    // Kullanıcıya geri bildirim ver
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(_languageService['refreshing'] ?? 'Yenileniyor...'),
+        duration: const Duration(seconds: 1),
+        backgroundColor: Colors.orange,
+      ),
+    );
+    
+    // Cache'i temizleyerek API'den yeni veri çek
+    await _vakitleriYukle(forceRefresh: true);
+    
+    if (mounted) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(_languageService['refresh_success'] ?? 'İmsakiye güncellendi!'),
+          duration: const Duration(seconds: 2),
+          backgroundColor: Colors.green,
+        ),
+      );
+    }
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -101,6 +194,14 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
         title: Text(_languageService['imsakiye_title'] ?? 'İmsakiye'),
         backgroundColor: Colors.transparent,
         elevation: 0,
+        actions: [
+          // Yenile butonu
+          IconButton(
+            icon: const Icon(Icons.refresh),
+            tooltip: _languageService['refresh'] ?? 'Yenile',
+            onPressed: yukleniyor ? null : _yenile,
+          ),
+        ],
       ),
       body: secilenIl == null || secilenIlce == null
           ? _konumSeciliDegil()
@@ -126,6 +227,7 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
                       ),
                     )
                   : ListView.builder(
+                      controller: _scrollController,
                       padding: const EdgeInsets.all(16),
                       itemCount: vakitler.length,
                       itemBuilder: (context, index) {

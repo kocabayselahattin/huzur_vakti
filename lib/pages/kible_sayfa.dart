@@ -123,7 +123,7 @@ class _KibleSayfaState extends State<KibleSayfa> {
       await VibrationService.vibratePattern([0, 150, 100, 150, 100, 200]);
 
       // Ses efekti
-      await _audioPlayer?.play(AssetSource('sounds/Ding_Dong.mp3'));
+      await _audioPlayer?.play(AssetSource('sounds/ding_dong.mp3'));
     } catch (e) {
       print('⚠️ Kıble geri bildirim hatası: $e');
     }
@@ -148,9 +148,12 @@ class _KibleSayfaState extends State<KibleSayfa> {
         permission = await Geolocator.requestPermission();
         if (permission == LocationPermission.denied) {
           setState(() {
-            _hata = _languageService['location_permission_denied'] ?? 'Konum izni reddedildi';
+            _hata =
+                _languageService['location_permission_denied'] ??
+                'Konum izni reddedildi';
             _hataAksiyon = Geolocator.openAppSettings;
-            _hataAksiyonLabel = _languageService['go_to_settings'] ?? 'Ayarlara Git';
+            _hataAksiyonLabel =
+                _languageService['go_to_settings'] ?? 'Ayarlara Git';
             _yukleniyor = false;
           });
           return;
@@ -159,9 +162,12 @@ class _KibleSayfaState extends State<KibleSayfa> {
 
       if (permission == LocationPermission.deniedForever) {
         setState(() {
-          _hata = _languageService['location_permission_denied_forever'] ?? 'Konum izni kalıcı olarak reddedildi. Ayarlardan izin verin.';
+          _hata =
+              _languageService['location_permission_denied_forever'] ??
+              'Konum izni kalıcı olarak reddedildi. Ayarlardan izin verin.';
           _hataAksiyon = Geolocator.openAppSettings;
-          _hataAksiyonLabel = _languageService['go_to_settings'] ?? 'Ayarlara Git';
+          _hataAksiyonLabel =
+              _languageService['go_to_settings'] ?? 'Ayarlara Git';
           _yukleniyor = false;
         });
         return;
@@ -171,9 +177,12 @@ class _KibleSayfaState extends State<KibleSayfa> {
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
       if (!serviceEnabled) {
         setState(() {
-          _hata = _languageService['location_service_disabled'] ?? 'Konum servisi kapalı. Lütfen açın.';
+          _hata =
+              _languageService['location_service_disabled'] ??
+              'Konum servisi kapalı. Lütfen açın.';
           _hataAksiyon = Geolocator.openLocationSettings;
-          _hataAksiyonLabel = _languageService['location_settings'] ?? 'Konum Ayarları';
+          _hataAksiyonLabel =
+              _languageService['location_settings'] ?? 'Konum Ayarları';
           _yukleniyor = false;
         });
         return;
@@ -197,7 +206,8 @@ class _KibleSayfaState extends State<KibleSayfa> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  _languageService['last_known_location_used'] ?? 'Canlı konum alınamadı, son bilinen konum kullanıldı.',
+                  _languageService['last_known_location_used'] ??
+                      'Canlı konum alınamadı, son bilinen konum kullanıldı.',
                 ),
                 backgroundColor: Colors.orange,
               ),
@@ -217,7 +227,9 @@ class _KibleSayfaState extends State<KibleSayfa> {
 
       if (position == null) {
         setState(() {
-          _hata = _languageService['location_not_available'] ?? 'Konum bilgisi alınamadı.';
+          _hata =
+              _languageService['location_not_available'] ??
+              'Konum bilgisi alınamadı.';
           _hataAksiyon = _konumuAl;
           _hataAksiyonLabel = _languageService['try_again'] ?? 'Tekrar Dene';
           _yukleniyor = false;
@@ -242,7 +254,8 @@ class _KibleSayfaState extends State<KibleSayfa> {
       });
     } catch (e) {
       setState(() {
-        _hata = '${_languageService['location_error'] ?? 'Konum alınamadı'}: $e';
+        _hata =
+            '${_languageService['location_error'] ?? 'Konum alınamadı'}: $e';
         _hataAksiyon = _konumuAl;
         _hataAksiyonLabel = _languageService['try_again'] ?? 'Tekrar Dene';
         _yukleniyor = false;
@@ -257,12 +270,13 @@ class _KibleSayfaState extends State<KibleSayfa> {
     final lat2 = _toRadians(kabeEnlem);
     final lon2 = _toRadians(kabeBoylam);
 
-    // Kıble açısını hesapla (düzeltilmiş formül)
+    // Standart bearing formülü (Great Circle)
     final dLon = lon2 - lon1;
 
-    // Düzeltilmiş bearing hesaplaması
-    final y = math.sin(dLon);
-    final x = math.cos(lat1) * math.tan(lat2) - math.sin(lat1) * math.cos(dLon);
+    final y = math.sin(dLon) * math.cos(lat2);
+    final x =
+        math.cos(lat1) * math.sin(lat2) -
+        math.sin(lat1) * math.cos(lat2) * math.cos(dLon);
 
     double derece = _toDegrees(math.atan2(y, x));
 
@@ -304,7 +318,10 @@ class _KibleSayfaState extends State<KibleSayfa> {
     return Scaffold(
       backgroundColor: renkler.arkaPlan,
       appBar: AppBar(
-        title: Text(_languageService['qibla_direction'] ?? 'Kıble Yönü', style: TextStyle(color: renkler.yaziPrimary)),
+        title: Text(
+          _languageService['qibla_direction'] ?? 'Kıble Yönü',
+          style: TextStyle(color: renkler.yaziPrimary),
+        ),
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: renkler.yaziPrimary),
@@ -361,7 +378,10 @@ class _KibleSayfaState extends State<KibleSayfa> {
             ElevatedButton.icon(
               onPressed: _hataAksiyon ?? _konumuAl,
               icon: const Icon(Icons.settings),
-              label: Text(_hataAksiyonLabel ?? (_languageService['try_again'] ?? 'Tekrar Dene')),
+              label: Text(
+                _hataAksiyonLabel ??
+                    (_languageService['try_again'] ?? 'Tekrar Dene'),
+              ),
               style: ElevatedButton.styleFrom(
                 backgroundColor: renkler.vurgu,
                 foregroundColor: Colors.white,
@@ -500,7 +520,14 @@ class _KibleSayfaState extends State<KibleSayfa> {
                   duration: const Duration(milliseconds: 300),
                   child: CustomPaint(
                     size: const Size(300, 300),
-                    painter: _CompassDialPainter(),
+                    painter: _CompassDialPainter(
+                      directions: [
+                        _languageService['compass_n'] ?? 'N',
+                        _languageService['compass_e'] ?? 'E',
+                        _languageService['compass_s'] ?? 'S',
+                        _languageService['compass_w'] ?? 'W',
+                      ],
+                    ),
                   ),
                 ),
                 // Kabe simgesi pusula üzerinde kıble açısına göre döner
@@ -558,7 +585,8 @@ class _KibleSayfaState extends State<KibleSayfa> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              _languageService['correct_direction'] ?? 'Doğru Yön',
+                              _languageService['correct_direction'] ??
+                                  'Doğru Yön',
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontWeight: FontWeight.bold,
@@ -586,7 +614,8 @@ class _KibleSayfaState extends State<KibleSayfa> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          _languageService['calibrating_compass'] ?? 'Pusula kalibre ediliyor...',
+                          _languageService['calibrating_compass'] ??
+                              'Pusula kalibre ediliyor...',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.8),
                             fontSize: 12,
@@ -665,15 +694,20 @@ class _KibleSayfaState extends State<KibleSayfa> {
   }
 
   String _getYonKisaltma(double derece) {
-    if (derece >= 337.5 || derece < 22.5) return _languageService['compass_n'] ?? 'K';
-    if (derece >= 22.5 && derece < 67.5) return _languageService['compass_ne'] ?? 'KD';
-    if (derece >= 67.5 && derece < 112.5) return _languageService['compass_e'] ?? 'D';
+    if (derece >= 337.5 || derece < 22.5)
+      return _languageService['compass_n'] ?? 'K';
+    if (derece >= 22.5 && derece < 67.5)
+      return _languageService['compass_ne'] ?? 'KD';
+    if (derece >= 67.5 && derece < 112.5)
+      return _languageService['compass_e'] ?? 'D';
     if (derece >= 112.5 && derece < 157.5)
       return _languageService['compass_se'] ?? 'GD';
-    if (derece >= 157.5 && derece < 202.5) return _languageService['compass_s'] ?? 'G';
+    if (derece >= 157.5 && derece < 202.5)
+      return _languageService['compass_s'] ?? 'G';
     if (derece >= 202.5 && derece < 247.5)
       return _languageService['compass_sw'] ?? 'GB';
-    if (derece >= 247.5 && derece < 292.5) return _languageService['compass_w'] ?? 'B';
+    if (derece >= 247.5 && derece < 292.5)
+      return _languageService['compass_w'] ?? 'B';
     return _languageService['compass_nw'] ?? 'KB';
   }
 
@@ -911,7 +945,8 @@ class _KibleSayfaState extends State<KibleSayfa> {
             ),
             const SizedBox(height: 20),
             Text(
-              _languageService['compass_not_found'] ?? 'Cihazda pusula sensörü bulunamadı.',
+              _languageService['compass_not_found'] ??
+                  'Cihazda pusula sensörü bulunamadı.',
               textAlign: TextAlign.center,
               style: TextStyle(color: renkler.yaziPrimary, fontSize: 16),
             ),
@@ -982,13 +1017,20 @@ class _KibleSayfaState extends State<KibleSayfa> {
   }
 
   String _getYonAdi(double derece) {
-    if (derece >= 337.5 || derece < 22.5) return _languageService['direction_north'] ?? 'Kuzey';
-    if (derece >= 22.5 && derece < 67.5) return _languageService['direction_northeast'] ?? 'Kuzeydoğu';
-    if (derece >= 67.5 && derece < 112.5) return _languageService['direction_east'] ?? 'Doğu';
-    if (derece >= 112.5 && derece < 157.5) return _languageService['direction_southeast'] ?? 'Güneydoğu';
-    if (derece >= 157.5 && derece < 202.5) return _languageService['direction_south'] ?? 'Güney';
-    if (derece >= 202.5 && derece < 247.5) return _languageService['direction_southwest'] ?? 'Güneybatı';
-    if (derece >= 247.5 && derece < 292.5) return _languageService['direction_west'] ?? 'Batı';
+    if (derece >= 337.5 || derece < 22.5)
+      return _languageService['direction_north'] ?? 'Kuzey';
+    if (derece >= 22.5 && derece < 67.5)
+      return _languageService['direction_northeast'] ?? 'Kuzeydoğu';
+    if (derece >= 67.5 && derece < 112.5)
+      return _languageService['direction_east'] ?? 'Doğu';
+    if (derece >= 112.5 && derece < 157.5)
+      return _languageService['direction_southeast'] ?? 'Güneydoğu';
+    if (derece >= 157.5 && derece < 202.5)
+      return _languageService['direction_south'] ?? 'Güney';
+    if (derece >= 202.5 && derece < 247.5)
+      return _languageService['direction_southwest'] ?? 'Güneybatı';
+    if (derece >= 247.5 && derece < 292.5)
+      return _languageService['direction_west'] ?? 'Batı';
     return _languageService['direction_northwest'] ?? 'Kuzeybatı';
   }
 
@@ -1008,8 +1050,10 @@ class _KibleSayfaState extends State<KibleSayfa> {
           Expanded(
             child: Text(
               hasHeading
-                  ? (_languageService['qibla_info_note'] ?? 'Telefonunuzu yatay tutun. Yeşil Kabe ibresi kıble yönünü gösterir. Kalibrasyon için telefonu 8 çizerek hareket ettirin.')
-                  : (_languageService['compass_no_data'] ?? 'Pusula verisi alınamıyor. Cihazınızın sensör desteğini kontrol edin.'),
+                  ? (_languageService['qibla_info_note'] ??
+                        'Telefonunuzu yatay tutun. Yeşil Kabe ibresi kıble yönünü gösterir. Kalibrasyon için telefonu 8 çizerek hareket ettirin.')
+                  : (_languageService['compass_no_data'] ??
+                        'Pusula verisi alınamıyor. Cihazınızın sensör desteğini kontrol edin.'),
               style: TextStyle(
                 color: renkler.yaziSecondary,
                 fontSize: 13,
@@ -1046,6 +1090,10 @@ class _TrianglePainter extends CustomPainter {
 }
 
 class _CompassDialPainter extends CustomPainter {
+  final List<String> directions;
+
+  _CompassDialPainter({required this.directions});
+
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
@@ -1106,14 +1154,15 @@ class _CompassDialPainter extends CustomPainter {
       textPainter.paint(canvas, offset);
     }
 
-    final directions = ['N', 'E', 'S', 'W'];
+    // Yön harfleri - dil desteği ile
     for (int i = 0; i < 4; i++) {
       final angle = (i * 90 - 90) * math.pi / 180;
       final textPainter = TextPainter(
         text: TextSpan(
           text: directions[i],
           style: TextStyle(
-            color: (directions[i] == 'N' || directions[i] == 'S')
+            color:
+                (i == 0 || i == 2) // N ve S için kırmızı
                 ? const Color(0xFFE4504D)
                 : Colors.white,
             fontSize: 16,
@@ -1131,7 +1180,7 @@ class _CompassDialPainter extends CustomPainter {
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) {
-    return false;
+  bool shouldRepaint(covariant _CompassDialPainter oldDelegate) {
+    return oldDelegate.directions != directions;
   }
 }
