@@ -84,6 +84,66 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
     return Column(
       children: [
         _buildFontSecimi(renkler),
+        // Sayaç temasına dön butonu (eğer manuel tema seçiliyse göster)
+        if (!_temaService.sayacTemasiKullan)
+          Container(
+            margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+            child: Material(
+              color: renkler.vurgu.withOpacity(0.15),
+              borderRadius: BorderRadius.circular(12),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(12),
+                onTap: () async {
+                  await _temaService.sayacTemasiKullanAyarla(true);
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          _languageService['theme_reset_to_counter'] ?? 
+                          'Tema sayaç rengine göre ayarlandı',
+                        ),
+                        backgroundColor: renkler.vurgu,
+                      ),
+                    );
+                  }
+                },
+                child: Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Row(
+                    children: [
+                      Icon(Icons.refresh, color: renkler.vurgu),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              _languageService['reset_to_counter_theme'] ?? 
+                              'Varsayılan Ayarlara Dön',
+                              style: TextStyle(
+                                color: renkler.yaziPrimary,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                            Text(
+                              _languageService['counter_theme_desc'] ?? 
+                              'Tema, seçili sayaca göre otomatik değişsin',
+                              style: TextStyle(
+                                color: renkler.yaziSecondary,
+                                fontSize: 12,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Icon(Icons.arrow_forward_ios, 
+                        color: renkler.yaziSecondary, size: 16),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ),
         // Önizleme
         _buildOnizleme(renkler),
         // Tema listesi
@@ -94,7 +154,8 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
             itemBuilder: (context, index) {
               final tema = AppTema.values[index];
               final temaRenkleri = TemaService.temalar[tema]!;
-              final secili = _temaService.mevcutTema == tema;
+              final secili = !_temaService.sayacTemasiKullan && 
+                             _temaService.mevcutTema == tema;
 
               return _buildTemaKarti(tema, temaRenkleri, secili);
             },

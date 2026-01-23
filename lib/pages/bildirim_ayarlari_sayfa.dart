@@ -1,5 +1,6 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:audioplayers/audioplayers.dart';
 import 'package:file_picker/file_picker.dart';
@@ -53,6 +54,12 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
   // Vakitlerde sessize al seçeneği
   bool _sessizeAl = false;
 
+  // Kilit ekranı bildirimi
+  bool _kilitEkraniBildirimi = false;
+
+  // Kilit ekranı servisi için MethodChannel
+  static const _lockScreenChannel = MethodChannel('huzur_vakti/lockscreen');
+
   // Değişiklik takibi
   bool _degisiklikYapildi = false;
 
@@ -78,7 +85,9 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
   };
 
   final List<int> _erkenSureler = [0, 5, 10, 15, 20, 30, 45, 60];
-  final List<Map<String, String>> _sesSecenekleri = [
+
+  // Ses seçenekleri - getter olarak tanımlanıyor çünkü languageService'e ihtiyaç var
+  List<Map<String, String>> get _sesSecenekleri => [
     {'ad': 'Best', 'dosya': 'best_2015.mp3'},
     {'ad': 'Arriving', 'dosya': 'arriving.mp3'},
     {'ad': 'Corner', 'dosya': 'corner.mp3'},
@@ -89,7 +98,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     {'ad': 'Sweet Favour', 'dosya': 'sweet_favour.mp3'},
     {'ad': 'Violet', 'dosya': 'violet.mp3'},
     {'ad': 'Woodpecker', 'dosya': 'woodpecker.mp3'},
-    {'ad': 'Özel Ses Seç', 'dosya': 'custom'},
+    {
+      'ad': _languageService['custom_sound'] ?? 'Özel Ses Seç',
+      'dosya': 'custom',
+    },
   ];
 
   // Özel ses yolları
@@ -112,8 +124,18 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
 
     // Türkçe karakterleri değiştir
     final turkceKarakterler = {
-      'ç': 'c', 'ğ': 'g', 'ı': 'i', 'ö': 'o', 'ş': 's', 'ü': 'u',
-      'Ç': 'c', 'Ğ': 'g', 'İ': 'i', 'Ö': 'o', 'Ş': 's', 'Ü': 'u',
+      'ç': 'c',
+      'ğ': 'g',
+      'ı': 'i',
+      'ö': 'o',
+      'ş': 's',
+      'ü': 'u',
+      'Ç': 'c',
+      'Ğ': 'g',
+      'İ': 'i',
+      'Ö': 'o',
+      'Ş': 's',
+      'Ü': 'u',
     };
     turkceKarakterler.forEach((key, value) {
       name = name.replaceAll(key, value);
@@ -142,11 +164,14 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
   }
 
   /// Özel ses dosyasını uygulamanın dizinine güvenli isimle kopyalar
-  Future<String?> _copyCustomSoundFile(String sourcePath, String vakitKey) async {
+  Future<String?> _copyCustomSoundFile(
+    String sourcePath,
+    String vakitKey,
+  ) async {
     try {
       final appDir = await getApplicationDocumentsDirectory();
       final soundsDir = Directory('${appDir.path}/custom_sounds');
-      
+
       // Dizin yoksa oluştur
       if (!await soundsDir.exists()) {
         await soundsDir.create(recursive: true);
@@ -155,17 +180,17 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       // Orijinal dosya adını al ve normalize et
       final originalFileName = sourcePath.split('/').last.split('\\').last;
       final safeFileName = _normalizeFileName(originalFileName);
-      
+
       // Benzersiz isim oluştur (vakit key + zaman damgası)
       final timestamp = DateTime.now().millisecondsSinceEpoch;
       final uniqueFileName = '${vakitKey}_${timestamp}_$safeFileName';
-      
+
       final destPath = '${soundsDir.path}/$uniqueFileName';
-      
+
       // Dosyayı kopyala
       final sourceFile = File(sourcePath);
       await sourceFile.copy(destPath);
-      
+
       return destPath;
     } catch (e) {
       debugPrint('Ses dosyası kopyalanamadı: $e');
@@ -206,6 +231,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
         }
       }
       _sessizeAl = prefs.getBool('sessize_al') ?? false;
+      _kilitEkraniBildirimi =
+          prefs.getBool('kilit_ekrani_bildirimi_aktif') ?? false;
     });
   }
 
@@ -390,6 +417,40 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     }
   }
 
+  /// Kilit ekranı bildirimi aç/kapat
+  Future<void> _toggleKilitEkraniBildirimi(bool value) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('kilit_ekrani_bildirimi_aktif', value);
+
+    try {
+      if (value) {
+        // Servisi başlat
+        await _lockScreenChannel.invokeMethod('startLockScreenService');
+        debugPrint('✅ Kilit ekranı bildirimi servisi başlatıldı');
+      } else {
+        // Servisi durdur
+        await _lockScreenChannel.invokeMethod('stopLockScreenService');
+        debugPrint('🛑 Kilit ekranı bildirimi servisi durduruldu');
+      }
+    } catch (e) {
+      debugPrint('❌ Kilit ekranı bildirimi hatası: $e');
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _languageService['lock_screen_error'] ??
+                  'Kilit ekranı bildirimi ayarlanamadı',
+            ),
+            backgroundColor: Colors.red,
+          ),
+        );
+        setState(() {
+          _kilitEkraniBildirimi = !value; // Geri al
+        });
+      }
+    }
+  }
+
   /// Alarm izni kontrolü
   Future<bool> _checkAlarmPermission() async {
     final notificationsPlugin = FlutterLocalNotificationsPlugin();
@@ -517,10 +578,13 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
 
       if (result != null && result.files.single.path != null) {
         final secilenDosyaYolu = result.files.single.path!;
-        
+
         // Dosyayı güvenli isimle uygulamanın dizinine kopyala
-        final guvenliDosyaYolu = await _copyCustomSoundFile(secilenDosyaYolu, key);
-        
+        final guvenliDosyaYolu = await _copyCustomSoundFile(
+          secilenDosyaYolu,
+          key,
+        );
+
         if (guvenliDosyaYolu != null) {
           setState(() {
             _ozelSesDosyalari[key] = guvenliDosyaYolu;
@@ -532,7 +596,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  _languageService['custom_sound_selected'] ?? 'Özel ses seçildi',
+                  _languageService['custom_sound_selected'] ??
+                      'Özel ses seçildi',
                 ),
                 backgroundColor: Colors.green,
               ),
@@ -546,7 +611,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
             ScaffoldMessenger.of(context).showSnackBar(
               SnackBar(
                 content: Text(
-                  _languageService['custom_sound_copy_error'] ?? 'Ses dosyası kopyalanamadı',
+                  _languageService['custom_sound_copy_error'] ??
+                      'Ses dosyası kopyalanamadı',
                 ),
                 backgroundColor: Colors.red,
               ),
@@ -771,7 +837,66 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                     ),
                     child: Text(
                       _languageService['mute_during_prayer_desc'] ??
-                          'Öğle, ikindi, akşam ve yatsı vakitlerinde 30 dk sessize alınır. Cuma günü 60 dk uygulanır.',
+                          'Alarm çaldıktan 1 dk sonra sessize alınır. Cuma namazı 60 dk, diğer vakitler 30 dk. Çık/Kal butonlu bildirim gösterilir.',
+                      style: const TextStyle(
+                        color: Colors.white54,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Kilit ekranı bildirimi seçeneği
+            Container(
+              margin: const EdgeInsets.only(bottom: 24),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.05),
+                borderRadius: BorderRadius.circular(12),
+                border: Border.all(color: Colors.white12),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      const Icon(Icons.lock_clock, color: Colors.purpleAccent),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Text(
+                          _languageService['lock_screen_notification'] ??
+                              'Kilit Ekranı Bildirimi',
+                          style: const TextStyle(
+                            color: Colors.white,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ),
+                      Switch(
+                        value: _kilitEkraniBildirimi,
+                        onChanged: (value) async {
+                          setState(() {
+                            _kilitEkraniBildirimi = value;
+                            _degisiklikYapildi = true;
+                          });
+                          await _toggleKilitEkraniBildirimi(value);
+                        },
+                        activeColor: Colors.purpleAccent,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 6),
+                  Padding(
+                    padding: const EdgeInsets.only(
+                      left: 36,
+                      right: 12,
+                      bottom: 6,
+                    ),
+                    child: Text(
+                      _languageService['lock_screen_notification_desc'] ??
+                          'Kilit ekranında hangi vakitten hangi vakte geçildiği ve kalan süreyi gösterir. Uygulama kapalıyken de çalışır.',
                       style: const TextStyle(
                         color: Colors.white54,
                         fontSize: 12,
@@ -980,32 +1105,16 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                         ),
                         const SizedBox(width: 12),
                         Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                _languageService['notify_at_prayer'] ??
-                                    'Vaktinde Hatırlat',
-                                style: TextStyle(
-                                  color: alarmAcik
-                                      ? Colors.orangeAccent
-                                      : Colors.white,
-                                  fontSize: 15,
-                                  fontWeight: FontWeight.bold,
-                                ),
-                              ),
-                              Text(
-                                alarmAcik
-                                    ? _languageService['alarm_enabled_desc'] ??
-                                          'Kilit ekranında bile sesli uyarı alacaksınız'
-                                    : _languageService['alarm_disabled_desc'] ??
-                                          'Açık olunca kilit ekranında alarm çalar',
-                                style: const TextStyle(
-                                  color: Colors.white54,
-                                  fontSize: 11,
-                                ),
-                              ),
-                            ],
+                          child: Text(
+                            _languageService['notify_at_prayer'] ??
+                                'Vaktinde Hatırlat',
+                            style: TextStyle(
+                              color: alarmAcik
+                                  ? Colors.orangeAccent
+                                  : Colors.white,
+                              fontSize: 15,
+                              fontWeight: FontWeight.bold,
+                            ),
                           ),
                         ),
                         Switch(

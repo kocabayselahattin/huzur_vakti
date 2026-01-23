@@ -4,6 +4,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.util.Log
+import com.example.huzur_vakti.lockscreen.LockScreenNotificationService
 
 /**
  * Cihaz yeniden başlatıldığında alarmları yeniden zamanlayan BroadcastReceiver
@@ -23,13 +24,14 @@ class BootReceiver : BroadcastReceiver() {
             Log.d(TAG, "📱 Cihaz yeniden başlatıldı veya uygulama güncellendi")
             Log.d(TAG, "   Action: ${intent.action}")
             
-            // SharedPreferences'dan kayıtlı alarmları kontrol et
-            val prefs = context.getSharedPreferences("flutter.prefs", Context.MODE_PRIVATE)
+            // Kilit ekranı bildirimi aktif mi kontrol et ve başlat
+            val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+            val kilitEkraniBildirimiAktif = prefs.getBoolean("flutter.kilit_ekrani_bildirimi_aktif", false)
             
-            // Flutter tarafında alarmların yeniden zamanlanması için
-            // uygulamayı tetikleyecek bir broadcast gönder
-            // NOT: flutter_local_notifications paketi boot sonrası bildirimleri zaten yeniden zamanlar
-            // Sadece alarm için özel bir işlem yapmamız gerekiyor
+            if (kilitEkraniBildirimiAktif) {
+                Log.d(TAG, "🔒 Kilit ekranı bildirimi servisi başlatılıyor...")
+                LockScreenNotificationService.start(context)
+            }
             
             Log.d(TAG, "✅ Boot receiver işlemi tamamlandı")
             Log.d(TAG, "   Bildirimler flutter_local_notifications tarafından yeniden zamanlanacak")

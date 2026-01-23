@@ -18,6 +18,23 @@ enum AppTema {
   ozel,         // Kullanıcının özel teması
 }
 
+/// Sayaç bazlı tema tanımları
+enum SayacTema {
+  dijital,
+  premium,
+  galaksi,
+  neon,
+  okyanus,
+  minimal,
+  retro,
+  aurora,
+  kristal,
+  volkanik,
+  zen,
+  siber,
+  gece,
+}
+
 class TemaRenkleri {
   final Color arkaPlan;
   final Color kartArkaPlan;
@@ -86,6 +103,8 @@ class TemaService extends ChangeNotifier {
   AppTema _mevcutTema = AppTema.gece;
   TemaRenkleri? _ozelTema;
   String _fontFamily = 'Poppins';
+  bool _sayacTemasiKullan = true; // Sayaç temasını kullan
+  int _aktifSayacIndex = 0;
 
   static const List<String> fontFamilies = [
     'Poppins',
@@ -108,6 +127,181 @@ class TemaService extends ChangeNotifier {
   
   AppTema get mevcutTema => _mevcutTema;
   String get fontFamily => _fontFamily;
+  bool get sayacTemasiKullan => _sayacTemasiKullan;
+  int get aktifSayacIndex => _aktifSayacIndex;
+
+  /// Sayaç bazlı tema renkleri
+  static const Map<int, TemaRenkleri> sayacTemalari = {
+    // 0: Dijital - Cyan tonları
+    0: TemaRenkleri(
+      arkaPlan: Color(0xFF1B2741),
+      kartArkaPlan: Color(0xFF2B3151),
+      vurgu: Color(0xFF00BCD4),
+      vurguSecondary: Color(0xFF26C6DA),
+      yaziPrimary: Colors.white,
+      yaziSecondary: Color(0xFFB0BEC5),
+      ayirac: Color(0xFF3D4466),
+      isim: 'Dijital',
+      aciklama: 'Cyan dijital tonları',
+      ikon: Icons.access_time,
+    ),
+    // 1: Premium - Altın tonları
+    1: TemaRenkleri(
+      arkaPlan: Color(0xFF1A1A2E),
+      kartArkaPlan: Color(0xFF252540),
+      vurgu: Color(0xFFFFD700),
+      vurguSecondary: Color(0xFFFFC107),
+      yaziPrimary: Colors.white,
+      yaziSecondary: Color(0xFFE0E0E0),
+      ayirac: Color(0xFF3D3D5C),
+      isim: 'Premium',
+      aciklama: 'Altın lüks tonları',
+      ikon: Icons.star,
+    ),
+    // 2: Galaksi - Mor tonları
+    2: TemaRenkleri(
+      arkaPlan: Color(0xFF0B0B1A),
+      kartArkaPlan: Color(0xFF1A1A2E),
+      vurgu: Color(0xFF7C4DFF),
+      vurguSecondary: Color(0xFFB388FF),
+      yaziPrimary: Colors.white,
+      yaziSecondary: Color(0xFF9E9E9E),
+      ayirac: Color(0xFF252540),
+      isim: 'Galaksi',
+      aciklama: 'Uzay mor tonları',
+      ikon: Icons.auto_awesome,
+    ),
+    // 3: Neon - Yeşil tonları
+    3: TemaRenkleri(
+      arkaPlan: Color(0xFF0D1F0D),
+      kartArkaPlan: Color(0xFF1A2E1A),
+      vurgu: Color(0xFF00FF41),
+      vurguSecondary: Color(0xFF76FF03),
+      yaziPrimary: Colors.white,
+      yaziSecondary: Color(0xFFA5D6A7),
+      ayirac: Color(0xFF2E4A2E),
+      isim: 'Neon',
+      aciklama: 'Neon yeşil tonları',
+      ikon: Icons.lightbulb,
+    ),
+    // 4: Okyanus - Mavi tonları
+    4: TemaRenkleri(
+      arkaPlan: Color(0xFF0D2137),
+      kartArkaPlan: Color(0xFF163354),
+      vurgu: Color(0xFF4DD0E1),
+      vurguSecondary: Color(0xFF80DEEA),
+      yaziPrimary: Colors.white,
+      yaziSecondary: Color(0xFFB2EBF2),
+      ayirac: Color(0xFF1A5276),
+      isim: 'Okyanus',
+      aciklama: 'Derin mavi tonları',
+      ikon: Icons.water,
+    ),
+    // 5: Minimal - Beyaz tonları
+    5: TemaRenkleri(
+      arkaPlan: Color(0xFFF5F5F5),
+      kartArkaPlan: Color(0xFFFFFFFF),
+      vurgu: Color(0xFF424242),
+      vurguSecondary: Color(0xFF757575),
+      yaziPrimary: Color(0xFF212121),
+      yaziSecondary: Color(0xFF757575),
+      ayirac: Color(0xFFE0E0E0),
+      isim: 'Minimal',
+      aciklama: 'Sade beyaz tonları',
+      ikon: Icons.crop_square,
+    ),
+    // 6: Retro - LCD yeşil
+    6: TemaRenkleri(
+      arkaPlan: Color(0xFF0D1F0D),
+      kartArkaPlan: Color(0xFF142414),
+      vurgu: Color(0xFF00FF41),
+      vurguSecondary: Color(0xFF33FF66),
+      yaziPrimary: Color(0xFF00FF41),
+      yaziSecondary: Color(0xFF00CC33),
+      ayirac: Color(0xFF1A2E1A),
+      isim: 'Retro',
+      aciklama: 'Nostaljik LCD yeşili',
+      ikon: Icons.tv,
+    ),
+    // 7: Aurora - Kuzey ışıkları
+    7: TemaRenkleri(
+      arkaPlan: Color(0xFF0A0A1A),
+      kartArkaPlan: Color(0xFF0D1B2A),
+      vurgu: Color(0xFF00D4AA),
+      vurguSecondary: Color(0xFF8B5CF6),
+      yaziPrimary: Colors.white,
+      yaziSecondary: Color(0xFF9CA3AF),
+      ayirac: Color(0xFF1B263B),
+      isim: 'Aurora',
+      aciklama: 'Kuzey ışıkları tonları',
+      ikon: Icons.nights_stay,
+    ),
+    // 8: Kristal - Cam efekti
+    8: TemaRenkleri(
+      arkaPlan: Color(0xFFE8EDF2),
+      kartArkaPlan: Color(0xFFF5F7FA),
+      vurgu: Color(0xFF5C6BC0),
+      vurguSecondary: Color(0xFF64B5F6),
+      yaziPrimary: Color(0xFF3D4F6F),
+      yaziSecondary: Color(0xFF6B7D9A),
+      ayirac: Color(0xFFDAE2EB),
+      isim: 'Kristal',
+      aciklama: 'Cam kristal tonları',
+      ikon: Icons.diamond_outlined,
+    ),
+    // 9: Volkanik - Ateş tonları
+    9: TemaRenkleri(
+      arkaPlan: Color(0xFF1A0A00),
+      kartArkaPlan: Color(0xFF2D1810),
+      vurgu: Color(0xFFFF6B35),
+      vurguSecondary: Color(0xFFFF0844),
+      yaziPrimary: Color(0xFFFFAA00),
+      yaziSecondary: Color(0xFFFF8C00),
+      ayirac: Color(0xFF3D1F15),
+      isim: 'Volkanik',
+      aciklama: 'Ateş ve lav tonları',
+      ikon: Icons.local_fire_department,
+    ),
+    // 10: Zen - Doğa tonları
+    10: TemaRenkleri(
+      arkaPlan: Color(0xFFE8E4D9),
+      kartArkaPlan: Color(0xFFF5F5DC),
+      vurgu: Color(0xFF4A6741),
+      vurguSecondary: Color(0xFF6B8E5F),
+      yaziPrimary: Color(0xFF2D3A29),
+      yaziSecondary: Color(0xFF5C6B54),
+      ayirac: Color(0xFFD4CFC4),
+      isim: 'Zen',
+      aciklama: 'Huzurlu doğa tonları',
+      ikon: Icons.spa,
+    ),
+    // 11: Siber - Cyberpunk
+    11: TemaRenkleri(
+      arkaPlan: Color(0xFF0D0221),
+      kartArkaPlan: Color(0xFF1A0533),
+      vurgu: Color(0xFFFF00FF),
+      vurguSecondary: Color(0xFF00FFFF),
+      yaziPrimary: Colors.white,
+      yaziSecondary: Color(0xFFB388FF),
+      ayirac: Color(0xFF2D0845),
+      isim: 'Siber',
+      aciklama: 'Cyberpunk neon tonları',
+      ikon: Icons.memory,
+    ),
+    // 12: Gece - Ay ışığı
+    12: TemaRenkleri(
+      arkaPlan: Color(0xFF0A1628),
+      kartArkaPlan: Color(0xFF1E3A5F),
+      vurgu: Color(0xFFFFF8DC),
+      vurguSecondary: Color(0xFFFFE4B5),
+      yaziPrimary: Colors.white,
+      yaziSecondary: Color(0xFFB0BEC5),
+      ayirac: Color(0xFF2D4A6F),
+      isim: 'Gece',
+      aciklama: 'Ay ışığı tonları',
+      ikon: Icons.nightlight_round,
+    ),
+  };
 
   static const Map<AppTema, TemaRenkleri> temalar = {
     // 1. Gece - Varsayılan
@@ -357,6 +551,11 @@ class TemaService extends ChangeNotifier {
   };
 
   TemaRenkleri get renkler {
+    // Sayaç teması kullanılıyorsa
+    if (_sayacTemasiKullan && sayacTemalari.containsKey(_aktifSayacIndex)) {
+      return sayacTemalari[_aktifSayacIndex]!;
+    }
+    // Manuel tema seçimi
     if (_mevcutTema == AppTema.ozel && _ozelTema != null) {
       return _ozelTema!;
     }
@@ -370,6 +569,8 @@ class TemaService extends ChangeNotifier {
       _mevcutTema = AppTema.values[temaIndex];
     }
     _fontFamily = prefs.getString('font_family') ?? _fontFamily;
+    _sayacTemasiKullan = prefs.getBool('sayac_temasi_kullan') ?? true;
+    _aktifSayacIndex = prefs.getInt('secili_sayac_index') ?? 0;
     await _ozelTemayiYukle();
     notifyListeners();
   }
@@ -408,8 +609,28 @@ class TemaService extends ChangeNotifier {
 
   Future<void> temayiDegistir(AppTema yeniTema) async {
     _mevcutTema = yeniTema;
+    _sayacTemasiKullan = false; // Manuel tema seçildi
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('tema_index', yeniTema.index);
+    await prefs.setBool('sayac_temasi_kullan', false);
+    notifyListeners();
+  }
+
+  /// Sayaç değiştiğinde temayı güncelle
+  Future<void> sayacTemasiGuncelle(int sayacIndex) async {
+    _aktifSayacIndex = sayacIndex;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setInt('secili_sayac_index', sayacIndex);
+    if (_sayacTemasiKullan) {
+      notifyListeners();
+    }
+  }
+
+  /// Sayaç teması modunu aç/kapat
+  Future<void> sayacTemasiKullanAyarla(bool kullan) async {
+    _sayacTemasiKullan = kullan;
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('sayac_temasi_kullan', kullan);
     notifyListeners();
   }
 

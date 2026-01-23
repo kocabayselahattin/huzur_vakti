@@ -75,8 +75,7 @@ class DndService {
       final entry = _findVakitEntryForDate(vakitler, day);
       if (entry == null) continue;
 
-      final duration = day.weekday == DateTime.friday ? 60 : 30;
-      final schedule = _buildDayEntries(entry, day, duration, now);
+      final schedule = _buildDayEntries(entry, day, 30, now);
       entries.addAll(schedule);
     }
 
@@ -86,15 +85,17 @@ class DndService {
   static List<_DndEntry> _buildDayEntries(
     Map<String, dynamic> entry,
     DateTime day,
-    int duration,
+    int defaultDuration,
     DateTime now,
   ) {
     final result = <_DndEntry>[];
+    final isFriday = day.weekday == DateTime.friday;
+    
     const vakitler = [
-      {'key': 'Ogle', 'label': 'Öğle'},
-      {'key': 'Ikindi', 'label': 'İkindi'},
-      {'key': 'Aksam', 'label': 'Akşam'},
-      {'key': 'Yatsi', 'label': 'Yatsı'},
+      {'key': 'Ogle', 'label': 'Öğle', 'isCumaVakti': true},
+      {'key': 'Ikindi', 'label': 'İkindi', 'isCumaVakti': false},
+      {'key': 'Aksam', 'label': 'Akşam', 'isCumaVakti': false},
+      {'key': 'Yatsi', 'label': 'Yatsı', 'isCumaVakti': false},
     ];
 
     for (final vakit in vakitler) {
@@ -104,11 +105,16 @@ class DndService {
       if (startAt.isBefore(now)) {
         continue;
       }
+      
+      // Sadece Cuma günü Öğle vakti (Cuma namazı) 60 dakika, diğerleri 30 dakika
+      final isCumaVakti = isFriday && (vakit['isCumaVakti'] as bool);
+      final duration = isCumaVakti ? 60 : 30;
+      
       result.add(
         _DndEntry(
           startAt: startAt,
           durationMinutes: duration,
-          label: vakit['label']!,
+          label: isCumaVakti ? 'Cuma' : vakit['label'] as String,
         ),
       );
     }

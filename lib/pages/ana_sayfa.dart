@@ -7,6 +7,14 @@ import '../widgets/galaksi_sayac_widget.dart';
 import '../widgets/neon_sayac_widget.dart';
 import '../widgets/okyanus_sayac_widget.dart';
 import '../widgets/dijital_sayac_widget.dart';
+import '../widgets/minimal_sayac_widget.dart';
+import '../widgets/retro_sayac_widget.dart';
+import '../widgets/aurora_sayac_widget.dart';
+import '../widgets/kristal_sayac_widget.dart';
+import '../widgets/volkanik_sayac_widget.dart';
+import '../widgets/zen_sayac_widget.dart';
+import '../widgets/siber_sayac_widget.dart';
+import '../widgets/gece_sayac_widget.dart';
 import '../widgets/esmaul_husna_widget.dart';
 import '../widgets/ozel_gun_popup.dart';
 import '../widgets/ozel_gun_banner_widget.dart';
@@ -40,7 +48,6 @@ class _AnaSayfaState extends State<AnaSayfa> {
   String konumBasligi = "";
   final TemaService _temaService = TemaService();
   final LanguageService _languageService = LanguageService();
-  PageController? _sayacController;
   int _currentSayacIndex = 0;
   bool _sayacYuklendi = false;
 
@@ -87,10 +94,6 @@ class _AnaSayfaState extends State<AnaSayfa> {
     if (mounted) {
       setState(() {
         _currentSayacIndex = index;
-        _sayacController = PageController(
-          viewportFraction: 0.95,
-          initialPage: index,
-        );
         _sayacYuklendi = true;
       });
     }
@@ -103,7 +106,6 @@ class _AnaSayfaState extends State<AnaSayfa> {
 
   @override
   void dispose() {
-    _sayacController?.dispose();
     _konumPageController?.dispose();
     _temaService.removeListener(_onTemaChanged);
     _languageService.removeListener(_onTemaChanged);
@@ -124,7 +126,9 @@ class _AnaSayfaState extends State<AnaSayfa> {
         _aktifKonumIndex = aktifIndex < konumlar.length ? aktifIndex : 0;
 
         if (konumlar.isEmpty) {
-          konumBasligi = _languageService['location_not_selected_upper'] ?? "KONUM SEÇİLMEDİ";
+          konumBasligi =
+              _languageService['location_not_selected_upper'] ??
+              "KONUM SEÇİLMEDİ";
         } else {
           final aktifKonum = konumlar[_aktifKonumIndex];
           konumBasligi = "${aktifKonum.ilAdi} / ${aktifKonum.ilceAdi}";
@@ -175,7 +179,8 @@ class _AnaSayfaState extends State<AnaSayfa> {
             width: double.maxFinite,
             child: _konumlar.isEmpty
                 ? Text(
-                    _languageService['no_saved_locations'] ?? 'Henüz kayıtlı konum yok',
+                    _languageService['no_saved_locations'] ??
+                        'Henüz kayıtlı konum yok',
                     style: TextStyle(color: renkler.yaziSecondary),
                   )
                 : ListView.builder(
@@ -207,7 +212,8 @@ class _AnaSayfaState extends State<AnaSayfa> {
                           ),
                           subtitle: isAktif
                               ? Text(
-                                  _languageService['active_location'] ?? 'Aktif Konum',
+                                  _languageService['active_location'] ??
+                                      'Aktif Konum',
                                   style: TextStyle(
                                     color: renkler.vurgu,
                                     fontSize: 12,
@@ -226,7 +232,8 @@ class _AnaSayfaState extends State<AnaSayfa> {
                                       builder: (ctx) => AlertDialog(
                                         backgroundColor: renkler.kartArkaPlan,
                                         title: Text(
-                                          _languageService['delete_location'] ?? 'Konumu Sil',
+                                          _languageService['delete_location'] ??
+                                              'Konumu Sil',
                                           style: TextStyle(
                                             color: renkler.yaziPrimary,
                                           ),
@@ -242,7 +249,8 @@ class _AnaSayfaState extends State<AnaSayfa> {
                                             onPressed: () =>
                                                 Navigator.pop(ctx, false),
                                             child: Text(
-                                              _languageService['cancel'] ?? 'İptal',
+                                              _languageService['cancel'] ??
+                                                  'İptal',
                                               style: TextStyle(
                                                 color: renkler.yaziSecondary,
                                               ),
@@ -252,7 +260,8 @@ class _AnaSayfaState extends State<AnaSayfa> {
                                             onPressed: () =>
                                                 Navigator.pop(ctx, true),
                                             child: Text(
-                                              _languageService['delete'] ?? 'Sil',
+                                              _languageService['delete'] ??
+                                                  'Sil',
                                               style: const TextStyle(
                                                 color: Colors.red,
                                               ),
@@ -702,7 +711,8 @@ class _AnaSayfaState extends State<AnaSayfa> {
                           crossAxisAlignment: CrossAxisAlignment.start,
                           children: [
                             Text(
-                              _languageService['location_not_selected'] ?? 'Konum Seçilmedi',
+                              _languageService['location_not_selected'] ??
+                                  'Konum Seçilmedi',
                               style: TextStyle(
                                 color: renkler.yaziPrimary,
                                 fontSize: 16,
@@ -711,7 +721,8 @@ class _AnaSayfaState extends State<AnaSayfa> {
                             ),
                             const SizedBox(height: 4),
                             Text(
-                              _languageService['select_location_hint'] ?? 'Namaz vakitlerini görmek için ayarlardan il/ilçe seçin',
+                              _languageService['select_location_hint'] ??
+                                  'Namaz vakitlerini görmek için ayarlardan il/ilçe seçin',
                               style: TextStyle(
                                 color: renkler.yaziSecondary,
                                 fontSize: 12,
@@ -738,35 +749,11 @@ class _AnaSayfaState extends State<AnaSayfa> {
                   ),
                 ),
 
-              // --- SAYAÇ SLIDER BÖLÜMÜ ---
+              // --- SAYAÇ BÖLÜMÜ ---
               SizedBox(
-                height: 260,
-                child: _sayacYuklendi && _sayacController != null
-                    ? Column(
-                        children: [
-                          Expanded(
-                            child: PageView(
-                              controller: _sayacController,
-                              onPageChanged: (index) {
-                                setState(() {
-                                  _currentSayacIndex = index;
-                                });
-                                _saveSayacIndex(index);
-                              },
-                              children: const [
-                                DijitalSayacWidget(),
-                                PremiumSayacWidget(),
-                                GalaksiSayacWidget(),
-                                NeonSayacWidget(),
-                                OkyanusSayacWidget(),
-                              ],
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          // Sayaç page indicator
-                          _buildPageIndicator(renkler),
-                        ],
-                      )
+                height: 240,
+                child: _sayacYuklendi
+                    ? _buildSelectedCounter()
                     : const Center(child: CircularProgressIndicator()),
               ),
 
@@ -806,84 +793,37 @@ class _AnaSayfaState extends State<AnaSayfa> {
     );
   }
 
-  Widget _buildPageIndicator(TemaRenkleri renkler) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        // Sol ok
-        GestureDetector(
-          onTap: () {
-            if (_currentSayacIndex > 0) {
-              _sayacController?.previousPage(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            }
-          },
-          child: Icon(
-            Icons.chevron_left,
-            color: _currentSayacIndex > 0
-                ? renkler.vurgu
-                : renkler.yaziSecondary.withValues(alpha: 0.3),
-            size: 24,
-          ),
-        ),
-        const SizedBox(width: 8),
-        // Dot indicators
-        ...List.generate(5, (index) {
-          final isActive = index == _currentSayacIndex;
-          return GestureDetector(
-            onTap: () {
-              _sayacController?.animateToPage(
-                index,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            },
-            child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              margin: const EdgeInsets.symmetric(horizontal: 4),
-              width: isActive ? 24 : 8,
-              height: 8,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
-                color: isActive
-                    ? renkler.vurgu
-                    : renkler.yaziSecondary.withValues(alpha: 0.3),
-                boxShadow: isActive
-                    ? [
-                        BoxShadow(
-                          color: renkler.vurgu.withValues(alpha: 0.4),
-                          blurRadius: 8,
-                          spreadRadius: 1,
-                        ),
-                      ]
-                    : null,
-              ),
-            ),
-          );
-        }),
-        const SizedBox(width: 8),
-        // Sağ ok
-        GestureDetector(
-          onTap: () {
-            if (_currentSayacIndex < 4) {
-              _sayacController?.nextPage(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOut,
-              );
-            }
-          },
-          child: Icon(
-            Icons.chevron_right,
-            color: _currentSayacIndex < 4
-                ? renkler.vurgu
-                : renkler.yaziSecondary.withValues(alpha: 0.3),
-            size: 24,
-          ),
-        ),
-      ],
-    );
+  Widget _buildSelectedCounter() {
+    switch (_currentSayacIndex) {
+      case 0:
+        return const DijitalSayacWidget();
+      case 1:
+        return const PremiumSayacWidget();
+      case 2:
+        return const GalaksiSayacWidget();
+      case 3:
+        return const NeonSayacWidget();
+      case 4:
+        return const OkyanusSayacWidget();
+      case 5:
+        return const MinimalSayacWidget();
+      case 6:
+        return const RetroSayacWidget();
+      case 7:
+        return const AuroraSayacWidget();
+      case 8:
+        return const KristalSayacWidget();
+      case 9:
+        return const VolkanikSayacWidget();
+      case 10:
+        return const ZenSayacWidget();
+      case 11:
+        return const SiberSayacWidget();
+      case 12:
+        return const GeceSayacWidget();
+      default:
+        return const DijitalSayacWidget();
+    }
   }
 
   void _showMenu(BuildContext context) {
