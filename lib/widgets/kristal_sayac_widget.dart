@@ -398,7 +398,7 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
 
   Widget _buildCrystalTimeUnit(String value, String label, Color primaryColor, Color secondaryColor, Color textColor) {
     return Container(
-      width: 85,
+      width: 80,
       height: 85,
       alignment: Alignment.center,
       decoration: BoxDecoration(
@@ -438,7 +438,7 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
             maxLines: 1,
             softWrap: false,
             style: TextStyle(
-              fontSize: 38,
+              fontSize: 36,
               fontWeight: FontWeight.w300,
               color: textColor,
               fontFeatures: const [FontFeature.tabularFigures()],

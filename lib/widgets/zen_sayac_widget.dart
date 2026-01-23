@@ -274,16 +274,19 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
                   const SizedBox(height: 24),
 
                   // Sayaç
-                  Center(
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildZenTimeUnit(hours.toString().padLeft(2, '0'), '時', primaryColor, textColor),
-                        const SizedBox(width: 16),
-                        _buildZenTimeUnit(minutes.toString().padLeft(2, '0'), '分', primaryColor, textColor),
-                        const SizedBox(width: 16),
-                        _buildZenTimeUnit(seconds.toString().padLeft(2, '0'), '秒', primaryColor, textColor),
-                      ],
+                  Padding(
+                    padding: const EdgeInsets.only(right: 4),
+                    child: Center(
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _buildZenTimeUnit(hours.toString().padLeft(2, '0'), '時', primaryColor, textColor),
+                          const SizedBox(width: 16),
+                          _buildZenTimeUnit(minutes.toString().padLeft(2, '0'), '分', primaryColor, textColor),
+                          const SizedBox(width: 16),
+                          _buildZenTimeUnit(seconds.toString().padLeft(2, '0'), '秒', primaryColor, textColor),
+                        ],
+                      ),
                     ),
                   ),
 

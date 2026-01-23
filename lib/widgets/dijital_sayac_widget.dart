@@ -200,17 +200,92 @@ class _DijitalSayacWidgetState extends State<DijitalSayacWidget> {
             ),
           ),
           const SizedBox(height: 5),
-          Text(
-            '${hours.toString().padLeft(2, '0')}:${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}',
-            maxLines: 1,
-            softWrap: false,
-            style: TextStyle(
-              fontSize: 66,
-              fontWeight: FontWeight.bold,
-              color: renkler.yaziPrimary,
-              fontFamily: 'Digital-7',
-              fontFeatures: const [FontFeature.tabularFigures()],
-            ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            crossAxisAlignment: CrossAxisAlignment.center,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              SizedBox(
+                width: 90,
+                child: Text(
+                  hours.toString().padLeft(2, '0'),
+                  textAlign: TextAlign.right,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: TextStyle(
+                    fontSize: 66,
+                    fontWeight: FontWeight.bold,
+                    color: renkler.yaziPrimary,
+                    fontFamily: 'Digital-7',
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 30,
+                child: Text(
+                  ':',
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: TextStyle(
+                    fontSize: 66,
+                    fontWeight: FontWeight.bold,
+                    color: renkler.yaziPrimary,
+                    fontFamily: 'Digital-7',
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 90,
+                child: Text(
+                  minutes.toString().padLeft(2, '0'),
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: TextStyle(
+                    fontSize: 66,
+                    fontWeight: FontWeight.bold,
+                    color: renkler.yaziPrimary,
+                    fontFamily: 'Digital-7',
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 30,
+                child: Text(
+                  ':',
+                  textAlign: TextAlign.center,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: TextStyle(
+                    fontSize: 66,
+                    fontWeight: FontWeight.bold,
+                    color: renkler.yaziPrimary,
+                    fontFamily: 'Digital-7',
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+              SizedBox(
+                width: 90,
+                child: Text(
+                  seconds.toString().padLeft(2, '0'),
+                  textAlign: TextAlign.left,
+                  maxLines: 1,
+                  softWrap: false,
+                  style: TextStyle(
+                    fontSize: 66,
+                    fontWeight: FontWeight.bold,
+                    color: renkler.yaziPrimary,
+                    fontFamily: 'Digital-7',
+                    fontFeatures: const [FontFeature.tabularFigures()],
+                  ),
+                ),
+              ),
+            ],
           ),
           const SizedBox(height: 15),
           Row(

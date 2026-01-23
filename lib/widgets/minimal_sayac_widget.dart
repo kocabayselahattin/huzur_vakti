@@ -239,17 +239,20 @@ class _MinimalSayacWidgetState extends State<MinimalSayacWidget> {
           const SizedBox(height: 20),
 
           // Orta: Sayaç
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              _buildTimeUnit(hours.toString().padLeft(2, '0'), 'h', textColor, mutedColor),
-              Text(' : ', style: TextStyle(fontSize: 40, fontWeight: FontWeight.w200, color: textColor)),
-              _buildTimeUnit(minutes.toString().padLeft(2, '0'), 'm', textColor, mutedColor),
-              Text(' : ', style: TextStyle(fontSize: 40, fontWeight: FontWeight.w200, color: textColor)),
-              _buildTimeUnit(seconds.toString().padLeft(2, '0'), 's', textColor, mutedColor),
-            ],
+          Padding(
+            padding: const EdgeInsets.only(right: 5),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              crossAxisAlignment: CrossAxisAlignment.baseline,
+              textBaseline: TextBaseline.alphabetic,
+              children: [
+                _buildTimeUnit(hours.toString().padLeft(2, '0'), 'h', textColor, mutedColor),
+                Text(' : ', style: TextStyle(fontSize: 40, fontWeight: FontWeight.w200, color: textColor)),
+                _buildTimeUnit(minutes.toString().padLeft(2, '0'), 'm', textColor, mutedColor),
+                Text(' : ', style: TextStyle(fontSize: 40, fontWeight: FontWeight.w200, color: textColor)),
+                _buildTimeUnit(seconds.toString().padLeft(2, '0'), 's', textColor, mutedColor),
+              ],
+            ),
           ),
 
           const SizedBox(height: 20),

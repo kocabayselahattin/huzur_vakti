@@ -358,22 +358,117 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                                   renkler.vurgu,
                                 ],
                               ).createShader(bounds),
-                              child: Text(
-                                _formatDuration(_kalanSure),
-                                maxLines: 1,
-                                softWrap: false,
-                                style: TextStyle(
-                                  fontSize: 48,
-                                  fontWeight: FontWeight.w300,
-                                  color: Colors.white,
-                                  fontFeatures: const [FontFeature.tabularFigures()],
-                                  shadows: [
-                                    Shadow(
-                                      color: renkler.vurgu.withValues(alpha: 0.5),
-                                      blurRadius: 20,
+                              child: Row(
+                                mainAxisAlignment: MainAxisAlignment.center,
+                                crossAxisAlignment: CrossAxisAlignment.center,
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  SizedBox(
+                                    width: 65,
+                                    child: Text(
+                                      _kalanSure.inHours.toString().padLeft(2, '0'),
+                                      textAlign: TextAlign.right,
+                                      maxLines: 1,
+                                      softWrap: false,
+                                      style: const TextStyle(
+                                        fontSize: 46,
+                                        fontWeight: FontWeight.w300,
+                                        color: Colors.white,
+                                        fontFeatures: [FontFeature.tabularFigures()],
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.white,
+                                            blurRadius: 20,
+                                          ),
+                                        ],
+                                      ),
                                     ),
-                                  ],
-                                ),
+                                  ),
+                                  const SizedBox(
+                                    width: 25,
+                                    child: Text(
+                                      ':',
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      softWrap: false,
+                                      style: TextStyle(
+                                        fontSize: 46,
+                                        fontWeight: FontWeight.w300,
+                                        color: Colors.white,
+                                        fontFeatures: [FontFeature.tabularFigures()],
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.white,
+                                            blurRadius: 20,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 65,
+                                    child: Text(
+                                      (_kalanSure.inMinutes % 60).toString().padLeft(2, '0'),
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      softWrap: false,
+                                      style: const TextStyle(
+                                        fontSize: 46,
+                                        fontWeight: FontWeight.w300,
+                                        color: Colors.white,
+                                        fontFeatures: [FontFeature.tabularFigures()],
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.white,
+                                            blurRadius: 20,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  const SizedBox(
+                                    width: 25,
+                                    child: Text(
+                                      ':',
+                                      textAlign: TextAlign.center,
+                                      maxLines: 1,
+                                      softWrap: false,
+                                      style: TextStyle(
+                                        fontSize: 46,
+                                        fontWeight: FontWeight.w300,
+                                        color: Colors.white,
+                                        fontFeatures: [FontFeature.tabularFigures()],
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.white,
+                                            blurRadius: 20,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                  SizedBox(
+                                    width: 65,
+                                    child: Text(
+                                      (_kalanSure.inSeconds % 60).toString().padLeft(2, '0'),
+                                      textAlign: TextAlign.left,
+                                      maxLines: 1,
+                                      softWrap: false,
+                                      style: const TextStyle(
+                                        fontSize: 46,
+                                        fontWeight: FontWeight.w300,
+                                        color: Colors.white,
+                                        fontFeatures: [FontFeature.tabularFigures()],
+                                        shadows: [
+                                          Shadow(
+                                            color: Colors.white,
+                                            blurRadius: 20,
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ),
+                                ],
                               ),
                             ),
                             

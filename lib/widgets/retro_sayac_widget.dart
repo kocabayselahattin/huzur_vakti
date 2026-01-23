@@ -255,7 +255,7 @@ class _RetroSayacWidgetState extends State<RetroSayacWidget>
                       animation: _blinkAnimation,
                       builder: (context, child) {
                         return Padding(
-                          padding: const EdgeInsets.only(right: 40),
+                          padding: const EdgeInsets.only(right: 44),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
