@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dart:async';
+import 'package:hijri/hijri_calendar.dart';
+import 'package:intl/intl.dart';
 import '../services/diyanet_api_service.dart';
 import '../services/konum_service.dart';
 import '../services/tema_service.dart';
@@ -168,6 +170,12 @@ class _IslamiSayacWidgetState extends State<IslamiSayacWidget>
     final hours = _kalanSure.inHours;
     final minutes = _kalanSure.inMinutes % 60;
     final seconds = _kalanSure.inSeconds % 60;
+
+    // Takvim bilgileri
+    final now = DateTime.now();
+    final miladiTarih = DateFormat('dd.MM.yyyy').format(now);
+    final hicri = HijriCalendar.now();
+    final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
 
     // İslami renkler - Yeşil ve altın
     const primaryColor = Color(0xFF1B5E20);
@@ -377,50 +385,99 @@ class _IslamiSayacWidgetState extends State<IslamiSayacWidget>
 
                   const SizedBox(height: 12),
 
-                  // İlerleme çubuğu - İslami stil
+                  // İlerleme çubuğu - Açıktan koyu renge (yeşil tonları)
                   Container(
                     height: 12,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(6),
-                      color: primaryColor.withOpacity(0.3),
+                      color: primaryColor.withOpacity(0.2),
                       border: Border.all(
                         color: secondaryColor.withOpacity(0.3),
                         width: 1,
                       ),
                     ),
-                    child: Stack(
-                      children: [
-                        AnimatedBuilder(
-                          animation: _shimmerController,
-                          builder: (context, child) {
-                            return FractionallySizedBox(
-                              alignment: Alignment.centerLeft,
-                              widthFactor: _ilerlemeOrani,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(5),
-                                  gradient: const LinearGradient(
-                                    colors: [primaryColor, accentColor],
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: accentColor.withOpacity(0.3 + _shimmerController.value * 0.2),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
-                                // İslami desen
-                                child: CustomPaint(
-                                  painter: _IslamicProgressPainter(
-                                    color: secondaryColor.withOpacity(0.3),
-                                  ),
-                                ),
-                              ),
-                            );
-                          },
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: _ilerlemeOrani,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(5),
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFF81C784), // Açık yeşil
+                              Color(0xFF4CAF50), // Yeşil
+                              Color(0xFF388E3C), // Koyu yeşil
+                              Color(0xFF1B5E20), // Çok koyu yeşil
+                            ],
+                            stops: [0.0, 0.33, 0.66, 1.0],
+                          ),
                         ),
-                      ],
+                      ),
                     ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // Miladi ve Hicri Takvim
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _languageService['gregorian_date'] ?? 'Miladi',
+                            style: TextStyle(
+                              color: secondaryColor.withOpacity(0.5),
+                              fontSize: 9,
+                            ),
+                          ),
+                          Text(
+                            miladiTarih,
+                            style: TextStyle(
+                              color: secondaryColor.withOpacity(0.9),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                      // İlerleme yüzdesi
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withOpacity(0.5),
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: secondaryColor.withOpacity(0.3)),
+                        ),
+                        child: Text(
+                          '${(_ilerlemeOrani * 100).toInt()}%',
+                          style: TextStyle(
+                            color: secondaryColor,
+                            fontSize: 11,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            _languageService['hijri_date'] ?? 'Hicri',
+                            style: TextStyle(
+                              color: secondaryColor.withOpacity(0.5),
+                              fontSize: 9,
+                            ),
+                          ),
+                          Text(
+                            hicriTarih,
+                            style: TextStyle(
+                              color: secondaryColor.withOpacity(0.9),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -429,6 +486,13 @@ class _IslamiSayacWidgetState extends State<IslamiSayacWidget>
         ),
       ),
     );
+  }
+
+  String _getHicriAyAdi(int ay) {
+    const aylar = ['', 'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir', 
+      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban', 'Ramazan', 
+      'Şevval', 'Zilkade', 'Zilhicce'];
+    return aylar[ay];
   }
 
   Widget _buildIslamicCorner(Color color) {

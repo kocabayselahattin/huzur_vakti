@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dart:async';
+import 'package:hijri/hijri_calendar.dart';
+import 'package:intl/intl.dart';
 import '../services/diyanet_api_service.dart';
 import '../services/konum_service.dart';
 import '../services/tema_service.dart';
@@ -205,6 +207,12 @@ class _TeslaSayacWidgetState extends State<TeslaSayacWidget>
     final minutes = _kalanSure.inMinutes % 60;
     final seconds = _kalanSure.inSeconds % 60;
 
+    // Takvim bilgileri
+    final now = DateTime.now();
+    final miladiTarih = DateFormat('dd.MM.yyyy').format(now);
+    final hicri = HijriCalendar.now();
+    final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
+
     // Elektrik mavisi
     const primaryColor = Color(0xFF00D4FF);
     const secondaryColor = Color(0xFF7B68EE);
@@ -406,7 +414,7 @@ class _TeslaSayacWidgetState extends State<TeslaSayacWidget>
 
                   const SizedBox(height: 12),
 
-                  // İlerleme çubuğu - Enerji seviyesi
+                  // İlerleme çubuğu - Enerji seviyesi (açıktan koyu renge)
                   Row(
                     children: [
                       Icon(Icons.battery_charging_full, color: primaryColor, size: 18),
@@ -422,35 +430,23 @@ class _TeslaSayacWidgetState extends State<TeslaSayacWidget>
                               width: 1,
                             ),
                           ),
-                          child: AnimatedBuilder(
-                            animation: _pulseController,
-                            builder: (context, child) {
-                              return Stack(
-                                children: [
-                                  FractionallySizedBox(
-                                    alignment: Alignment.centerLeft,
-                                    widthFactor: _ilerlemeOrani,
-                                    child: Container(
-                                      decoration: BoxDecoration(
-                                        borderRadius: BorderRadius.circular(5),
-                                        gradient: LinearGradient(
-                                          colors: [
-                                            secondaryColor,
-                                            primaryColor,
-                                          ],
-                                        ),
-                                        boxShadow: [
-                                          BoxShadow(
-                                            color: primaryColor.withOpacity(0.4 + _pulseController.value * 0.3),
-                                            blurRadius: 10,
-                                          ),
-                                        ],
-                                      ),
-                                    ),
-                                  ),
-                                ],
-                              );
-                            },
+                          child: FractionallySizedBox(
+                            alignment: Alignment.centerLeft,
+                            widthFactor: _ilerlemeOrani,
+                            child: Container(
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(5),
+                                gradient: const LinearGradient(
+                                  colors: [
+                                    Color(0xFF00E5FF), // Açık cyan
+                                    Color(0xFF00BCD4), // Cyan
+                                    Color(0xFF0097A7), // Koyu cyan
+                                    Color(0xFF006064), // Çok koyu cyan
+                                  ],
+                                  stops: [0.0, 0.33, 0.66, 1.0],
+                                ),
+                              ),
+                            ),
                           ),
                         ),
                       ),
@@ -466,6 +462,55 @@ class _TeslaSayacWidgetState extends State<TeslaSayacWidget>
                       ),
                     ],
                   ),
+
+                  const SizedBox(height: 10),
+
+                  // Miladi ve Hicri Takvim
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _languageService['gregorian_date'] ?? 'Miladi',
+                            style: TextStyle(
+                              color: primaryColor.withOpacity(0.4),
+                              fontSize: 9,
+                            ),
+                          ),
+                          Text(
+                            miladiTarih,
+                            style: TextStyle(
+                              color: primaryColor.withOpacity(0.8),
+                              fontSize: 11,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            _languageService['hijri_date'] ?? 'Hicri',
+                            style: TextStyle(
+                              color: primaryColor.withOpacity(0.4),
+                              fontSize: 9,
+                            ),
+                          ),
+                          Text(
+                            hicriTarih,
+                            style: TextStyle(
+                              color: primaryColor.withOpacity(0.8),
+                              fontSize: 11,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -473,6 +518,13 @@ class _TeslaSayacWidgetState extends State<TeslaSayacWidget>
         ),
       ),
     );
+  }
+
+  String _getHicriAyAdi(int ay) {
+    const aylar = ['', 'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir', 
+      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban', 'Ramazan', 
+      'Şevval', 'Zilkade', 'Zilhicce'];
+    return aylar[ay];
   }
 
   Widget _buildCornerDecor(Color color) {

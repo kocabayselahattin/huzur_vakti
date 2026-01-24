@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dart:async';
+import 'package:hijri/hijri_calendar.dart';
+import 'package:intl/intl.dart';
 import '../services/diyanet_api_service.dart';
 import '../services/konum_service.dart';
 import '../services/tema_service.dart';
@@ -199,6 +201,12 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
     final hours = _kalanSure.inHours;
     final minutes = _kalanSure.inMinutes % 60;
     final seconds = _kalanSure.inSeconds % 60;
+
+    // Takvim bilgileri
+    final now = DateTime.now();
+    final miladiTarih = DateFormat('dd.MM.yyyy').format(now);
+    final hicri = HijriCalendar.now();
+    final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
 
     const matrixGreen = Color(0xFF00FF41);
     const darkGreen = Color(0xFF003B00);
@@ -420,6 +428,57 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                       ),
                     ],
                   ),
+
+                  const SizedBox(height: 12),
+
+                  // Miladi ve Hicri Takvim
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            '// ${_languageService['gregorian_date'] ?? 'Miladi'}',
+                            style: TextStyle(
+                              color: darkGreen,
+                              fontSize: 9,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                          Text(
+                            miladiTarih,
+                            style: TextStyle(
+                              color: matrixGreen.withOpacity(0.8),
+                              fontSize: 11,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ],
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            '// ${_languageService['hijri_date'] ?? 'Hicri'}',
+                            style: TextStyle(
+                              color: darkGreen,
+                              fontSize: 9,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                          Text(
+                            hicriTarih,
+                            style: TextStyle(
+                              color: matrixGreen.withOpacity(0.8),
+                              fontSize: 11,
+                              fontFamily: 'monospace',
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ],
               ),
             ),
@@ -427,6 +486,13 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
         ),
       ),
     );
+  }
+
+  String _getHicriAyAdi(int ay) {
+    const aylar = ['', 'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir', 
+      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban', 'Ramazan', 
+      'Şevval', 'Zilkade', 'Zilhicce'];
+    return aylar[ay];
   }
 
   Widget _buildDigit(String value, Color color) {

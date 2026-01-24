@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dart:async';
+import 'package:hijri/hijri_calendar.dart';
+import 'package:intl/intl.dart';
 import '../services/diyanet_api_service.dart';
 import '../services/konum_service.dart';
 import '../services/tema_service.dart';
@@ -169,6 +171,12 @@ class _GeometrikSayacWidgetState extends State<GeometrikSayacWidget>
     final minutes = _kalanSure.inMinutes % 60;
     final seconds = _kalanSure.inSeconds % 60;
 
+    // Takvim bilgileri
+    final now = DateTime.now();
+    final miladiTarih = DateFormat('dd.MM.yyyy').format(now);
+    final hicri = HijriCalendar.now();
+    final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
+
     // Altın ve mistik renkler
     const primaryColor = Color(0xFFFFD700);
     const secondaryColor = Color(0xFFC9A227);
@@ -312,44 +320,87 @@ class _GeometrikSayacWidgetState extends State<GeometrikSayacWidget>
 
                   const SizedBox(height: 12),
 
-                  // İlerleme çubuğu - Altın gradient
+                  // İlerleme çubuğu - Açıktan koyu renge gradient
                   Container(
                     height: 8,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(4),
                       color: primaryColor.withOpacity(0.1),
-                      border: Border.all(
-                        color: primaryColor.withOpacity(0.2),
-                        width: 0.5,
+                    ),
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: _ilerlemeOrani,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(4),
+                          gradient: const LinearGradient(
+                            colors: [
+                              Color(0xFFFFD700), // Altın - açık
+                              Color(0xFFFFB300), // Turuncu altın
+                              Color(0xFFFF8F00), // Koyu turuncu
+                              Color(0xFFB71C1C), // Koyu kırmızı
+                            ],
+                            stops: [0.0, 0.33, 0.66, 1.0],
+                          ),
+                        ),
                       ),
                     ),
-                    child: AnimatedBuilder(
-                      animation: _glowController,
-                      builder: (context, child) {
-                        return Stack(
-                          children: [
-                            FractionallySizedBox(
-                              alignment: Alignment.centerLeft,
-                              widthFactor: _ilerlemeOrani,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(4),
-                                  gradient: const LinearGradient(
-                                    colors: [secondaryColor, primaryColor],
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: primaryColor.withOpacity(0.3 + _glowController.value * 0.3),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
-                              ),
+                  ),
+
+                  const SizedBox(height: 10),
+
+                  // Miladi ve Hicri Takvim
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _languageService['gregorian_date'] ?? 'Miladi',
+                            style: TextStyle(
+                              color: primaryColor.withOpacity(0.4),
+                              fontSize: 9,
                             ),
-                          ],
-                        );
-                      },
-                    ),
+                          ),
+                          Text(
+                            miladiTarih,
+                            style: TextStyle(
+                              color: primaryColor.withOpacity(0.8),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                      // İlerleme yüzdesi
+                      Text(
+                        '${(_ilerlemeOrani * 100).toInt()}%',
+                        style: TextStyle(
+                          color: primaryColor.withOpacity(0.6),
+                          fontSize: 12,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            _languageService['hijri_date'] ?? 'Hicri',
+                            style: TextStyle(
+                              color: primaryColor.withOpacity(0.4),
+                              fontSize: 9,
+                            ),
+                          ),
+                          Text(
+                            hicriTarih,
+                            style: TextStyle(
+                              color: primaryColor.withOpacity(0.8),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -358,6 +409,13 @@ class _GeometrikSayacWidgetState extends State<GeometrikSayacWidget>
         ),
       ),
     );
+  }
+
+  String _getHicriAyAdi(int ay) {
+    const aylar = ['', 'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir', 
+      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban', 'Ramazan', 
+      'Şevval', 'Zilkade', 'Zilhicce'];
+    return aylar[ay];
   }
 
   Widget _buildGoldenDigit(String value, Color primary, Color secondary) {

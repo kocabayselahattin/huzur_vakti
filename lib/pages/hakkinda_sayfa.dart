@@ -171,7 +171,7 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
           ),
           const SizedBox(height: 4),
           Text(
-            '${_languageService['version'] ?? 'Versiyon'} 2.2.0',
+            '${_languageService['version'] ?? 'Versiyon'} 2.3.0',
             style: TextStyle(
               color: renkler.yaziSecondary.withValues(alpha: 0.7),
               fontSize: 12,
@@ -209,6 +209,44 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
 
   Widget _ozelliklerBolumu(TemaRenkleri renkler) {
     final ozellikler = [
+      // 🎨 SAYAÇ TASARIMLARI (YENİ!)
+      {
+        'ikon': Icons.timer,
+        'renk': Colors.cyan,
+        'baslik': _languageService['feature_counter_designs'] ?? '18 Benzersiz Sayaç Tasarımı',
+        'aciklama': _languageService['feature_counter_designs_desc'] ?? 'Dijital, Premium, Galaksi, Neon, Okyanus, Minimal, Retro, Aurora, Kristal, Volkanik, Zen, Siber, Gece, Matrix, Nefes, Geometrik, Tesla ve İslami tasarımlar',
+      },
+      {
+        'ikon': Icons.auto_awesome,
+        'renk': Colors.greenAccent,
+        'baslik': _languageService['feature_matrix_counter'] ?? 'Matrix Sayaç',
+        'aciklama': _languageService['feature_matrix_counter_desc'] ?? 'Matrix filmi tarzı düşen Arapça harfler ve kod efektli hacker teması',
+      },
+      {
+        'ikon': Icons.air,
+        'renk': Colors.lightBlue,
+        'baslik': _languageService['feature_breath_counter'] ?? 'Nefes Sayaç',
+        'aciklama': _languageService['feature_breath_counter_desc'] ?? 'Meditasyon ve nefes egzersizi temalı sakinleştirici tasarım, 8 saniyelik nefes döngüsü animasyonu',
+      },
+      {
+        'ikon': Icons.hexagon_outlined,
+        'renk': Colors.amber,
+        'baslik': _languageService['feature_geometric_counter'] ?? 'Geometrik Sayaç',
+        'aciklama': _languageService['feature_geometric_counter_desc'] ?? 'Sacred Geometry kutsal geometri desenleri, Flower of Life ve Merkaba animasyonları',
+      },
+      {
+        'ikon': Icons.bolt,
+        'renk': Colors.blue,
+        'baslik': _languageService['feature_tesla_counter'] ?? 'Tesla Sayaç',
+        'aciklama': _languageService['feature_tesla_counter_desc'] ?? 'Elektrik ve enerji temalı dinamik tasarım, yıldırım ark animasyonları',
+      },
+      {
+        'ikon': Icons.mosque,
+        'renk': Colors.green,
+        'baslik': _languageService['feature_islamic_counter'] ?? 'İslami Sayaç',
+        'aciklama': _languageService['feature_islamic_counter_desc'] ?? 'Hilal, yıldız ve İslami geometrik desenlerle süslenmiş geleneksel tasarım',
+      },
+      
       // 🔔 BİLDİRİM VE ALARM
       {
         'ikon': Icons.alarm,
@@ -339,8 +377,24 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
       {
         'ikon': Icons.palette,
         'renk': Colors.pinkAccent,
-        'baslik': _languageService['feature_themes'] ?? '13 Premium Tema',
-        'aciklama': _languageService['feature_themes_desc'] ?? 'Her sayaç için özel tema veya kendi renk seçiminiz',
+        'baslik': _languageService['feature_themes'] ?? '13+ Premium Tema',
+        'aciklama': _languageService['feature_themes_desc'] ?? 'Her sayaç için özel tema renkleri otomatik uygulanır veya kendi renk kombinasyonunuzu oluşturun',
+      },
+      
+      // 📆 TAKVİM (YENİ!)
+      {
+        'ikon': Icons.date_range,
+        'renk': Colors.deepOrange,
+        'baslik': _languageService['feature_dual_calendar'] ?? 'Miladi ve Hicri Takvim',
+        'aciklama': _languageService['feature_dual_calendar_desc'] ?? 'Tüm sayaçlarda hem Miladi hem Hicri tarih gösterimi',
+      },
+      
+      // 📊 İLERLEME ÇUBUĞU (YENİ!)
+      {
+        'ikon': Icons.linear_scale,
+        'renk': Colors.redAccent,
+        'baslik': _languageService['feature_progress_gradient'] ?? 'Gradient İlerleme Çubuğu',
+        'aciklama': _languageService['feature_progress_gradient_desc'] ?? 'Vakitlere kalan süreyi açıktan koyu renge geçişli gradient ile görsel olarak takip edin',
       },
     ];
 

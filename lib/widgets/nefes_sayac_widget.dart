@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dart:async';
+import 'package:hijri/hijri_calendar.dart';
+import 'package:intl/intl.dart';
 import '../services/diyanet_api_service.dart';
 import '../services/konum_service.dart';
 import '../services/tema_service.dart';
@@ -169,6 +171,12 @@ class _NefesSayacWidgetState extends State<NefesSayacWidget>
     final hours = _kalanSure.inHours;
     final minutes = _kalanSure.inMinutes % 60;
     final seconds = _kalanSure.inSeconds % 60;
+
+    // Takvim bilgileri
+    final now = DateTime.now();
+    final miladiTarih = DateFormat('dd.MM.yyyy').format(now);
+    final hicri = HijriCalendar.now();
+    final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
 
     // Sakin mavi-mor tonları
     const primaryColor = Color(0xFF6B5B95);
@@ -375,44 +383,98 @@ class _NefesSayacWidgetState extends State<NefesSayacWidget>
 
                   const SizedBox(height: 12),
 
-                  // İlerleme çubuğu - Yumuşak dalga
+                  // İlerleme çubuğu - Açıktan koyu renge gradient
                   Container(
                     height: 8,
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(4),
-                      color: primaryColor.withOpacity(0.2),
+                      color: Colors.white.withOpacity(0.1),
                     ),
                     child: Stack(
                       children: [
-                        AnimatedBuilder(
-                          animation: _breathController,
-                          builder: (context, child) {
-                            return FractionallySizedBox(
-                              alignment: Alignment.centerLeft,
-                              widthFactor: _ilerlemeOrani,
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(4),
-                                  gradient: LinearGradient(
-                                    colors: [
-                                      primaryColor,
-                                      accentColor,
-                                      secondaryColor,
-                                    ],
-                                  ),
-                                  boxShadow: [
-                                    BoxShadow(
-                                      color: accentColor.withOpacity(0.4),
-                                      blurRadius: 8,
-                                    ),
-                                  ],
-                                ),
+                        FractionallySizedBox(
+                          alignment: Alignment.centerLeft,
+                          widthFactor: _ilerlemeOrani,
+                          child: Container(
+                            decoration: BoxDecoration(
+                              borderRadius: BorderRadius.circular(4),
+                              gradient: LinearGradient(
+                                colors: [
+                                  const Color(0xFF00E676), // Açık yeşil
+                                  const Color(0xFFFFEB3B), // Sarı
+                                  const Color(0xFFFF5722), // Turuncu
+                                  const Color(0xFFB71C1C), // Koyu kırmızı
+                                ],
+                                stops: const [0.0, 0.33, 0.66, 1.0],
                               ),
-                            );
-                          },
+                            ),
+                          ),
                         ),
                       ],
                     ),
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // Miladi ve Hicri Takvim
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _languageService['gregorian_date'] ?? 'Miladi',
+                            style: TextStyle(
+                              color: accentColor.withOpacity(0.5),
+                              fontSize: 9,
+                            ),
+                          ),
+                          Text(
+                            miladiTarih,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                      // İlerleme yüzdesi
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: primaryColor.withOpacity(0.3),
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Text(
+                          '%${(_ilerlemeOrani * 100).toInt()}',
+                          style: TextStyle(
+                            color: accentColor,
+                            fontSize: 12,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          Text(
+                            _languageService['hijri_date'] ?? 'Hicri',
+                            style: TextStyle(
+                              color: accentColor.withOpacity(0.5),
+                              fontSize: 9,
+                            ),
+                          ),
+                          Text(
+                            hicriTarih,
+                            style: TextStyle(
+                              color: Colors.white.withOpacity(0.7),
+                              fontSize: 11,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
                   ),
                 ],
               ),
@@ -421,6 +483,13 @@ class _NefesSayacWidgetState extends State<NefesSayacWidget>
         ),
       ),
     );
+  }
+
+  String _getHicriAyAdi(int ay) {
+    const aylar = ['', 'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir', 
+      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban', 'Ramazan', 
+      'Şevval', 'Zilkade', 'Zilhicce'];
+    return aylar[ay];
   }
 
   Widget _buildTimeSegment(String value, String label) {

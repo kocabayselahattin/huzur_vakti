@@ -37,6 +37,9 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
   bool yukleniyor = false;
   bool konumTespit = false;
 
+  // İlçe listesi için ScrollController
+  final ScrollController _ilceScrollController = ScrollController();
+
   // Ülke seçimi
   String secilenUlke = '🇹🇷 Türkiye';
   final List<Map<String, String>> ulkeler = [
@@ -71,6 +74,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
   void dispose() {
     _ilAramaController.dispose();
     _ilceAramaController.dispose();
+    _ilceScrollController.dispose();
     super.dispose();
   }
 
@@ -606,16 +610,51 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
     }
 
     if (secilenIlce != null) {
+      final ilceId = secilenIlce!['IlceID']?.toString();
+      final ilceAdi = secilenIlce['IlceAdi']?.toString();
+      
       setState(() {
-        secilenIlceId = secilenIlce!['IlceID']?.toString();
-        secilenIlceAdi = secilenIlce['IlceAdi']?.toString();
+        secilenIlceId = ilceId;
+        secilenIlceAdi = ilceAdi;
         konumTespit = false;
       });
 
       print('🏘️ İlçe seçildi: $secilenIlceAdi (ID: $secilenIlceId)');
+      
+      // İlçeyi listede bul ve scroll yap
+      _scrollToSelectedIlce();
     } else {
       setState(() {
         konumTespit = false;
+      });
+    }
+  }
+
+  /// Seçilen ilçeye scroll yap
+  void _scrollToSelectedIlce() {
+    if (secilenIlceId == null || filtrelenmisIlceler.isEmpty) return;
+    
+    // İlçenin index'ini bul
+    final index = filtrelenmisIlceler.indexWhere(
+      (ilce) => ilce['IlceID']?.toString() == secilenIlceId
+    );
+    
+    if (index != -1) {
+      // Biraz bekleyip scroll yap (ListView'ın oluşması için)
+      Future.delayed(const Duration(milliseconds: 300), () {
+        if (_ilceScrollController.hasClients) {
+          // Her item yaklaşık 56 pixel yüksekliğinde
+          final scrollOffset = (index * 56.0).clamp(
+            0.0, 
+            _ilceScrollController.position.maxScrollExtent
+          );
+          
+          _ilceScrollController.animateTo(
+            scrollOffset,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
       });
     }
   }
@@ -1320,13 +1359,51 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                     const Icon(Icons.location_city, color: Colors.cyanAccent),
                     const SizedBox(width: 12),
                     Expanded(
-                      child: Text(
-                        secilenIlAdi ?? '',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontWeight: FontWeight.bold,
-                          fontSize: 16,
-                        ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            secilenIlAdi ?? '',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontWeight: FontWeight.bold,
+                              fontSize: 16,
+                            ),
+                          ),
+                          if (secilenIlceAdi != null) ...[
+                            const SizedBox(height: 4),
+                            Row(
+                              children: [
+                                const Icon(Icons.location_on, color: Colors.greenAccent, size: 14),
+                                const SizedBox(width: 4),
+                                Text(
+                                  secilenIlceAdi!,
+                                  style: const TextStyle(
+                                    color: Colors.greenAccent,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 14,
+                                  ),
+                                ),
+                                const SizedBox(width: 8),
+                                Container(
+                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  decoration: BoxDecoration(
+                                    color: Colors.greenAccent.withOpacity(0.2),
+                                    borderRadius: BorderRadius.circular(4),
+                                  ),
+                                  child: Text(
+                                    '✓ Seçildi',
+                                    style: TextStyle(
+                                      color: Colors.greenAccent,
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.bold,
+                                    ),
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
                       ),
                     ),
                     IconButton(
@@ -1398,6 +1475,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                         ),
                       )
                     : ListView.builder(
+                        controller: _ilceScrollController,
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         itemCount: filtrelenmisIlceler.length,
                         itemBuilder: (context, index) {
@@ -1406,7 +1484,15 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                               secilenIlceId == ilce['IlceID'].toString();
                           final ilceAdi = ilce['IlceAdi'] ?? '';
 
-                          return ListTile(
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 300),
+                            decoration: BoxDecoration(
+                              color: isSelected 
+                                  ? Colors.cyanAccent.withOpacity(0.15)
+                                  : Colors.transparent,
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: ListTile(
                             leading: Icon(
                               isSelected
                                   ? Icons.check_circle
@@ -1438,6 +1524,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                                 secilenIlceAdi = ilce['IlceAdi'];
                               });
                             },
+                          ),
                           );
                         },
                       ),
