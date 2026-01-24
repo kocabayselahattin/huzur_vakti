@@ -15,6 +15,11 @@ import '../widgets/volkanik_sayac_widget.dart';
 import '../widgets/zen_sayac_widget.dart';
 import '../widgets/siber_sayac_widget.dart';
 import '../widgets/gece_sayac_widget.dart';
+import '../widgets/kumsaati_sayac_widget.dart';
+import '../widgets/nebula_sayac_widget.dart';
+import '../widgets/origami_sayac_widget.dart';
+import '../widgets/pulse_sayac_widget.dart';
+import '../widgets/hologram_sayac_widget.dart';
 
 class SayacAyarlariSayfa extends StatefulWidget {
   const SayacAyarlariSayfa({super.key});
@@ -27,6 +32,7 @@ class _SayacAyarlariSayfaState extends State<SayacAyarlariSayfa> {
   final TemaService _temaService = TemaService();
   final LanguageService _languageService = LanguageService();
   int _seciliSayacIndex = 0;
+  int _currentPreviewIndex = 0; // Şu an önizlenen sayaç
   final PageController _previewController = PageController(
     viewportFraction: 1.0,
   );
@@ -46,6 +52,11 @@ class _SayacAyarlariSayfaState extends State<SayacAyarlariSayfa> {
     {'id': 'zen', 'icon': Icons.spa, 'color': const Color(0xFF4A6741)},
     {'id': 'siber', 'icon': Icons.memory, 'color': const Color(0xFFFF00FF)},
     {'id': 'gece', 'icon': Icons.nightlight_round, 'color': const Color(0xFF1E3A5F)},
+    {'id': 'kumsaati', 'icon': Icons.hourglass_empty, 'color': const Color(0xFFD4A574)},
+    {'id': 'nebula', 'icon': Icons.blur_circular, 'color': const Color(0xFF9C27B0)},
+    {'id': 'origami', 'icon': Icons.change_history, 'color': const Color(0xFFE91E63)},
+    {'id': 'pulse', 'icon': Icons.favorite, 'color': const Color(0xFFFF1744)},
+    {'id': 'hologram', 'icon': Icons.view_in_ar, 'color': const Color(0xFF00BCD4)},
   ];
 
   @override
@@ -74,6 +85,7 @@ class _SayacAyarlariSayfaState extends State<SayacAyarlariSayfa> {
     if (mounted) {
       setState(() {
         _seciliSayacIndex = index;
+        _currentPreviewIndex = index;
       });
       // Preview'ı seçili sayaca getir
       WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -122,6 +134,16 @@ class _SayacAyarlariSayfaState extends State<SayacAyarlariSayfa> {
         return _languageService['counter_siber'] ?? 'Siber';
       case 'gece':
         return _languageService['counter_gece'] ?? 'Gece';
+      case 'kumsaati':
+        return _languageService['counter_kumsaati'] ?? 'Kum Saati';
+      case 'nebula':
+        return _languageService['counter_nebula'] ?? 'Nebula';
+      case 'origami':
+        return _languageService['counter_origami'] ?? 'Origami';
+      case 'pulse':
+        return _languageService['counter_pulse'] ?? 'Pulse';
+      case 'hologram':
+        return _languageService['counter_hologram'] ?? 'Hologram';
       default:
         return id;
     }
@@ -168,12 +190,33 @@ class _SayacAyarlariSayfaState extends State<SayacAyarlariSayfa> {
       case 'gece':
         return _languageService['counter_gece_desc'] ??
             'Ay ve yıldızlı gece gökyüzü tasarımı';
+      case 'kumsaati':
+        return _languageService['counter_kumsaati_desc'] ??
+            '3D kum saati animasyonlu altın tasarım';
+      case 'nebula':
+        return _languageService['counter_nebula_desc'] ??
+            'Uzay bulutsusu efektli kozmik tasarım';
+      case 'origami':
+        return _languageService['counter_origami_desc'] ??
+            'Japon kağıt katlama sanatı temalı';
+      case 'pulse':
+        return _languageService['counter_pulse_desc'] ??
+            'Kalp atışı monitörü tarzı canlı tasarım';
+      case 'hologram':
+        return _languageService['counter_hologram_desc'] ??
+            'Futuristik holografik projeksiyon';
       default:
         return '';
     }
   }
 
-  Widget _buildSayacWidget(int index) {
+  // Sadece görünür sayaç widget'ını oluştur (performans için)
+  Widget _buildSayacWidget(int index, bool isActive) {
+    // isActive=false ise boş placeholder göster
+    if (!isActive) {
+      return const SizedBox.shrink();
+    }
+    
     switch (index) {
       case 0:
         return const DijitalSayacWidget();
@@ -201,6 +244,16 @@ class _SayacAyarlariSayfaState extends State<SayacAyarlariSayfa> {
         return const SiberSayacWidget();
       case 12:
         return const GeceSayacWidget();
+      case 13:
+        return const KumsaatiSayacWidget();
+      case 14:
+        return const NebulaSayacWidget();
+      case 15:
+        return const OrigamiSayacWidget();
+      case 16:
+        return const PulseSayacWidget();
+      case 17:
+        return const HologramSayacWidget();
       default:
         return const DijitalSayacWidget();
     }
@@ -234,17 +287,21 @@ class _SayacAyarlariSayfaState extends State<SayacAyarlariSayfa> {
             ),
           ),
 
-          // Sayaç Önizleme
+          // Sayaç Önizleme - Sadece görünür sayaç aktif
           SizedBox(
             height: 240,
             child: PageView.builder(
               controller: _previewController,
               itemCount: _sayaclar.length,
               onPageChanged: (index) {
-                setState(() {});
+                setState(() {
+                  _currentPreviewIndex = index;
+                });
               },
               itemBuilder: (context, index) {
-                return _buildSayacWidget(index);
+                // Sadece mevcut sayfa aktif, diğerleri için placeholder
+                final isActive = index == _currentPreviewIndex;
+                return _buildSayacWidget(index, isActive);
               },
             ),
           ),

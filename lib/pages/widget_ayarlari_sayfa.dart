@@ -41,6 +41,12 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
   final Map<String, int> _secilenYaziRengiIndex = {};
   final Map<String, double> _seffaflik = {};
   final Map<String, bool> _seffafTema = {};
+  
+  // Değişiklik takibi için başlangıç değerleri
+  final Map<String, int> _baslangicArkaPlanIndex = {};
+  final Map<String, int> _baslangicYaziRengiIndex = {};
+  final Map<String, double> _baslangicSeffaflik = {};
+  final Map<String, bool> _baslangicSeffafTema = {};
 
   // Widget türleri listesi (orijinal tasarımlara göre)
   static const List<WidgetTuru> _widgetTurleri = [
@@ -220,6 +226,70 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
 
   bool _canPinWidgets = false;
 
+  /// Belirli bir widget'ta değişiklik var mı kontrol et
+  bool _widgetDegisiklikVar(String widgetId) {
+    return _secilenArkaPlanIndex[widgetId] != _baslangicArkaPlanIndex[widgetId] ||
+           _secilenYaziRengiIndex[widgetId] != _baslangicYaziRengiIndex[widgetId] ||
+           _seffaflik[widgetId] != _baslangicSeffaflik[widgetId] ||
+           _seffafTema[widgetId] != _baslangicSeffafTema[widgetId];
+  }
+
+  /// Değişiklik yapılmış widget'ların ID'lerini döndür
+  List<String> _degisiklikYapilanWidgetlar() {
+    return _widgetTurleri
+        .where((w) => _widgetDegisiklikVar(w.id))
+        .map((w) => w.id)
+        .toList();
+  }
+
+  /// Çıkış onay dialogu göster
+  Future<bool> _cikisOnayiGoster() async {
+    final degisikenWidgetlar = _degisiklikYapilanWidgetlar();
+    if (degisikenWidgetlar.isEmpty) return true;
+
+    // Aktif tab'daki widget'ı öncelikli göster
+    String aktifWidgetId = _widgetTurleri[_tabController.index].id;
+    String gosterilecekWidgetId = degisikenWidgetlar.contains(aktifWidgetId)
+        ? aktifWidgetId
+        : degisikenWidgetlar.first;
+    String widgetIsmi = _getWidgetIsim(gosterilecekWidgetId);
+
+    final sonuc = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(_languageService['unsaved_changes'] ?? 'Kaydedilmemiş Değişiklikler'),
+        content: Text(
+          '${_languageService['widget_unsaved_changes_message']?.replaceAll('{widget}', widgetIsmi) ?? '$widgetIsmi üzerinde yaptığınız değişiklikler kaydedilsin mi?'}',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'discard'),
+            child: Text(_languageService['discard'] ?? 'Kaydetme'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, 'cancel'),
+            child: Text(_languageService['cancel'] ?? 'İptal'),
+          ),
+          ElevatedButton(
+            onPressed: () => Navigator.pop(context, 'save'),
+            child: Text(_languageService['save'] ?? 'Kaydet'),
+          ),
+        ],
+      ),
+    );
+
+    if (sonuc == 'save') {
+      // Değişiklik yapılan tüm widget'ları kaydet
+      for (final widgetId in degisikenWidgetlar) {
+        await _widgetAyarlariniKaydet(widgetId);
+      }
+      return true;
+    } else if (sonuc == 'discard') {
+      return true;
+    }
+    return false; // cancel veya dialog kapatıldı
+  }
+
   /// Widget id'sine göre yerelleştirilmiş isim döndür
   String _getWidgetIsim(String id) {
     final key = 'widget_$id';
@@ -310,6 +380,12 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
         
         _seffaflik[id] = (prefs.getDouble('widget_${id}_seffaflik') ?? 1.0).clamp(0.3, 1.0);
         _seffafTema[id] = prefs.getBool('widget_${id}_seffaf_tema') ?? false;
+        
+        // Başlangıç değerlerini kaydet (değişiklik takibi için)
+        _baslangicArkaPlanIndex[id] = _secilenArkaPlanIndex[id]!;
+        _baslangicYaziRengiIndex[id] = _secilenYaziRengiIndex[id]!;
+        _baslangicSeffaflik[id] = _seffaflik[id]!;
+        _baslangicSeffafTema[id] = _seffafTema[id]!;
       }
     });
   }
@@ -338,6 +414,12 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
       yaziRengiHex: yaziRengi['hex'],
       seffaflik: seffafTema ? 0.0 : seffaflik,
     );
+    
+    // Başlangıç değerlerini güncelle (değişiklik takibi için)
+    _baslangicArkaPlanIndex[widgetId] = arkaPlanIndex;
+    _baslangicYaziRengiIndex[widgetId] = yaziRengiIndex;
+    _baslangicSeffaflik[widgetId] = seffaflik;
+    _baslangicSeffafTema[widgetId] = seffafTema;
 
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -497,7 +579,16 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
     final theme = Theme.of(context);
     final isDark = theme.brightness == Brightness.dark;
 
-    return Scaffold(
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) async {
+        if (didPop) return;
+        final izinVerildi = await _cikisOnayiGoster();
+        if (izinVerildi && mounted) {
+          Navigator.of(context).pop();
+        }
+      },
+      child: Scaffold(
       appBar: AppBar(
         title: Text(_languageService['widget_settings_title'] ?? 'Widget Ayarları'),
         bottom: TabBar(
@@ -536,6 +627,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
         children: _widgetTurleri.map((widget) => 
           _buildWidgetAyarlari(widget, isDark)
         ).toList(),
+      ),
       ),
     );
   }

@@ -619,11 +619,11 @@ class TemaService extends ChangeNotifier {
   /// Sayaç değiştiğinde temayı güncelle
   Future<void> sayacTemasiGuncelle(int sayacIndex) async {
     _aktifSayacIndex = sayacIndex;
+    _sayacTemasiKullan = true; // Sayaç değiştirildiğinde tema sayaca göre güncellenmeli
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('secili_sayac_index', sayacIndex);
-    if (_sayacTemasiKullan) {
-      notifyListeners();
-    }
+    await prefs.setBool('sayac_temasi_kullan', true);
+    notifyListeners();
   }
 
   /// Sayaç teması modunu aç/kapat

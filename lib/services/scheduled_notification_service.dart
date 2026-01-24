@@ -274,11 +274,12 @@ class ScheduledNotificationService {
             }
           }
 
-          // 🔔 ALARM: Alarm her zaman TAM VAKİT zamanında çalmalı
+          // 🔔 ALARM: Alarm ayarları
           final alarmAcik = prefs.getBool('alarm_$vakitKeyLower') ?? false;
           debugPrint('🔔 Vakit: $vakitKey, Alarm açık: $alarmAcik');
           
           if (alarmAcik) {
+            // TAM VAKİT ALARMI
             var alarmZamani = DateTime(
               hedefTarih.year,
               hedefTarih.month,
@@ -287,7 +288,7 @@ class ScheduledNotificationService {
               dakika,
             );
             
-            debugPrint('   Alarm zamanı: $alarmZamani, Şu an: $now');
+            debugPrint('   Tam vakit alarm zamanı: $alarmZamani, Şu an: $now');
             
             if (alarmZamani.isAfter(now)) {
               final alarmId = AlarmService.generateAlarmId(
@@ -307,12 +308,43 @@ class ScheduledNotificationService {
               
               if (success) {
                 alarmCount++;
-                debugPrint('   ✅ Alarm zamanlandı');
+                debugPrint('   ✅ Tam vakit alarmı zamanlandı');
               } else {
-                debugPrint('   ❌ Alarm zamanlanamadı');
+                debugPrint('   ❌ Tam vakit alarmı zamanlanamadı');
               }
             } else {
-              debugPrint('   ⏭️ Alarm zamanı geçmiş, atlanıyor');
+              debugPrint('   ⏭️ Tam vakit alarm zamanı geçmiş, atlanıyor');
+            }
+            
+            // ERKEN ALARM (Vaktinden önce)
+            if (erkenDakika > 0) {
+              var erkenAlarmZamani = alarmZamani.subtract(Duration(minutes: erkenDakika));
+              
+              debugPrint('   Erken alarm zamanı: $erkenAlarmZamani ($erkenDakika dk önce)');
+              
+              if (erkenAlarmZamani.isAfter(now)) {
+                final erkenAlarmId = AlarmService.generateAlarmId(
+                  '${vakitKeyLower}_erken',
+                  erkenAlarmZamani,
+                );
+                
+                final erkenSuccess = await AlarmService.scheduleAlarm(
+                  prayerName: '${_vakitTurkce[vakitKey]} ($erkenDakika dk)',
+                  triggerAtMillis: erkenAlarmZamani.millisecondsSinceEpoch,
+                  soundPath: sesDosyasi,
+                  useVibration: true,
+                  alarmId: erkenAlarmId,
+                );
+                
+                if (erkenSuccess) {
+                  alarmCount++;
+                  debugPrint('   ✅ Erken alarm zamanlandı');
+                } else {
+                  debugPrint('   ❌ Erken alarm zamanlanamadı');
+                }
+              } else {
+                debugPrint('   ⏭️ Erken alarm zamanı geçmiş, atlanıyor');
+              }
             }
           }
         }

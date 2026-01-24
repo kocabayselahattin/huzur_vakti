@@ -170,6 +170,11 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
   String? _ipCity;
   String? _ipCountry;
   String? _ipCountryCode;
+  
+  // Reverse geocoding ile gelen bilgiler
+  String? _geoCity;
+  String? _geoDistrict;
+  String? _geoCountryCode;
 
   Future<void> _konumuTespitEt() async {
     setState(() {
@@ -179,25 +184,8 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
     try {
       Position? position;
 
-      // Önce IP tabanlı konum dene - ülke ve şehir bilgisi için
-      print('🌐 IP tabanlı konum deneniyor...');
-      final ipResult = await _getIpBasedLocationWithCity();
-
-      if (ipResult != null) {
-        position = ipResult['position'] as Position?;
-        _ipCity = ipResult['city'] as String?;
-        _ipCountry = ipResult['country'] as String?;
-        _ipCountryCode = ipResult['countryCode'] as String?;
-
-        print('🌐 IP Konum: $_ipCity, $_ipCountry ($_ipCountryCode)');
-
-        // Ülkeye göre dil ayarla
-        if (_ipCountryCode != null) {
-          await _setLanguageByCountry(_ipCountryCode!);
-        }
-      }
-
-      // GPS ile daha hassas konum al
+      // ÖNCELİK 1: GPS ile konum al
+      print('📍 GPS ile konum alınıyor...');
       bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
 
       if (serviceEnabled) {
@@ -209,16 +197,41 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
         if (permission == LocationPermission.always ||
             permission == LocationPermission.whileInUse) {
           try {
-            final gpsPosition = await Geolocator.getCurrentPosition(
-              desiredAccuracy: LocationAccuracy.low,
-              timeLimit: const Duration(seconds: 10),
+            position = await Geolocator.getCurrentPosition(
+              desiredAccuracy: LocationAccuracy.high,
+              timeLimit: const Duration(seconds: 15),
             );
-            position = gpsPosition;
-            print('📍 GPS: ${position.latitude}, ${position.longitude}');
+            print('📍 GPS başarılı: ${position.latitude}, ${position.longitude}');
+            
+            // GPS koordinatlarından il/ilçe bilgisi al (reverse geocoding)
+            await _reverseGeocode(position.latitude, position.longitude);
           } catch (e) {
             print('⚠️ GPS alınamadı: $e');
           }
         }
+      }
+
+      // ÖNCELİK 2: GPS başarısızsa IP tabanlı konum dene
+      if (position == null) {
+        print('🌐 IP tabanlı konum deneniyor...');
+        final ipResult = await _getIpBasedLocationWithCity();
+
+        if (ipResult != null) {
+          position = ipResult['position'] as Position?;
+          _ipCity = ipResult['city'] as String?;
+          _ipCountry = ipResult['country'] as String?;
+          _ipCountryCode = ipResult['countryCode'] as String?;
+
+          print('🌐 IP Konum: $_ipCity, $_ipCountry ($_ipCountryCode)');
+        }
+      }
+
+      // Ülke kodunu belirle (önce GPS reverse geocoding, sonra IP)
+      final countryCode = _geoCountryCode ?? _ipCountryCode;
+      
+      // Ülkeye göre dil ayarla
+      if (countryCode != null) {
+        await _setLanguageByCountry(countryCode);
       }
 
       if (position == null) {
@@ -230,11 +243,11 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
 
       print('📍 Konum alındı: ${position.latitude}, ${position.longitude}');
 
-      // Türkiye için Diyanet API kullan
-      if (_ipCountryCode == 'TR' || _ipCountryCode == null) {
+      // Türkiye için
+      if (countryCode == 'TR' || countryCode == null) {
         await _turkiyeKonumBul(position);
       } else {
-        // Diğer ülkeler için IP'den gelen şehir bilgisini kullan
+        // Diğer ülkeler için
         await _digerUlkeKonumBul(position);
       }
     } catch (e) {
@@ -242,6 +255,44 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
       _konumHatasi(
         'Konum alınırken hata oluştu: ${e.toString().substring(0, e.toString().length > 50 ? 50 : e.toString().length)}...',
       );
+    }
+  }
+  
+  /// Koordinatlardan il/ilçe bilgisi al (Nominatim reverse geocoding)
+  Future<void> _reverseGeocode(double lat, double lon) async {
+    try {
+      final url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lon&zoom=10&addressdetails=1&accept-language=tr';
+      
+      final response = await http.get(
+        Uri.parse(url),
+        headers: {'User-Agent': 'HuzurVakti/1.0'},
+      ).timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final address = data['address'] as Map<String, dynamic>?;
+        
+        if (address != null) {
+          // İlçe bilgisi (town, county, district, suburb sırasıyla dene)
+          _geoDistrict = address['town'] ?? 
+                         address['county'] ?? 
+                         address['district'] ?? 
+                         address['suburb'] ??
+                         address['city_district'];
+          
+          // İl bilgisi (province, state, city sırasıyla dene)
+          _geoCity = address['province'] ?? 
+                     address['state'] ?? 
+                     address['city'];
+          
+          // Ülke kodu
+          _geoCountryCode = address['country_code']?.toString().toUpperCase();
+          
+          print('🗺️ Reverse Geocoding: $_geoCity / $_geoDistrict ($_geoCountryCode)');
+        }
+      }
+    } catch (e) {
+      print('⚠️ Reverse geocoding hatası: $e');
     }
   }
 
@@ -255,8 +306,42 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
     // Koordinatlara göre en yakın ili bul
     Map<String, dynamic>? enYakinIl;
 
-    // IP'den gelen şehir bilgisi varsa önce onu dene
-    if (_ipCity != null && _ipCity!.isNotEmpty) {
+    // ÖNCELİK 1: GPS reverse geocoding'den gelen il bilgisi
+    if (_geoCity != null && _geoCity!.isNotEmpty) {
+      final aramaSehir = _geoCity!
+          .toUpperCase()
+          .replaceAll('İ', 'I')
+          .replaceAll('Ş', 'S')
+          .replaceAll('Ğ', 'G')
+          .replaceAll('Ü', 'U')
+          .replaceAll('Ö', 'O')
+          .replaceAll('Ç', 'C')
+          .replaceAll(' PROVINCE', '')
+          .replaceAll(' İLİ', '')
+          .replaceAll(' IL', '')
+          .trim();
+
+      try {
+        enYakinIl = iller.firstWhere((il) {
+          final sehirAdi = (il['SehirAdi'] ?? il['IlceAdi'] ?? '')
+              .toString()
+              .toUpperCase()
+              .replaceAll('İ', 'I')
+              .replaceAll('Ş', 'S')
+              .replaceAll('Ğ', 'G')
+              .replaceAll('Ü', 'U')
+              .replaceAll('Ö', 'O')
+              .replaceAll('Ç', 'C');
+          return sehirAdi.contains(aramaSehir) || aramaSehir.contains(sehirAdi);
+        });
+        print('🏙️ GPS reverse geocoding ile il eşleşti: $_geoCity');
+      } catch (_) {
+        print('⚠️ GPS reverse geocoding il eşleşmedi: $_geoCity');
+      }
+    }
+
+    // ÖNCELİK 2: IP'den gelen şehir bilgisi
+    if (enYakinIl == null && _ipCity != null && _ipCity!.isNotEmpty) {
       final aramaSehir = _ipCity!
           .toUpperCase()
           .replaceAll('İ', 'I')
@@ -285,7 +370,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
       }
     }
 
-    // IP ile bulunamadıysa koordinatlardan bul
+    // ÖNCELİK 3: Koordinatlardan en yakın ili bul
     if (enYakinIl == null) {
       enYakinIl = _enYakinIliBul(position.latitude, position.longitude);
     }
@@ -407,18 +492,54 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
 
     Map<String, dynamic>? secilenIlce;
 
-    // 1. Önce "MERKEZ" adlı ilçeyi ara
-    try {
-      secilenIlce = ilceler.firstWhere((ilce) {
-        final ilceAdi = (ilce['IlceAdi'] ?? '').toString().toUpperCase();
-        return ilceAdi == 'MERKEZ';
-      });
-      print('🏘️ MERKEZ ilçesi bulundu');
-    } catch (_) {
-      secilenIlce = null;
+    // ÖNCELİK 1: GPS reverse geocoding'den gelen ilçe bilgisi
+    if (_geoDistrict != null && _geoDistrict!.isNotEmpty) {
+      final aramaIlce = _geoDistrict!
+          .toUpperCase()
+          .replaceAll('İ', 'I')
+          .replaceAll('Ş', 'S')
+          .replaceAll('Ğ', 'G')
+          .replaceAll('Ü', 'U')
+          .replaceAll('Ö', 'O')
+          .replaceAll('Ç', 'C')
+          .replaceAll(' İLÇESİ', '')
+          .replaceAll(' ILCESI', '')
+          .trim();
+
+      try {
+        secilenIlce = ilceler.firstWhere((ilce) {
+          final ilceAdi = (ilce['IlceAdi'] ?? '')
+              .toString()
+              .toUpperCase()
+              .replaceAll('İ', 'I')
+              .replaceAll('Ş', 'S')
+              .replaceAll('Ğ', 'G')
+              .replaceAll('Ü', 'U')
+              .replaceAll('Ö', 'O')
+              .replaceAll('Ç', 'C');
+          return ilceAdi == aramaIlce || ilceAdi.contains(aramaIlce) || aramaIlce.contains(ilceAdi);
+        });
+        print('🏘️ GPS reverse geocoding ile ilçe eşleşti: $_geoDistrict');
+      } catch (_) {
+        print('⚠️ GPS reverse geocoding ilçe eşleşmedi: $_geoDistrict');
+        secilenIlce = null;
+      }
     }
 
-    // 2. Merkez bulunamadıysa, il adını içeren ilçeyi ara
+    // ÖNCELİK 2: "MERKEZ" adlı ilçeyi ara
+    if (secilenIlce == null) {
+      try {
+        secilenIlce = ilceler.firstWhere((ilce) {
+          final ilceAdi = (ilce['IlceAdi'] ?? '').toString().toUpperCase();
+          return ilceAdi == 'MERKEZ';
+        });
+        print('🏘️ MERKEZ ilçesi bulundu');
+      } catch (_) {
+        secilenIlce = null;
+      }
+    }
+
+    // ÖNCELİK 3: İl adını içeren ilçeyi ara
     if (secilenIlce == null) {
       final aramaIlAdi = ilAdi
           .toUpperCase()
@@ -448,7 +569,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
       }
     }
 
-    // 3. IP'den gelen şehir adını içeren ilçeyi ara
+    // ÖNCELİK 4: IP'den gelen şehir adını içeren ilçeyi ara
     if (secilenIlce == null && _ipCity != null) {
       final aramaCity = _ipCity!
           .toUpperCase()
@@ -478,7 +599,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
       }
     }
 
-    // 4. Hala bulunamadıysa ilk ilçeyi seç
+    // ÖNCELİK 5: Hala bulunamadıysa ilk ilçeyi seç
     if (secilenIlce == null && ilceler.isNotEmpty) {
       secilenIlce = ilceler.first;
       print('🏘️ Varsayılan ilk ilçe seçildi');
@@ -1321,6 +1442,47 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                         },
                       ),
               ),
+              
+              // İlçe seçildiyse Tamam butonu göster
+              if (secilenIlceId != null)
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: const Color(0xFF2A3F5F),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.3),
+                        blurRadius: 10,
+                        offset: const Offset(0, -5),
+                      ),
+                    ],
+                  ),
+                  child: SafeArea(
+                    top: false,
+                    child: SizedBox(
+                      width: double.infinity,
+                      child: ElevatedButton.icon(
+                        onPressed: _kaydet,
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.cyanAccent,
+                          foregroundColor: const Color(0xFF1B2741),
+                          padding: const EdgeInsets.symmetric(vertical: 16),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                        ),
+                        icon: const Icon(Icons.check),
+                        label: Text(
+                          _languageService['ok'] ?? 'Tamam',
+                          style: const TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                          ),
+                        ),
+                      ),
+                    ),
+                  ),
+                ),
             ],
           ],
         ),
