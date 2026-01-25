@@ -201,4 +201,30 @@ class PermissionService {
       print('⚠️ Pil ayarları açılamadı: $e');
     }
   }
+
+  /// Do Not Disturb (Rahatsız Etme) izni kontrolü
+  static Future<bool> hasDoNotDisturbPermission() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      final result = await _channel.invokeMethod<bool>('hasDoNotDisturbPermission');
+      return result ?? false;
+    } catch (e) {
+      print('⚠️ DND izin kontrolü hatası: $e');
+      return false;
+    }
+  }
+
+  /// Do Not Disturb (Rahatsız Etme) izni iste
+  static Future<bool> requestDoNotDisturbPermission() async {
+    if (!Platform.isAndroid) return true;
+    try {
+      await _channel.invokeMethod<void>('requestDoNotDisturbPermission');
+      // Ayarlardan döndükten sonra kontrol et
+      await Future.delayed(const Duration(milliseconds: 500));
+      return await hasDoNotDisturbPermission();
+    } catch (e) {
+      print('⚠️ DND izni istenemedi: $e');
+      return false;
+    }
+  }
 }

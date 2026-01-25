@@ -297,7 +297,7 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '${_languageService['time_to'] ?? 'vaktine'} $_sonrakiVakit ${_languageService['remaining'] ?? 'Kalan'}',
+                              '$_sonrakiVakit ${_languageService['time_to'] ?? 'vaktine'} ${_languageService['time_remaining'] ?? 'kalan süre'}',
                               style: TextStyle(
                                 color: renkler.yaziSecondary,
                                 fontSize: 13,

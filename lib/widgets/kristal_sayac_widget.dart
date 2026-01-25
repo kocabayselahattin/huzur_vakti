@@ -298,7 +298,7 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
             
             // İçerik
             Padding(
-              padding: const EdgeInsets.all(24),
+              padding: const EdgeInsets.all(16),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -342,7 +342,7 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
                     ),
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 16),
 
                   // Sayaç - Kristal görünümlü
                   Row(
@@ -376,7 +376,7 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
                     ],
                   ),
 
-                  const SizedBox(height: 24),
+                  const SizedBox(height: 14),
 
                   // Alt: Tarihler
                   Container(
@@ -417,7 +417,7 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
                     ),
                   ),
                   
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   
                   // İlerleme Barı
                   _buildProgressBar(primaryColor, secondaryColor, textColor),

@@ -406,8 +406,10 @@
   
   "battery_optimization": "تحسين البطارية",
   "battery_optimization_desc": "السماح بالعمليات في الخلفية",
-  
-  "active_location": "الموقع النشط",
+    "overlay_permission": "العرض فوق التطبيقات الأخرى",
+  "overlay_permission_desc": "هذا الإذن مطلوب لعرض شاشة المنبه دائمًا في الأعلى. بعو منح الإذن، ابحث عن تطبيق Huzur Vakti في شاشة الإعدادات وقم بتفعيل إذن 'العرض فوق التطبيقات الأخرى'.",
+  "open_settings": "فتح الإعدادات",
+    "active_location": "الموقع النشط",
   "saved_locations_title": "المواقع المحفوظة",
   "no_saved_locations": "لا توجد مواقع محفوظة بعد",
   "delete_location": "حذف الموقع",
@@ -528,8 +530,8 @@
   "special_days_nights": "الأيام والليالي الخاصة",
   "no_upcoming_special_days": "لا توجد أيام خاصة قادمة",
   "notification_permission_denied": "تم رفض إذن الإشعارات. لن تعمل الإشعارات.",
-  "dnd_permission_title": "إذن الصمت",
-  "dnd_permission_message": "يلزم إذن النظام لكتم الصوت أثناء أوقات الصلاة. هل تريد السماح؟",
+  "dnd_permission_title": "إذن عدم الإزعاج",
+  "dnd_permission_message": "الإذن مطلوب لكتم هاتفك تلقائيًا أثناء أوقات الصلاة. يسمح هذا لهاتفك بالدخول في الوضع الصامت عند بدء وقت الصلاة، حتى تتمكن من الصلاة بسلام. بعد منح الإذن، ابحث عن تطبيق Huzur Vakti في شاشة الإعدادات وقم بتفعيل الإذن.",
   "save_changes_title": "حفظ التغييرات؟",
   "save_changes_message": "هل تريد حفظ التغييرات التي أجريتها؟",
   "notification_alarm_system": "نظام الإشعارات والتنبيهات",

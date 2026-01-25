@@ -202,6 +202,16 @@
             </intent-filter>
         </receiver>
         
+        <!-- Silent Mode Receiver - Sessize mod bildirimindeki butonları yönetir -->
+        <receiver
+            android:name=".alarm.SilentModeReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.huzur_vakti.EXIT_SILENT" />
+                <action android:name="com.example.huzur_vakti.STAY_SILENT" />
+            </intent-filter>
+        </receiver>
+        
         <!-- Boot Receiver - Cihaz yeniden başlatıldığında alarmları geri yükler -->
         <receiver
             android:name=".alarm.BootReceiver"

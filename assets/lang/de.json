@@ -408,6 +408,10 @@
   "battery_optimization": "Batterieoptimierung",
   "battery_optimization_desc": "Hintergrundprozesse erlauben",
   
+  "overlay_permission": "Über anderen Apps anzeigen",
+  "overlay_permission_desc": "Diese Berechtigung ist erforderlich, damit der Alarmbildschirm immer oben angezeigt wird. Nachdem Sie die Berechtigung erteilt haben, finden Sie die Huzur Vakti-App im Einstellungsbildschirm und aktivieren Sie die Berechtigung 'Über anderen Apps anzeigen'.",
+  "open_settings": "Einstellungen öffnen",
+  
   "active_location": "Aktiver Standort",
   "saved_locations_title": "Gespeicherte Standorte",
   "no_saved_locations": "Noch keine gespeicherten Standorte",
@@ -612,7 +616,7 @@
   "no_upcoming_special_days": "Keine bevorstehenden besonderen Tage gefunden",
   "notification_permission_denied": "Benachrichtigungsberechtigung verweigert. Benachrichtigungen funktionieren nicht.",
   "dnd_permission_title": "Nicht-stören-Berechtigung",
-  "dnd_permission_message": "Systemberechtigung erforderlich, um während der Gebetszeiten stummzuschalten. Möchten Sie die Berechtigung erteilen?",
+  "dnd_permission_message": "Die Berechtigung ist erforderlich, um Ihr Telefon während der Gebetszeiten automatisch stumm zu schalten. Dadurch kann Ihr Telefon in den Stummmodus wechseln, wenn die Gebetszeit beginnt, damit Sie in Ruhe beten können. Nachdem Sie die Berechtigung erteilt haben, finden Sie die Huzur Vakti-App im Einstellungsbildschirm und aktivieren Sie die Berechtigung.",
   "save_changes_title": "Änderungen speichern?",
   "save_changes_message": "Möchten Sie Ihre Änderungen speichern?",
   "dont_save": "Nicht speichern",

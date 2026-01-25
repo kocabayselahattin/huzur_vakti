@@ -268,7 +268,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                   ],
                 ),
               ),
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(12),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -295,7 +295,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                             '// ${_languageService['time_remaining'] ?? 'Kalan Süre'}',
                             style: TextStyle(
                               color: darkGreen,
-                              fontSize: 11,
+                              fontSize: 13,
                               fontFamily: 'monospace',
                             ),
                           ),
@@ -330,13 +330,13 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                   // Zaman göstergesi - Terminal stili (yukarı kaydırıldı)
                   Expanded(
                     child: Transform.translate(
-                      offset: const Offset(0, -10),
+                      offset: const Offset(0, -8), // Sayaç kutusunu biraz aşağı al
                       child: Center(
                       child: AnimatedBuilder(
                         animation: _glowController,
                         builder: (context, child) {
                           return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+                            padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 11),
                             decoration: BoxDecoration(
                               color: cardBg.withOpacity(0.8),
                               border: Border.all(
@@ -364,7 +364,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                                     letterSpacing: 2,
                                   ),
                                 ),
-                                const SizedBox(height: 8),
+                                const SizedBox(height: 6),
                                 Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
@@ -384,7 +384,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                     ),
                   ),
 
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 2),
 
                   // İlerleme çubuğu - ASCII style
                   Row(
@@ -403,11 +403,11 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                           margin: const EdgeInsets.symmetric(horizontal: 4),
                           child: LayoutBuilder(
                             builder: (context, constraints) {
-                              final filledWidth = constraints.maxWidth * _ilerlemeOrani;
-                              final chars = (constraints.maxWidth / 8).floor();
+                              final chars = (constraints.maxWidth / 9).floor();
                               final filledChars = (chars * _ilerlemeOrani).floor();
                               
                               return Row(
+                                mainAxisSize: MainAxisSize.min,
                                 children: List.generate(chars, (index) {
                                   return Text(
                                     index < filledChars ? '█' : '░',
@@ -436,7 +436,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                     ],
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
 
                   // Miladi ve Hicri Takvim
                   Row(
@@ -507,7 +507,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
       value,
       style: TextStyle(
         color: color,
-        fontSize: 42,
+        fontSize: 38,
         fontWeight: FontWeight.bold,
         fontFamily: 'monospace',
         letterSpacing: 2,
@@ -526,7 +526,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
         ':',
         style: TextStyle(
           color: color.withOpacity(0.7),
-          fontSize: 36,
+          fontSize: 32,
           fontWeight: FontWeight.bold,
           fontFamily: 'monospace',
         ),

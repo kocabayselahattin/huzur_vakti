@@ -45,7 +45,7 @@
   "todays_dua": "Prayer of the Day",
   "swipe_for_more": "Swipe for more content",
   "esmaul_husna": "99 Names of Allah",
-  "remaining": "Remaining",
+  "remaining": "remaining",
   "hours": "hours",
   "minutes": "minutes",
   "seconds": "seconds",
@@ -399,6 +399,7 @@
   "dnd_permission": "Do Not Disturb Permission",
   "dnd_permission_prompt": "System permission is required to mute during prayer times. Do you want to grant permission?",
   "give_permission": "Grant Permission",
+  "open_settings": "Open Settings",
   "dnd_not_scheduled": "Could not schedule mute. Location selection required.",
   "custom_sound_info": "Important: Sound file name should not start with a number.",
   "custom_sound_info_detail": "Sound file names must start with a letter on Android system.",
@@ -407,6 +408,9 @@
   
   "battery_optimization": "Battery Optimization",
   "battery_optimization_desc": "Allow background processes",
+  
+  "overlay_permission": "Display Over Other Apps",
+  "overlay_permission_desc": "This permission is required for the alarm screen to always appear on top. After granting permission, find Huzur Vakti app in the settings screen and enable 'Display over other apps' permission.",
   
   "active_location": "Active Location",
   "saved_locations_title": "Saved Locations",
@@ -612,7 +616,7 @@
   "no_upcoming_special_days": "No upcoming special days found",
   "notification_permission_denied": "Notification permission denied. Notifications will not work.",
   "dnd_permission_title": "Do Not Disturb Permission",
-  "dnd_permission_message": "System permission is required to mute during prayer times. Would you like to grant permission?",
+  "dnd_permission_message": "Permission is required to automatically silence your phone during prayer times. This allows your phone to enter silent mode when prayer time begins, so you can pray peacefully. After granting permission, find Huzur Vakti app in the settings screen and enable the permission.",
   "save_changes_title": "Save Changes?",
   "save_changes_message": "Would you like to save your changes?",
   "dont_save": "Don't Save",

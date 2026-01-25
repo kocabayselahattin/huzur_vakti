@@ -284,7 +284,7 @@ class _RetroSayacWidgetState extends State<RetroSayacWidget>
                       animation: _blinkAnimation,
                       builder: (context, child) {
                         return Padding(
-                          padding: const EdgeInsets.only(right: 25),
+                          padding: const EdgeInsets.only(right: 12),
                           child: Row(
                             mainAxisAlignment: MainAxisAlignment.center,
                             children: [
@@ -295,7 +295,7 @@ class _RetroSayacWidgetState extends State<RetroSayacWidget>
                                   ':',
                                   style: TextStyle(
                                     color: lcdGreen,
-                                    fontSize: 46,
+                                    fontSize: 36,
                                     fontFamily: 'monospace',
                                     fontWeight: FontWeight.bold,
                                     shadows: [
@@ -311,7 +311,7 @@ class _RetroSayacWidgetState extends State<RetroSayacWidget>
                                   ':',
                                   style: TextStyle(
                                     color: lcdGreen,
-                                    fontSize: 46,
+                                    fontSize: 36,
                                     fontFamily: 'monospace',
                                     fontWeight: FontWeight.bold,
                                     shadows: [
@@ -434,7 +434,7 @@ class _RetroSayacWidgetState extends State<RetroSayacWidget>
 
   Widget _buildLCDDigit(String value, Color lcdGreen) {
     return SizedBox(
-      width: 62,
+      width: 68,
       child: Text(
         value,
         textAlign: TextAlign.center,
@@ -442,7 +442,7 @@ class _RetroSayacWidgetState extends State<RetroSayacWidget>
         softWrap: false,
         style: TextStyle(
           color: lcdGreen,
-          fontSize: 46,
+          fontSize: 36,
           fontFamily: 'monospace',
           fontWeight: FontWeight.bold,
           fontFeatures: const [FontFeature.tabularFigures()],

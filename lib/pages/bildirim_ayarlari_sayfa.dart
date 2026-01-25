@@ -32,13 +32,14 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
   };
 
   // Vaktinde bildirim (tam vakitte göster)
+  // Varsayılan: Öğle, ikindi, akşam, yatsı açık
   Map<String, bool> _vaktindeBildirim = {
     'imsak': false,
     'gunes': false,
-    'ogle': false,
-    'ikindi': false,
-    'aksam': false,
-    'yatsi': false,
+    'ogle': true,
+    'ikindi': true,
+    'aksam': true,
+    'yatsi': true,
   };
 
   // Alarm açık/kapalı durumları (kilit ekranında alarm çalar)

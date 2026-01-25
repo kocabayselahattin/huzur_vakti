@@ -19,10 +19,9 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
 
   // İzin durumları
   bool _locationGranted = false;
-  bool _notificationGranted = false;
   bool _overlayGranted = false;
+  bool _dndGranted = false;
   bool _batteryOptDisabled = false;
-  bool _exactAlarmGranted = false;
 
   late List<_PermissionStep> _steps;
 
@@ -43,25 +42,18 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
         color: Colors.blue,
       ),
       _PermissionStep(
-        icon: Icons.notifications_active,
-        title: _languageService['notification_permission'] ?? 'Bildirim İzni',
-        description: _languageService['notification_permission_desc'] ??
-            'Namaz vakitlerinde sizi bilgilendirmek için bildirim izni gereklidir.',
-        color: Colors.orange,
-      ),
-      _PermissionStep(
-        icon: Icons.alarm,
-        title: _languageService['exact_alarm_permission'] ?? 'Tam Zamanlı Alarm İzni',
-        description: _languageService['exact_alarm_permission_desc'] ??
-            'Bildirimlerin tam vakitinde çalması için alarm izni gereklidir.',
-        color: Colors.purple,
-      ),
-      _PermissionStep(
         icon: Icons.layers,
         title: _languageService['overlay_permission'] ?? 'Üstünde Göster İzni',
         description: _languageService['overlay_permission_desc'] ??
             'Vakit girdiğinde ekranda bildirim gösterebilmek için bu izin gereklidir.',
         color: Colors.teal,
+      ),
+      _PermissionStep(
+        icon: Icons.do_not_disturb,
+        title: _languageService['dnd_permission_title'] ?? 'Rahatsız Etme İzni',
+        description: _languageService['dnd_permission_desc'] ??
+            'Vakitlerde telefonu otomatik sessize alabilmek için rahatsız etme izni gereklidir.',
+        color: Colors.deepPurple,
       ),
       _PermissionStep(
         icon: Icons.battery_charging_full,
@@ -77,19 +69,16 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
     if (!Platform.isAndroid) return;
 
     final locationStatus = await PermissionService.checkLocationPermission();
-    final notificationStatus =
-        await PermissionService.checkNotificationPermission();
-    final exactAlarmStatus = await PermissionService.hasExactAlarmPermission();
     final overlayStatus = await PermissionService.hasOverlayPermission();
+    final dndStatus = await PermissionService.hasDoNotDisturbPermission();
     final batteryStatus =
         await PermissionService.isBatteryOptimizationDisabled();
 
     if (mounted) {
       setState(() {
         _locationGranted = locationStatus;
-        _notificationGranted = notificationStatus;
-        _exactAlarmGranted = exactAlarmStatus;
         _overlayGranted = overlayStatus;
+        _dndGranted = dndStatus;
         _batteryOptDisabled = batteryStatus;
       });
     }
@@ -108,22 +97,18 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
           granted = await PermissionService.requestLocationPermission();
           _locationGranted = granted;
           break;
-        case 1: // Bildirim
-          granted = await PermissionService.requestNotificationPermission();
-          _notificationGranted = granted;
-          break;
-        case 2: // Exact Alarm
-          granted = await PermissionService.requestExactAlarmPermission();
-          _exactAlarmGranted = granted;
-          break;
-        case 3: // Overlay
+        case 1: // Overlay - Direkt ayarları aç
           await PermissionService.openOverlaySettings();
           // Ayarlardan döndükten sonra kontrol et
           await Future.delayed(const Duration(milliseconds: 500));
           _overlayGranted = await PermissionService.hasOverlayPermission();
           granted = _overlayGranted;
           break;
-        case 4: // Pil
+        case 2: // DND
+          granted = await PermissionService.requestDoNotDisturbPermission();
+          _dndGranted = granted;
+          break;
+        case 3: // Pil
           await PermissionService.requestBatteryOptimizationExemption();
           await Future.delayed(const Duration(milliseconds: 500));
           _batteryOptDisabled =
@@ -205,12 +190,10 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
       case 0:
         return _locationGranted;
       case 1:
-        return _notificationGranted;
-      case 2:
-        return _exactAlarmGranted;
-      case 3:
         return _overlayGranted;
-      case 4:
+      case 2:
+        return _dndGranted;
+      case 3:
         return _batteryOptDisabled;
       default:
         return false;
