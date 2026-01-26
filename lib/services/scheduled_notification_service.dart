@@ -100,6 +100,8 @@ class ScheduledNotificationService {
   }
 
   /// Günlük bildirimleri kontrol eden timer başlat
+  /// 7 günlük zamanlama olduğu için her gün yeniden zamanlamaya gerek yok
+  /// Sadece zamanlamalar bitince yeniden zamanla
   static void _startDailyScheduleCheck() {
     _dailyScheduleTimer?.cancel();
     // Her dakika kontrol et
@@ -107,21 +109,31 @@ class ScheduledNotificationService {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 
-      // Gün değiştiyse veya hiç zamanlanmadıysa
-      if (_lastScheduleDate == null || _lastScheduleDate!.isBefore(today)) {
-        debugPrint('📅 Yeni gün başladı, bildirimler yeniden zamanlanıyor...');
+      // İlk kez zamanlanıyorsa
+      if (_lastScheduleDate == null) {
+        debugPrint('📅 İlk zamanlama yapılıyor...');
+        await scheduleAllPrayerNotifications();
+        _lastScheduleDate = today;
+        return;
+      }
+
+      // 7 günlük zamanlama olduğu için 6. günde yeniden zamanla
+      // Böylece her zaman en az 1 günlük önceden zamanlanmış olur
+      final daysSinceLastSchedule = today.difference(_lastScheduleDate!).inDays;
+      if (daysSinceLastSchedule >= 6) {
+        debugPrint('📅 6 gün geçti, bildirimler yeniden zamanlanıyor...');
         await scheduleAllPrayerNotifications();
         _lastScheduleDate = today;
       }
     });
   }
 
-  /// Tüm vakit bildirimlerini zamanla (14 günlük - 2 hafta)
-  /// Bu sayede uygulama 1 hafta açılmasa bile bildirimler gelir
+  /// Tüm vakit bildirimlerini zamanla (7 günlük - 1 hafta)
+  /// Bu sayede uygulama birkaç gün açılmasa bile bildirimler gelir
   static Future<void> scheduleAllPrayerNotifications() async {
     try {
-      // 14 gün için zamanlama (2 hafta)
-      const int zamanlamaSuresi = 14;
+      // 7 gün için zamanlama (1 hafta)
+      const int zamanlamaSuresi = 7;
       debugPrint('🔔 $zamanlamaSuresi günlük vakit bildirimleri zamanlanıyor...');
 
       // Önce mevcut bildirimleri iptal et
@@ -134,7 +146,7 @@ class ScheduledNotificationService {
         return;
       }
 
-      // 14 günlük vakit bilgisi için aylık verileri al
+      // 7 günlük vakit bilgisi için aylık verileri al
       final now = DateTime.now();
       final aylikVakitler = await DiyanetApiService.getAylikVakitler(
         ilceId,
@@ -142,9 +154,9 @@ class ScheduledNotificationService {
         now.month,
       );
       
-      // Gelecek ay da lazım olabilir (ay sonundaysak veya 14 gün için)
+      // Gelecek ay da lazım olabilir (ay sonundaysak veya 7 gün için)
       List<Map<String, dynamic>> sonrakiAyVakitler = [];
-      if (now.day > 17) { // 14 gün için erken başla
+      if (now.day > 24) { // 7 gün için erken başla
         final sonrakiAy = now.month == 12 ? 1 : now.month + 1;
         final sonrakiYil = now.month == 12 ? now.year + 1 : now.year;
         sonrakiAyVakitler = await DiyanetApiService.getAylikVakitler(
@@ -169,7 +181,7 @@ class ScheduledNotificationService {
       int scheduledCount = 0;
       int alarmCount = 0;
       
-      // 14 gün için döngü (2 hafta)
+      // 7 gün için döngü (1 hafta)
       for (int gun = 0; gun < zamanlamaSuresi; gun++) {
         final hedefTarih = now.add(Duration(days: gun));
         final hedefTarihStr = '${hedefTarih.day.toString().padLeft(2, '0')}.${hedefTarih.month.toString().padLeft(2, '0')}.${hedefTarih.year}';
@@ -291,8 +303,9 @@ class ScheduledNotificationService {
             debugPrint('   Tam vakit alarm zamanı: $alarmZamani, Şu an: $now');
             
             if (alarmZamani.isAfter(now)) {
+              // TAM VAKİT ALARMI için ID (son 2 hane: vakit indexi)
               final alarmId = AlarmService.generateAlarmId(
-                vakitKeyLower,
+                vakitKeyLower, // Örn: "ogle"
                 alarmZamani,
               );
               

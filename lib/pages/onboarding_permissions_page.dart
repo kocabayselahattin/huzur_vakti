@@ -81,6 +81,13 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
         _dndGranted = dndStatus;
         _batteryOptDisabled = batteryStatus;
       });
+      
+      // Eğer tüm izinler zaten verilmişse, otomatik olarak tamamla
+      if (locationStatus && overlayStatus && dndStatus && batteryStatus) {
+        Future.delayed(const Duration(milliseconds: 500), () {
+          if (mounted) _completeOnboarding();
+        });
+      }
     }
   }
 
@@ -99,14 +106,17 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
           break;
         case 1: // Overlay - Direkt ayarları aç
           await PermissionService.openOverlaySettings();
-          // Ayarlardan döndükten sonra kontrol et
-          await Future.delayed(const Duration(milliseconds: 500));
+          // Ayarlardan döndükten sonra kontrol et (daha uzun bekleme)
+          await Future.delayed(const Duration(seconds: 1));
           _overlayGranted = await PermissionService.hasOverlayPermission();
           granted = _overlayGranted;
           break;
-        case 2: // DND
-          granted = await PermissionService.requestDoNotDisturbPermission();
-          _dndGranted = granted;
+        case 2: // DND - Direkt ayarları aç
+          await PermissionService.requestDoNotDisturbPermission();
+          // Ayarlardan döndükten sonra kontrol et
+          await Future.delayed(const Duration(seconds: 1));
+          _dndGranted = await PermissionService.hasDoNotDisturbPermission();
+          granted = _dndGranted;
           break;
         case 3: // Pil
           await PermissionService.requestBatteryOptimizationExemption();
@@ -120,19 +130,18 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
       if (mounted) {
         setState(() {});
 
-        if (granted || _currentStep >= _steps.length - 1) {
+        if (granted) {
+          // İzin verildi, sonraki adıma geç
           _nextStep();
         } else {
-          // İzin verilmedi uyarısı
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                '${_steps[_currentStep].title} ${_languageService['permission_not_granted_continue'] ?? 'verilmedi. Yine de devam edebilirsiniz.'}',
-              ),
-              action: SnackBarAction(label: _languageService['continue_btn'] ?? 'Devam', onPressed: _nextStep),
-              backgroundColor: Colors.orange,
-            ),
-          );
+          // İzin verilmedi ama kullanıcı isterse atlayabilir
+          // Son adımsa direkt bitir, değilse kullanıcıya sor
+          if (_currentStep >= _steps.length - 1) {
+            _nextStep();
+          } else {
+            // Sessizce devam et, kullanıcı isterse "Atla" butonunu kullanabilir
+            _nextStep();
+          }
         }
       }
     } finally {

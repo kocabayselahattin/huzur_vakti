@@ -12,20 +12,61 @@ class KuranSayfa extends StatefulWidget {
   State<KuranSayfa> createState() => _KuranSayfaState();
 }
 
-class _KuranSayfaState extends State<KuranSayfa> {
+class _KuranSayfaState extends State<KuranSayfa>
+    with SingleTickerProviderStateMixin {
   final TemaService _temaService = TemaService();
   final LanguageService _languageService = LanguageService();
   List<Sure> _sureler = [];
   bool _yukleniyor = true;
+  late TabController _tabController;
+  int? _sonOkunanSureNo;
+  int? _sonOkunanAyetNo;
+  String? _sonOkunanSureAd;
 
   @override
   void initState() {
     super.initState();
+    _tabController = TabController(length: 2, vsync: this);
     _sureleriYukle();
+    _sonOkunanYeriYukle();
+  }
+
+  Future<void> _sonOkunanYeriYukle() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (mounted) {
+      setState(() {
+        _sonOkunanSureNo = prefs.getInt('son_okunan_sure_no');
+        _sonOkunanAyetNo = prefs.getInt('son_okunan_ayet_no');
+        _sonOkunanSureAd = prefs.getString('son_okunan_sure_ad');
+      });
+    }
+  }
+
+  void _kaldirKaldiginYerden() {
+    if (_sonOkunanSureNo != null) {
+      final sure = _sureler.firstWhere(
+        (s) => s.no == _sonOkunanSureNo,
+        orElse: () => _sureler.first,
+      );
+      Navigator.push(
+        context,
+        MaterialPageRoute(
+          builder: (context) => SureDetaySayfa(
+            sure: sure,
+            baslangicAyetNo: _sonOkunanAyetNo,
+          ),
+        ),
+      ).then((_) => _sonOkunanYeriYukle());
+    }
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    super.dispose();
   }
 
   Future<void> _sureleriYukle() async {
-    // Kısa surelerle başlıyoruz (Cüz Amma - Son 37 sure)
     setState(() {
       _sureler = _tumSureler;
       _yukleniyor = false;
@@ -54,6 +95,20 @@ class _KuranSayfaState extends State<KuranSayfa> {
           icon: Icon(Icons.arrow_back, color: renkler.yaziPrimary),
           onPressed: () => Navigator.pop(context),
         ),
+        bottom: TabBar(
+          controller: _tabController,
+          indicatorColor: renkler.vurgu,
+          labelColor: renkler.vurgu,
+          unselectedLabelColor: renkler.yaziSecondary,
+          labelStyle: const TextStyle(
+            fontSize: 14,
+            fontWeight: FontWeight.bold,
+          ),
+          tabs: const [
+            Tab(text: 'SURELER'),
+            Tab(text: 'CÜZLER'),
+          ],
+        ),
       ),
       body: Container(
         decoration: renkler.arkaPlanGradient != null
@@ -61,14 +116,131 @@ class _KuranSayfaState extends State<KuranSayfa> {
             : null,
         child: _yukleniyor
             ? Center(child: CircularProgressIndicator(color: renkler.vurgu))
-            : ListView.builder(
-                padding: const EdgeInsets.all(12),
-                itemCount: _sureler.length,
-                itemBuilder: (context, index) {
-                  final sure = _sureler[index];
-                  return _buildSureKarti(sure, renkler);
-                },
+            : TabBarView(
+                controller: _tabController,
+                children: [
+                  // Sureler Tab
+                  ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: _sureler.length + (_sonOkunanSureNo != null ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      // İlk sırada "Kaldığınız Yerden" kartı
+                      if (index == 0 && _sonOkunanSureNo != null) {
+                        return _buildKaldiginYerdenKarti(renkler);
+                      }
+                      // Normal sure kartları
+                      final sureIndex = _sonOkunanSureNo != null ? index - 1 : index;
+                      final sure = _sureler[sureIndex];
+                      return _buildSureKarti(sure, renkler);
+                    },
+                  ),
+                  // Cüzler Tab
+                  ListView.builder(
+                    padding: const EdgeInsets.all(12),
+                    itemCount: _cuzler.length + (_sonOkunanSureNo != null ? 1 : 0),
+                    itemBuilder: (context, index) {
+                      // İlk sırada "Kaldığınız Yerden" kartı
+                      if (index == 0 && _sonOkunanSureNo != null) {
+                        return _buildKaldiginYerdenKarti(renkler);
+                      }
+                      // Normal cüz kartları
+                      final cuzIndex = _sonOkunanSureNo != null ? index - 1 : index;
+                      final cuz = _cuzler[cuzIndex];
+                      return _buildCuzKarti(cuz, renkler);
+                    },
+                  ),
+                ],
               ),
+      ),
+    );
+  }
+
+  Widget _buildKaldiginYerdenKarti(TemaRenkleri renkler) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: [
+            renkler.vurgu.withOpacity(0.8),
+            renkler.vurguSecondary.withOpacity(0.8),
+          ],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(20),
+        boxShadow: [
+          BoxShadow(
+            color: renkler.vurgu.withOpacity(0.3),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
+          ),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: _kaldirKaldiginYerden,
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Row(
+              children: [
+                Container(
+                  width: 56,
+                  height: 56,
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.3),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: const Icon(
+                    Icons.bookmark,
+                    color: Colors.white,
+                    size: 30,
+                  ),
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text(
+                        'KALDIĞINIZ YERDEN DEVAM EDİN',
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                          letterSpacing: 0.5,
+                        ),
+                      ),
+                      const SizedBox(height: 6),
+                      Text(
+                        _sonOkunanSureAd ?? 'Sure',
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      if (_sonOkunanAyetNo != null)
+                        Text(
+                          'Ayet ${_sonOkunanAyetNo}',
+                          style: TextStyle(
+                            color: Colors.white.withOpacity(0.9),
+                            fontSize: 13,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                Icon(
+                  Icons.play_circle_fill,
+                  color: Colors.white.withOpacity(0.9),
+                  size: 40,
+                ),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -158,6 +330,139 @@ class _KuranSayfaState extends State<KuranSayfa> {
       ),
     );
   }
+
+  Widget _buildCuzKarti(Cuz cuz, TemaRenkleri renkler) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: renkler.kartArkaPlan,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: renkler.vurgu.withOpacity(0.1), blurRadius: 8),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            // Cüz detay sayfasına git (gelecekte implement edilecek)
+            ScaffoldMessenger.of(context).showSnackBar(
+              SnackBar(
+                content: Text('${cuz.no}. Cüz: ${cuz.baslangicSure} - ${cuz.bitisSure}'),
+                backgroundColor: renkler.vurgu,
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Row(
+              children: [
+                // Cüz numarası
+                Container(
+                  width: 45,
+                  height: 45,
+                  decoration: BoxDecoration(
+                    color: renkler.vurgu.withOpacity(0.1),
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  alignment: Alignment.center,
+                  child: Text(
+                    '${cuz.no}',
+                    style: TextStyle(
+                      color: renkler.vurgu,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 16),
+                // Cüz bilgisi
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'CÜZ ${cuz.no}',
+                        style: TextStyle(
+                          color: renkler.yaziPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        '${cuz.baslangicSure} - ${cuz.bitisSure}',
+                        style: TextStyle(
+                          color: renkler.yaziSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                // Arapça yazı (Juz)
+                Text(
+                  'جُزْءُ ${_getArabicNumber(cuz.no)}',
+                  style: TextStyle(
+                    color: renkler.vurgu,
+                    fontSize: 20,
+                    fontFamily: 'Amiri',
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  String _getArabicNumber(int number) {
+    final arabicNumbers = {
+      1: '١', 2: '٢', 3: '٣', 4: '٤', 5: '٥',
+      6: '٦', 7: '٧', 8: '٨', 9: '٩', 10: '١٠',
+      11: '١١', 12: '١٢', 13: '١٣', 14: '١٤', 15: '١٥',
+      16: '١٦', 17: '١٧', 18: '١٨', 19: '١٩', 20: '٢٠',
+      21: '٢١', 22: '٢٢', 23: '٢٣', 24: '٢٤', 25: '٢٥',
+      26: '٢٦', 27: '٢٧', 28: '٢٨', 29: '٢٩', 30: '٣٠',
+    };
+    return arabicNumbers[number] ?? '$number';
+  }
+
+  // Cüzler listesi (30 cüz)
+  final List<Cuz> _cuzler = [
+    Cuz(no: 1, baslangicSure: 'Fatiha', bitisSure: 'Bakara 141'),
+    Cuz(no: 2, baslangicSure: 'Bakara 142', bitisSure: 'Bakara 252'),
+    Cuz(no: 3, baslangicSure: 'Bakara 253', bitisSure: 'Âl-i İmrân 92'),
+    Cuz(no: 4, baslangicSure: 'Âl-i İmrân 93', bitisSure: 'Nisâ 23'),
+    Cuz(no: 5, baslangicSure: 'Nisâ 24', bitisSure: 'Nisâ 147'),
+    Cuz(no: 6, baslangicSure: 'Nisâ 148', bitisSure: 'Mâide 81'),
+    Cuz(no: 7, baslangicSure: 'Mâide 82', bitisSure: 'En\'âm 110'),
+    Cuz(no: 8, baslangicSure: 'En\'âm 111', bitisSure: 'A\'râf 87'),
+    Cuz(no: 9, baslangicSure: 'A\'râf 88', bitisSure: 'Enfâl 40'),
+    Cuz(no: 10, baslangicSure: 'Enfâl 41', bitisSure: 'Tevbe 92'),
+    Cuz(no: 11, baslangicSure: 'Tevbe 93', bitisSure: 'Hûd 5'),
+    Cuz(no: 12, baslangicSure: 'Hûd 6', bitisSure: 'Yûsuf 52'),
+    Cuz(no: 13, baslangicSure: 'Yûsuf 53', bitisSure: 'İbrâhîm 52'),
+    Cuz(no: 14, baslangicSure: 'Hicr 1', bitisSure: 'Nahl 128'),
+    Cuz(no: 15, baslangicSure: 'İsrâ 1', bitisSure: 'Kehf 74'),
+    Cuz(no: 16, baslangicSure: 'Kehf 75', bitisSure: 'Tâhâ 135'),
+    Cuz(no: 17, baslangicSure: 'Enbiyâ 1', bitisSure: 'Hac 78'),
+    Cuz(no: 18, baslangicSure: 'Mü\'minûn 1', bitisSure: 'Furkân 20'),
+    Cuz(no: 19, baslangicSure: 'Furkân 21', bitisSure: 'Neml 55'),
+    Cuz(no: 20, baslangicSure: 'Neml 56', bitisSure: 'Ankebût 45'),
+    Cuz(no: 21, baslangicSure: 'Ankebût 46', bitisSure: 'Ahzâb 30'),
+    Cuz(no: 22, baslangicSure: 'Ahzâb 31', bitisSure: 'Yâsîn 27'),
+    Cuz(no: 23, baslangicSure: 'Yâsîn 28', bitisSure: 'Zuhruf 89'),
+    Cuz(no: 24, baslangicSure: 'Zuhruf 90', bitisSure: 'Câsiye 37'),
+    Cuz(no: 25, baslangicSure: 'Câsiye 38', bitisSure: 'Zâriyât 30'),
+    Cuz(no: 26, baslangicSure: 'Zâriyât 31', bitisSure: 'Hadîd 29'),
+    Cuz(no: 27, baslangicSure: 'Mücâdele 1', bitisSure: 'Tahrîm 12'),
+    Cuz(no: 28, baslangicSure: 'Mülk 1', bitisSure: 'Mürselât 50'),
+    Cuz(no: 29, baslangicSure: 'Nebe\' 1', bitisSure: 'Burûc 22'),
+    Cuz(no: 30, baslangicSure: 'Târık 1', bitisSure: 'Nâs 6'),
+  ];
 
   // 114 Sure listesi
   final List<Sure> _tumSureler = [
@@ -978,11 +1283,29 @@ class Sure {
   });
 }
 
+// Cüz modeli
+class Cuz {
+  final int no;
+  final String baslangicSure;
+  final String bitisSure;
+
+  Cuz({
+    required this.no,
+    required this.baslangicSure,
+    required this.bitisSure,
+  });
+}
+
 // Sure detay sayfası
 class SureDetaySayfa extends StatefulWidget {
   final Sure sure;
+  final int? baslangicAyetNo;
 
-  const SureDetaySayfa({super.key, required this.sure});
+  const SureDetaySayfa({
+    super.key,
+    required this.sure,
+    this.baslangicAyetNo,
+  });
 
   @override
   State<SureDetaySayfa> createState() => _SureDetaySayfaState();
@@ -991,16 +1314,130 @@ class SureDetaySayfa extends StatefulWidget {
 class _SureDetaySayfaState extends State<SureDetaySayfa> {
   final TemaService _temaService = TemaService();
   final LanguageService _languageService = LanguageService();
+  final ScrollController _scrollController = ScrollController();
   List<Ayet> _ayetler = [];
   bool _yukleniyor = true;
   String _hata = '';
   double _fontScale = 1.0;
+  bool _okumaModu = false; // false: Tema Renkleri, true: Siyah-Beyaz Mod
+  int? _gorunenAyetNo;
 
   @override
   void initState() {
     super.initState();
     _ayetleriYukle();
     _loadFontScale();
+    _loadOkumaModu();
+    _scrollController.addListener(_onScroll);
+  }
+
+  @override
+  void dispose() {
+    _scrollController.removeListener(_onScroll);
+    _scrollController.dispose();
+    _kaydetSonOkunanYer();
+    super.dispose();
+  }
+
+  void _onScroll() {
+    // Görünen ilk ayeti yakala (basitleştirilmiş versiyon)
+    if (_ayetler.isNotEmpty) {
+      final scrollOffset = _scrollController.offset;
+      // Her ayet kartı yaklaşık 200-300 piksel yüksekliğinde
+      final tahminiIndex = (scrollOffset / 250).floor();
+      final yeniAyetNo = tahminiIndex < _ayetler.length 
+          ? _ayetler[tahminiIndex].no 
+          : _ayetler.last.no;
+      
+      if (_gorunenAyetNo != yeniAyetNo) {
+        _gorunenAyetNo = yeniAyetNo;
+      }
+    }
+  }
+
+  Future<void> _kaydetSonOkunanYer() async {
+    if (_gorunenAyetNo != null) {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('son_okunan_sure_no', widget.sure.no);
+      await prefs.setInt('son_okunan_ayet_no', _gorunenAyetNo!);
+      await prefs.setString('son_okunan_sure_ad', widget.sure.turkceAd);
+    }
+  }
+
+  void _scrollToBaslangicAyet() {
+    if (widget.baslangicAyetNo != null && _ayetler.isNotEmpty) {
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final ayetIndex = _ayetler.indexWhere(
+          (a) => a.no == widget.baslangicAyetNo,
+        );
+        if (ayetIndex >= 0 && _scrollController.hasClients) {
+          // Her ayet kartı yaklaşık 250 piksel + header
+          final position = ayetIndex * 250.0;
+          _scrollController.animateTo(
+            position,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
+    }
+  }
+
+  Future<void> _loadOkumaModu() async {
+    final prefs = await SharedPreferences.getInstance();
+    final okumaModu = prefs.getBool('okuma_modu') ?? false;
+    if (mounted) {
+      setState(() {
+        _okumaModu = okumaModu;
+      });
+    }
+  }
+
+  Future<void> _saveOkumaModu() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('okuma_modu', _okumaModu);
+  }
+
+  void _toggleOkumaModu() {
+    setState(() {
+      _okumaModu = !_okumaModu;
+    });
+    _saveOkumaModu();
+  }
+
+  Color get _arkaPlanRengi {
+    if (_okumaModu) {
+      return Colors.white;
+    }
+    return _temaService.renkler.arkaPlan;
+  }
+
+  Color get _yaziRengi {
+    if (_okumaModu) {
+      return Colors.black87;
+    }
+    return _temaService.renkler.yaziPrimary;
+  }
+
+  Color get _yaziSecondaryRengi {
+    if (_okumaModu) {
+      return Colors.black54;
+    }
+    return _temaService.renkler.yaziSecondary;
+  }
+
+  Color get _vurguRengi {
+    if (_okumaModu) {
+      return Colors.black;
+    }
+    return _temaService.renkler.vurgu;
+  }
+
+  Color get _kartRengi {
+    if (_okumaModu) {
+      return Colors.grey.shade50;
+    }
+    return _temaService.renkler.kartArkaPlan;
   }
 
   Future<void> _loadFontScale() async {
@@ -1045,6 +1482,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
         _ayetler = hazirAyetler;
         _yukleniyor = false;
       });
+      _scrollToBaslangicAyet();
       return;
     }
 
@@ -1077,6 +1515,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
             });
             _yukleniyor = false;
           });
+          _scrollToBaslangicAyet();
         }
       } else {
         setState(() {
@@ -1097,58 +1536,95 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     final renkler = _temaService.renkler;
 
     return Scaffold(
-      backgroundColor: renkler.arkaPlan,
+      backgroundColor: _arkaPlanRengi,
       appBar: AppBar(
         title: Column(
           children: [
             Text(
               widget.sure.turkceAd,
-              style: TextStyle(fontSize: 14, color: renkler.yaziPrimary),
+              style: TextStyle(fontSize: 14, color: _yaziRengi),
             ),
             Text(
               widget.sure.arapca,
               style: TextStyle(
                 fontSize: 16,
-                color: renkler.vurgu,
+                color: _vurguRengi,
                 fontFamily: 'Amiri',
               ),
             ),
           ],
         ),
         centerTitle: true,
-        backgroundColor: Colors.transparent,
-        elevation: 0,
+        backgroundColor: _okumaModu ? Colors.white : Colors.transparent,
+        elevation: _okumaModu ? 1 : 0,
         leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: renkler.yaziPrimary),
+          icon: Icon(Icons.arrow_back, color: _yaziRengi),
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          PopupMenuButton<String>(
+            icon: Icon(Icons.palette_outlined, color: _yaziRengi),
+            tooltip: 'Okuma Modu',
+            onSelected: (value) {
+              if (value == 'toggle') {
+                _toggleOkumaModu();
+              }
+            },
+            itemBuilder: (context) => [
+              PopupMenuItem(
+                value: 'toggle',
+                child: Row(
+                  children: [
+                    Icon(
+                      _okumaModu ? Icons.check_box : Icons.check_box_outline_blank,
+                      color: _okumaModu ? Colors.green : Colors.grey,
+                      size: 20,
+                    ),
+                    const SizedBox(width: 12),
+                    const Text('Siyah-Beyaz Mod'),
+                  ],
+                ),
+              ),
+              const PopupMenuItem(
+                enabled: false,
+                child: Padding(
+                  padding: EdgeInsets.only(left: 32),
+                  child: Text(
+                    'Okumayı rahatlatır',
+                    style: TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+                ),
+              ),
+            ],
+          ),
           IconButton(
-            icon: Icon(Icons.text_decrease, color: renkler.yaziPrimary),
+            icon: Icon(Icons.text_decrease, color: _yaziRengi),
             onPressed: _decreaseFontSize,
             tooltip: 'Yazı Küçült',
           ),
           IconButton(
-            icon: Icon(Icons.text_increase, color: renkler.yaziPrimary),
+            icon: Icon(Icons.text_increase, color: _yaziRengi),
             onPressed: _increaseFontSize,
             tooltip: 'Yazı Büyüt',
           ),
         ],
       ),
       body: Container(
-        decoration: renkler.arkaPlanGradient != null
-            ? BoxDecoration(gradient: renkler.arkaPlanGradient)
-            : null,
+        decoration: _okumaModu 
+            ? null 
+            : (renkler.arkaPlanGradient != null
+                ? BoxDecoration(gradient: renkler.arkaPlanGradient)
+                : null),
         child: _yukleniyor
             ? Center(
                 child: Column(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    CircularProgressIndicator(color: renkler.vurgu),
+                    CircularProgressIndicator(color: _vurguRengi),
                     const SizedBox(height: 16),
                     Text(
                       'Ayetler yükleniyor...',
-                      style: TextStyle(color: renkler.yaziSecondary),
+                      style: TextStyle(color: _yaziSecondaryRengi),
                     ),
                   ],
                 ),
@@ -1160,12 +1636,12 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      Icon(Icons.error_outline, color: renkler.vurgu, size: 48),
+                      Icon(Icons.error_outline, color: _vurguRengi, size: 48),
                       const SizedBox(height: 16),
                       Text(
                         _hata,
                         textAlign: TextAlign.center,
-                        style: TextStyle(color: renkler.yaziSecondary),
+                        style: TextStyle(color: _yaziRengi, fontSize: 16),
                       ),
                       const SizedBox(height: 16),
                       ElevatedButton(
@@ -1177,7 +1653,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                           _ayetleriYukle();
                         },
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: renkler.vurgu,
+                          backgroundColor: _vurguRengi,
                         ),
                         child: Text(_languageService['try_again'] ?? 'Tekrar Dene'),
                       ),
@@ -1186,6 +1662,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                 ),
               )
             : ListView.builder(
+                controller: _scrollController,
                 padding: const EdgeInsets.all(12),
                 itemCount: _ayetler.length + 1, // +1 for Besmele
                 itemBuilder: (context, index) {
@@ -1235,11 +1712,14 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: renkler.kartArkaPlan,
+        color: _kartRengi,
         borderRadius: BorderRadius.circular(16),
-        boxShadow: [
-          BoxShadow(color: renkler.vurgu.withOpacity(0.05), blurRadius: 8),
-        ],
+        border: _okumaModu ? Border.all(color: Colors.grey.shade200) : null,
+        boxShadow: _okumaModu 
+            ? []
+            : [
+                BoxShadow(color: renkler.vurgu.withOpacity(0.05), blurRadius: 8),
+              ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -1248,7 +1728,9 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: renkler.vurgu.withOpacity(0.1),
+              color: _okumaModu 
+                  ? Colors.grey.shade100
+                  : renkler.vurgu.withOpacity(0.1),
               borderRadius: const BorderRadius.vertical(
                 top: Radius.circular(16),
               ),
@@ -1259,14 +1741,14 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                   width: 30,
                   height: 30,
                   decoration: BoxDecoration(
-                    color: renkler.vurgu,
+                    color: _vurguRengi,
                     shape: BoxShape.circle,
                   ),
                   alignment: Alignment.center,
                   child: Text(
                     '${ayet.no}',
-                    style: const TextStyle(
-                      color: Colors.white,
+                    style: TextStyle(
+                      color: _okumaModu ? Colors.white : Colors.white,
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
                     ),
@@ -1276,7 +1758,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                 Text(
                   'Ayet ${ayet.no}',
                   style: TextStyle(
-                    color: renkler.vurgu,
+                    color: _okumaModu ? Colors.black87 : renkler.vurgu,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
                   ),
@@ -1293,7 +1775,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
               textAlign: TextAlign.right,
               textDirection: TextDirection.rtl,
               style: TextStyle(
-                color: renkler.yaziPrimary,
+                color: _yaziRengi,
                 fontSize: 24 * _fontScale,
                 height: 2,
                 fontFamily: 'Amiri',
@@ -1306,14 +1788,16 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: renkler.vurguSecondary.withOpacity(0.1),
+              color: _okumaModu 
+                  ? Colors.grey.shade50
+                  : renkler.vurguSecondary.withOpacity(0.1),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
                     'Okunuş',
                     style: TextStyle(
-                      color: renkler.vurguSecondary,
+                      color: _okumaModu ? Colors.black54 : renkler.vurguSecondary,
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1322,7 +1806,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                   Text(
                     ayet.okunus,
                     style: TextStyle(
-                      color: renkler.yaziPrimary,
+                      color: _yaziRengi,
                       fontSize: 14 * _fontScale,
                       fontStyle: FontStyle.italic,
                       height: 1.5,
@@ -1342,7 +1826,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                   Text(
                     'Meal',
                     style: TextStyle(
-                      color: renkler.vurgu,
+                      color: _okumaModu ? Colors.black87 : renkler.vurgu,
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1351,7 +1835,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                   Text(
                     ayet.meal,
                     style: TextStyle(
-                      color: renkler.yaziPrimary,
+                      color: _yaziRengi,
                       fontSize: 15 * _fontScale,
                       height: 1.6,
                     ),

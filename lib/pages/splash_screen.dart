@@ -49,20 +49,27 @@ class _SplashScreenState extends State<SplashScreen> {
       if (result != true || !mounted) return;
     }
 
-    // 2. İzin onboarding (sadece ilk kurulumda)
+    // 2. İzin onboarding (sadece ilk kurulumda ve kritik izinler eksikse)
     if (!onboardingCompleted) {
-      setState(() => _durum = 'İzinler ayarlanıyor...');
+      setState(() => _durum = 'İzinler kontrol ediliyor...');
 
-      final permissionResult = await Navigator.push(
-        context,
-        MaterialPageRoute(
-          builder: (context) => const OnboardingPermissionsPage(),
-        ),
-      );
+      // Kritik izinleri kontrol et (konum ve bildirim)
+      final locationGranted = await PermissionService.checkLocationPermission();
+      final notificationGranted = await PermissionService.checkNotificationPermission();
+      
+      // Eğer kritik izinler eksikse onboarding göster
+      if (!locationGranted || !notificationGranted) {
+        final permissionResult = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => const OnboardingPermissionsPage(),
+          ),
+        );
 
-      if (!mounted) return;
+        if (!mounted) return;
+      }
 
-      // Onboarding tamamlandı olarak işaretle
+      // Onboarding tamamlandı olarak işaretle (kullanıcı atlamış olsa bile)
       await prefs.setBool('onboarding_completed', true);
     }
 

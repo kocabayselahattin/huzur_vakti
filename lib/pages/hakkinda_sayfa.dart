@@ -220,7 +220,7 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
         'ikon': Icons.alarm,
         'renk': Colors.red,
         'baslik': _languageService['feature_smart_alarm'] ?? 'Akıllı Alarm Sistemi',
-        'aciklama': _languageService['feature_smart_alarm_desc'] ?? '14 günlük zamanlama, ses/kilit tuşu ile durdurma, sessiz modda sadece titreşim, kilit ekranında bildirim',
+        'aciklama': _languageService['feature_smart_alarm_desc'] ?? '7 günlük zamanlama, ses/kilit tuşu ile durdurma, sessiz modda sadece titreşim, kilit ekranında bildirim',
       },
       {
         'ikon': Icons.notifications_active,
