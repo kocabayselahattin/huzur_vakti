@@ -270,7 +270,7 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
             
             // İçerik
             Padding(
-              padding: const EdgeInsets.all(16),
+              padding: const EdgeInsets.all(24),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -311,7 +311,7 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
                     ],
                   ),
 
-                  const SizedBox(height: 16),
+                  const SizedBox(height: 24),
 
                   // Sayaç
                   Padding(
@@ -330,7 +330,7 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
                     ),
                   ),
 
-                  const SizedBox(height: 14),
+                  const SizedBox(height: 24),
 
                   // Alt: Tarihler
                   Center(
@@ -352,7 +352,7 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
                     ),
                   ),
 
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 16),
 
                   // İlerleme barı
                   _buildProgressBar(primaryColor, textColor),

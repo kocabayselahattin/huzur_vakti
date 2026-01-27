@@ -98,47 +98,9 @@ class AlarmService {
   /// Vakit ID'sinden benzersiz alarm ID'si oluşturur
   /// Aynı günde farklı vakitler için farklı ID'ler üretir
   static int generateAlarmId(String prayerKey, DateTime date) {
-    // prayerKey: "imsak", "gunes", "ogle", "ikindi", "aksam", "yatsi", "imsak_erken" vs.
+    // prayerKey: "imsak", "gunes", "ogle", "ikindi", "aksam", "yatsi"
     // Tarih ve vakit bazında benzersiz ID
-    // Vakit index'ini kullan: 1-İmsak, 2-Güneş, 3-Öğle, 4-İkindi, 5-Akşam, 6-Yatsı
-    // Erken alarm için +10 ekle
-    
-    int vakitIndex;
-    bool isErken = prayerKey.contains('_erken');
-    String cleanKey = prayerKey.replaceAll('_erken', '');
-    
-    switch (cleanKey) {
-      case 'imsak':
-        vakitIndex = 1;
-        break;
-      case 'gunes':
-        vakitIndex = 2;
-        break;
-      case 'ogle':
-        vakitIndex = 3;
-        break;
-      case 'ikindi':
-        vakitIndex = 4;
-        break;
-      case 'aksam':
-        vakitIndex = 5;
-        break;
-      case 'yatsi':
-        vakitIndex = 6;
-        break;
-      default:
-        vakitIndex = 0;
-    }
-    
-    if (isErken) {
-      vakitIndex += 10; // Erken alarmlar için 11-16 arası
-    }
-    
-    // Format: YYYYMMDD * 100 + vakitIndex
-    // Örnek: 20260125 * 100 + 3 = 2026012503 (25 Ocak 2026 Öğle)
-    final dateInt = date.year * 10000 + date.month * 100 + date.day;
-    final alarmId = dateInt * 100 + vakitIndex;
-    
-    return alarmId;
+    final dateStr = '${date.year}${date.month}${date.day}';
+    return '${dateStr}_$prayerKey'.hashCode.abs();
   }
 }

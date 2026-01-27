@@ -408,10 +408,6 @@
   "battery_optimization": "Batterieoptimierung",
   "battery_optimization_desc": "Hintergrundprozesse erlauben",
   
-  "overlay_permission": "Über anderen Apps anzeigen",
-  "overlay_permission_desc": "Diese Berechtigung ist erforderlich, damit der Alarmbildschirm immer oben angezeigt wird. Nachdem Sie die Berechtigung erteilt haben, finden Sie die Huzur Vakti-App im Einstellungsbildschirm und aktivieren Sie die Berechtigung 'Über anderen Apps anzeigen'.",
-  "open_settings": "Einstellungen öffnen",
-  
   "active_location": "Aktiver Standort",
   "saved_locations_title": "Gespeicherte Standorte",
   "no_saved_locations": "Noch keine gespeicherten Standorte",
@@ -616,7 +612,7 @@
   "no_upcoming_special_days": "Keine bevorstehenden besonderen Tage gefunden",
   "notification_permission_denied": "Benachrichtigungsberechtigung verweigert. Benachrichtigungen funktionieren nicht.",
   "dnd_permission_title": "Nicht-stören-Berechtigung",
-  "dnd_permission_message": "Die Berechtigung ist erforderlich, um Ihr Telefon während der Gebetszeiten automatisch stumm zu schalten. Dadurch kann Ihr Telefon in den Stummmodus wechseln, wenn die Gebetszeit beginnt, damit Sie in Ruhe beten können. Nachdem Sie die Berechtigung erteilt haben, finden Sie die Huzur Vakti-App im Einstellungsbildschirm und aktivieren Sie die Berechtigung.",
+  "dnd_permission_message": "Systemberechtigung erforderlich, um während der Gebetszeiten stummzuschalten. Möchten Sie die Berechtigung erteilen?",
   "save_changes_title": "Änderungen speichern?",
   "save_changes_message": "Möchten Sie Ihre Änderungen speichern?",
   "dont_save": "Nicht speichern",
@@ -809,26 +805,6 @@
     {"text": "Mein Herr, wer vergibt die Sünden außer Dir?", "source": "Al-Imran, 135"},
     {"text": "O Allah, lass mein Leben im Guten enden.", "source": "Hadith"}
   ],
-  
-  "voice_selection": "Sprachauswahl",
-  "male_voice": "Männliche Stimme",
-  "female_voice": "Weibliche Stimme",
-  "islamic_fiqh": "Islamisches Fiqh",
-  "download_required": "Download erforderlich",
-  "download_content_message": "Sie müssen den islamischen Fiqh-Inhalt\nherunterladen, um ihn zu verwenden.",
-  "content_size": "Größe: ~2 MB",
-  "download": "Herunterladen",
-  "downloading": "Wird heruntergeladen...",
-  "download_failed": "Download fehlgeschlagen",
-  "faith": "Glaube",
-  "worship": "Anbetung",
-  "ablution": "Waschung",
-  "prayer": "Gebet",
-  "fasting": "Fasten",
-  "zakat": "Zakat",
-  "hajj": "Hadsch",
-  "morality": "Moral",
-  "loading_content": "Inhalt wird geladen...",
   
   "hadiths": [
     {"text": "Die Taten werden nach den Absichten beurteilt, und jeder wird bekommen, was er beabsichtigt.", "source": "Bukhari, Muslim"},

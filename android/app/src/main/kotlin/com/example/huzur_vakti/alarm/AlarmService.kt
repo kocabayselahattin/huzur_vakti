@@ -37,8 +37,6 @@ class AlarmService : Service() {
         const val CHANNEL_ID = "alarm_channel"
         const val ACTION_STOP_ALARM = "com.example.huzur_vakti.STOP_ALARM"
         const val ACTION_SNOOZE_ALARM = "com.example.huzur_vakti.SNOOZE_ALARM"
-        const val ACTION_EXIT_SILENT = "com.example.huzur_vakti.EXIT_SILENT"
-        const val ACTION_STAY_SILENT = "com.example.huzur_vakti.STAY_SILENT"
         
         // Singleton instance - alarm durumunu kontrol etmek için
         @Volatile
@@ -265,9 +263,6 @@ class AlarmService : Service() {
                     this@AlarmService.stopVibration()
                     // Bildirim kalır ama ses biter
                     this@AlarmService.isPlaying = false
-                    
-                    // Ses bittikten sonra "vakitlerde sessize al" ayarı açıksa sessize al
-                    checkAndEnableSilentMode()
                 }
                 
                 prepare()
@@ -289,9 +284,6 @@ class AlarmService : Service() {
                         Log.d(TAG, "🔊 Fallback alarm sesi tamamlandı")
                         this@AlarmService.stopVibration()
                         this@AlarmService.isPlaying = false
-                        
-                        // Ses bittikten sonra "vakitlerde sessize al" ayarı açıksa sessize al
-                        checkAndEnableSilentMode()
                     }
                     prepare()
                     start()
@@ -415,7 +407,6 @@ class AlarmService : Service() {
                                 KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
                                     Log.d(TAG, "🎮 Ses tuşu ile alarm durduruldu")
                                     stopAlarmSound()
-                                    checkAndEnableSilentMode()
                                     stopForeground(STOP_FOREGROUND_REMOVE)
                                     stopSelf()
                                     return true
@@ -443,7 +434,6 @@ class AlarmService : Service() {
                     if (intent.action == Intent.ACTION_SCREEN_OFF) {
                         Log.d(TAG, "📴 Güç tuşu ile ekran kapatıldı - alarm durduruluyor")
                         stopAlarmSound()
-                        checkAndEnableSilentMode()
                         stopForeground(STOP_FOREGROUND_REMOVE)
                         stopSelf()
                     }
@@ -459,107 +449,6 @@ class AlarmService : Service() {
             Log.d(TAG, "📴 Screen off receiver kuruldu - güç tuşu dinleniyor")
         } catch (e: Exception) {
             Log.e(TAG, "❌ Screen off receiver hatası: ${e.message}")
-        }
-    }
-    
-    /**
-     * "Vakitlerde sessize al" ayarı açıksa telefonu sessize moda alır
-     * Ses dosyası bittikten sonra çağrılır
-     */
-    private fun checkAndEnableSilentMode() {
-        try {
-            // SharedPreferences'tan ayarı kontrol et
-            val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-            val sessizeAl = prefs.getBoolean("flutter.sessize_al", false)
-            
-            if (!sessizeAl) {
-                Log.d(TAG, "ℹ️ Sessize alma ayarı kapalı")
-                return
-            }
-            
-            // AudioManager ile sessize moda al
-            val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
-            
-            // Android M+ için DND izni kontrol et
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-                if (!notificationManager.isNotificationPolicyAccessGranted) {
-                    Log.w(TAG, "⚠️ DND izni yok - sessize alma yapılamadı")
-                    return
-                }
-            }
-            
-            // Telefonu sessize al
-            audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
-            Log.d(TAG, "🔇 Telefon sessize alındı (alarm sesi bittikten sonra)")
-            
-            // Kullanıcıya bildirim göster
-            showSilentModeNotification()
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Sessize alma hatası: ${e.message}")
-        }
-    }
-    
-    /**
-     * Telefon sessize alındığında kullanıcıya bildirim gösterir
-     * "Kal" ve "Çık" butonları ile kullanıcı sessize moddan çıkabilir
-     */
-    private fun showSilentModeNotification() {
-        try {
-            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
-            
-            // Kanal oluştur (Android O+)
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                val channel = NotificationChannel(
-                    "silent_mode_channel",
-                    "Sessize Mod Bildirimleri",
-                    NotificationManager.IMPORTANCE_DEFAULT
-                ).apply {
-                    description = "Telefon sessize alındığında bildirim"
-                    setSound(null, null) // Sessiz bildirim
-                }
-                notificationManager.createNotificationChannel(channel)
-            }
-            
-            // "Çık" butonu - Sessize moddan çık
-            val exitIntent = Intent(this, SilentModeReceiver::class.java).apply {
-                action = ACTION_EXIT_SILENT
-            }
-            val exitPendingIntent = PendingIntent.getBroadcast(
-                this,
-                3001,
-                exitIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            
-            // "Kal" butonu - Bildirimi kapat, sessize modda kal
-            val stayIntent = Intent(this, SilentModeReceiver::class.java).apply {
-                action = ACTION_STAY_SILENT
-            }
-            val stayPendingIntent = PendingIntent.getBroadcast(
-                this,
-                3002,
-                stayIntent,
-                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-            )
-            
-            // Bildirim oluştur
-            val notification = NotificationCompat.Builder(this, "silent_mode_channel")
-                .setSmallIcon(R.mipmap.ic_launcher)
-                .setContentTitle("📵 Telefon Sessize Alındı")
-                .setContentText("Vakit alarmı sona erdi, telefon sessize alındı.")
-                .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-                .setAutoCancel(false) // Butonlarla kapatılacak
-                .addAction(0, "Çık", exitPendingIntent)
-                .addAction(0, "Kal", stayPendingIntent)
-                .build()
-            
-            notificationManager.notify(2001, notification)
-            Log.d(TAG, "📢 Sessize mod bildirimi gösterildi (Kal/Çık butonlarıyla)")
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Bildirim gösterme hatası: ${e.message}")
         }
     }
     

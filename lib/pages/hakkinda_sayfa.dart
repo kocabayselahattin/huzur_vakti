@@ -209,18 +209,50 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
 
   Widget _ozelliklerBolumu(TemaRenkleri renkler) {
     final ozellikler = [
-      // 🕌 TEMEL ÖZELLİKLER
+      // 🎨 SAYAÇ TASARIMLARI (YENİ!)
       {
-        'ikon': Icons.access_time,
-        'renk': Colors.blue,
-        'baslik': _languageService['feature_prayer_times'] ?? 'Namaz Vakitleri',
-        'aciklama': _languageService['feature_prayer_times_desc'] ?? 'Diyanet İşleri Başkanlığı verilerine göre günlük vakit bilgileri, geri sayım ve ilerleme takibi',
+        'ikon': Icons.timer,
+        'renk': Colors.cyan,
+        'baslik': _languageService['feature_counter_designs'] ?? '18 Benzersiz Sayaç Tasarımı',
+        'aciklama': _languageService['feature_counter_designs_desc'] ?? 'Dijital, Premium, Galaksi, Neon, Okyanus, Minimal, Retro, Aurora, Kristal, Volkanik, Zen, Siber, Gece, Matrix, Nefes, Geometrik, Tesla ve İslami tasarımlar',
       },
+      {
+        'ikon': Icons.auto_awesome,
+        'renk': Colors.greenAccent,
+        'baslik': _languageService['feature_matrix_counter'] ?? 'Matrix Sayaç',
+        'aciklama': _languageService['feature_matrix_counter_desc'] ?? 'Matrix filmi tarzı düşen Arapça harfler ve kod efektli hacker teması',
+      },
+      {
+        'ikon': Icons.air,
+        'renk': Colors.lightBlue,
+        'baslik': _languageService['feature_breath_counter'] ?? 'Nefes Sayaç',
+        'aciklama': _languageService['feature_breath_counter_desc'] ?? 'Meditasyon ve nefes egzersizi temalı sakinleştirici tasarım, 8 saniyelik nefes döngüsü animasyonu',
+      },
+      {
+        'ikon': Icons.hexagon_outlined,
+        'renk': Colors.amber,
+        'baslik': _languageService['feature_geometric_counter'] ?? 'Geometrik Sayaç',
+        'aciklama': _languageService['feature_geometric_counter_desc'] ?? 'Sacred Geometry kutsal geometri desenleri, Flower of Life ve Merkaba animasyonları',
+      },
+      {
+        'ikon': Icons.bolt,
+        'renk': Colors.blue,
+        'baslik': _languageService['feature_tesla_counter'] ?? 'Tesla Sayaç',
+        'aciklama': _languageService['feature_tesla_counter_desc'] ?? 'Elektrik ve enerji temalı dinamik tasarım, yıldırım ark animasyonları',
+      },
+      {
+        'ikon': Icons.mosque,
+        'renk': Colors.green,
+        'baslik': _languageService['feature_islamic_counter'] ?? 'İslami Sayaç',
+        'aciklama': _languageService['feature_islamic_counter_desc'] ?? 'Hilal, yıldız ve İslami geometrik desenlerle süslenmiş geleneksel tasarım',
+      },
+      
+      // 🔔 BİLDİRİM VE ALARM
       {
         'ikon': Icons.alarm,
         'renk': Colors.red,
         'baslik': _languageService['feature_smart_alarm'] ?? 'Akıllı Alarm Sistemi',
-        'aciklama': _languageService['feature_smart_alarm_desc'] ?? '7 günlük zamanlama, ses/kilit tuşu ile durdurma, sessiz modda sadece titreşim, kilit ekranında bildirim',
+        'aciklama': _languageService['feature_smart_alarm_desc'] ?? '14 günlük zamanlama, ses/kilit tuşu ile durdurma, sessiz modda sadece titreşim, kilit ekranında bildirim',
       },
       {
         'ikon': Icons.notifications_active,
@@ -235,7 +267,7 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
         'aciklama': _languageService['feature_auto_silent_desc'] ?? 'Namaz vakitlerinde telefonu otomatik sessize alır (Cuma 60dk, diğer günler 30dk)',
       },
       
-      // 📍 KONUM VE TAKVİM
+      // 📍 KONUM VE VAKİT
       {
         'ikon': Icons.location_city,
         'renk': Colors.blue,
@@ -254,19 +286,19 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
         'baslik': _languageService['feature_imsakiye'] ?? 'İmsakiye',
         'aciklama': _languageService['feature_imsakiye_desc'] ?? 'Aylık vakit tablosu, yenile butonu ile anlık güncelleme',
       },
-      {
-        'ikon': Icons.date_range,
-        'renk': Colors.deepOrange,
-        'baslik': _languageService['feature_dual_calendar'] ?? 'Miladi ve Hicri Takvim',
-        'aciklama': _languageService['feature_dual_calendar_desc'] ?? 'Hem Miladi hem Hicri tarih gösterimi',
-      },
       
       // 📱 WİDGET
       {
         'ikon': Icons.widgets,
         'renk': Colors.pink,
-        'baslik': _languageService['feature_widgets'] ?? 'Ana Ekran Widget\'ları',
-        'aciklama': _languageService['feature_widgets_desc'] ?? '8 farklı tasarımda widget seçenekleri - uygulama kapalıyken bile çalışır',
+        'baslik': _languageService['feature_widgets'] ?? '8 Farklı Widget',
+        'aciklama': _languageService['feature_widgets_desc'] ?? 'Klasik, Mini, Glassmorphism, Neon, Cosmic, Timeline, Zen, Origami - uygulama kapalıyken bile çalışır',
+      },
+      {
+        'ikon': Icons.lock_open,
+        'renk': Colors.indigo,
+        'baslik': _languageService['feature_auto_widget_update'] ?? 'Otomatik Widget Güncelleme',
+        'aciklama': _languageService['feature_auto_widget_update_desc'] ?? 'Ekran kilidi açıldığında ve her dakika otomatik güncellenir',
       },
       
       // 📖 İBADET REHBERİ
@@ -335,7 +367,7 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
         'aciklama': _languageService['feature_nearby_mosques_desc'] ?? 'OpenStreetMap ile 2km yarıçapta camileri görüntüleyin',
       },
       
-      // 🎨 TEMA VE DİL
+      // 🌐 DİL VE TEMA
       {
         'ikon': Icons.language,
         'renk': Colors.blueGrey,
@@ -345,8 +377,24 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
       {
         'ikon': Icons.palette,
         'renk': Colors.pinkAccent,
-        'baslik': _languageService['feature_themes'] ?? 'Zengin Tema Seçenekleri',
-        'aciklama': _languageService['feature_themes_desc'] ?? '18 farklı sayaç tasarımı ile görsel çeşitlilik ve kişiselleştirme imkanı',
+        'baslik': _languageService['feature_themes'] ?? '13+ Premium Tema',
+        'aciklama': _languageService['feature_themes_desc'] ?? 'Her sayaç için özel tema renkleri otomatik uygulanır veya kendi renk kombinasyonunuzu oluşturun',
+      },
+      
+      // 📆 TAKVİM (YENİ!)
+      {
+        'ikon': Icons.date_range,
+        'renk': Colors.deepOrange,
+        'baslik': _languageService['feature_dual_calendar'] ?? 'Miladi ve Hicri Takvim',
+        'aciklama': _languageService['feature_dual_calendar_desc'] ?? 'Tüm sayaçlarda hem Miladi hem Hicri tarih gösterimi',
+      },
+      
+      // 📊 İLERLEME ÇUBUĞU (YENİ!)
+      {
+        'ikon': Icons.linear_scale,
+        'renk': Colors.redAccent,
+        'baslik': _languageService['feature_progress_gradient'] ?? 'Gradient İlerleme Çubuğu',
+        'aciklama': _languageService['feature_progress_gradient_desc'] ?? 'Vakitlere kalan süreyi açıktan koyu renge geçişli gradient ile görsel olarak takip edin',
       },
     ];
 
