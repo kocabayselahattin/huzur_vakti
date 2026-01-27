@@ -88,16 +88,18 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
 
   // Ses seçenekleri - getter olarak tanımlanıyor çünkü languageService'e ihtiyaç var
   List<Map<String, String>> get _sesSecenekleri => [
-    {'ad': 'Arriving', 'dosya': 'arriving.mp3'},
+    {'ad': 'Akşam Ezanı', 'dosya': 'aksam_ezani.mp3'},
+    {'ad': 'Ayasofya Ezan Sesi', 'dosya': 'ayasofya_ezan_sesi.mp3'},
     {'ad': 'Best', 'dosya': 'best.mp3'},
     {'ad': 'Corner', 'dosya': 'corner.mp3'},
     {'ad': 'Ding Dong', 'dosya': 'ding_dong.mp3'},
-    {'ad': 'Echo', 'dosya': 'echo.mp3'},
-    {'ad': 'iPhone SMS Original', 'dosya': 'iphone_sms_original.mp3'},
+    {'ad': 'Es-Selatu Hayrun Minen Nevm 1', 'dosya': 'esselatu_hayrun_minen_nevm1.mp3'},
+    {'ad': 'Es-Selatu Hayrun Minen Nevm 2', 'dosya': 'esselatu_hayrun_minen_nevm2.mp3'},
+    {'ad': 'Melodi', 'dosya': 'melodi.mp3'},
+    {'ad': 'Mescid-i Nebi Sabah Ezanı', 'dosya': 'mescid_i_nebi_sabah_ezani.mp3'},
     {'ad': 'Snaps', 'dosya': 'snaps.mp3'},
     {'ad': 'Sweet Favour', 'dosya': 'sweet_favour.mp3'},
     {'ad': 'Violet', 'dosya': 'violet.mp3'},
-    {'ad': 'Woodpecker', 'dosya': 'woodpecker.mp3'},
     {
       'ad': _languageService['custom_sound'] ?? 'Özel Ses Seç',
       'dosya': 'custom',
