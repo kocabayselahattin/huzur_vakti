@@ -51,7 +51,7 @@ class ScheduledNotificationService {
         InitializationSettings(android: initializationSettingsAndroid);
 
     await _notificationsPlugin.initialize(
-      initializationSettings,
+      settings: initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         debugPrint('🔔 Bildirime tıklandı: ${response.payload}');
       },
@@ -433,11 +433,11 @@ class ScheduledNotificationService {
       final tzScheduledTime = tz.TZDateTime.from(scheduledTime, tz.local);
 
       await _notificationsPlugin.zonedSchedule(
-        id,
-        title,
-        body,
-        tzScheduledTime,
-        notificationDetails,
+        id: id,
+        title: title,
+        body: body,
+        scheduledDate: tzScheduledTime,
+        notificationDetails: notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         payload: 'vakit_$id',
       );
@@ -459,7 +459,7 @@ class ScheduledNotificationService {
 
   /// Belirli bir vaktin bildirimini iptal et
   static Future<void> cancelNotification(int id) async {
-    await _notificationsPlugin.cancel(id);
+    await _notificationsPlugin.cancel(id: id);
   }
 
   /// Zamanlanmış bildirimlerin listesini al (debug için)
@@ -486,10 +486,10 @@ class ScheduledNotificationService {
       final notificationDetails = NotificationDetails(android: androidDetails);
 
       await _notificationsPlugin.show(
-        999,
-        '🧪 Test Bildirimi',
-        'Bildirim sistemi çalışıyor! ${DateTime.now().toString().substring(11, 19)}',
-        notificationDetails,
+        id: 999,
+        title: '🧪 Test Bildirimi',
+        body: 'Bildirim sistemi çalışıyor! ${DateTime.now().toString().substring(11, 19)}',
+        notificationDetails: notificationDetails,
       );
       debugPrint('✅ Test bildirimi gönderildi');
     } catch (e) {
@@ -523,11 +523,11 @@ class ScheduledNotificationService {
       final notificationDetails = NotificationDetails(android: androidDetails);
 
       await _notificationsPlugin.zonedSchedule(
-        998,
-        '🔒 Kilit Ekranı Testi',
-        '5 saniye sonra zamanlandı - Kilit ekranında görüyorsan bildirimler çalışıyor!',
-        scheduledTime,
-        notificationDetails,
+        id: 998,
+        title: '🔒 Kilit Ekranı Testi',
+        body: '5 saniye sonra zamanlandı - Kilit ekranında görüyorsan bildirimler çalışıyor!',
+        scheduledDate: scheduledTime,
+        notificationDetails: notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
         matchDateTimeComponents: null,
       );

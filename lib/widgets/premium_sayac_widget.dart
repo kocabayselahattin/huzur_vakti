@@ -235,13 +235,6 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
     });
   }
 
-  String _formatDuration(Duration d) {
-    final hours = d.inHours.toString().padLeft(2, '0');
-    final minutes = (d.inMinutes % 60).toString().padLeft(2, '0');
-    final seconds = (d.inSeconds % 60).toString().padLeft(2, '0');
-    return '$hours:$minutes:$seconds';
-  }
-
   @override
   Widget build(BuildContext context) {
     final renkler = _temaService.renkler;

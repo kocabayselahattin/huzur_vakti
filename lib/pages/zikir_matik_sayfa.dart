@@ -334,9 +334,10 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
   @override
   Widget build(BuildContext context) {
     final progress = _sayac / _hedef;
+    final temaRenkleri = _temaService.aktifRenkler;
 
     return Scaffold(
-      backgroundColor: const Color(0xFF1B2741),
+      backgroundColor: temaRenkleri.arkaPlan,
       appBar: AppBar(
         title: Text(_languageService['dhikr'] ?? 'Zikir Matik'),
         backgroundColor: Colors.transparent,
@@ -419,21 +420,21 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
                       margin: const EdgeInsets.symmetric(horizontal: 6),
                       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                       decoration: BoxDecoration(
-                        color: Colors.white.withOpacity(0.05),
+                        color: temaRenkleri.kartArkaPlan.withOpacity(0.3),
                         borderRadius: BorderRadius.circular(16),
                         border: Border.all(
-                          color: Colors.cyanAccent.withOpacity(0.3),
+                          color: temaRenkleri.vurgu.withOpacity(0.5),
                           width: 2,
                         ),
                       ),
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          const Icon(Icons.add, color: Colors.cyanAccent, size: 24),
+                          Icon(Icons.add, color: temaRenkleri.vurgu, size: 24),
                           const SizedBox(height: 4),
                           Text(
                             _languageService['add'] ?? 'Ekle',
-                            style: TextStyle(color: Colors.cyanAccent, fontSize: 10 * _fontScale),
+                            style: TextStyle(color: temaRenkleri.vurgu, fontSize: 10 * _fontScale),
                           ),
                         ],
                       ),
@@ -456,11 +457,11 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
                     padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
                     decoration: BoxDecoration(
                       color: isSelected
-                          ? Colors.cyanAccent.withOpacity(0.2)
-                          : Colors.white.withOpacity(0.05),
+                          ? temaRenkleri.vurgu.withOpacity(0.2)
+                          : temaRenkleri.kartArkaPlan.withOpacity(0.3),
                       borderRadius: BorderRadius.circular(16),
                       border: Border.all(
-                        color: isSelected ? Colors.cyanAccent : Colors.transparent,
+                        color: isSelected ? temaRenkleri.vurgu : Colors.transparent,
                         width: 2,
                       ),
                     ),
@@ -472,7 +473,7 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
                             Text(
                               _zikirler[index]['isim']!,
                               style: TextStyle(
-                                color: isSelected ? Colors.cyanAccent : Colors.white,
+                                color: isSelected ? temaRenkleri.vurgu : temaRenkleri.yaziPrimary,
                                 fontWeight: FontWeight.bold,
                                 fontSize: 14 * _fontScale,
                               ),
@@ -484,8 +485,8 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
                               _zikirler[index]['anlam']!,
                               style: TextStyle(
                                 color: isSelected
-                                    ? Colors.cyanAccent.withOpacity(0.7)
-                                    : Colors.white54,
+                                    ? temaRenkleri.vurgu.withOpacity(0.7)
+                                    : temaRenkleri.yaziSecondary,
                                 fontSize: 10 * _fontScale,
                               ),
                               maxLines: 1,
@@ -541,11 +542,11 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
                         color: _titresimAcik 
-                            ? Colors.cyanAccent.withOpacity(0.2)
-                            : Colors.white.withOpacity(0.05),
+                            ? temaRenkleri.vurgu.withOpacity(0.2)
+                            : temaRenkleri.kartArkaPlan.withOpacity(0.3),
                         borderRadius: BorderRadius.circular(20),
                         border: Border.all(
-                          color: _titresimAcik ? Colors.cyanAccent : Colors.white24,
+                          color: _titresimAcik ? temaRenkleri.vurgu : temaRenkleri.ayirac,
                           width: 1.5,
                         ),
                       ),
@@ -554,7 +555,7 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
                         children: [
                           Icon(
                             _titresimAcik ? Icons.vibration : Icons.vibration_outlined,
-                            color: _titresimAcik ? Colors.cyanAccent : Colors.white54,
+                            color: _titresimAcik ? temaRenkleri.vurgu : temaRenkleri.yaziSecondary,
                             size: 18,
                           ),
                           const SizedBox(width: 6),
@@ -563,7 +564,7 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
                                 ? (_languageService['vibration_on'] ?? 'Titreşim Açık')
                                 : (_languageService['vibration_off'] ?? 'Titreşim Kapalı'),
                             style: TextStyle(
-                              color: _titresimAcik ? Colors.cyanAccent : Colors.white54,
+                              color: _titresimAcik ? temaRenkleri.vurgu : temaRenkleri.yaziSecondary,
                               fontSize: 12 * _fontScale,
                               fontWeight: FontWeight.w500,
                             ),
@@ -593,7 +594,7 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
                               border: Border.all(
-                                color: Colors.cyanAccent.withOpacity(1 - _rippleAnimation.value),
+                                color: temaRenkleri.vurgu.withOpacity(1 - _rippleAnimation.value),
                                 width: 3,
                               ),
                             ),
@@ -604,8 +605,8 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
                           child: CustomPaint(
                             painter: _CircleProgressPainter(
                               progress: progress,
-                              backgroundColor: Colors.white.withOpacity(0.1),
-                              progressColor: Colors.cyanAccent,
+                              backgroundColor: temaRenkleri.kartArkaPlan.withOpacity(0.3),
+                              progressColor: temaRenkleri.vurgu,
                               strokeWidth: 8,
                             ),
                           ),
@@ -617,14 +618,14 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
                             height: 220,
                             decoration: BoxDecoration(
                               shape: BoxShape.circle,
-                              gradient: const LinearGradient(
+                              gradient: LinearGradient(
                                 begin: Alignment.topLeft,
                                 end: Alignment.bottomRight,
-                                colors: [Color(0xFF2B3151), Color(0xFF1B2741)],
+                                colors: [temaRenkleri.kartArkaPlan, temaRenkleri.arkaPlan],
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.cyanAccent.withOpacity(0.3),
+                                  color: temaRenkleri.vurgu.withOpacity(0.3),
                                   blurRadius: 30,
                                   spreadRadius: 5,
                                 ),
@@ -641,7 +642,7 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
                                 Text(
                                   '$_sayac',
                                   style: TextStyle(
-                                    color: Colors.cyanAccent,
+                                    color: temaRenkleri.vurgu,
                                     fontSize: 72 * _fontScale,
                                     fontWeight: FontWeight.bold,
                                     letterSpacing: 2,
@@ -651,7 +652,7 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
                                   padding: const EdgeInsets.symmetric(horizontal: 16),
                                   child: Text(
                                     _zikirler[_secilenZikirIndex]['isim']!,
-                                    style: TextStyle(color: Colors.white70, fontSize: 14 * _fontScale),
+                                    style: TextStyle(color: temaRenkleri.yaziSecondary, fontSize: 14 * _fontScale),
                                     textAlign: TextAlign.center,
                                     maxLines: 2,
                                     overflow: TextOverflow.ellipsis,
@@ -694,24 +695,26 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
   }
 
   Widget _infoChip(IconData icon, String label) {
+    final temaRenkleri = _temaService.aktifRenkler;
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.05),
+        color: temaRenkleri.kartArkaPlan.withOpacity(0.3),
         borderRadius: BorderRadius.circular(20),
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, color: Colors.cyanAccent, size: 18),
+          Icon(icon, color: temaRenkleri.vurgu, size: 18),
           const SizedBox(width: 8),
-          Text(label, style: const TextStyle(color: Colors.white, fontWeight: FontWeight.w500)),
+          Text(label, style: TextStyle(color: temaRenkleri.yaziPrimary, fontWeight: FontWeight.w500)),
         ],
       ),
     );
   }
 
   Widget _controlButton({required IconData icon, required VoidCallback onTap, bool isLarge = false}) {
+    final temaRenkleri = _temaService.aktifRenkler;
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -719,10 +722,10 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
         height: isLarge ? 70 : 56,
         decoration: BoxDecoration(
           shape: BoxShape.circle,
-          color: Colors.white.withOpacity(0.1),
-          border: Border.all(color: Colors.cyanAccent.withOpacity(0.3), width: 2),
+          color: temaRenkleri.kartArkaPlan.withOpacity(0.3),
+          border: Border.all(color: temaRenkleri.vurgu.withOpacity(0.5), width: 2),
         ),
-        child: Icon(icon, color: Colors.cyanAccent, size: isLarge ? 32 : 24),
+        child: Icon(icon, color: temaRenkleri.vurgu, size: isLarge ? 32 : 24),
       ),
     );
   }

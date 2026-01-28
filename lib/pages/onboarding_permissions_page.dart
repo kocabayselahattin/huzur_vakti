@@ -127,8 +127,8 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
           break;
         case 3: // Overlay
           await PermissionService.openOverlaySettings();
-          // Ayarlardan döndükten sonra kontrol et - daha uzun bekleme
-          await Future.delayed(const Duration(seconds: 1));
+          // Ayarlardan döndükten sonra kontrol et - kullanıcının ayar yapması için bekle
+          await Future.delayed(const Duration(milliseconds: 800));
           if (mounted) {
             _overlayGranted = await PermissionService.hasOverlayPermission();
             granted = _overlayGranted;
@@ -136,7 +136,8 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
           break;
         case 4: // Pil
           await PermissionService.requestBatteryOptimizationExemption();
-          await Future.delayed(const Duration(seconds: 1));
+          // Ayarlardan döndükten sonra kontrol et - kullanıcının ayar yapması için bekle
+          await Future.delayed(const Duration(milliseconds: 800));
           if (mounted) {
             _batteryOptDisabled =
                 await PermissionService.isBatteryOptimizationDisabled();

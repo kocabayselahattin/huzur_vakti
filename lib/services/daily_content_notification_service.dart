@@ -21,8 +21,28 @@ class DailyContentNotificationService {
   static const int hadithNotificationId = 1001;
   static const int prayerNotificationId = 1002;
 
-  // Ses dosyası: Hafif bir bildirim için ding_dong kullanıyoruz
-  static const String notificationSound = 'ding_dong';
+  // Varsayılan ses dosyası
+  static const String defaultNotificationSound = 'ding_dong';
+
+  /// Günlük içerik bildirim sesini ayarla
+  static Future<void> setDailyContentNotificationSound(String soundFileName) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setString('daily_content_notification_sound', soundFileName);
+    debugPrint('✅ Günlük içerik bildirim sesi ayarlandı: $soundFileName');
+    
+    // Servisi yeniden başlat (kanal ses ayarını güncellemek için)
+    _initialized = false;
+    await initialize();
+    
+    // Bildirimleri yeniden zamanla
+    await scheduleDailyContentNotifications();
+  }
+
+  /// Günlük içerik bildirim sesini al
+  static Future<String> getDailyContentNotificationSound() async {
+    final prefs = await SharedPreferences.getInstance();
+    return prefs.getString('daily_content_notification_sound') ?? defaultNotificationSound;
+  }
 
   /// Servisi başlat
   static Future<void> initialize() async {
@@ -35,6 +55,18 @@ class DailyContentNotificationService {
               AndroidFlutterLocalNotificationsPlugin>();
 
       if (androidImplementation != null) {
+        // Ses ayarını al
+        final soundFile = await getDailyContentNotificationSound();
+        final soundName = soundFile.replaceAll('.mp3', '');
+        
+        // Eski kanalı sil ve yeniden oluştur (ses değişikliği için gerekli)
+        try {
+          await androidImplementation.deleteNotificationChannel('daily_content_channel');
+          debugPrint('🗑️ Eski günlük içerik kanalı silindi');
+        } catch (e) {
+          debugPrint('⚠️ Kanal silinirken hata (normal olabilir): $e');
+        }
+        
         // Günlük içerik kanalı oluştur
         final channel = AndroidNotificationChannel(
           'daily_content_channel',
@@ -42,13 +74,13 @@ class DailyContentNotificationService {
           description: 'Günün ayeti, hadisi ve duası bildirimleri',
           importance: Importance.high,
           playSound: true,
-          sound: RawResourceAndroidNotificationSound(notificationSound),
+          sound: RawResourceAndroidNotificationSound(soundName),
           enableVibration: true,
           enableLights: true,
           showBadge: true,
         );
         await androidImplementation.createNotificationChannel(channel);
-        debugPrint('✅ Günlük içerik bildirim kanalı oluşturuldu');
+        debugPrint('✅ Günlük içerik bildirim kanalı oluşturuldu (ses: $soundName)');
       }
 
       _initialized = true;
@@ -197,14 +229,18 @@ class DailyContentNotificationService {
     required String body,
     required tz.TZDateTime scheduledDate,
   }) async {
-    const androidPlatformChannelSpecifics = AndroidNotificationDetails(
+    // Ses ayarını al
+    final soundFile = await getDailyContentNotificationSound();
+    final soundName = soundFile.replaceAll('.mp3', '');
+    
+    final androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'daily_content_channel',
       'Günlük İçerik',
       channelDescription: 'Günün ayeti, hadisi ve duası bildirimleri',
       importance: Importance.high,
       priority: Priority.high,
       playSound: true,
-      sound: RawResourceAndroidNotificationSound(notificationSound),
+      sound: RawResourceAndroidNotificationSound(soundName),
       enableVibration: true,
       enableLights: true,
       visibility: NotificationVisibility.public,
@@ -218,11 +254,11 @@ class DailyContentNotificationService {
     );
 
     await _notificationsPlugin.zonedSchedule(
-      id,
-      title,
-      body,
-      scheduledDate,
-      notificationDetails,
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: scheduledDate,
+      notificationDetails: notificationDetails,
       androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
       matchDateTimeComponents: DateTimeComponents.time, // Her gün aynı saatte
     );
@@ -232,9 +268,9 @@ class DailyContentNotificationService {
 
   /// Tüm günlük içerik bildirimlerini iptal et
   static Future<void> cancelAllDailyContentNotifications() async {
-    await _notificationsPlugin.cancel(verseNotificationId);
-    await _notificationsPlugin.cancel(hadithNotificationId);
-    await _notificationsPlugin.cancel(prayerNotificationId);
+    await _notificationsPlugin.cancel(id: verseNotificationId);
+    await _notificationsPlugin.cancel(id: hadithNotificationId);
+    await _notificationsPlugin.cancel(id: prayerNotificationId);
     debugPrint('🚫 Günlük içerik bildirimleri iptal edildi');
   }
 
@@ -288,14 +324,18 @@ class DailyContentNotificationService {
         return;
     }
 
-    const androidPlatformChannelSpecifics = AndroidNotificationDetails(
+    // Ses ayarını al
+    final soundFile = await getDailyContentNotificationSound();
+    final soundName = soundFile.replaceAll('.mp3', '');
+
+    final androidPlatformChannelSpecifics = AndroidNotificationDetails(
       'daily_content_channel',
       'Günlük İçerik',
       channelDescription: 'Günün ayeti, hadisi ve duası bildirimleri',
       importance: Importance.high,
       priority: Priority.high,
       playSound: true,
-      sound: RawResourceAndroidNotificationSound(notificationSound),
+      sound: RawResourceAndroidNotificationSound(soundName),
       enableVibration: true,
       enableLights: true,
       visibility: NotificationVisibility.public,
@@ -309,10 +349,10 @@ class DailyContentNotificationService {
     );
 
     await _notificationsPlugin.show(
-      id,
-      title,
-      body,
-      notificationDetails,
+      id: id,
+      title: title,
+      body: body,
+      notificationDetails: notificationDetails,
     );
 
     debugPrint('🔔 Test bildirimi gönderildi: $title');

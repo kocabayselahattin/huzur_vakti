@@ -38,9 +38,9 @@ class AlarmReceiver : BroadcastReceiver() {
         ) {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             
-            // Ses dosyası null veya boş ise SharedPreferences'tan al
+            // Ses dosyası null veya boş ise SharedPreferences'tan veya varsayılan kullan
             var actualSoundPath = soundPath
-            if (actualSoundPath.isNullOrEmpty() || actualSoundPath == "ding_dong") {
+            if (actualSoundPath.isNullOrEmpty()) {
                 val vakitKey = prayerName.lowercase()
                     .replace("ı", "i").replace("ö", "o").replace("ü", "u")
                     .replace("ş", "s").replace("ğ", "g").replace("ç", "c")
@@ -64,14 +64,14 @@ class AlarmReceiver : BroadcastReceiver() {
                         Log.d(TAG, "🔊 Ses dosyası SharedPreferences'tan alındı: $vakitKey -> $actualSoundPath")
                     }
                 }
+                
+                // Hala null ise varsayılan ses
+                if (actualSoundPath.isNullOrEmpty()) {
+                    actualSoundPath = "ding_dong.mp3"
+                }
             }
             
-            // Hala null ise varsayılan ses
-            if (actualSoundPath.isNullOrEmpty()) {
-                actualSoundPath = "ding_dong.mp3"
-            }
-            
-            Log.d(TAG, "🔊 Alarm ses dosyası: $actualSoundPath (orijinal: $soundPath)")
+            Log.d(TAG, "🔊 Alarm ses dosyası: $actualSoundPath")
             
             val intent = Intent(context, AlarmReceiver::class.java).apply {
                 action = ACTION_PRAYER_ALARM

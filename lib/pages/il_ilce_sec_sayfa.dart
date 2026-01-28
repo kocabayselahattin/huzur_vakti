@@ -588,7 +588,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
     }
 
     if (secilenIlce != null) {
-      final ilceId = secilenIlce!['IlceID']?.toString();
+      final ilceId = secilenIlce['IlceID']?.toString();
       final ilceAdi = secilenIlce['IlceAdi']?.toString();
       
       setState(() {
@@ -735,11 +735,6 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
   }
 
   // Eski fonksiyon - uyumluluk için
-  Future<Position?> _getIpBasedLocation() async {
-    final result = await _getIpBasedLocationWithCity();
-    return result?['position'] as Position?;
-  }
-
   /// Ülke koduna göre uygulama dilini ayarla
   Future<void> _setLanguageByCountry(String countryCode) async {
     // Ülke kodu -> Dil kodu eşlemesi

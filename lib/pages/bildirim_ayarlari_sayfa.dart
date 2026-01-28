@@ -61,6 +61,9 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
   // Günlük içerik bildirimleri
   bool _gunlukIcerikBildirimleri = true;
 
+  // Günlük içerik bildirim sesi
+  String _gunlukIcerikBildirimSesi = 'ding_dong.mp3';
+
   // Kilit ekranı servisi için MethodChannel
   static const _lockScreenChannel = MethodChannel('huzur_vakti/lockscreen');
 
@@ -238,6 +241,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       }
       _gunlukIcerikBildirimleri = 
           prefs.getBool('daily_content_notifications_enabled') ?? true;
+      _gunlukIcerikBildirimSesi = 
+          prefs.getString('daily_content_notification_sound') ?? 'ding_dong.mp3';
       _sessizeAl = prefs.getBool('sessize_al') ?? false;
       _kilitEkraniBildirimi =
           prefs.getBool('kilit_ekrani_bildirimi_aktif') ?? false;
@@ -356,6 +361,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     }
     await prefs.setBool('sessize_al', _sessizeAl);
     await prefs.setBool('gunluk_icerik_bildirimleri', _gunlukIcerikBildirimleri);
+    await prefs.setString('daily_content_notification_sound', _gunlukIcerikBildirimSesi);
 
     if (_sessizeAl) {
       await DndService.schedulePrayerDnd();
@@ -524,64 +530,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     return true;
   }
 
-  /// Bildirim izni kontrolü
-  Future<bool> _checkNotificationPermission() async {
-    final notificationsPlugin = FlutterLocalNotificationsPlugin();
-    final androidImpl = notificationsPlugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
 
-    if (androidImpl == null) return true;
-
-    final hasPermission =
-        await androidImpl.areNotificationsEnabled() ?? false;
-    if (hasPermission) return true;
-
-    if (mounted) {
-      final shouldRequest = await showDialog<bool>(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: Text(
-            _languageService['notification_permission_required'] ??
-                'Bildirim İzni Gerekli',
-          ),
-          content: Text(
-            _languageService['notification_permission_message'] ??
-                'Test bildirimleri için bildirim izni vermeniz gerekiyor.',
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(_languageService['give_up'] ?? 'Vazgeç'),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              child: Text(_languageService['allow'] ?? 'İzin Ver'),
-            ),
-          ],
-        ),
-      );
-
-      if (shouldRequest == true) {
-        final granted =
-            await androidImpl.requestNotificationsPermission() ?? false;
-        if (!granted && mounted) {
-          ScaffoldMessenger.of(context).showSnackBar(
-            SnackBar(
-              content: Text(
-                _languageService['notification_permission_denied'] ??
-                    'Bildirim izni verilmedi. Test bildirimi gönderilemez.',
-              ),
-              backgroundColor: Colors.red,
-            ),
-          );
-        }
-        return granted;
-      }
-    }
-    return false;
-  }
 
   Future<void> _sesCal(String key, String sesDosyasi) async {
     try {
@@ -1047,28 +996,34 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(Icons.volume_up, size: 14, color: Colors.white54),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Bildirim Sesi:',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                              ),
+                        const SizedBox(height: 12),
+                        // Bildirim sesi seçimi
+                        InkWell(
+                          onTap: () => _showDailyContentSoundSelector(),
+                          child: Container(
+                            padding: const EdgeInsets.all(12),
+                            decoration: BoxDecoration(
+                              color: Colors.black.withOpacity(0.2),
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.tealAccent.withOpacity(0.3)),
                             ),
-                            const Spacer(),
-                            const Text(
-                              'Ding Dong',
-                              style: TextStyle(
-                                color: Colors.white54,
-                                fontSize: 13,
-                                fontStyle: FontStyle.italic,
-                              ),
+                            child: Row(
+                              children: [
+                                const Icon(Icons.volume_up, size: 16, color: Colors.tealAccent),
+                                const SizedBox(width: 10),
+                                Expanded(
+                                  child: Text(
+                                    _getSoundName(_gunlukIcerikBildirimSesi),
+                                    style: const TextStyle(
+                                      color: Colors.white,
+                                      fontSize: 13,
+                                    ),
+                                  ),
+                                ),
+                                const Icon(Icons.chevron_right, color: Colors.white54),
+                              ],
                             ),
-                          ],
+                          ),
                         ),
                       ],
                     ),
@@ -1538,5 +1493,94 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
         ],
       ),
     );
+  }
+
+  /// Günlük içerik bildirimleri için ses seçici dialog
+  Future<void> _showDailyContentSoundSelector() async {
+    final selectedSound = await showDialog<String>(
+      context: context,
+      builder: (context) => AlertDialog(
+        backgroundColor: const Color(0xFF2B3151),
+        title: const Text(
+          'Günlük İçerik Bildirim Sesi',
+          style: TextStyle(color: Colors.white),
+        ),
+        content: SizedBox(
+          width: double.maxFinite,
+          child: ListView.builder(
+            shrinkWrap: true,
+            itemCount: _sesSecenekleri.length - 1, // Özel ses hariç
+            itemBuilder: (context, index) {
+              final ses = _sesSecenekleri[index];
+              final sesDosyasi = ses['dosya']!;
+              final sesAdi = ses['ad']!;
+              final isSelected = _gunlukIcerikBildirimSesi == sesDosyasi;
+
+              return ListTile(
+                leading: Icon(
+                  isSelected ? Icons.check_circle : Icons.music_note,
+                  color: isSelected ? Colors.tealAccent : Colors.white54,
+                ),
+                title: Text(
+                  sesAdi,
+                  style: TextStyle(
+                    color: isSelected ? Colors.tealAccent : Colors.white,
+                    fontWeight: isSelected ? FontWeight.bold : FontWeight.normal,
+                  ),
+                ),
+                trailing: IconButton(
+                  icon: const Icon(Icons.play_arrow, color: Colors.white54),
+                  onPressed: () async {
+                    try {
+                      await _audioPlayer.play(AssetSource('sounds/$sesDosyasi'));
+                    } catch (e) {
+                      debugPrint('Ses çalınamadı: $e');
+                    }
+                  },
+                ),
+                onTap: () {
+                  Navigator.pop(context, sesDosyasi);
+                },
+              );
+            },
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'İptal',
+              style: TextStyle(color: Colors.white70),
+            ),
+          ),
+        ],
+      ),
+    );
+
+    if (selectedSound != null && mounted) {
+      setState(() {
+        _gunlukIcerikBildirimSesi = selectedSound;
+        _degisiklikYapildi = true;
+      });
+
+      // Seçilen sesi çal
+      try {
+        await _audioPlayer.play(AssetSource('sounds/$selectedSound'));
+      } catch (e) {
+        debugPrint('Ses çalınamadı: $e');
+      }
+
+      // Servise yeni sesi bildir
+      await DailyContentNotificationService.setDailyContentNotificationSound(selectedSound);
+    }
+  }
+
+  /// Ses dosya adından kullanıcıya gösterilecek ismi al
+  String _getSoundName(String dosyaAdi) {
+    final ses = _sesSecenekleri.firstWhere(
+      (s) => s['dosya'] == dosyaAdi,
+      orElse: () => {'ad': 'Ding Dong', 'dosya': 'ding_dong.mp3'},
+    );
+    return ses['ad']!;
   }
 }

@@ -1,7 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math' as math;
-import 'package:shared_preferences/shared_preferences.dart';
 import '../services/konum_service.dart';
 import '../services/diyanet_api_service.dart';
 import 'package:intl/intl.dart';
@@ -50,7 +49,6 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
   }
 
   Future<void> _vakitleriYukle() async {
-    final prefs = await SharedPreferences.getInstance();
     final konumlar = await KonumService.getKonumlar();
     final aktifIndex = await KonumService.getAktifKonumIndex();
 
@@ -237,54 +235,54 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
                     ),
                   ],
                 ),
-                const SizedBox(height: 12),
-                // Takvimler
+                const SizedBox(height: 10),
+                // Takvimler - Kompakt versiyon
                 Row(
                   children: [
                     Expanded(
-                      child: _buildCalendarCard(
+                      child: _buildCompactCalendarCard(
                         icon: Icons.today,
-                        label: 'MİLADİ',
                         date: miladi,
                         color: Colors.blue.shade300,
                       ),
                     ),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     Expanded(
-                      child: _buildCalendarCard(
+                      child: _buildCompactCalendarCard(
                         icon: Icons.nightlight_round,
-                        label: 'HİCRİ',
                         date: hicri,
                         color: Colors.amber,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 14),
                 // Vakit bilgisi
                 Container(
-                  padding: const EdgeInsets.all(10),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(15),
+                    borderRadius: BorderRadius.circular(12),
                     border: Border.all(
                       color: Colors.amber.withOpacity(0.3),
                     ),
                   ),
-                  child: Column(
+                  child: Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
                     children: [
                       Text(
                         _gelecekVakit.toUpperCase(),
                         style: const TextStyle(
                           color: Colors.amber,
-                          fontSize: 15,
+                          fontSize: 14,
                           fontWeight: FontWeight.bold,
-                          letterSpacing: 3,
+                          letterSpacing: 2,
                         ),
                       ),
-                      const SizedBox(height: 5),
+                      const SizedBox(width: 6),
                       Text(
-                        'vakti için',
+                        'için',
                         style: TextStyle(
                           color: Colors.white.withOpacity(0.6),
                           fontSize: 11,
@@ -293,19 +291,19 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
                     ],
                   ),
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 // Kalan süre
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
                     _buildTimePillar(hours.toString().padLeft(2, '0'), 'SAAT'),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     _buildTimePillar(minutes.toString().padLeft(2, '0'), 'DAKİKA'),
-                    const SizedBox(width: 12),
+                    const SizedBox(width: 10),
                     _buildTimePillar(seconds.toString().padLeft(2, '0'), 'SANİYE'),
                   ],
                 ),
-                const SizedBox(height: 12),
+                const SizedBox(height: 10),
                 // Ecir barı
                 _buildEcirSection(),
               ],
@@ -316,14 +314,13 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
     );
   }
 
-  Widget _buildCalendarCard({
+  Widget _buildCompactCalendarCard({
     required IconData icon,
-    required String label,
     required String date,
     required Color color,
   }) {
     return Container(
-      padding: const EdgeInsets.all(10),
+      padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
       decoration: BoxDecoration(
         gradient: LinearGradient(
           begin: Alignment.topCenter,
@@ -333,30 +330,25 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
             color.withOpacity(0.05),
           ],
         ),
-        borderRadius: BorderRadius.circular(15),
+        borderRadius: BorderRadius.circular(12),
         border: Border.all(color: color.withOpacity(0.3)),
       ),
-      child: Column(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(icon, color: color, size: 18),
-          const SizedBox(height: 6),
-          Text(
-            label,
-            style: TextStyle(
-              color: color.withOpacity(0.8),
-              fontSize: 9,
-              letterSpacing: 1.5,
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 6),
+          Flexible(
+            child: Text(
+              date,
+              style: TextStyle(
+                color: color,
+                fontSize: 10,
+                fontWeight: FontWeight.w600,
+              ),
+              textAlign: TextAlign.center,
+              overflow: TextOverflow.ellipsis,
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            date,
-            style: TextStyle(
-              color: color,
-              fontSize: 10,
-              fontWeight: FontWeight.w600,
-            ),
-            textAlign: TextAlign.center,
           ),
         ],
       ),
@@ -367,8 +359,8 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
     return Column(
       children: [
         Container(
-          width: 60,
-          height: 60,
+          width: 55,
+          height: 55,
           decoration: BoxDecoration(
             gradient: LinearGradient(
               begin: Alignment.topCenter,
@@ -378,12 +370,12 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
                 Colors.amber.withOpacity(0.1),
               ],
             ),
-            borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.amber.withOpacity(0.4), width: 2),
+            borderRadius: BorderRadius.circular(10),
+            border: Border.all(color: Colors.amber.withOpacity(0.4), width: 1.5),
             boxShadow: [
               BoxShadow(
                 color: Colors.amber.withOpacity(0.2),
-                blurRadius: 10,
+                blurRadius: 8,
               ),
             ],
           ),
@@ -391,20 +383,20 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
             child: Text(
               value,
               style: const TextStyle(
-                fontSize: 28,
+                fontSize: 24,
                 fontWeight: FontWeight.bold,
                 color: Colors.white,
               ),
             ),
           ),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 6),
         Text(
           label,
           style: TextStyle(
-            fontSize: 9,
+            fontSize: 8,
             color: Colors.white.withOpacity(0.6),
-            letterSpacing: 1,
+            letterSpacing: 0.5,
           ),
         ),
       ],

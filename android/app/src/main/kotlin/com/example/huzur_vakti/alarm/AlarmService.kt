@@ -254,14 +254,13 @@ class AlarmService : Service() {
                     setDataSource(this@AlarmService, defaultUri)
                 }
                 
-                // ⚠️ ÖNEMLI: Ses bir kere çalacak ve bitecek (sonsuz döngü yok)
-                isLooping = false
+                // ⚠️ ÖNEMLİ: Ses sonsuz döngüde çalacak (kullanıcı uyansın diye)
+                isLooping = true
                 
-                // Ses bittiğinde servisi durdur
+                // Ses bittiginde (isLooping true olduğu için asla tetiklenmez)
                 setOnCompletionListener {
                     Log.d(TAG, "🔊 Alarm sesi tamamlandı")
                     this@AlarmService.stopVibration()
-                    // Bildirim kalır ama ses biter
                     this@AlarmService.isPlaying = false
                     
                     // Vakitlerde sessize al ayarı açıksa telefonu sessize al
@@ -314,6 +313,9 @@ class AlarmService : Service() {
             
             stopVibration()
             
+            // Alarm durdurulduğunda sessize al ayarını kontrol et
+            checkAndSetSilentMode()
+            
             Log.d(TAG, "🔇 Alarm sesi durduruldu")
         } catch (e: Exception) {
             Log.e(TAG, "❌ Ses durdurma hatası: ${e.message}")
@@ -340,15 +342,15 @@ class AlarmService : Service() {
                 getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
             }
             
-            // Titreşim paterni: bekle, titret, bekle, titret... (tekrar yok: -1)
+            // Titreşim paterni: bekle, titret, bekle, titret... (sonsuz döngü: 0)
             val pattern = longArrayOf(0, 500, 200, 500, 200, 500, 200, 500)
             
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                // -1 = tekrar yok, sadece bir kere titret
-                vibrator?.vibrate(VibrationEffect.createWaveform(pattern, -1))
+                // 0 = sonsuz döngü, patern tekrar eder
+                vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0))
             } else {
                 @Suppress("DEPRECATION")
-                vibrator?.vibrate(pattern, -1)
+                vibrator?.vibrate(pattern, 0)
             }
             
             Log.d(TAG, "📳 Titreşim başlatıldı")

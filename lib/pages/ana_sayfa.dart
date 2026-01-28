@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../widgets/premium_sayac_widget.dart';
 import '../widgets/vakit_listesi_widget.dart';
 import '../widgets/gunun_icerigi_widget.dart';
@@ -105,11 +104,6 @@ class _AnaSayfaState extends State<AnaSayfa> {
         _sayacYuklendi = true;
       });
     }
-  }
-
-  Future<void> _saveSayacIndex(int index) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt('secili_sayac_index', index);
   }
 
   @override

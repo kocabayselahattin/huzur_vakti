@@ -23,7 +23,6 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
   Timer? _timer;
   Duration _kalanSure = Duration.zero;
   String _sonrakiVakit = '';
-  String _mevcutVakit = '';
   double _ilerlemeOrani = 0.0;
   Map<String, String> _vakitSaatleri = {};
   final TemaService _temaService = TemaService();
@@ -120,7 +119,6 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
 
     DateTime? sonrakiVakitZamani;
     String sonrakiVakitAdi = '';
-    String mevcutVakitAdi = '';
     double oran = 0.0;
 
     int sonrakiIndex = -1;
@@ -136,7 +134,6 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
       sonrakiVakitZamani = DateTime(now.year, now.month, now.day + 1,
           int.parse(parts[0]), int.parse(parts[1]));
       sonrakiVakitAdi = vakitSaatleri[0]['adi']!;
-      mevcutVakitAdi = vakitSaatleri.last['adi']!;
       final yatsiSaniye = vakitSaniyeleri.last;
       final imsakSaniye = vakitSaniyeleri.first;
       final toplamSure = (24 * 3600 - yatsiSaniye) + imsakSaniye;
@@ -147,7 +144,6 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
       sonrakiVakitZamani = DateTime(now.year, now.month, now.day,
           int.parse(parts[0]), int.parse(parts[1]));
       sonrakiVakitAdi = vakitSaatleri[0]['adi']!;
-      mevcutVakitAdi = vakitSaatleri.last['adi']!;
       final yatsiSaniye = vakitSaniyeleri.last;
       final imsakSaniye = vakitSaniyeleri.first;
       final toplamSure = (24 * 3600 - yatsiSaniye) + imsakSaniye;
@@ -158,7 +154,6 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
       sonrakiVakitZamani = DateTime(now.year, now.month, now.day,
           int.parse(parts[0]), int.parse(parts[1]));
       sonrakiVakitAdi = vakitSaatleri[sonrakiIndex]['adi']!;
-      mevcutVakitAdi = sonrakiIndex > 0 ? vakitSaatleri[sonrakiIndex - 1]['adi']! : vakitSaatleri.last['adi']!;
       final toplamSure = vakitSaniyeleri[sonrakiIndex] - vakitSaniyeleri[sonrakiIndex - 1];
       final gecenSure = nowTotalSeconds - vakitSaniyeleri[sonrakiIndex - 1];
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
@@ -167,7 +162,6 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
     setState(() {
       _kalanSure = sonrakiVakitZamani!.difference(now);
       _sonrakiVakit = sonrakiVakitAdi;
-      _mevcutVakit = mevcutVakitAdi;
       _ilerlemeOrani = oran;
     });
   }
@@ -201,7 +195,6 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
     final secondaryColor = kullanTemaRenkleri ? temaRenkleri.vurguSecondary : const Color(0xFF64B5F6);
     final bgColor = kullanTemaRenkleri ? temaRenkleri.kartArkaPlan : const Color(0xFFF5F7FA);
     final textColor = kullanTemaRenkleri ? temaRenkleri.yaziPrimary : const Color(0xFF3D4F6F);
-    final secondaryTextColor = kullanTemaRenkleri ? temaRenkleri.yaziSecondary : const Color(0xFF6B7D9A);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -432,13 +425,13 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
 
   Widget _buildProgressBar(Color primaryColor, Color secondaryColor, Color textColor) {
     return Container(
-      height: 8,
+      height: 12,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
-        color: textColor.withOpacity(0.15),
+        borderRadius: BorderRadius.circular(6),
+        color: textColor.withOpacity(0.25),
         border: Border.all(
-          color: textColor.withOpacity(0.1),
-          width: 0.5,
+          color: textColor.withOpacity(0.2),
+          width: 1,
         ),
       ),
       child: Stack(
@@ -456,19 +449,19 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
             widthFactor: _ilerlemeOrani.clamp(0.0, 1.0),
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(6),
                 gradient: LinearGradient(
                   colors: [
-                    primaryColor.withOpacity(0.7),
+                    primaryColor.withOpacity(0.9),
                     primaryColor,
                     secondaryColor,
                   ],
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: primaryColor.withOpacity(0.5),
-                    blurRadius: 6,
-                    spreadRadius: 0,
+                    color: primaryColor.withOpacity(0.7),
+                    blurRadius: 8,
+                    spreadRadius: 1,
                   ),
                 ],
               ),

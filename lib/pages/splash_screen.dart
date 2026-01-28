@@ -57,7 +57,7 @@ class _SplashScreenState extends State<SplashScreen> {
       
       // Eğer kritik izinler eksikse onboarding göster
       if (!locationGranted || !notificationGranted) {
-        final permissionResult = await Navigator.push(
+        await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => const OnboardingPermissionsPage(),

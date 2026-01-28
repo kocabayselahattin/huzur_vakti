@@ -256,18 +256,6 @@ class _KibleSayfaState extends State<KibleSayfa> {
         }
       }
 
-      if (position == null) {
-        setState(() {
-          _hata =
-              _languageService['location_not_available'] ??
-              'Konum bilgisi alınamadı.';
-          _hataAksiyon = _konumuAl;
-          _hataAksiyonLabel = _languageService['try_again'] ?? 'Tekrar Dene';
-          _yukleniyor = false;
-        });
-        return;
-      }
-
       // Kıble açısını hesapla
       final kibleAcisi = _kibleHesapla(position.latitude, position.longitude);
 
@@ -443,7 +431,7 @@ class _KibleSayfaState extends State<KibleSayfa> {
     final qibla = _kibleDerece ?? 0;
     final double? trueHeading = hasHeading
         ? _normalizeAngle(
-            (heading ?? 0).toDouble() + (_declination ?? 0),
+            heading.toDouble() + (_declination ?? 0),
           ).toDouble()
         : null;
     final double? relative = trueHeading != null
@@ -711,9 +699,6 @@ class _KibleSayfaState extends State<KibleSayfa> {
     final headingText = trueHeading == null
         ? '--'
         : '${trueHeading.toStringAsFixed(0)}° ${_getYonKisaltma(trueHeading)}';
-    final qiblaText = _kibleDerece == null
-        ? '--'
-        : '${_kibleDerece!.toStringAsFixed(0)}°';
     final isCorrectDirection = relativeAngle != null && relativeAngle.abs() < 3;
     // Kabe simgesi için açı (kıble açısı - cihaz yönü)
     final double kabeAngle = (_kibleDerece ?? 0) - (trueHeading ?? 0);
@@ -1381,40 +1366,6 @@ class _KibleSayfaState extends State<KibleSayfa> {
         const SizedBox(height: 4),
         const Icon(Icons.mosque, color: Colors.black, size: 18),
       ],
-    );
-  }
-
-  Widget _centerDegreeBadge(String text) {
-    return Container(
-      width: 56,
-      height: 56,
-      decoration: BoxDecoration(
-        color: const Color(0xFF2F7DE1),
-        shape: BoxShape.circle,
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.35),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      alignment: Alignment.center,
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          const Icon(Icons.mosque, color: Colors.black, size: 16),
-          const SizedBox(height: 2),
-          Text(
-            text,
-            style: const TextStyle(
-              color: Colors.white,
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-            ),
-          ),
-        ],
-      ),
     );
   }
 

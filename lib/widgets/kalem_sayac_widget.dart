@@ -1,6 +1,5 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:shared_preferences/shared_preferences.dart';
 import '../services/konum_service.dart';
 import '../services/diyanet_api_service.dart';
 import 'package:intl/intl.dart';
@@ -49,7 +48,6 @@ class _KalemSayacWidgetState extends State<KalemSayacWidget>
   }
 
   Future<void> _vakitleriYukle() async {
-    final prefs = await SharedPreferences.getInstance();
     final konumlar = await KonumService.getKonumlar();
     final aktifIndex = await KonumService.getAktifKonumIndex();
 

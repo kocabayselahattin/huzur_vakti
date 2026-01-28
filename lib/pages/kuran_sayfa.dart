@@ -2213,8 +2213,6 @@ class CuzDetaySayfa extends StatefulWidget {
 
 class _CuzDetaySayfaState extends State<CuzDetaySayfa> {
   final TemaService _temaService = TemaService();
-  final LanguageService _languageService = LanguageService();
-  bool _yukleniyor = false;
 
   // Cüzdeki sureleri al
   List<Sure> _getCuzSureleri() {
