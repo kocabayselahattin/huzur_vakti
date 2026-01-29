@@ -24,17 +24,24 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
   String _mevcutVakit = '';
   double _ilerlemeYuzdesi = 0.0;
   Map<String, String> _vakitSaatleri = {};
-  
+
   late AnimationController _breathController;
   late AnimationController _rotateController;
   late Animation<double> _breathAnimation;
   late Animation<double> _rotateAnimation;
-  
+
   final TemaService _temaService = TemaService();
   final LanguageService _languageService = LanguageService();
 
-  final List<String> _vakitSirasi = ['Imsak', 'Gunes', 'Ogle', 'Ikindi', 'Aksam', 'Yatsi'];
-  
+  final List<String> _vakitSirasi = [
+    'Imsak',
+    'Gunes',
+    'Ogle',
+    'Ikindi',
+    'Aksam',
+    'Yatsi',
+  ];
+
   Map<String, String> get _vakitAdlari => {
     'Imsak': (_languageService['imsak'] ?? 'İMSAK').toUpperCase(),
     'Gunes': (_languageService['gunes'] ?? 'GÜNEŞ').toUpperCase(),
@@ -47,32 +54,33 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
   @override
   void initState() {
     super.initState();
-    
+
     _breathController = AnimationController(
       duration: const Duration(milliseconds: 3000),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     _breathAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _breathController, curve: Curves.easeInOut),
     );
-    
+
     _rotateController = AnimationController(
       duration: const Duration(seconds: 30),
       vsync: this,
     )..repeat();
-    
-    _rotateAnimation = Tween<double>(begin: 0, end: 2 * math.pi).animate(
-      CurvedAnimation(parent: _rotateController, curve: Curves.linear),
-    );
-    
+
+    _rotateAnimation = Tween<double>(
+      begin: 0,
+      end: 2 * math.pi,
+    ).animate(CurvedAnimation(parent: _rotateController, curve: Curves.linear));
+
     if (widget.shouldLoadData) {
       _vakitleriYukle();
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
         _hesaplaKalanSure();
       });
     }
-    
+
     _temaService.addListener(_onTemaChanged);
     _languageService.addListener(_onTemaChanged);
   }
@@ -104,21 +112,30 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
         final vakitler = data['vakitler'] as List;
         if (vakitler.isNotEmpty) {
           final bugun = DateTime.now();
-          final bugunVakit = vakitler.firstWhere((v) {
-            final tarih = v['MiladiTarihKisa'] ?? '';
-            try {
-              final parts = tarih.split('.');
-              if (parts.length == 3) {
-                final gun = int.parse(parts[0]);
-                final ay = int.parse(parts[1]);
-                final yil = int.parse(parts[2]);
-                return gun == bugun.day && ay == bugun.month && yil == bugun.year;
-              }
-            } catch (e) {}
-            return false;
-          }, orElse: () => vakitler.isNotEmpty 
-              ? Map<String, dynamic>.from(vakitler[0]) 
-              : <String, dynamic>{}) as Map<String, dynamic>;
+          final bugunVakit =
+              vakitler.firstWhere(
+                    (v) {
+                      final tarih = v['MiladiTarihKisa'] ?? '';
+                      try {
+                        final parts = tarih.split('.');
+                        if (parts.length == 3) {
+                          final gun = int.parse(parts[0]);
+                          final ay = int.parse(parts[1]);
+                          final yil = int.parse(parts[2]);
+                          return gun == bugun.day &&
+                              ay == bugun.month &&
+                              yil == bugun.year;
+                        }
+                      } catch (e) {
+                        // Tarih parse hatası - varsayılan değer kullanılacak
+                      }
+                      return false;
+                    },
+                    orElse: () => vakitler.isNotEmpty
+                        ? Map<String, dynamic>.from(vakitler[0])
+                        : <String, dynamic>{},
+                  )
+                  as Map<String, dynamic>;
 
           setState(() {
             _vakitSaatleri = {
@@ -174,8 +191,11 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
 
         if (vakitMinutes > nowMinutes) {
           sonrakiVakitZamani = DateTime(
-            now.year, now.month, now.day,
-            int.parse(parts[0]), int.parse(parts[1]),
+            now.year,
+            now.month,
+            now.day,
+            int.parse(parts[0]),
+            int.parse(parts[1]),
           );
           sonrakiVakitKey = key;
 
@@ -184,44 +204,60 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
             final oncekiSaat = _vakitSaatleri[oncekiKey]!;
             final oncekiParts = oncekiSaat.split(':');
             mevcutVakitZamani = DateTime(
-              now.year, now.month, now.day,
-              int.parse(oncekiParts[0]), int.parse(oncekiParts[1]),
+              now.year,
+              now.month,
+              now.day,
+              int.parse(oncekiParts[0]),
+              int.parse(oncekiParts[1]),
             );
             mevcutVakitKey = oncekiKey;
           } else {
             final yatsiSaat = _vakitSaatleri['Yatsi']!;
             final yatsiParts = yatsiSaat.split(':');
             mevcutVakitZamani = DateTime(
-              now.year, now.month, now.day - 1,
-              int.parse(yatsiParts[0]), int.parse(yatsiParts[1]),
+              now.year,
+              now.month,
+              now.day - 1,
+              int.parse(yatsiParts[0]),
+              int.parse(yatsiParts[1]),
             );
             mevcutVakitKey = 'Yatsi';
           }
           break;
         }
-      } catch (e) {}
+      } catch (e) {
+        // Vakit parse hatası - atla
+      }
     }
 
     if (sonrakiVakitZamani == null) {
       final yarin = now.add(const Duration(days: 1));
       final imsakSaat = _vakitSaatleri['Imsak']!.split(':');
       sonrakiVakitZamani = DateTime(
-        yarin.year, yarin.month, yarin.day,
-        int.parse(imsakSaat[0]), int.parse(imsakSaat[1]),
+        yarin.year,
+        yarin.month,
+        yarin.day,
+        int.parse(imsakSaat[0]),
+        int.parse(imsakSaat[1]),
       );
       sonrakiVakitKey = 'Imsak';
-      
+
       final yatsiSaat = _vakitSaatleri['Yatsi']!.split(':');
       mevcutVakitZamani = DateTime(
-        now.year, now.month, now.day,
-        int.parse(yatsiSaat[0]), int.parse(yatsiSaat[1]),
+        now.year,
+        now.month,
+        now.day,
+        int.parse(yatsiSaat[0]),
+        int.parse(yatsiSaat[1]),
       );
       mevcutVakitKey = 'Yatsi';
     }
 
     double ilerleme = 0.0;
     if (mevcutVakitZamani != null) {
-      final toplamSure = sonrakiVakitZamani.difference(mevcutVakitZamani).inSeconds;
+      final toplamSure = sonrakiVakitZamani
+          .difference(mevcutVakitZamani)
+          .inSeconds;
       final gecenSure = now.difference(mevcutVakitZamani).inSeconds;
       if (toplamSure > 0) {
         ilerleme = gecenSure / toplamSure;
@@ -240,7 +276,7 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
   @override
   Widget build(BuildContext context) {
     final renkler = _temaService.renkler;
-    
+
     return Card(
       color: Colors.transparent,
       elevation: 0,
@@ -272,22 +308,30 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
               children: [
                 // Arka plan parçacıkları
                 ...List.generate(8, (index) {
-                  final angle = (index * math.pi / 4) + _rotateAnimation.value * 0.3;
-                  final radius = 80 + math.sin(_breathAnimation.value * math.pi + index) * 10;
+                  final angle =
+                      (index * math.pi / 4) + _rotateAnimation.value * 0.3;
+                  final radius =
+                      80 +
+                      math.sin(_breathAnimation.value * math.pi + index) * 10;
                   return Positioned(
-                    left: MediaQuery.of(context).size.width / 2 - 30 + math.cos(angle) * radius,
+                    left:
+                        MediaQuery.of(context).size.width / 2 -
+                        30 +
+                        math.cos(angle) * radius,
                     top: 110 + math.sin(angle) * radius * 0.6,
                     child: Container(
                       width: 4,
                       height: 4,
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        color: renkler.vurgu.withValues(alpha: 0.3 + _breathAnimation.value * 0.2),
+                        color: renkler.vurgu.withValues(
+                          alpha: 0.3 + _breathAnimation.value * 0.2,
+                        ),
                       ),
                     ),
                   );
                 }),
-                
+
                 // Ana içerik
                 Center(
                   child: Column(
@@ -296,12 +340,17 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                     children: [
                       // Mevcut vakit badge
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 4,
+                        ),
                         decoration: BoxDecoration(
                           color: renkler.vurgu.withValues(alpha: 0.15),
                           borderRadius: BorderRadius.circular(30),
                           border: Border.all(
-                            color: renkler.vurgu.withValues(alpha: 0.3 + _breathAnimation.value * 0.2),
+                            color: renkler.vurgu.withValues(
+                              alpha: 0.3 + _breathAnimation.value * 0.2,
+                            ),
                             width: 1.5,
                           ),
                         ),
@@ -315,7 +364,9 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              _mevcutVakit.isNotEmpty ? _mevcutVakit : 'YÜKLENİYOR',
+                              _mevcutVakit.isNotEmpty
+                                  ? _mevcutVakit
+                                  : 'YÜKLENİYOR',
                               style: TextStyle(
                                 color: renkler.vurgu,
                                 fontSize: 12,
@@ -326,12 +377,15 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 10),
-                      
+
                       // Sayaç container
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(20),
                           gradient: LinearGradient(
@@ -348,10 +402,7 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                             // Ana sayaç
                             ShaderMask(
                               shaderCallback: (bounds) => LinearGradient(
-                                colors: [
-                                  renkler.yaziPrimary,
-                                  renkler.vurgu,
-                                ],
+                                colors: [renkler.yaziPrimary, renkler.vurgu],
                               ).createShader(bounds),
                               child: Row(
                                 mainAxisAlignment: MainAxisAlignment.center,
@@ -361,7 +412,10 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                                   SizedBox(
                                     width: 65,
                                     child: Text(
-                                      _kalanSure.inHours.toString().padLeft(2, '0'),
+                                      _kalanSure.inHours.toString().padLeft(
+                                        2,
+                                        '0',
+                                      ),
                                       textAlign: TextAlign.right,
                                       maxLines: 1,
                                       softWrap: false,
@@ -369,7 +423,9 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                                         fontSize: 46,
                                         fontWeight: FontWeight.w300,
                                         color: Colors.white,
-                                        fontFeatures: [FontFeature.tabularFigures()],
+                                        fontFeatures: [
+                                          FontFeature.tabularFigures(),
+                                        ],
                                         shadows: [
                                           Shadow(
                                             color: Colors.white,
@@ -390,7 +446,9 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                                         fontSize: 46,
                                         fontWeight: FontWeight.w300,
                                         color: Colors.white,
-                                        fontFeatures: [FontFeature.tabularFigures()],
+                                        fontFeatures: [
+                                          FontFeature.tabularFigures(),
+                                        ],
                                         shadows: [
                                           Shadow(
                                             color: Colors.white,
@@ -403,7 +461,9 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                                   SizedBox(
                                     width: 65,
                                     child: Text(
-                                      (_kalanSure.inMinutes % 60).toString().padLeft(2, '0'),
+                                      (_kalanSure.inMinutes % 60)
+                                          .toString()
+                                          .padLeft(2, '0'),
                                       textAlign: TextAlign.center,
                                       maxLines: 1,
                                       softWrap: false,
@@ -411,7 +471,9 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                                         fontSize: 46,
                                         fontWeight: FontWeight.w300,
                                         color: Colors.white,
-                                        fontFeatures: [FontFeature.tabularFigures()],
+                                        fontFeatures: [
+                                          FontFeature.tabularFigures(),
+                                        ],
                                         shadows: [
                                           Shadow(
                                             color: Colors.white,
@@ -432,7 +494,9 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                                         fontSize: 46,
                                         fontWeight: FontWeight.w300,
                                         color: Colors.white,
-                                        fontFeatures: [FontFeature.tabularFigures()],
+                                        fontFeatures: [
+                                          FontFeature.tabularFigures(),
+                                        ],
                                         shadows: [
                                           Shadow(
                                             color: Colors.white,
@@ -445,7 +509,9 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                                   SizedBox(
                                     width: 65,
                                     child: Text(
-                                      (_kalanSure.inSeconds % 60).toString().padLeft(2, '0'),
+                                      (_kalanSure.inSeconds % 60)
+                                          .toString()
+                                          .padLeft(2, '0'),
                                       textAlign: TextAlign.left,
                                       maxLines: 1,
                                       softWrap: false,
@@ -453,7 +519,9 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                                         fontSize: 46,
                                         fontWeight: FontWeight.w300,
                                         color: Colors.white,
-                                        fontFeatures: [FontFeature.tabularFigures()],
+                                        fontFeatures: [
+                                          FontFeature.tabularFigures(),
+                                        ],
                                         shadows: [
                                           Shadow(
                                             color: Colors.white,
@@ -466,20 +534,23 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                                 ],
                               ),
                             ),
-                            
+
                             const SizedBox(height: 8),
-                            
+
                             // İlerleme çubuğu
                             SizedBox(
                               width: 200,
-                              child: _buildProgressBar(renkler.vurgu, renkler.yaziPrimary),
+                              child: _buildProgressBar(
+                                renkler.vurgu,
+                                renkler.yaziPrimary,
+                              ),
                             ),
                           ],
                         ),
                       ),
-                      
+
                       const SizedBox(height: 8),
-                      
+
                       // Sonraki vakit
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
@@ -520,9 +591,9 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
                           ],
                         ],
                       ),
-                      
+
                       const SizedBox(height: 8),
-                      
+
                       // Miladi ve Hicri Takvim
                       _buildTakvimRow(renkler),
                     ],
@@ -535,13 +606,14 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
       ),
     );
   }
-  
+
   Widget _buildTakvimRow(TemaRenkleri renkler) {
     final now = DateTime.now();
     final miladiTarih = DateFormat('dd MMM yyyy', 'tr_TR').format(now);
     final hicri = HijriCalendar.now();
-    final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
-    
+    final hicriTarih =
+        '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -555,14 +627,15 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
           child: Row(
             mainAxisSize: MainAxisSize.min,
             children: [
-              Icon(Icons.calendar_today, size: 12, color: renkler.yaziSecondary),
+              Icon(
+                Icons.calendar_today,
+                size: 12,
+                color: renkler.yaziSecondary,
+              ),
               const SizedBox(width: 4),
               Text(
                 miladiTarih,
-                style: TextStyle(
-                  color: renkler.yaziSecondary,
-                  fontSize: 10,
-                ),
+                style: TextStyle(color: renkler.yaziSecondary, fontSize: 10),
               ),
             ],
           ),
@@ -594,11 +667,23 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
       ],
     );
   }
-  
+
   String _getHicriAyAdi(int ay) {
-    const aylar = ['', 'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir', 
-      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban', 'Ramazan', 
-      'Şevval', 'Zilkade', 'Zilhicce'];
+    const aylar = [
+      '',
+      'Muharrem',
+      'Safer',
+      'Rebiülevvel',
+      'Rebiülahir',
+      'Cemaziyelevvel',
+      'Cemaziyelahir',
+      'Recep',
+      'Şaban',
+      'Ramazan',
+      'Şevval',
+      'Zilkade',
+      'Zilhicce',
+    ];
     return aylar[ay];
   }
 
@@ -642,7 +727,9 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
             borderRadius: BorderRadius.circular(4),
             child: CustomPaint(
               size: const Size(double.infinity, 8),
-              painter: _ProgressBarLinesPainter(lineColor: textColor.withOpacity(0.08)),
+              painter: _ProgressBarLinesPainter(
+                lineColor: textColor.withOpacity(0.08),
+              ),
             ),
           ),
           FractionallySizedBox(
@@ -651,9 +738,19 @@ class _PremiumSayacWidgetState extends State<PremiumSayacWidget>
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(4),
                 gradient: LinearGradient(
-                  colors: [primaryColor.withOpacity(0.7), primaryColor, Color.lerp(primaryColor, Colors.white, 0.2)!],
+                  colors: [
+                    primaryColor.withOpacity(0.7),
+                    primaryColor,
+                    Color.lerp(primaryColor, Colors.white, 0.2)!,
+                  ],
                 ),
-                boxShadow: [BoxShadow(color: primaryColor.withOpacity(0.5), blurRadius: 6, spreadRadius: 0)],
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.5),
+                    blurRadius: 6,
+                    spreadRadius: 0,
+                  ),
+                ],
               ),
             ),
           ),
@@ -669,12 +766,15 @@ class _ProgressBarLinesPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = lineColor..strokeWidth = 1;
+    final paint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 1;
     for (double x = 0; x < size.width; x += 8) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant _ProgressBarLinesPainter oldDelegate) => oldDelegate.lineColor != lineColor;
+  bool shouldRepaint(covariant _ProgressBarLinesPainter oldDelegate) =>
+      oldDelegate.lineColor != lineColor;
 }

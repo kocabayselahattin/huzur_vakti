@@ -27,18 +27,18 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
   Map<String, String> _vakitSaatleri = {};
   final TemaService _temaService = TemaService();
   final LanguageService _languageService = LanguageService();
-  
+
   late AnimationController _twinkleController;
 
   @override
   void initState() {
     super.initState();
-    
+
     _twinkleController = AnimationController(
       duration: const Duration(seconds: 2),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     if (widget.shouldLoadData) {
       _vakitleriYukle();
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -105,18 +105,38 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
     final nowTotalSeconds = now.hour * 3600 + now.minute * 60 + now.second;
 
     final vakitSaatleri = [
-      {'adi': _languageService['imsak'] ?? 'İmsak', 'saat': _vakitSaatleri['Imsak']!},
-      {'adi': _languageService['gunes'] ?? 'Güneş', 'saat': _vakitSaatleri['Gunes']!},
-      {'adi': _languageService['ogle'] ?? 'Öğle', 'saat': _vakitSaatleri['Ogle']!},
-      {'adi': _languageService['ikindi'] ?? 'İkindi', 'saat': _vakitSaatleri['Ikindi']!},
-      {'adi': _languageService['aksam'] ?? 'Akşam', 'saat': _vakitSaatleri['Aksam']!},
-      {'adi': _languageService['yatsi'] ?? 'Yatsı', 'saat': _vakitSaatleri['Yatsi']!},
+      {
+        'adi': _languageService['imsak'] ?? 'İmsak',
+        'saat': _vakitSaatleri['Imsak']!,
+      },
+      {
+        'adi': _languageService['gunes'] ?? 'Güneş',
+        'saat': _vakitSaatleri['Gunes']!,
+      },
+      {
+        'adi': _languageService['ogle'] ?? 'Öğle',
+        'saat': _vakitSaatleri['Ogle']!,
+      },
+      {
+        'adi': _languageService['ikindi'] ?? 'İkindi',
+        'saat': _vakitSaatleri['Ikindi']!,
+      },
+      {
+        'adi': _languageService['aksam'] ?? 'Akşam',
+        'saat': _vakitSaatleri['Aksam']!,
+      },
+      {
+        'adi': _languageService['yatsi'] ?? 'Yatsı',
+        'saat': _vakitSaatleri['Yatsi']!,
+      },
     ];
 
-    List<int> vakitSaniyeleri = [];
+    final vakitSaniyeleri = <int>[];
     for (final vakit in vakitSaatleri) {
       final parts = vakit['saat']!.split(':');
-      vakitSaniyeleri.add(int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60);
+      vakitSaniyeleri.add(
+        int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60,
+      );
     }
 
     DateTime? sonrakiVakitZamani;
@@ -133,8 +153,13 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
 
     if (sonrakiIndex == -1) {
       final parts = vakitSaatleri[0]['saat']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day + 1,
-          int.parse(parts[0]), int.parse(parts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day + 1,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
       sonrakiVakitAdi = vakitSaatleri[0]['adi']!;
       final yatsiSaniye = vakitSaniyeleri.last;
       final imsakSaniye = vakitSaniyeleri.first;
@@ -143,8 +168,13 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     } else if (sonrakiIndex == 0) {
       final parts = vakitSaatleri[0]['saat']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day,
-          int.parse(parts[0]), int.parse(parts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
       sonrakiVakitAdi = vakitSaatleri[0]['adi']!;
       final yatsiSaniye = vakitSaniyeleri.last;
       final imsakSaniye = vakitSaniyeleri.first;
@@ -153,10 +183,16 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     } else {
       final parts = vakitSaatleri[sonrakiIndex]['saat']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day,
-          int.parse(parts[0]), int.parse(parts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
       sonrakiVakitAdi = vakitSaatleri[sonrakiIndex]['adi']!;
-      final toplamSure = vakitSaniyeleri[sonrakiIndex] - vakitSaniyeleri[sonrakiIndex - 1];
+      final toplamSure =
+          vakitSaniyeleri[sonrakiIndex] - vakitSaniyeleri[sonrakiIndex - 1];
       final gecenSure = nowTotalSeconds - vakitSaniyeleri[sonrakiIndex - 1];
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     }
@@ -170,11 +206,30 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
 
   String _getHicriAyAdi(int ay) {
     final aylar = [
-      '', 'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir',
-      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban', 'Ramazan',
-      'Şevval', 'Zilkade', 'Zilhicce'
+      '',
+      'Muharrem',
+      'Safer',
+      'Rebiülevvel',
+      'Rebiülahir',
+      'Cemaziyelevvel',
+      'Cemaziyelahir',
+      'Recep',
+      'Şaban',
+      'Ramazan',
+      'Şevval',
+      'Zilkade',
+      'Zilhicce',
     ];
     return aylar[ay];
+  }
+
+  double _moonPhaseFraction(DateTime date) {
+    // 2000-01-06 18:14 UTC yeni ay referansı
+    final reference = DateTime.utc(2000, 1, 6, 18, 14);
+    final days = date.toUtc().difference(reference).inSeconds / 86400.0;
+    const synodicMonth = 29.53058867;
+    final phase = (days % synodicMonth) / synodicMonth;
+    return phase < 0 ? phase + 1 : phase;
   }
 
   @override
@@ -185,7 +240,8 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
 
     final now = DateTime.now();
     final hicri = HijriCalendar.now();
-    final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
+    final hicriTarih =
+        '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
     final miladiTarih = DateFormat('dd MMMM yyyy', 'tr_TR').format(now);
 
     // Tema kontrolü: Varsayılansa orijinal, değilse tema renkleri
@@ -193,11 +249,21 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
     final temaRenkleri = _temaService.renkler;
 
     // Orijinal renkler veya tema renkleri
-    final primaryColor = kullanTemaRenkleri ? temaRenkleri.vurgu : const Color(0xFFFFF8DC);
-    final secondaryColor = kullanTemaRenkleri ? temaRenkleri.vurguSecondary : const Color(0xFFFFE4B5);
-    final bgColor1 = kullanTemaRenkleri ? temaRenkleri.arkaPlan : const Color(0xFF0A1628);
-    final bgColor2 = kullanTemaRenkleri ? temaRenkleri.kartArkaPlan : const Color(0xFF1E3A5F);
-    final textColor = kullanTemaRenkleri ? temaRenkleri.yaziPrimary : Colors.white;
+    final primaryColor = kullanTemaRenkleri
+        ? temaRenkleri.vurgu
+        : const Color(0xFFFFF8DC);
+    final secondaryColor = kullanTemaRenkleri
+        ? temaRenkleri.vurguSecondary
+        : const Color(0xFFFFE4B5);
+    final bgColor1 = kullanTemaRenkleri
+        ? temaRenkleri.arkaPlan
+        : const Color(0xFF0A1628);
+    final bgColor2 = kullanTemaRenkleri
+        ? temaRenkleri.kartArkaPlan
+        : const Color(0xFF1E3A5F);
+    final textColor = kullanTemaRenkleri
+        ? temaRenkleri.yaziPrimary
+        : Colors.white;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -221,68 +287,39 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
                 gradient: LinearGradient(
                   begin: Alignment.topCenter,
                   end: Alignment.bottomCenter,
-                  colors: [
-                    bgColor1,
-                    bgColor2,
-                    bgColor2.withOpacity(0.8),
-                  ],
+                  colors: [bgColor1, bgColor2, bgColor2.withOpacity(0.8)],
                 ),
               ),
             ),
-            
+
             // Yıldızlar
             AnimatedBuilder(
               animation: _twinkleController,
               builder: (context, child) {
                 return CustomPaint(
                   size: const Size(double.infinity, 240),
-                  painter: _StarsPainter(twinkle: _twinkleController.value, starColor: textColor),
+                  painter: _StarsPainter(
+                    twinkle: _twinkleController.value,
+                    starColor: textColor,
+                  ),
                 );
               },
             ),
-            
+
             // Hilal Ay
             Positioned(
               right: 30,
               top: 25,
-              child: Container(
-                width: 50,
-                height: 50,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  gradient: RadialGradient(
-                    colors: [
-                      primaryColor,
-                      secondaryColor,
-                    ],
-                  ),
-                  boxShadow: [
-                    BoxShadow(
-                      color: primaryColor.withOpacity(0.5),
-                      blurRadius: 20,
-                      spreadRadius: 5,
-                    ),
-                  ],
-                ),
-                child: Stack(
-                  children: [
-                    Positioned(
-                      left: 10,
-                      top: 0,
-                      child: Container(
-                        width: 40,
-                        height: 50,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: bgColor1,
-                        ),
-                      ),
-                    ),
-                  ],
+              child: CustomPaint(
+                size: const Size(50, 50),
+                painter: _MoonPhasePainter(
+                  phase: _moonPhaseFraction(DateTime.now()),
+                  glowColor: primaryColor,
+                  shadowColor: bgColor1,
                 ),
               ),
             ),
-            
+
             // İçerik
             Padding(
               padding: const EdgeInsets.all(24),
@@ -329,7 +366,11 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildNightTimeUnit(hours.toString().padLeft(2, '0'), textColor, primaryColor),
+                      _buildNightTimeUnit(
+                        hours.toString().padLeft(2, '0'),
+                        textColor,
+                        primaryColor,
+                      ),
                       Text(
                         ' : ',
                         style: TextStyle(
@@ -338,7 +379,11 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
                           color: primaryColor.withOpacity(0.6),
                         ),
                       ),
-                      _buildNightTimeUnit(minutes.toString().padLeft(2, '0'), textColor, primaryColor),
+                      _buildNightTimeUnit(
+                        minutes.toString().padLeft(2, '0'),
+                        textColor,
+                        primaryColor,
+                      ),
                       Text(
                         ' : ',
                         style: TextStyle(
@@ -347,7 +392,11 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
                           color: primaryColor.withOpacity(0.6),
                         ),
                       ),
-                      _buildNightTimeUnit(seconds.toString().padLeft(2, '0'), textColor, primaryColor),
+                      _buildNightTimeUnit(
+                        seconds.toString().padLeft(2, '0'),
+                        textColor,
+                        primaryColor,
+                      ),
                     ],
                   ),
 
@@ -355,13 +404,14 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
 
                   // Alt: Tarihler
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: textColor.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: primaryColor.withOpacity(0.2),
-                      ),
+                      border: Border.all(color: primaryColor.withOpacity(0.2)),
                     ),
                     child: Row(
                       mainAxisSize: MainAxisSize.min,
@@ -391,9 +441,9 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   // İlerleme Barı
                   _buildProgressBar(primaryColor, textColor),
                 ],
@@ -411,10 +461,7 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4),
         color: textColor.withOpacity(0.15),
-        border: Border.all(
-          color: textColor.withOpacity(0.1),
-          width: 0.5,
-        ),
+        border: Border.all(color: textColor.withOpacity(0.1), width: 0.5),
       ),
       child: Stack(
         children: [
@@ -468,10 +515,7 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
           color: textColor,
           fontFeatures: const [FontFeature.tabularFigures()],
           shadows: [
-            Shadow(
-              color: shadowColor.withOpacity(0.3),
-              blurRadius: 15,
-            ),
+            Shadow(color: shadowColor.withOpacity(0.3), blurRadius: 15),
           ],
         ),
       ),
@@ -488,17 +532,19 @@ class _StarsPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final random = math.Random(42);
-    final paint = Paint()..style = PaintingStyle.fill;
+    final paint = Paint()
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
 
     for (int i = 0; i < 50; i++) {
       final x = random.nextDouble() * size.width;
       final y = random.nextDouble() * size.height;
       final baseSize = random.nextDouble() * 2 + 0.5;
       final twinkleFactor = random.nextDouble();
-      
+
       final currentSize = baseSize * (0.5 + twinkle * twinkleFactor * 0.5);
       final opacity = 0.3 + twinkle * twinkleFactor * 0.7;
-      
+
       paint.color = starColor.withOpacity(opacity.clamp(0.0, 1.0));
       canvas.drawCircle(Offset(x, y), currentSize, paint);
     }
@@ -519,15 +565,68 @@ class _ProgressBarLinesPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = lineColor
-      ..strokeWidth = 1;
+      ..strokeWidth = 0.8
+      ..strokeCap = StrokeCap.round
+      ..isAntiAlias = true;
 
     for (double x = 0; x < size.width; x += 8) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+      final dx = x + 0.5;
+      canvas.drawLine(Offset(dx, 0), Offset(dx, size.height), paint);
     }
   }
 
   @override
   bool shouldRepaint(covariant _ProgressBarLinesPainter oldDelegate) {
     return oldDelegate.lineColor != lineColor;
+  }
+}
+
+class _MoonPhasePainter extends CustomPainter {
+  final double phase;
+  final Color glowColor;
+  final Color shadowColor;
+
+  _MoonPhasePainter({
+    required this.phase,
+    required this.glowColor,
+    required this.shadowColor,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
+
+    final glowPaint = Paint()
+      ..color = glowColor.withOpacity(0.35)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12)
+      ..isAntiAlias = true;
+
+    final lightPaint = Paint()
+      ..color = Colors.white.withOpacity(0.9)
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
+
+    final darkPaint = Paint()
+      ..color = shadowColor.withOpacity(0.9)
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
+
+    canvas.drawCircle(center, radius, glowPaint);
+
+    canvas.saveLayer(Offset.zero & size, Paint());
+    canvas.drawCircle(center, radius, lightPaint);
+
+    final t = phase <= 0.5 ? (phase / 0.5) : ((1 - phase) / 0.5);
+    final dx = (phase <= 0.5 ? -1 : 1) * (t * 2 * radius);
+    canvas.drawCircle(center.translate(dx, 0), radius, darkPaint);
+    canvas.restore();
+  }
+
+  @override
+  bool shouldRepaint(covariant _MoonPhasePainter oldDelegate) {
+    return oldDelegate.phase != phase ||
+        oldDelegate.glowColor != glowColor ||
+        oldDelegate.shadowColor != shadowColor;
   }
 }

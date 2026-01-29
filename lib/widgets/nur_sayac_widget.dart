@@ -72,9 +72,7 @@ class _NurSayacWidgetState extends State<NurSayacWidget>
     final ilceId = konum.ilceId;
 
     try {
-      final vakitler = await DiyanetApiService.getBugunVakitler(
-        ilceId,
-      );
+      final vakitler = await DiyanetApiService.getBugunVakitler(ilceId);
 
       if (mounted && vakitler != null) {
         setState(() {
@@ -103,6 +101,8 @@ class _NurSayacWidgetState extends State<NurSayacWidget>
 
     DateTime? gelecekVakitZamani;
     String? gelecekVakitIsmi;
+    String? gelecekVakitKey;
+    final vakitTimes = <String, DateTime>{};
 
     for (final vakit in vakitSirasi) {
       final vakitStr = _vakitler[vakit];
@@ -119,37 +119,57 @@ class _NurSayacWidgetState extends State<NurSayacWidget>
         int.parse(parts[1]),
       );
 
-      if (vakitZamani.isAfter(now)) {
+      vakitTimes[vakit] = vakitZamani;
+
+      if (gelecekVakitZamani == null && vakitZamani.isAfter(now)) {
         gelecekVakitZamani = vakitZamani;
         gelecekVakitIsmi = vakitIsimleri[vakit];
-        break;
+        gelecekVakitKey = vakit;
       }
     }
 
     if (gelecekVakitZamani == null) {
-      final imsakStr = _vakitler['Imsak'];
-      if (imsakStr != null) {
-        final parts = imsakStr.split(':');
-        if (parts.length == 2) {
-          gelecekVakitZamani = DateTime(
-            now.year,
-            now.month,
-            now.day + 1,
-            int.parse(parts[0]),
-            int.parse(parts[1]),
-          );
-          gelecekVakitIsmi = 'İmsak';
-        }
+      final imsakZamani = vakitTimes['Imsak'];
+      if (imsakZamani != null) {
+        gelecekVakitZamani = imsakZamani.add(const Duration(days: 1));
+        gelecekVakitIsmi = 'İmsak';
+        gelecekVakitKey = 'Imsak';
       }
     }
 
-    if (gelecekVakitZamani != null && gelecekVakitIsmi != null) {
+    if (gelecekVakitZamani != null &&
+        gelecekVakitIsmi != null &&
+        gelecekVakitKey != null) {
       final kalan = gelecekVakitZamani.difference(now);
-      final gunBaslangic = DateTime(now.year, now.month, now.day, 0, 0);
-      final gunBitis = DateTime(now.year, now.month, now.day, 23, 59, 59);
-      final gunSuresi = gunBitis.difference(gunBaslangic).inSeconds;
-      final gecenSure = now.difference(gunBaslangic).inSeconds;
-      final oran = (gecenSure / gunSuresi).clamp(0.0, 1.0);
+
+      final imsakToday = vakitTimes['Imsak'];
+      final yatsiToday = vakitTimes['Yatsi'];
+      DateTime? onceVakitZamani;
+
+      if (gelecekVakitKey == 'Imsak' &&
+          imsakToday != null &&
+          now.isBefore(imsakToday) &&
+          yatsiToday != null) {
+        onceVakitZamani = yatsiToday.subtract(const Duration(days: 1));
+      } else {
+        final nextIndex = vakitSirasi.indexOf(gelecekVakitKey);
+        if (nextIndex != -1) {
+          final prevKey =
+              vakitSirasi[(nextIndex - 1 + vakitSirasi.length) %
+                  vakitSirasi.length];
+          onceVakitZamani = vakitTimes[prevKey];
+        }
+        onceVakitZamani ??= yatsiToday;
+      }
+
+      onceVakitZamani ??= now;
+      final toplamSure = gelecekVakitZamani
+          .difference(onceVakitZamani)
+          .inSeconds;
+      final gecenSure = now.difference(onceVakitZamani).inSeconds;
+      final oran = toplamSure <= 0
+          ? 0.0
+          : (gecenSure / toplamSure).clamp(0.0, 1.0);
 
       setState(() {
         _gelecekVakit = gelecekVakitIsmi ?? '';
@@ -167,7 +187,8 @@ class _NurSayacWidgetState extends State<NurSayacWidget>
 
     final hijriNow = HijriCalendar.now();
     final miladi = DateFormat('d MMM yyyy', 'tr_TR').format(DateTime.now());
-    final hicri = '${hijriNow.hDay} ${_getHijriMonth(hijriNow.hMonth)} ${hijriNow.hYear}';
+    final hicri =
+        '${hijriNow.hDay} ${_getHijriMonth(hijriNow.hMonth)} ${hijriNow.hYear}';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -175,11 +196,7 @@ class _NurSayacWidgetState extends State<NurSayacWidget>
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            Color(0xFF1A237E),
-            Color(0xFF283593),
-            Color(0xFF3949AB),
-          ],
+          colors: [Color(0xFF1A237E), Color(0xFF283593), Color(0xFF3949AB)],
         ),
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
@@ -223,10 +240,7 @@ class _NurSayacWidgetState extends State<NurSayacWidget>
                     const Text(' • ', style: TextStyle(color: Colors.white38)),
                     Text(
                       hicri,
-                      style: const TextStyle(
-                        color: Colors.amber,
-                        fontSize: 11,
-                      ),
+                      style: const TextStyle(color: Colors.amber, fontSize: 11),
                     ),
                   ],
                 ),
@@ -235,10 +249,7 @@ class _NurSayacWidgetState extends State<NurSayacWidget>
                 AnimatedBuilder(
                   animation: _glowAnimation,
                   builder: (context, child) {
-                    return Opacity(
-                      opacity: _glowAnimation.value,
-                      child: child,
-                    );
+                    return Opacity(opacity: _glowAnimation.value, child: child);
                   },
                   child: Text(
                     _gelecekVakit,
@@ -289,10 +300,7 @@ class _NurSayacWidgetState extends State<NurSayacWidget>
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white.withOpacity(0.3), width: 2),
         boxShadow: [
-          BoxShadow(
-            color: Colors.white.withOpacity(0.1),
-            blurRadius: 8,
-          ),
+          BoxShadow(color: Colors.white.withOpacity(0.1), blurRadius: 8),
         ],
       ),
       child: Center(
@@ -325,33 +333,6 @@ class _NurSayacWidgetState extends State<NurSayacWidget>
   Widget _buildEcirBar() {
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Row(
-              children: [
-                const Icon(Icons.wb_sunny, color: Colors.amber, size: 14),
-                const SizedBox(width: 6),
-                const Text(
-                  'Gün İlerlemesi',
-                  style: TextStyle(
-                    color: Colors.white70,
-                    fontSize: 11,
-                  ),
-                ),
-              ],
-            ),
-            Text(
-              '${(_ecirOrani * 100).toInt()}%',
-              style: const TextStyle(
-                color: Colors.amber,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
         Container(
           height: 5,
           decoration: BoxDecoration(
@@ -386,9 +367,18 @@ class _NurSayacWidgetState extends State<NurSayacWidget>
 
   String _getHijriMonth(int month) {
     const months = [
-      'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir',
-      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban',
-      'Ramazan', 'Şevval', 'Zilkade', 'Zilhicce'
+      'Muharrem',
+      'Safer',
+      'Rebiülevvel',
+      'Rebiülahir',
+      'Cemaziyelevvel',
+      'Cemaziyelahir',
+      'Recep',
+      'Şaban',
+      'Ramazan',
+      'Şevval',
+      'Zilkade',
+      'Zilhicce',
     ];
     return months[month - 1];
   }

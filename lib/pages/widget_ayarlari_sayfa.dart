@@ -32,16 +32,17 @@ class WidgetAyarlariSayfa extends StatefulWidget {
   State<WidgetAyarlariSayfa> createState() => _WidgetAyarlariSayfaState();
 }
 
-class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTickerProviderStateMixin {
+class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa>
+    with SingleTickerProviderStateMixin {
   final LanguageService _languageService = LanguageService();
   late TabController _tabController;
-  
+
   // Her widget için ayrı ayarlar
   final Map<String, int> _secilenArkaPlanIndex = {};
   final Map<String, int> _secilenYaziRengiIndex = {};
   final Map<String, double> _seffaflik = {};
   final Map<String, bool> _seffafTema = {};
-  
+
   // Değişiklik takibi için başlangıç değerleri
   final Map<String, int> _baslangicArkaPlanIndex = {};
   final Map<String, int> _baslangicYaziRengiIndex = {};
@@ -228,10 +229,12 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
 
   /// Belirli bir widget'ta değişiklik var mı kontrol et
   bool _widgetDegisiklikVar(String widgetId) {
-    return _secilenArkaPlanIndex[widgetId] != _baslangicArkaPlanIndex[widgetId] ||
-           _secilenYaziRengiIndex[widgetId] != _baslangicYaziRengiIndex[widgetId] ||
-           _seffaflik[widgetId] != _baslangicSeffaflik[widgetId] ||
-           _seffafTema[widgetId] != _baslangicSeffafTema[widgetId];
+    return _secilenArkaPlanIndex[widgetId] !=
+            _baslangicArkaPlanIndex[widgetId] ||
+        _secilenYaziRengiIndex[widgetId] !=
+            _baslangicYaziRengiIndex[widgetId] ||
+        _seffaflik[widgetId] != _baslangicSeffaflik[widgetId] ||
+        _seffafTema[widgetId] != _baslangicSeffafTema[widgetId];
   }
 
   /// Değişiklik yapılmış widget'ların ID'lerini döndür
@@ -257,7 +260,9 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
     final sonuc = await showDialog<String>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(_languageService['unsaved_changes'] ?? 'Kaydedilmemiş Değişiklikler'),
+        title: Text(
+          _languageService['unsaved_changes'] ?? 'Kaydedilmemiş Değişiklikler',
+        ),
         content: Text(
           '${_languageService['widget_unsaved_changes_message']?.replaceAll('{widget}', widgetIsmi) ?? '$widgetIsmi üzerinde yaptığınız değişiklikler kaydedilsin mi?'}',
         ),
@@ -357,30 +362,37 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
 
   Future<void> _ayarlariYukle() async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     setState(() {
       for (final widget in _widgetTurleri) {
         final id = widget.id;
-        
+
         // Her widget için kaydedilmiş ayarları yükle, yoksa varsayılanı kullan
         final savedArkaPlanKey = prefs.getString('widget_${id}_arkaplan_key');
-        final savedYaziRengiHex = prefs.getString('widget_${id}_yazi_rengi_hex');
-        
+        final savedYaziRengiHex = prefs.getString(
+          'widget_${id}_yazi_rengi_hex',
+        );
+
         if (savedArkaPlanKey != null) {
           _secilenArkaPlanIndex[id] = _arkaPlanKeyToIndex(savedArkaPlanKey);
         } else {
-          _secilenArkaPlanIndex[id] = _arkaPlanKeyToIndex(widget.varsayilanArkaPlanKey);
+          _secilenArkaPlanIndex[id] = _arkaPlanKeyToIndex(
+            widget.varsayilanArkaPlanKey,
+          );
         }
-        
+
         if (savedYaziRengiHex != null) {
           _secilenYaziRengiIndex[id] = _yaziRengiHexToIndex(savedYaziRengiHex);
         } else {
-          _secilenYaziRengiIndex[id] = _yaziRengiHexToIndex(widget.varsayilanYaziRengiHex);
+          _secilenYaziRengiIndex[id] = _yaziRengiHexToIndex(
+            widget.varsayilanYaziRengiHex,
+          );
         }
-        
-        _seffaflik[id] = (prefs.getDouble('widget_${id}_seffaflik') ?? 1.0).clamp(0.3, 1.0);
+
+        _seffaflik[id] = (prefs.getDouble('widget_${id}_seffaflik') ?? 1.0)
+            .clamp(0.3, 1.0);
         _seffafTema[id] = prefs.getBool('widget_${id}_seffaf_tema') ?? false;
-        
+
         // Başlangıç değerlerini kaydet (değişiklik takibi için)
         _baslangicArkaPlanIndex[id] = _secilenArkaPlanIndex[id]!;
         _baslangicYaziRengiIndex[id] = _secilenYaziRengiIndex[id]!;
@@ -392,21 +404,24 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
 
   Future<void> _widgetAyarlariniKaydet(String widgetId) async {
     final prefs = await SharedPreferences.getInstance();
-    
+
     final arkaPlanIndex = _secilenArkaPlanIndex[widgetId] ?? 0;
     final yaziRengiIndex = _secilenYaziRengiIndex[widgetId] ?? 0;
     final seffaflik = _seffaflik[widgetId] ?? 1.0;
     final seffafTema = _seffafTema[widgetId] ?? false;
-    
+
     final arkaPlan = _arkaPlanSecenekleri[arkaPlanIndex];
     final yaziRengi = _yaziRengiSecenekleri[yaziRengiIndex];
-    
+
     // Widget'a özel ayarları kaydet
     await prefs.setString('widget_${widgetId}_arkaplan_key', arkaPlan['key']);
-    await prefs.setString('widget_${widgetId}_yazi_rengi_hex', yaziRengi['hex']);
+    await prefs.setString(
+      'widget_${widgetId}_yazi_rengi_hex',
+      yaziRengi['hex'],
+    );
     await prefs.setDouble('widget_${widgetId}_seffaflik', seffaflik);
     await prefs.setBool('widget_${widgetId}_seffaf_tema', seffafTema);
-    
+
     // Widget verilerini güncelle
     await HomeWidgetService.updateWidgetColorsForWidget(
       widgetId: widgetId,
@@ -414,7 +429,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
       yaziRengiHex: yaziRengi['hex'],
       seffaflik: seffafTema ? 0.0 : seffaflik,
     );
-    
+
     // Başlangıç değerlerini güncelle (değişiklik takibi için)
     _baslangicArkaPlanIndex[widgetId] = arkaPlanIndex;
     _baslangicYaziRengiIndex[widgetId] = yaziRengiIndex;
@@ -424,7 +439,9 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${_getWidgetIsim(widgetId)} ${_languageService['settings_applied'] ?? 'ayarları kaydedildi'}'),
+          content: Text(
+            '${_getWidgetIsim(widgetId)} ${_languageService['settings_applied'] ?? 'ayarları kaydedildi'}',
+          ),
           backgroundColor: Colors.green,
         ),
       );
@@ -433,10 +450,14 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
 
   Future<void> _widgetVarsayilanaGetir(String widgetId) async {
     final widget = _widgetTurleri.firstWhere((w) => w.id == widgetId);
-    
+
     setState(() {
-      _secilenArkaPlanIndex[widgetId] = _arkaPlanKeyToIndex(widget.varsayilanArkaPlanKey);
-      _secilenYaziRengiIndex[widgetId] = _yaziRengiHexToIndex(widget.varsayilanYaziRengiHex);
+      _secilenArkaPlanIndex[widgetId] = _arkaPlanKeyToIndex(
+        widget.varsayilanArkaPlanKey,
+      );
+      _secilenYaziRengiIndex[widgetId] = _yaziRengiHexToIndex(
+        widget.varsayilanYaziRengiHex,
+      );
       _seffaflik[widgetId] = 1.0;
       _seffafTema[widgetId] = false;
     });
@@ -446,7 +467,9 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text('${_getWidgetIsim(widget.id)} ${_languageService['reset_to_original'] ?? 'orijinal tasarımına döndürüldü'}'),
+          content: Text(
+            '${_getWidgetIsim(widget.id)} ${_languageService['reset_to_original'] ?? 'orijinal tasarımına döndürüldü'}',
+          ),
           backgroundColor: Colors.orange,
         ),
       );
@@ -456,8 +479,12 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
   Future<void> _tumWidgetlariVarsayilanaGetir() async {
     for (final widget in _widgetTurleri) {
       setState(() {
-        _secilenArkaPlanIndex[widget.id] = _arkaPlanKeyToIndex(widget.varsayilanArkaPlanKey);
-        _secilenYaziRengiIndex[widget.id] = _yaziRengiHexToIndex(widget.varsayilanYaziRengiHex);
+        _secilenArkaPlanIndex[widget.id] = _arkaPlanKeyToIndex(
+          widget.varsayilanArkaPlanKey,
+        );
+        _secilenYaziRengiIndex[widget.id] = _yaziRengiHexToIndex(
+          widget.varsayilanYaziRengiHex,
+        );
         _seffaflik[widget.id] = 1.0;
         _seffafTema[widget.id] = false;
       });
@@ -467,7 +494,10 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(
-          content: Text(_languageService['all_widgets_reset'] ?? 'Tüm widget\'lar orijinal tasarımlarına döndürüldü'),
+          content: Text(
+            _languageService['all_widgets_reset'] ??
+                'Tüm widget\'lar orijinal tasarımlarına döndürüldü',
+          ),
           backgroundColor: Colors.orange,
         ),
       );
@@ -477,13 +507,16 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
   /// Widget'ı ekrana ekleme dialogu göster
   Future<void> _widgetEkranaEkleDialoguGoster(String widgetId) async {
     final widget = _widgetTurleri.firstWhere((w) => w.id == widgetId);
-    
+
     final result = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
         title: Row(
           children: [
-            Icon(Icons.add_to_home_screen, color: Theme.of(context).colorScheme.primary),
+            Icon(
+              Icons.add_to_home_screen,
+              color: Theme.of(context).colorScheme.primary,
+            ),
             const SizedBox(width: 12),
             Expanded(
               child: Text(
@@ -511,12 +544,16 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.warning_amber_rounded, color: Colors.orange, size: 24),
+                  const Icon(
+                    Icons.warning_amber_rounded,
+                    color: Colors.orange,
+                    size: 24,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
-                      _languageService['widget_pin_warning'] ?? 
-                      'Kabul ederseniz ana ekranınızdaki uygulama kısayollarının yeri değişebilir.',
+                      _languageService['widget_pin_warning'] ??
+                          'Kabul ederseniz ana ekranınızdaki uygulama kısayollarının yeri değişebilir.',
                       style: TextStyle(
                         fontSize: 13,
                         color: Colors.orange.shade800,
@@ -549,23 +586,27 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
     if (result == true && mounted) {
       // Önce ayarları kaydet
       await _widgetAyarlariniKaydet(widgetId);
-      
+
       // Widget'ı ekrana ekle
       final success = await WidgetPinService.pinWidget(widgetId);
-      
+
       if (mounted) {
         if (success) {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text('${_getWidgetIsim(widget.id)} ${_languageService['widget_pin_sent'] ?? 'ekleme isteği gönderildi'}'),
+              content: Text(
+                '${_getWidgetIsim(widget.id)} ${_languageService['widget_pin_sent'] ?? 'ekleme isteği gönderildi'}',
+              ),
               backgroundColor: Colors.green,
             ),
           );
         } else {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
-              content: Text(_languageService['widget_pin_not_supported'] ?? 
-                'Bu cihaz widget eklemeyi desteklemiyor'),
+              content: Text(
+                _languageService['widget_pin_not_supported'] ??
+                    'Bu cihaz widget eklemeyi desteklemiyor',
+              ),
               backgroundColor: Colors.red,
             ),
           );
@@ -584,50 +625,59 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
       onPopInvokedWithResult: (didPop, result) async {
         if (didPop) return;
         final izinVerildi = await _cikisOnayiGoster();
-        if (izinVerildi && mounted) {
+        if (izinVerildi && context.mounted) {
           Navigator.of(context).pop();
         }
       },
       child: Scaffold(
-      appBar: AppBar(
-        title: Text(_languageService['widget_settings_title'] ?? 'Widget Ayarları'),
-        bottom: TabBar(
-          controller: _tabController,
-          isScrollable: true,
-          tabs: _widgetTurleri.map((w) => Tab(
-            icon: Icon(w.icon, size: 20),
-            text: _getWidgetIsim(w.id).split(' ').first,
-          )).toList(),
-        ),
-        actions: [
-          PopupMenuButton<String>(
-            icon: const Icon(Icons.more_vert),
-            onSelected: (value) {
-              if (value == 'reset_all') {
-                _tumWidgetlariVarsayilanaGetir();
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'reset_all',
-                child: Row(
-                  children: [
-                    const Icon(Icons.restore, size: 20),
-                    const SizedBox(width: 8),
-                    Text(_languageService['reset_all_widgets'] ?? 'Tümünü Varsayılana Dön'),
-                  ],
-                ),
-              ),
-            ],
+        appBar: AppBar(
+          title: Text(
+            _languageService['widget_settings_title'] ?? 'Widget Ayarları',
           ),
-        ],
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: _widgetTurleri.map((widget) => 
-          _buildWidgetAyarlari(widget, isDark)
-        ).toList(),
-      ),
+          bottom: TabBar(
+            controller: _tabController,
+            isScrollable: true,
+            tabs: _widgetTurleri
+                .map(
+                  (w) => Tab(
+                    icon: Icon(w.icon, size: 20),
+                    text: _getWidgetIsim(w.id).split(' ').first,
+                  ),
+                )
+                .toList(),
+          ),
+          actions: [
+            PopupMenuButton<String>(
+              icon: const Icon(Icons.more_vert),
+              onSelected: (value) {
+                if (value == 'reset_all') {
+                  _tumWidgetlariVarsayilanaGetir();
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'reset_all',
+                  child: Row(
+                    children: [
+                      const Icon(Icons.restore, size: 20),
+                      const SizedBox(width: 8),
+                      Text(
+                        _languageService['reset_all_widgets'] ??
+                            'Tümünü Varsayılana Dön',
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
+        body: TabBarView(
+          controller: _tabController,
+          children: _widgetTurleri
+              .map((widget) => _buildWidgetAyarlari(widget, isDark))
+              .toList(),
+        ),
       ),
     );
   }
@@ -658,7 +708,11 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
                     ),
                     borderRadius: BorderRadius.circular(12),
                   ),
-                  child: Icon(widget.icon, color: widget.varsayilanYaziRengi, size: 28),
+                  child: Icon(
+                    widget.icon,
+                    color: widget.varsayilanYaziRengi,
+                    size: 28,
+                  ),
                 ),
                 const SizedBox(width: 16),
                 Expanded(
@@ -667,16 +721,15 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
                     children: [
                       Text(
                         _getWidgetIsim(widget.id),
-                        style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          fontWeight: FontWeight.bold,
-                        ),
+                        style: Theme.of(context).textTheme.titleMedium
+                            ?.copyWith(fontWeight: FontWeight.bold),
                       ),
                       const SizedBox(height: 4),
                       Text(
                         _getWidgetAciklama(widget.id),
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: Colors.grey,
-                        ),
+                        style: Theme.of(
+                          context,
+                        ).textTheme.bodySmall?.copyWith(color: Colors.grey),
                       ),
                     ],
                   ),
@@ -688,14 +741,24 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
         const SizedBox(height: 16),
 
         // Önizleme
-        _buildOnizleme(id, isDark, arkaPlanIndex, yaziRengiIndex, seffaflik, seffafTema),
+        _buildOnizleme(
+          id,
+          isDark,
+          arkaPlanIndex,
+          yaziRengiIndex,
+          seffaflik,
+          seffafTema,
+        ),
         const SizedBox(height: 24),
 
         // Şeffaf Tema Switch
         Card(
           child: SwitchListTile(
             title: Text(_languageService['transparent_theme'] ?? 'Şeffaf Tema'),
-            subtitle: Text(_languageService['transparent_theme_description'] ?? 'Arka planı tamamen şeffaf yapar'),
+            subtitle: Text(
+              _languageService['transparent_theme_description'] ??
+                  'Arka planı tamamen şeffaf yapar',
+            ),
             value: seffafTema,
             onChanged: (value) {
               setState(() {
@@ -705,7 +768,10 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
                 }
               });
             },
-            secondary: Icon(Icons.opacity, color: Theme.of(context).colorScheme.primary),
+            secondary: Icon(
+              Icons.opacity,
+              color: Theme.of(context).colorScheme.primary,
+            ),
           ),
         ),
         const SizedBox(height: 16),
@@ -714,9 +780,9 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
         if (!seffafTema) ...[
           Text(
             _languageService['background_color'] ?? 'Arka Plan Rengi',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           const SizedBox(height: 12),
           _buildArkaPlanSecimi(id, arkaPlanIndex),
@@ -725,9 +791,9 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
           // Şeffaflık Ayarı
           Text(
             '${_languageService['opacity'] ?? 'Şeffaflık'}: ${(seffaflik * 100).toInt()}%',
-            style: Theme.of(context).textTheme.titleMedium?.copyWith(
-              fontWeight: FontWeight.bold,
-            ),
+            style: Theme.of(
+              context,
+            ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
           ),
           Slider(
             value: seffaflik.clamp(0.3, 1.0),
@@ -747,9 +813,9 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
         // Yazı Rengi Seçimi
         Text(
           _languageService['text_color'] ?? 'Yazı Rengi',
-          style: Theme.of(context).textTheme.titleMedium?.copyWith(
-            fontWeight: FontWeight.bold,
-          ),
+          style: Theme.of(
+            context,
+          ).textTheme.titleMedium?.copyWith(fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 12),
         _buildYaziRengiSecimi(id, yaziRengiIndex),
@@ -767,12 +833,15 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
             padding: const EdgeInsets.all(16),
             child: Row(
               children: [
-                Icon(Icons.info_outline, color: Theme.of(context).colorScheme.primary),
+                Icon(
+                  Icons.info_outline,
+                  color: Theme.of(context).colorScheme.primary,
+                ),
                 const SizedBox(width: 12),
                 Expanded(
                   child: Text(
-                    _languageService['widget_specific_info'] ?? 
-                    'Bu ayarlar sadece seçili widget\'a uygulanır. Widget\'ı kaldırıp tekrar ekleyin.',
+                    _languageService['widget_specific_info'] ??
+                        'Bu ayarlar sadece seçili widget\'a uygulanır. Widget\'ı kaldırıp tekrar ekleyin.',
                     style: Theme.of(context).textTheme.bodySmall,
                   ),
                 ),
@@ -786,7 +855,9 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
         OutlinedButton.icon(
           onPressed: () => _widgetVarsayilanaGetir(id),
           icon: const Icon(Icons.restore),
-          label: Text('${_getWidgetIsim(widget.id)} ${_languageService['reset_to_default'] ?? 'Varsayılana Dön'}'),
+          label: Text(
+            '${_getWidgetIsim(widget.id)} ${_languageService['reset_to_default'] ?? 'Varsayılana Dön'}',
+          ),
           style: OutlinedButton.styleFrom(
             padding: const EdgeInsets.symmetric(vertical: 16),
             foregroundColor: Colors.orange,
@@ -813,7 +884,9 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
           ElevatedButton.icon(
             onPressed: () => _widgetEkranaEkleDialoguGoster(id),
             icon: const Icon(Icons.add_to_home_screen),
-            label: Text(_languageService['add_to_home_screen'] ?? 'Ana Ekrana Ekle'),
+            label: Text(
+              _languageService['add_to_home_screen'] ?? 'Ana Ekrana Ekle',
+            ),
             style: ElevatedButton.styleFrom(
               padding: const EdgeInsets.symmetric(vertical: 16),
               backgroundColor: Colors.green,
@@ -825,10 +898,22 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
     );
   }
 
-  Widget _buildOnizleme(String widgetId, bool isDark, int arkaPlanIndex, int yaziRengiIndex, double seffaflik, bool seffafTema) {
+  Widget _buildOnizleme(
+    String widgetId,
+    bool isDark,
+    int arkaPlanIndex,
+    int yaziRengiIndex,
+    double seffaflik,
+    bool seffafTema,
+  ) {
     final arkaPlan = _arkaPlanSecenekleri[arkaPlanIndex];
     final yaziRengi = _yaziRengiSecenekleri[yaziRengiIndex]['renk'] as Color;
-    final yaziRengiSecondary = Color.fromRGBO(yaziRengi.red, yaziRengi.green, yaziRengi.blue, 0.7);
+    final yaziRengiSecondary = Color.fromRGBO(
+      yaziRengi.red,
+      yaziRengi.green,
+      yaziRengi.blue,
+      0.7,
+    );
 
     final Color renk1 = seffafTema
         ? Colors.transparent
@@ -850,29 +935,104 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
     // Her widget türü için özel önizleme
     switch (widgetId) {
       case 'klasik':
-        return _buildKlasikOnizleme(renk1, renk2, yaziRengi, yaziRengiSecondary, seffafTema, isDark);
+        return _buildKlasikOnizleme(
+          renk1,
+          renk2,
+          yaziRengi,
+          yaziRengiSecondary,
+          seffafTema,
+          isDark,
+        );
       case 'mini':
-        return _buildMiniOnizleme(renk1, renk2, yaziRengi, yaziRengiSecondary, seffafTema, isDark);
+        return _buildMiniOnizleme(
+          renk1,
+          renk2,
+          yaziRengi,
+          yaziRengiSecondary,
+          seffafTema,
+          isDark,
+        );
       case 'glass':
-        return _buildGlassOnizleme(renk1, renk2, yaziRengi, yaziRengiSecondary, seffafTema, isDark);
+        return _buildGlassOnizleme(
+          renk1,
+          renk2,
+          yaziRengi,
+          yaziRengiSecondary,
+          seffafTema,
+          isDark,
+        );
       case 'neon':
-        return _buildNeonOnizleme(renk1, renk2, yaziRengi, yaziRengiSecondary, seffafTema, isDark);
+        return _buildNeonOnizleme(
+          renk1,
+          renk2,
+          yaziRengi,
+          yaziRengiSecondary,
+          seffafTema,
+          isDark,
+        );
       case 'cosmic':
-        return _buildCosmicOnizleme(renk1, renk2, yaziRengi, yaziRengiSecondary, seffafTema, isDark);
+        return _buildCosmicOnizleme(
+          renk1,
+          renk2,
+          yaziRengi,
+          yaziRengiSecondary,
+          seffafTema,
+          isDark,
+        );
       case 'timeline':
-        return _buildTimelineOnizleme(renk1, renk2, yaziRengi, yaziRengiSecondary, seffafTema, isDark);
+        return _buildTimelineOnizleme(
+          renk1,
+          renk2,
+          yaziRengi,
+          yaziRengiSecondary,
+          seffafTema,
+          isDark,
+        );
       case 'zen':
-        return _buildZenOnizleme(renk1, renk2, yaziRengi, yaziRengiSecondary, seffafTema, isDark);
+        return _buildZenOnizleme(
+          renk1,
+          renk2,
+          yaziRengi,
+          yaziRengiSecondary,
+          seffafTema,
+          isDark,
+        );
       case 'origami':
-        return _buildOrigamiOnizleme(renk1, renk2, yaziRengi, yaziRengiSecondary, seffafTema, isDark);
+        return _buildOrigamiOnizleme(
+          renk1,
+          renk2,
+          yaziRengi,
+          yaziRengiSecondary,
+          seffafTema,
+          isDark,
+        );
       default:
-        return _buildKlasikOnizleme(renk1, renk2, yaziRengi, yaziRengiSecondary, seffafTema, isDark);
+        return _buildKlasikOnizleme(
+          renk1,
+          renk2,
+          yaziRengi,
+          yaziRengiSecondary,
+          seffafTema,
+          isDark,
+        );
     }
   }
 
   // ==================== KLASİK TURUNCU WİDGET ====================
-  Widget _buildKlasikOnizleme(Color renk1, Color renk2, Color yaziRengi, Color yaziRengiSecondary, bool seffafTema, bool isDark) {
-    return _buildOnizlemeContainer(renk1, renk2, seffafTema, isDark, 160,
+  Widget _buildKlasikOnizleme(
+    Color renk1,
+    Color renk2,
+    Color yaziRengi,
+    Color yaziRengiSecondary,
+    bool seffafTema,
+    bool isDark,
+  ) {
+    return _buildOnizlemeContainer(
+      renk1,
+      renk2,
+      seffafTema,
+      isDark,
+      160,
       Padding(
         padding: const EdgeInsets.all(8),
         child: Column(
@@ -881,23 +1041,53 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
             // Üst: Başlık ve sonraki vakit
             Row(
               children: [
-                Text('NAMAZ', style: TextStyle(color: yaziRengi, fontSize: 10, fontWeight: FontWeight.bold)),
-                Text(' VAKTİ', style: TextStyle(color: yaziRengiSecondary, fontSize: 10)),
+                Text(
+                  'NAMAZ',
+                  style: TextStyle(
+                    color: yaziRengi,
+                    fontSize: 10,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  ' VAKTİ',
+                  style: TextStyle(color: yaziRengiSecondary, fontSize: 10),
+                ),
                 const Spacer(),
-                Text('İmsak Vaktine Kalan', style: TextStyle(color: yaziRengiSecondary, fontSize: 9)),
+                Text(
+                  'İmsak Vaktine Kalan',
+                  style: TextStyle(color: yaziRengiSecondary, fontSize: 9),
+                ),
               ],
             ),
             const SizedBox(height: 4),
             // Orta: Sayaç ve Tarih
             Row(
               children: [
-                Text('07:25:12', style: TextStyle(color: yaziRengi, fontSize: 28, fontWeight: FontWeight.bold)),
+                Text(
+                  '07:25:12',
+                  style: TextStyle(
+                    color: yaziRengi,
+                    fontSize: 28,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const Spacer(),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text('28 Recep 1447', style: TextStyle(color: yaziRengi, fontSize: 11)),
-                    Text('İSTANBUL', style: TextStyle(color: yaziRengiSecondary, fontSize: 9, fontWeight: FontWeight.bold)),
+                    Text(
+                      '28 Recep 1447',
+                      style: TextStyle(color: yaziRengi, fontSize: 11),
+                    ),
+                    Text(
+                      'İSTANBUL',
+                      style: TextStyle(
+                        color: yaziRengiSecondary,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -907,12 +1097,48 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                _vakitKutusu('İmsak', '05:47', yaziRengi, yaziRengiSecondary, true),
-                _vakitKutusu('Güneş', '07:22', yaziRengi, yaziRengiSecondary, false),
-                _vakitKutusu('Öğle', '12:30', yaziRengi, yaziRengiSecondary, false),
-                _vakitKutusu('İkindi', '15:14', yaziRengi, yaziRengiSecondary, false),
-                _vakitKutusu('Akşam', '17:32', yaziRengi, yaziRengiSecondary, false),
-                _vakitKutusu('Yatsı', '18:57', yaziRengi, yaziRengiSecondary, false),
+                _vakitKutusu(
+                  'İmsak',
+                  '05:47',
+                  yaziRengi,
+                  yaziRengiSecondary,
+                  true,
+                ),
+                _vakitKutusu(
+                  'Güneş',
+                  '07:22',
+                  yaziRengi,
+                  yaziRengiSecondary,
+                  false,
+                ),
+                _vakitKutusu(
+                  'Öğle',
+                  '12:30',
+                  yaziRengi,
+                  yaziRengiSecondary,
+                  false,
+                ),
+                _vakitKutusu(
+                  'İkindi',
+                  '15:14',
+                  yaziRengi,
+                  yaziRengiSecondary,
+                  false,
+                ),
+                _vakitKutusu(
+                  'Akşam',
+                  '17:32',
+                  yaziRengi,
+                  yaziRengiSecondary,
+                  false,
+                ),
+                _vakitKutusu(
+                  'Yatsı',
+                  '18:57',
+                  yaziRengi,
+                  yaziRengiSecondary,
+                  false,
+                ),
               ],
             ),
           ],
@@ -921,18 +1147,49 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
     );
   }
 
-  Widget _vakitKutusu(String isim, String saat, Color yaziRengi, Color yaziRengiSecondary, bool aktif) {
+  Widget _vakitKutusu(
+    String isim,
+    String saat,
+    Color yaziRengi,
+    Color yaziRengiSecondary,
+    bool aktif,
+  ) {
     return Column(
       children: [
-        Text(isim, style: TextStyle(color: aktif ? yaziRengi : yaziRengiSecondary, fontSize: 8)),
-        Text(saat, style: TextStyle(color: aktif ? yaziRengi : yaziRengiSecondary, fontSize: 10, fontWeight: aktif ? FontWeight.bold : FontWeight.normal)),
+        Text(
+          isim,
+          style: TextStyle(
+            color: aktif ? yaziRengi : yaziRengiSecondary,
+            fontSize: 8,
+          ),
+        ),
+        Text(
+          saat,
+          style: TextStyle(
+            color: aktif ? yaziRengi : yaziRengiSecondary,
+            fontSize: 10,
+            fontWeight: aktif ? FontWeight.bold : FontWeight.normal,
+          ),
+        ),
       ],
     );
   }
 
   // ==================== MİNİ SUNSET WİDGET ====================
-  Widget _buildMiniOnizleme(Color renk1, Color renk2, Color yaziRengi, Color yaziRengiSecondary, bool seffafTema, bool isDark) {
-    return _buildOnizlemeContainer(renk1, renk2, seffafTema, isDark, 120,
+  Widget _buildMiniOnizleme(
+    Color renk1,
+    Color renk2,
+    Color yaziRengi,
+    Color yaziRengiSecondary,
+    bool seffafTema,
+    bool isDark,
+  ) {
+    return _buildOnizlemeContainer(
+      renk1,
+      renk2,
+      seffafTema,
+      isDark,
+      120,
       Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
@@ -941,25 +1198,52 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
             // Üst: Konum ve tarih
             Row(
               children: [
-                Text('İstanbul, Küçükçekmece', style: TextStyle(color: yaziRengi, fontSize: 11, fontWeight: FontWeight.bold)),
+                Text(
+                  'İstanbul, Küçükçekmece',
+                  style: TextStyle(
+                    color: yaziRengi,
+                    fontSize: 11,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const Spacer(),
-                Text('28 Recep • 17 Ocak', style: TextStyle(color: yaziRengiSecondary, fontSize: 9)),
+                Text(
+                  '28 Recep • 17 Ocak',
+                  style: TextStyle(color: yaziRengiSecondary, fontSize: 9),
+                ),
               ],
             ),
             const SizedBox(height: 8),
             // Orta: Geri sayım
             Row(
               children: [
-                Text('18:39', style: TextStyle(color: yaziRengi, fontSize: 22, fontWeight: FontWeight.bold)),
+                Text(
+                  '18:39',
+                  style: TextStyle(
+                    color: yaziRengi,
+                    fontSize: 22,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const Spacer(),
-                Text('Akşam Vaktine Kalan', style: TextStyle(color: yaziRengiSecondary, fontSize: 10)),
+                Text(
+                  'Akşam Vaktine Kalan',
+                  style: TextStyle(color: yaziRengiSecondary, fontSize: 10),
+                ),
               ],
             ),
             const Spacer(),
             // Alt: Ecir barı
             Row(
               children: [
-                Text('ECİR', style: TextStyle(color: const Color(0xFF00C853), fontSize: 9, fontWeight: FontWeight.bold)),
+                Text(
+                  'ECİR',
+                  style: TextStyle(
+                    color: const Color(0xFF00C853),
+                    fontSize: 9,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
                 const SizedBox(width: 8),
                 Expanded(
                   child: Container(
@@ -981,7 +1265,10 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
                   ),
                 ),
                 const SizedBox(width: 8),
-                Text('60%', style: TextStyle(color: const Color(0xFF00C853), fontSize: 9)),
+                Text(
+                  '60%',
+                  style: TextStyle(color: const Color(0xFF00C853), fontSize: 9),
+                ),
               ],
             ),
           ],
@@ -991,24 +1278,63 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
   }
 
   // ==================== GLASSMORPHISM WİDGET ====================
-  Widget _buildGlassOnizleme(Color renk1, Color renk2, Color yaziRengi, Color yaziRengiSecondary, bool seffafTema, bool isDark) {
-    return _buildOnizlemeContainer(renk1, renk2, seffafTema, isDark, 140,
+  Widget _buildGlassOnizleme(
+    Color renk1,
+    Color renk2,
+    Color yaziRengi,
+    Color yaziRengiSecondary,
+    bool seffafTema,
+    bool isDark,
+  ) {
+    return _buildOnizlemeContainer(
+      renk1,
+      renk2,
+      seffafTema,
+      isDark,
+      140,
       Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             // Üst
-            Text('Şu an Güneş vaktinde', style: TextStyle(color: yaziRengiSecondary, fontSize: 10)),
-            Text('28 Recep 1447', style: TextStyle(color: yaziRengi, fontSize: 11)),
-            Text('21 Ocak 2026', style: TextStyle(color: yaziRengiSecondary, fontSize: 10)),
+            Text(
+              'Şu an Güneş vaktinde',
+              style: TextStyle(color: yaziRengiSecondary, fontSize: 10),
+            ),
+            Text(
+              '28 Recep 1447',
+              style: TextStyle(color: yaziRengi, fontSize: 11),
+            ),
+            Text(
+              '21 Ocak 2026',
+              style: TextStyle(color: yaziRengiSecondary, fontSize: 10),
+            ),
             const Spacer(),
             // Orta
-            Text("Öğle'ye", style: TextStyle(color: yaziRengi, fontSize: 14, fontWeight: FontWeight.bold)),
-            Text('02:30:45', style: TextStyle(color: yaziRengi, fontSize: 28, fontWeight: FontWeight.w200, letterSpacing: 2)),
+            Text(
+              "Öğle'ye",
+              style: TextStyle(
+                color: yaziRengi,
+                fontSize: 14,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+            Text(
+              '02:30:45',
+              style: TextStyle(
+                color: yaziRengi,
+                fontSize: 28,
+                fontWeight: FontWeight.w200,
+                letterSpacing: 2,
+              ),
+            ),
             const Spacer(),
             // Alt: Progress
-            Text('Vakit İlerlemesi', style: TextStyle(color: yaziRengiSecondary, fontSize: 8)),
+            Text(
+              'Vakit İlerlemesi',
+              style: TextStyle(color: yaziRengiSecondary, fontSize: 8),
+            ),
             const SizedBox(height: 4),
             Container(
               height: 3,
@@ -1029,7 +1355,10 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
             ),
             const SizedBox(height: 8),
             // Konum
-            Text('İstanbul', style: TextStyle(color: yaziRengiSecondary, fontSize: 10)),
+            Text(
+              'İstanbul',
+              style: TextStyle(color: yaziRengiSecondary, fontSize: 10),
+            ),
           ],
         ),
       ),
@@ -1037,11 +1366,23 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
   }
 
   // ==================== NEON GLOW WİDGET ====================
-  Widget _buildNeonOnizleme(Color renk1, Color renk2, Color yaziRengi, Color yaziRengiSecondary, bool seffafTema, bool isDark) {
+  Widget _buildNeonOnizleme(
+    Color renk1,
+    Color renk2,
+    Color yaziRengi,
+    Color yaziRengiSecondary,
+    bool seffafTema,
+    bool isDark,
+  ) {
     final neonColor = yaziRengi;
     final pinkNeon = Color.lerp(yaziRengi, Colors.pink, 0.5) ?? Colors.pink;
-    
-    return _buildOnizlemeContainer(renk1, renk2, seffafTema, isDark, 150,
+
+    return _buildOnizlemeContainer(
+      renk1,
+      renk2,
+      seffafTema,
+      isDark,
+      150,
       Stack(
         children: [
           Padding(
@@ -1052,24 +1393,61 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
                 Align(
                   alignment: Alignment.topLeft,
                   child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 3,
+                    ),
                     decoration: BoxDecoration(
                       borderRadius: BorderRadius.circular(4),
-                      border: Border.all(color: neonColor.withValues(alpha: 0.5)),
+                      border: Border.all(
+                        color: neonColor.withValues(alpha: 0.5),
+                      ),
                     ),
-                    child: Text('Güneş', style: TextStyle(color: neonColor, fontSize: 9, fontWeight: FontWeight.bold)),
+                    child: Text(
+                      'Güneş',
+                      style: TextStyle(
+                        color: neonColor,
+                        fontSize: 9,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ),
                 ),
                 const Spacer(),
                 // Orta
-                Text('ÖĞLE', style: TextStyle(color: pinkNeon, fontSize: 18, fontWeight: FontWeight.bold, letterSpacing: 2, shadows: [Shadow(color: pinkNeon, blurRadius: 10)])),
+                Text(
+                  'ÖĞLE',
+                  style: TextStyle(
+                    color: pinkNeon,
+                    fontSize: 18,
+                    fontWeight: FontWeight.bold,
+                    letterSpacing: 2,
+                    shadows: [Shadow(color: pinkNeon, blurRadius: 10)],
+                  ),
+                ),
                 const SizedBox(height: 4),
-                Text('02:30:45', style: TextStyle(color: neonColor, fontSize: 30, fontWeight: FontWeight.bold, fontFamily: 'monospace', shadows: [Shadow(color: neonColor, blurRadius: 15)])),
+                Text(
+                  '02:30:45',
+                  style: TextStyle(
+                    color: neonColor,
+                    fontSize: 30,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
+                    shadows: [Shadow(color: neonColor, blurRadius: 15)],
+                  ),
+                ),
                 const Spacer(),
                 // Alt
                 Row(
                   children: [
-                    Text('⚡ VAKİT İLERLEMESİ', style: TextStyle(color: pinkNeon, fontSize: 8, fontWeight: FontWeight.bold)),
+                    Text(
+                      '⚡ VAKİT İLERLEMESİ',
+                      style: TextStyle(
+                        color: pinkNeon,
+                        fontSize: 8,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 4),
@@ -1095,9 +1473,18 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Text('İstanbul', style: TextStyle(color: yaziRengiSecondary, fontSize: 9)),
-                    Text('28 Recep 1447', style: TextStyle(color: yaziRengiSecondary, fontSize: 9)),
-                    Text('21 Ocak 2026', style: TextStyle(color: yaziRengiSecondary, fontSize: 9)),
+                    Text(
+                      'İstanbul',
+                      style: TextStyle(color: yaziRengiSecondary, fontSize: 9),
+                    ),
+                    Text(
+                      '28 Recep 1447',
+                      style: TextStyle(color: yaziRengiSecondary, fontSize: 9),
+                    ),
+                    Text(
+                      '21 Ocak 2026',
+                      style: TextStyle(color: yaziRengiSecondary, fontSize: 9),
+                    ),
                   ],
                 ),
               ],
@@ -1109,10 +1496,23 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
   }
 
   // ==================== COSMIC WİDGET ====================
-  Widget _buildCosmicOnizleme(Color renk1, Color renk2, Color yaziRengi, Color yaziRengiSecondary, bool seffafTema, bool isDark) {
-    final purpleAccent = Color.lerp(yaziRengi, Colors.purple, 0.3) ?? Colors.purple;
-    
-    return _buildOnizlemeContainer(renk1, renk2, seffafTema, isDark, 150,
+  Widget _buildCosmicOnizleme(
+    Color renk1,
+    Color renk2,
+    Color yaziRengi,
+    Color yaziRengiSecondary,
+    bool seffafTema,
+    bool isDark,
+  ) {
+    final purpleAccent =
+        Color.lerp(yaziRengi, Colors.purple, 0.3) ?? Colors.purple;
+
+    return _buildOnizlemeContainer(
+      renk1,
+      renk2,
+      seffafTema,
+      isDark,
+      150,
       Padding(
         padding: const EdgeInsets.all(12),
         child: Column(
@@ -1123,9 +1523,25 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('İstanbul', style: TextStyle(color: purpleAccent, fontSize: 11, fontWeight: FontWeight.bold)),
-                    Text('28 Recep 1447', style: TextStyle(color: yaziRengiSecondary, fontSize: 10)),
-                    Text('21 Ocak 2026', style: TextStyle(color: yaziRengiSecondary.withValues(alpha: 0.5), fontSize: 9)),
+                    Text(
+                      'İstanbul',
+                      style: TextStyle(
+                        color: purpleAccent,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      '28 Recep 1447',
+                      style: TextStyle(color: yaziRengiSecondary, fontSize: 10),
+                    ),
+                    Text(
+                      '21 Ocak 2026',
+                      style: TextStyle(
+                        color: yaziRengiSecondary.withValues(alpha: 0.5),
+                        fontSize: 9,
+                      ),
+                    ),
                   ],
                 ),
                 const Spacer(),
@@ -1134,16 +1550,39 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
             ),
             const Spacer(),
             // Orta
-            Text('✦ Güneş ✦', style: TextStyle(color: purpleAccent, fontSize: 10, letterSpacing: 2)),
-            Text('02:30:45', style: TextStyle(color: yaziRengi, fontSize: 32, fontWeight: FontWeight.bold, shadows: [Shadow(color: purpleAccent, blurRadius: 20)])),
-            Text("Öğle'ye kalan", style: TextStyle(color: yaziRengiSecondary, fontSize: 10)),
+            Text(
+              '✦ Güneş ✦',
+              style: TextStyle(
+                color: purpleAccent,
+                fontSize: 10,
+                letterSpacing: 2,
+              ),
+            ),
+            Text(
+              '02:30:45',
+              style: TextStyle(
+                color: yaziRengi,
+                fontSize: 32,
+                fontWeight: FontWeight.bold,
+                shadows: [Shadow(color: purpleAccent, blurRadius: 20)],
+              ),
+            ),
+            Text(
+              "Öğle'ye kalan",
+              style: TextStyle(color: yaziRengiSecondary, fontSize: 10),
+            ),
             const Spacer(),
             // Alt
             Container(
               height: 4,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(2),
-                gradient: LinearGradient(colors: [Colors.purple.withValues(alpha: 0.3), Colors.cyan.withValues(alpha: 0.3)]),
+                gradient: LinearGradient(
+                  colors: [
+                    Colors.purple.withValues(alpha: 0.3),
+                    Colors.cyan.withValues(alpha: 0.3),
+                  ],
+                ),
               ),
               child: FractionallySizedBox(
                 alignment: Alignment.centerLeft,
@@ -1151,7 +1590,9 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
                 child: Container(
                   decoration: BoxDecoration(
                     borderRadius: BorderRadius.circular(2),
-                    gradient: const LinearGradient(colors: [Colors.purple, Colors.cyan]),
+                    gradient: const LinearGradient(
+                      colors: [Colors.purple, Colors.cyan],
+                    ),
                   ),
                 ),
               ),
@@ -1163,10 +1604,22 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
   }
 
   // ==================== TIMELINE WİDGET ====================
-  Widget _buildTimelineOnizleme(Color renk1, Color renk2, Color yaziRengi, Color yaziRengiSecondary, bool seffafTema, bool isDark) {
+  Widget _buildTimelineOnizleme(
+    Color renk1,
+    Color renk2,
+    Color yaziRengi,
+    Color yaziRengiSecondary,
+    bool seffafTema,
+    bool isDark,
+  ) {
     final greenAccent = const Color(0xFF4CAF50);
-    
-    return _buildOnizlemeContainer(renk1, renk2, seffafTema, isDark, 160,
+
+    return _buildOnizlemeContainer(
+      renk1,
+      renk2,
+      seffafTema,
+      isDark,
+      160,
       Padding(
         padding: const EdgeInsets.all(10),
         child: Column(
@@ -1177,17 +1630,47 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('İstanbul', style: TextStyle(color: yaziRengi, fontSize: 11, fontWeight: FontWeight.bold)),
-                    Text('28 Recep 1447', style: TextStyle(color: yaziRengiSecondary, fontSize: 10)),
-                    Text('21 Ocak 2026', style: TextStyle(color: yaziRengiSecondary.withValues(alpha: 0.6), fontSize: 9)),
+                    Text(
+                      'İstanbul',
+                      style: TextStyle(
+                        color: yaziRengi,
+                        fontSize: 11,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      '28 Recep 1447',
+                      style: TextStyle(color: yaziRengiSecondary, fontSize: 10),
+                    ),
+                    Text(
+                      '21 Ocak 2026',
+                      style: TextStyle(
+                        color: yaziRengiSecondary.withValues(alpha: 0.6),
+                        fontSize: 9,
+                      ),
+                    ),
                   ],
                 ),
                 const Spacer(),
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
-                    Text("Öğle'ye", style: TextStyle(color: greenAccent, fontSize: 10, fontWeight: FontWeight.bold)),
-                    Text('02:30:45', style: TextStyle(color: greenAccent, fontSize: 14, fontWeight: FontWeight.bold)),
+                    Text(
+                      "Öğle'ye",
+                      style: TextStyle(
+                        color: greenAccent,
+                        fontSize: 10,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
+                    Text(
+                      '02:30:45',
+                      style: TextStyle(
+                        color: greenAccent,
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                      ),
+                    ),
                   ],
                 ),
               ],
@@ -1218,18 +1701,54 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
                 Expanded(
                   child: Column(
                     children: [
-                      _timelineVakit('İmsak', '05:47', yaziRengi, yaziRengiSecondary, true),
-                      _timelineVakit('Güneş', '07:22', yaziRengi, yaziRengiSecondary, false),
-                      _timelineVakit('Öğle', '12:30', yaziRengi, yaziRengiSecondary, false),
+                      _timelineVakit(
+                        'İmsak',
+                        '05:47',
+                        yaziRengi,
+                        yaziRengiSecondary,
+                        true,
+                      ),
+                      _timelineVakit(
+                        'Güneş',
+                        '07:22',
+                        yaziRengi,
+                        yaziRengiSecondary,
+                        false,
+                      ),
+                      _timelineVakit(
+                        'Öğle',
+                        '12:30',
+                        yaziRengi,
+                        yaziRengiSecondary,
+                        false,
+                      ),
                     ],
                   ),
                 ),
                 Expanded(
                   child: Column(
                     children: [
-                      _timelineVakit('İkindi', '15:14', yaziRengi, yaziRengiSecondary, false),
-                      _timelineVakit('Akşam', '17:32', yaziRengi, yaziRengiSecondary, false),
-                      _timelineVakit('Yatsı', '18:57', yaziRengi, yaziRengiSecondary, false),
+                      _timelineVakit(
+                        'İkindi',
+                        '15:14',
+                        yaziRengi,
+                        yaziRengiSecondary,
+                        false,
+                      ),
+                      _timelineVakit(
+                        'Akşam',
+                        '17:32',
+                        yaziRengi,
+                        yaziRengiSecondary,
+                        false,
+                      ),
+                      _timelineVakit(
+                        'Yatsı',
+                        '18:57',
+                        yaziRengi,
+                        yaziRengiSecondary,
+                        false,
+                      ),
                     ],
                   ),
                 ),
@@ -1241,7 +1760,13 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
     );
   }
 
-  Widget _timelineVakit(String isim, String saat, Color yaziRengi, Color yaziRengiSecondary, bool aktif) {
+  Widget _timelineVakit(
+    String isim,
+    String saat,
+    Color yaziRengi,
+    Color yaziRengiSecondary,
+    bool aktif,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 2),
       child: Row(
@@ -1251,34 +1776,85 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
             height: 6,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: aktif ? const Color(0xFF4CAF50) : yaziRengiSecondary.withValues(alpha: 0.5),
+              color: aktif
+                  ? const Color(0xFF4CAF50)
+                  : yaziRengiSecondary.withValues(alpha: 0.5),
             ),
           ),
           const SizedBox(width: 6),
-          Text(isim, style: TextStyle(color: aktif ? yaziRengi : yaziRengiSecondary, fontSize: 9)),
+          Text(
+            isim,
+            style: TextStyle(
+              color: aktif ? yaziRengi : yaziRengiSecondary,
+              fontSize: 9,
+            ),
+          ),
           const Spacer(),
-          Text(saat, style: TextStyle(color: aktif ? yaziRengi : yaziRengiSecondary, fontSize: 9, fontWeight: aktif ? FontWeight.bold : FontWeight.normal)),
+          Text(
+            saat,
+            style: TextStyle(
+              color: aktif ? yaziRengi : yaziRengiSecondary,
+              fontSize: 9,
+              fontWeight: aktif ? FontWeight.bold : FontWeight.normal,
+            ),
+          ),
         ],
       ),
     );
   }
 
   // ==================== ZEN WİDGET ====================
-  Widget _buildZenOnizleme(Color renk1, Color renk2, Color yaziRengi, Color yaziRengiSecondary, bool seffafTema, bool isDark) {
-    return _buildOnizlemeContainer(renk1, renk2, seffafTema, isDark, 130,
+  Widget _buildZenOnizleme(
+    Color renk1,
+    Color renk2,
+    Color yaziRengi,
+    Color yaziRengiSecondary,
+    bool seffafTema,
+    bool isDark,
+  ) {
+    return _buildOnizlemeContainer(
+      renk1,
+      renk2,
+      seffafTema,
+      isDark,
+      130,
       Center(
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
-            Text('İSTANBUL', style: TextStyle(color: yaziRengiSecondary, fontSize: 10, letterSpacing: 2)),
+            Text(
+              'İSTANBUL',
+              style: TextStyle(
+                color: yaziRengiSecondary,
+                fontSize: 10,
+                letterSpacing: 2,
+              ),
+            ),
             const SizedBox(height: 4),
-            Text('02:30', style: TextStyle(color: yaziRengi, fontSize: 36, fontWeight: FontWeight.w200)),
+            Text(
+              '02:30',
+              style: TextStyle(
+                color: yaziRengi,
+                fontSize: 36,
+                fontWeight: FontWeight.w200,
+              ),
+            ),
             const SizedBox(height: 4),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                Text('Öğle', style: TextStyle(color: Colors.blue, fontSize: 12, fontWeight: FontWeight.bold)),
-                Text(' vaktine', style: TextStyle(color: yaziRengiSecondary, fontSize: 12)),
+                Text(
+                  'Öğle',
+                  style: TextStyle(
+                    color: Colors.blue,
+                    fontSize: 12,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  ' vaktine',
+                  style: TextStyle(color: yaziRengiSecondary, fontSize: 12),
+                ),
               ],
             ),
             const SizedBox(height: 8),
@@ -1307,8 +1883,20 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
   }
 
   // ==================== ORIGAMI WİDGET ====================
-  Widget _buildOrigamiOnizleme(Color renk1, Color renk2, Color yaziRengi, Color yaziRengiSecondary, bool seffafTema, bool isDark) {
-    return _buildOnizlemeContainer(renk1, renk2, seffafTema, isDark, 150,
+  Widget _buildOrigamiOnizleme(
+    Color renk1,
+    Color renk2,
+    Color yaziRengi,
+    Color yaziRengiSecondary,
+    bool seffafTema,
+    bool isDark,
+  ) {
+    return _buildOnizlemeContainer(
+      renk1,
+      renk2,
+      seffafTema,
+      isDark,
+      150,
       Stack(
         children: [
           // Köşe katlama efekti
@@ -1322,7 +1910,10 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [yaziRengiSecondary.withValues(alpha: 0.3), Colors.transparent],
+                  colors: [
+                    yaziRengiSecondary.withValues(alpha: 0.3),
+                    Colors.transparent,
+                  ],
                 ),
               ),
             ),
@@ -1337,13 +1928,41 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
                     Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Text('İstanbul', style: TextStyle(color: yaziRengi, fontSize: 12, fontStyle: FontStyle.italic, fontFamily: 'serif')),
-                        Text('٢٨ رجب ١٤٤٧', style: TextStyle(color: yaziRengiSecondary, fontSize: 11, fontFamily: 'serif')),
-                        Text('21 Ocak 2026', style: TextStyle(color: yaziRengiSecondary.withValues(alpha: 0.8), fontSize: 10, fontFamily: 'serif')),
+                        Text(
+                          'İstanbul',
+                          style: TextStyle(
+                            color: yaziRengi,
+                            fontSize: 12,
+                            fontStyle: FontStyle.italic,
+                            fontFamily: 'serif',
+                          ),
+                        ),
+                        Text(
+                          '٢٨ رجب ١٤٤٧',
+                          style: TextStyle(
+                            color: yaziRengiSecondary,
+                            fontSize: 11,
+                            fontFamily: 'serif',
+                          ),
+                        ),
+                        Text(
+                          '21 Ocak 2026',
+                          style: TextStyle(
+                            color: yaziRengiSecondary.withValues(alpha: 0.8),
+                            fontSize: 10,
+                            fontFamily: 'serif',
+                          ),
+                        ),
                       ],
                     ),
                     const Spacer(),
-                    Text('◯', style: TextStyle(color: yaziRengi.withValues(alpha: 0.3), fontSize: 18)),
+                    Text(
+                      '◯',
+                      style: TextStyle(
+                        color: yaziRengi.withValues(alpha: 0.3),
+                        fontSize: 18,
+                      ),
+                    ),
                   ],
                 ),
                 const Spacer(),
@@ -1351,16 +1970,50 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Text('───', style: TextStyle(color: yaziRengiSecondary.withValues(alpha: 0.5), fontSize: 8)),
+                    Text(
+                      '───',
+                      style: TextStyle(
+                        color: yaziRengiSecondary.withValues(alpha: 0.5),
+                        fontSize: 8,
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Text('Güneş Vakti', style: TextStyle(color: yaziRengiSecondary, fontSize: 10, fontStyle: FontStyle.italic, fontFamily: 'serif')),
+                    Text(
+                      'Güneş Vakti',
+                      style: TextStyle(
+                        color: yaziRengiSecondary,
+                        fontSize: 10,
+                        fontStyle: FontStyle.italic,
+                        fontFamily: 'serif',
+                      ),
+                    ),
                     const SizedBox(width: 8),
-                    Text('───', style: TextStyle(color: yaziRengiSecondary.withValues(alpha: 0.5), fontSize: 8)),
+                    Text(
+                      '───',
+                      style: TextStyle(
+                        color: yaziRengiSecondary.withValues(alpha: 0.5),
+                        fontSize: 8,
+                      ),
+                    ),
                   ],
                 ),
                 const SizedBox(height: 4),
-                Text('02:30:45', style: TextStyle(color: yaziRengi, fontSize: 30, fontFamily: 'serif')),
-                Text("Öğle'ye kalan", style: TextStyle(color: yaziRengiSecondary, fontSize: 10, fontFamily: 'serif')),
+                Text(
+                  '02:30:45',
+                  style: TextStyle(
+                    color: yaziRengi,
+                    fontSize: 30,
+                    fontFamily: 'serif',
+                  ),
+                ),
+                Text(
+                  "Öğle'ye kalan",
+                  style: TextStyle(
+                    color: yaziRengiSecondary,
+                    fontSize: 10,
+                    fontFamily: 'serif',
+                  ),
+                ),
                 const Spacer(),
                 // Alt: Progress
                 Container(
@@ -1389,7 +2042,14 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
   }
 
   // ==================== ORTAK CONTAINER ====================
-  Widget _buildOnizlemeContainer(Color renk1, Color renk2, bool seffafTema, bool isDark, double height, Widget child) {
+  Widget _buildOnizlemeContainer(
+    Color renk1,
+    Color renk2,
+    bool seffafTema,
+    bool isDark,
+    double height,
+    Widget child,
+  ) {
     return Container(
       height: height,
       decoration: BoxDecoration(
@@ -1422,10 +2082,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa> with SingleTi
                 ),
               ),
             ),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(14),
-            child: child,
-          ),
+          ClipRRect(borderRadius: BorderRadius.circular(14), child: child),
         ],
       ),
     );

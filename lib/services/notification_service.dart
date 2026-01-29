@@ -3,14 +3,15 @@ import 'package:flutter/foundation.dart';
 import 'package:audioplayers/audioplayers.dart';
 
 class NotificationService {
-  static final FlutterLocalNotificationsPlugin _notificationsPlugin = FlutterLocalNotificationsPlugin();
+  static final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
   static AudioPlayer? _audioPlayer;
   static bool _initialized = false;
 
   // Ses dosyası adını Android raw kaynağı adına dönüştür
   static String _getSoundResourceName(String? soundAsset) {
     if (soundAsset == null || soundAsset.isEmpty) return 'ding_dong';
-    
+
     // Dosya adını al ve uzantıyı kaldır
     String name = soundAsset.toLowerCase();
     if (name.contains('/')) {
@@ -19,13 +20,13 @@ class NotificationService {
     if (name.endsWith('.mp3')) {
       name = name.substring(0, name.length - 4);
     }
-    
+
     // Android resource adı için geçersiz karakterleri temizle
     name = name.replaceAll(RegExp(r'[^a-z0-9_]'), '_');
-    
+
     // Özel eşlemeler
     if (name == 'best_2015') name = 'best';
-    
+
     return name;
   }
 
@@ -41,34 +42,41 @@ class NotificationService {
 
   static Future<void> initialize([dynamic context]) async {
     if (_initialized) return;
-    
+
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/ic_launcher');
-    const InitializationSettings initializationSettings = InitializationSettings(
-      android: initializationSettingsAndroid,
-    );
-    
+    const InitializationSettings initializationSettings =
+        InitializationSettings(android: initializationSettingsAndroid);
+
     await _notificationsPlugin.initialize(
       settings: initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         debugPrint('Bildirime tıklandı: ${response.payload}');
       },
     );
-    
-    final androidImplementation = _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-    
+
+    final androidImplementation = _notificationsPlugin
+        .resolvePlatformSpecificImplementation<
+          AndroidFlutterLocalNotificationsPlugin
+        >();
+
     if (androidImplementation != null) {
       // Bildirim iznini kontrol et ve logla
-      final hasPermission = await androidImplementation.areNotificationsEnabled() ?? false;
+      final hasPermission =
+          await androidImplementation.areNotificationsEnabled() ?? false;
       debugPrint('📱 Bildirim izni durumu: $hasPermission');
-      
+
       if (!hasPermission) {
-        debugPrint('⚠️ Bildirim izni verilmemiş! Kullanıcıdan izin isteniyor...');
-        final granted = await androidImplementation.requestNotificationsPermission() ?? false;
+        debugPrint(
+          '⚠️ Bildirim izni verilmemiş! Kullanıcıdan izin isteniyor...',
+        );
+        final granted =
+            await androidImplementation.requestNotificationsPermission() ??
+            false;
         debugPrint('📱 Bildirim izni sonucu: $granted');
       }
     }
-    
+
     _initialized = true;
   }
 
@@ -81,10 +89,13 @@ class NotificationService {
       // Ses kaynağı adını al
       final soundResourceName = _getSoundResourceName(soundAsset);
       debugPrint('🔊 Ses kaynağı: $soundResourceName (orijinal: $soundAsset)');
-      
+
       // Android notification channel'ı ses ile oluştur
-      final androidImplementation = _notificationsPlugin.resolvePlatformSpecificImplementation<AndroidFlutterLocalNotificationsPlugin>();
-      
+      final androidImplementation = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+
       if (androidImplementation != null) {
         // Her ses için ayrı kanal oluştur (Android kısıtlaması)
         final channelId = 'vakit_channel_$soundResourceName';
@@ -100,7 +111,7 @@ class NotificationService {
           showBadge: true,
         );
         await androidImplementation.createNotificationChannel(channel);
-        
+
         // Bildirim göster (Android native ses ile)
         final androidPlatformChannelSpecifics = AndroidNotificationDetails(
           channelId,
@@ -115,42 +126,46 @@ class NotificationService {
           fullScreenIntent: true,
           category: AndroidNotificationCategory.alarm,
           visibility: NotificationVisibility.public,
-          autoCancel: true,
+          autoCancel: false,
           ongoing: false,
           ticker: 'Vakit bildirimi',
           largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
         );
-        
+
         final notificationDetails = NotificationDetails(
           android: androidPlatformChannelSpecifics,
         );
-        
-        final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
-        
+
+        final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(
+          100000,
+        );
+
         await _notificationsPlugin.show(
           id: notificationId,
           title: title,
           body: body,
           notificationDetails: notificationDetails,
         );
-        debugPrint('✅ Bildirim gönderildi: $title - $body (ID: $notificationId, Ses: $soundResourceName)');
+        debugPrint(
+          '✅ Bildirim gönderildi: $title - $body (ID: $notificationId, Ses: $soundResourceName)',
+        );
       }
     } catch (e) {
       debugPrint('❌ Bildirim gönderilemedi: $e');
     }
   }
-  
+
   /// Sesi test et (uygulama açıkken)
   static Future<void> testSound(String soundAsset) async {
     try {
       final player = await _getAudioPlayer();
       await player.stop();
-      
+
       String assetPath = soundAsset;
       if (!assetPath.startsWith('sounds/')) {
         assetPath = 'sounds/$soundAsset';
       }
-      
+
       await player.setVolume(1.0);
       await player.setPlayerMode(PlayerMode.mediaPlayer);
       await player.play(AssetSource(assetPath));
@@ -159,14 +174,14 @@ class NotificationService {
       debugPrint('⚠️ Test sesi çalınamadı: $e');
     }
   }
-  
+
   /// Sesi durdur
   static Future<void> stopSound() async {
     if (_audioPlayer != null) {
       await _audioPlayer!.stop();
     }
   }
-  
+
   /// Kaynakları temizle
   static Future<void> dispose() async {
     if (_audioPlayer != null) {

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -41,7 +42,7 @@ class PermissionService {
       return permission == LocationPermission.always ||
           permission == LocationPermission.whileInUse;
     } catch (e) {
-      print('⚠️ Konum izni hatası: $e');
+      debugPrint('⚠️ Konum izni hatası: $e');
       return false;
     }
   }
@@ -77,7 +78,7 @@ class PermissionService {
       }
       return false;
     } catch (e) {
-      print('⚠️ Bildirim izni hatası: $e');
+      debugPrint('⚠️ Bildirim izni hatası: $e');
       return false;
     }
   }
@@ -92,13 +93,13 @@ class PermissionService {
         const Duration(seconds: 3),
         onTimeout: () => false,
       );
-      print(
+      debugPrint(
         '📱 Bildirim izni: ${hasNotification ? "verildi" : "istendi/reddedildi"}',
       );
 
-      print('✅ İzinler kontrol edildi');
+      debugPrint('✅ İzinler kontrol edildi');
     } catch (e) {
-      print('⚠️ İzin kontrolü hatası: $e');
+      debugPrint('⚠️ İzin kontrolü hatası: $e');
     }
   }
 
@@ -119,7 +120,7 @@ class PermissionService {
     try {
       await _channel.invokeMethod<void>('openOverlaySettings');
     } catch (e) {
-      print('⚠️ Overlay ayarları açılamadı: $e');
+      debugPrint('⚠️ Overlay ayarları açılamadı: $e');
     }
   }
 
@@ -154,7 +155,7 @@ class PermissionService {
       }
       return true;
     } catch (e) {
-      print('⚠️ Exact alarm izni hatası: $e');
+      debugPrint('⚠️ Exact alarm izni hatası: $e');
       return true;
     }
   }
@@ -165,7 +166,7 @@ class PermissionService {
     try {
       await _channel.invokeMethod<void>('openExactAlarmSettings');
     } catch (e) {
-      print('⚠️ Alarm ayarları açılamadı: $e');
+      debugPrint('⚠️ Alarm ayarları açılamadı: $e');
     }
   }
 
@@ -188,7 +189,7 @@ class PermissionService {
     try {
       await _channel.invokeMethod<void>('requestBatteryOptimizationExemption');
     } catch (e) {
-      print('⚠️ Pil optimizasyonu muafiyeti istenemedi: $e');
+      debugPrint('⚠️ Pil optimizasyonu muafiyeti istenemedi: $e');
     }
   }
 
@@ -198,7 +199,7 @@ class PermissionService {
     try {
       await _channel.invokeMethod<void>('openBatteryOptimizationSettings');
     } catch (e) {
-      print('⚠️ Pil ayarları açılamadı: $e');
+      debugPrint('⚠️ Pil ayarları açılamadı: $e');
     }
   }
 }

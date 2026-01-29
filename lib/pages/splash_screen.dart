@@ -25,24 +25,32 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _kontrolVeYonlendir() async {
     if (!mounted) return;
-    print('🚀 Splash: Başladı');
+    debugPrint('🚀 Splash: Başladı');
 
     // 1 saniye splash screen göster
     await Future.delayed(const Duration(milliseconds: 800));
 
     if (!mounted) return;
-    print('🚀 Splash: Delay bitti');
+    debugPrint('🚀 Splash: Delay bitti');
 
     // SharedPreferences'ı tek seferde al
     final prefs = await SharedPreferences.getInstance();
-    print('🚀 Splash: Prefs yüklendi');
-    final dilSecildi = prefs.containsKey('language');
+    debugPrint('🚀 Splash: Prefs yüklendi');
+
+    // Dil seçimi kontrolü - language key varsa dil seçilmiş demektir
+    final savedLanguage = prefs.getString('language');
+    final dilSecildi = savedLanguage != null && savedLanguage.isNotEmpty;
     final onboardingCompleted = prefs.getBool('onboarding_completed') ?? false;
-    print('🚀 Splash: dilSecildi=$dilSecildi, onboardingCompleted=$onboardingCompleted');
+    debugPrint(
+      '🚀 Splash: dilSecildi=$dilSecildi (savedLanguage=$savedLanguage), onboardingCompleted=$onboardingCompleted',
+    );
 
     // İlk açılış kontrolü - dil sadece ilk kurulumda sorulur
     if (!dilSecildi) {
-      print('🚀 Splash: Dil seçim sayfasına yönlendiriliyor (ilk kurulum)');
+      debugPrint(
+        '🚀 Splash: Dil seçim sayfasına yönlendiriliyor (ilk kurulum)',
+      );
+      if (!mounted) return;
       // 1. Dil seçimi
       final result = await Navigator.push(
         context,
@@ -50,41 +58,47 @@ class _SplashScreenState extends State<SplashScreen> {
       );
 
       if (result != true || !mounted) return;
-      
+
       // Dil seçildi, bir daha sorma
-      print('🚀 Splash: Dil seçildi, kaydedildi');
+      debugPrint('🚀 Splash: Dil seçildi, kaydedildi');
     } else {
       // Dil zaten seçilmiş, yükle
-      print('🚀 Splash: Kayıtlı dil yükleniyor');
-      await LanguageService().load();
+      debugPrint('🚀 Splash: Kayıtlı dil yükleniyor: $savedLanguage');
+      await LanguageService().load(savedLanguage);
     }
 
     // 2. İzin onboarding (sadece ilk kurulumda ve kritik izinler eksikse)
     if (!onboardingCompleted) {
-      print('🚀 Splash: Onboarding tamamlanmamış, izinler kontrol ediliyor...');
+      debugPrint(
+        '🚀 Splash: Onboarding tamamlanmamış, izinler kontrol ediliyor...',
+      );
       setState(() => _durum = 'İzinler kontrol ediliyor...');
 
       // Kritik izinleri kontrol et (konum ve bildirim)
       final locationGranted = await PermissionService.checkLocationPermission();
-      final notificationGranted = await PermissionService.checkNotificationPermission();
-      print('🚀 Splash: locationGranted=$locationGranted, notificationGranted=$notificationGranted');
-      
+      final notificationGranted =
+          await PermissionService.checkNotificationPermission();
+      debugPrint(
+        '🚀 Splash: locationGranted=$locationGranted, notificationGranted=$notificationGranted',
+      );
+
       // Eğer kritik izinler eksikse onboarding göster
       if (!locationGranted || !notificationGranted) {
-        print('🚀 Splash: İzin sayfasına yönlendiriliyor...');
+        debugPrint('🚀 Splash: İzin sayfasına yönlendiriliyor...');
+        if (!mounted) return;
         await Navigator.push(
           context,
           MaterialPageRoute(
             builder: (context) => const OnboardingPermissionsPage(),
           ),
         );
-        print('🚀 Splash: İzin sayfasından döndü');
+        debugPrint('🚀 Splash: İzin sayfasından döndü');
 
         if (!mounted) return;
       }
 
       // Onboarding tamamlandı olarak işaretle (kullanıcı atlamış olsa bile)
-      print('🚀 Splash: Onboarding tamamlandı işaretleniyor');
+      debugPrint('🚀 Splash: Onboarding tamamlandı işaretleniyor');
       await prefs.setBool('onboarding_completed', true);
     }
 
@@ -104,7 +118,7 @@ class _SplashScreenState extends State<SplashScreen> {
         ilceId.isNotEmpty &&
         ilId != null &&
         ilId.isNotEmpty) {
-      print('✅ Kayıtlı konum bulundu, ana sayfaya yönlendiriliyor...');
+      debugPrint('✅ Kayıtlı konum bulundu, ana sayfaya yönlendiriliyor...');
 
       if (!mounted) return;
 
@@ -333,8 +347,10 @@ class IlIlceSecOnboarding extends StatelessWidget {
               // Açıklama
               Text(
                 konumIzniVar
-                    ? LanguageService().translate('welcome_desc_location') ?? 'Konumunuz otomatik tespit edilecek'
-                    : LanguageService().translate('welcome_desc_manual') ?? 'Konumunuzu manuel seçin',
+                    ? LanguageService().translate('welcome_desc_location') ??
+                          'Konumunuz otomatik tespit edilecek'
+                    : LanguageService().translate('welcome_desc_manual') ??
+                          'Konumunuzu manuel seçin',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.8),
                   fontSize: 16,
@@ -382,8 +398,10 @@ class IlIlceSecOnboarding extends StatelessWidget {
                   children: [
                     Text(
                       konumIzniVar
-                          ? LanguageService().translate('auto_detect') ?? 'Otomatik Tespit'
-                          : LanguageService().translate('manual_select') ?? 'Manuel Seç',
+                          ? LanguageService().translate('auto_detect') ??
+                                'Otomatik Tespit'
+                          : LanguageService().translate('manual_select') ??
+                                'Manuel Seç',
                       style: const TextStyle(
                         fontSize: 18,
                         fontWeight: FontWeight.bold,
@@ -398,7 +416,8 @@ class IlIlceSecOnboarding extends StatelessWidget {
 
               // İpucu
               Text(
-                LanguageService().translate('settings_tip') ?? 'İpucu: Ayarlardan dilediğiniz zaman değiştirebilirsiniz',
+                LanguageService().translate('settings_tip') ??
+                    'İpucu: Ayarlardan dilediğiniz zaman değiştirebilirsiniz',
                 style: TextStyle(
                   color: Colors.white.withOpacity(0.5),
                   fontSize: 12,

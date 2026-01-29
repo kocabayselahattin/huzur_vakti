@@ -17,31 +17,30 @@ void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Uygulama dikey yönde sabit kalsın
-  await SystemChrome.setPreferredOrientations([
-    DeviceOrientation.portraitUp,
-  ]);
-  
+  await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
+
   // Tarih formatını Türkçe için başlat
   await initializeDateFormatting('tr_TR', null);
-  
+
   // Tema servisini başlat
   final temaService = TemaService();
   await temaService.temayiYukle();
-  
+
   // Dil servisini başlat
   final languageService = LanguageService();
   await languageService.load();
-  
+
   // Home Widget servisini başlat ve arka plan güncellemelerini planla
   await HomeWidgetService.initialize();
-  
+
   // Android için arka plan widget güncellemelerini başlat
   if (Platform.isAndroid) {
     try {
-      await const MethodChannel('huzur_vakti/widgets')
-          .invokeMethod('scheduleWidgetUpdates');
+      await const MethodChannel(
+        'huzur_vakti/widgets',
+      ).invokeMethod('scheduleWidgetUpdates');
     } catch (e) {
-      print('⚠️ Widget arka plan güncellemeleri başlatılamadı: $e');
+      debugPrint('⚠️ Widget arka plan güncellemeleri başlatılamadı: $e');
     }
   }
 
@@ -54,18 +53,18 @@ void main() async {
 
   // Bildirim altyapısını başlat
   await NotificationService.initialize(null);
-  
+
   // Zamanlanmış bildirim servisini başlat
   await ScheduledNotificationService.initialize();
-  
+
   // Günlük içerik bildirimleri servisini başlat
   await DailyContentNotificationService.initialize();
   await DailyContentNotificationService.scheduleDailyContentNotifications();
-  
+
   // 🔔 Uygulama başlatıldığında alarmları yeniden zamanla
   // Bu boot sonrası veya uygulama güncellemesi sonrası alarmları geri yükler
   await ScheduledNotificationService.scheduleAllPrayerNotifications();
-  
+
   runApp(const HuzurVaktiApp());
 }
 

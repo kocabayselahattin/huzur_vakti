@@ -25,27 +25,33 @@ class LanguageService extends ChangeNotifier {
   Future<void> load([String? languageCode]) async {
     final prefs = await SharedPreferences.getInstance();
     _currentLanguage = languageCode ?? prefs.getString('language') ?? 'tr';
-    
+
     try {
-      String jsonString = await rootBundle.loadString('assets/lang/$_currentLanguage.json');
+      String jsonString = await rootBundle.loadString(
+        'assets/lang/$_currentLanguage.json',
+      );
       _localizedStrings = json.decode(jsonString);
-      
+
       // NOT: Dil tercihini burada kaydetmiyoruz - kullanıcı seçmeli
       // Sadece dil zaten seçilmişse (changeLanguage ile) kaydedilir
     } catch (e) {
-      print('⚠️ Dil dosyası yüklenemedi ($_currentLanguage), Türkçe yükleniyor: $e');
+      print(
+        '⚠️ Dil dosyası yüklenemedi ($_currentLanguage), Türkçe yükleniyor: $e',
+      );
       _currentLanguage = 'tr';
       String jsonString = await rootBundle.loadString('assets/lang/tr.json');
       _localizedStrings = json.decode(jsonString);
     }
-    
+
     notifyListeners();
   }
 
   Future<void> changeLanguage(String languageCode) async {
-    if (_currentLanguage == languageCode) return;
-    
     final prefs = await SharedPreferences.getInstance();
+    final saved = prefs.getString('language');
+    if (_currentLanguage == languageCode && saved == languageCode) {
+      return;
+    }
     await prefs.setString('language', languageCode);
     await load(languageCode);
   }

@@ -241,8 +241,8 @@ class AlarmReceiver : BroadcastReceiver() {
                     
                     Log.d(TAG, "🔔 Alarm tetiklendi: $vakitName - Ses: $soundFile")
                     
-                    // Ses dosyası yoksa veya ding_dong ise SharedPreferences'tan al
-                    if (soundFile.isEmpty() || soundFile == "ding_dong") {
+                    // Ses dosyası yoksa veya varsayılan ding_dong ise SharedPreferences'tan al
+                    if (soundFile.isEmpty() || soundFile == "ding_dong" || soundFile == "ding_dong.mp3") {
                         val vakitKey = vakitName.lowercase()
                             .replace("ı", "i").replace("ö", "o").replace("ü", "u")
                             .replace("ş", "s").replace("ğ", "g").replace("ç", "c")

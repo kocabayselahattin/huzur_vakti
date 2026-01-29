@@ -26,18 +26,18 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
   final TemaService _temaService = TemaService();
   final LanguageService _languageService = LanguageService();
   double _ilerlemeOrani = 0.0;
-  
+
   late AnimationController _rippleController;
 
   @override
   void initState() {
     super.initState();
-    
+
     _rippleController = AnimationController(
       duration: const Duration(seconds: 4),
       vsync: this,
     )..repeat();
-    
+
     if (widget.shouldLoadData) {
       _vakitleriYukle();
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -105,12 +105,30 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
     final nowTotalSeconds = now.hour * 3600 + now.minute * 60 + now.second;
 
     final vakitSaatleri = [
-      {'adi': _languageService['imsak'] ?? 'İmsak', 'saat': _vakitSaatleri['Imsak']!},
-      {'adi': _languageService['gunes'] ?? 'Güneş', 'saat': _vakitSaatleri['Gunes']!},
-      {'adi': _languageService['ogle'] ?? 'Öğle', 'saat': _vakitSaatleri['Ogle']!},
-      {'adi': _languageService['ikindi'] ?? 'İkindi', 'saat': _vakitSaatleri['Ikindi']!},
-      {'adi': _languageService['aksam'] ?? 'Akşam', 'saat': _vakitSaatleri['Aksam']!},
-      {'adi': _languageService['yatsi'] ?? 'Yatsı', 'saat': _vakitSaatleri['Yatsi']!},
+      {
+        'adi': _languageService['imsak'] ?? 'İmsak',
+        'saat': _vakitSaatleri['Imsak']!,
+      },
+      {
+        'adi': _languageService['gunes'] ?? 'Güneş',
+        'saat': _vakitSaatleri['Gunes']!,
+      },
+      {
+        'adi': _languageService['ogle'] ?? 'Öğle',
+        'saat': _vakitSaatleri['Ogle']!,
+      },
+      {
+        'adi': _languageService['ikindi'] ?? 'İkindi',
+        'saat': _vakitSaatleri['Ikindi']!,
+      },
+      {
+        'adi': _languageService['aksam'] ?? 'Akşam',
+        'saat': _vakitSaatleri['Aksam']!,
+      },
+      {
+        'adi': _languageService['yatsi'] ?? 'Yatsı',
+        'saat': _vakitSaatleri['Yatsi']!,
+      },
     ];
 
     DateTime? sonrakiVakitZamani;
@@ -122,8 +140,13 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
       final vakitMinutes = int.parse(parts[0]) * 60 + int.parse(parts[1]);
 
       if (vakitMinutes > nowMinutes) {
-        sonrakiVakitZamani = DateTime(now.year, now.month, now.day,
-            int.parse(parts[0]), int.parse(parts[1]));
+        sonrakiVakitZamani = DateTime(
+          now.year,
+          now.month,
+          now.day,
+          int.parse(parts[0]),
+          int.parse(parts[1]),
+        );
         sonrakiVakitAdi = vakitSaatleri[i]['adi']!;
         mevcutVakitIndex = i > 0 ? i - 1 : vakitSaatleri.length - 1;
         break;
@@ -132,8 +155,13 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
 
     if (sonrakiVakitZamani == null) {
       final parts = vakitSaatleri[0]['saat']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day + 1,
-          int.parse(parts[0]), int.parse(parts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day + 1,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
       sonrakiVakitAdi = vakitSaatleri[0]['adi']!;
       mevcutVakitIndex = vakitSaatleri.length - 1;
     }
@@ -142,14 +170,16 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
     double ilerlemeOrani = 0.0;
     if (mevcutVakitIndex >= 0) {
       final mevcutParts = vakitSaatleri[mevcutVakitIndex]['saat']!.split(':');
-      final mevcutVakitSeconds = int.parse(mevcutParts[0]) * 3600 + int.parse(mevcutParts[1]) * 60;
-      
+      final mevcutVakitSeconds =
+          int.parse(mevcutParts[0]) * 3600 + int.parse(mevcutParts[1]) * 60;
+
       int sonrakiVakitSeconds;
       if (mevcutVakitIndex == vakitSaatleri.length - 1) {
         // Yatsıdan sonra - gece yarısından sonra imsak öncesi veya normal gündüz vakitleri
         final imsakParts = vakitSaatleri[0]['saat']!.split(':');
-        final imsakSeconds = int.parse(imsakParts[0]) * 3600 + int.parse(imsakParts[1]) * 60;
-        
+        final imsakSeconds =
+            int.parse(imsakParts[0]) * 3600 + int.parse(imsakParts[1]) * 60;
+
         if (nowTotalSeconds < imsakSeconds) {
           // Gece yarısından sonra, imsak öncesi
           final toplamSure = imsakSeconds;
@@ -163,9 +193,12 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
         }
       } else {
         // Normal gündüz vakitleri
-        final sonrakiParts = vakitSaatleri[mevcutVakitIndex + 1]['saat']!.split(':');
-        sonrakiVakitSeconds = int.parse(sonrakiParts[0]) * 3600 + int.parse(sonrakiParts[1]) * 60;
-        
+        final sonrakiParts = vakitSaatleri[mevcutVakitIndex + 1]['saat']!.split(
+          ':',
+        );
+        sonrakiVakitSeconds =
+            int.parse(sonrakiParts[0]) * 3600 + int.parse(sonrakiParts[1]) * 60;
+
         final toplamSure = sonrakiVakitSeconds - mevcutVakitSeconds;
         final gecenSure = nowTotalSeconds - mevcutVakitSeconds;
         ilerlemeOrani = (gecenSure / toplamSure).clamp(0.0, 1.0);
@@ -181,9 +214,19 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
 
   String _getHicriAyAdi(int ay) {
     final aylar = [
-      '', 'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir',
-      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban', 'Ramazan',
-      'Şevval', 'Zilkade', 'Zilhicce'
+      '',
+      'Muharrem',
+      'Safer',
+      'Rebiülevvel',
+      'Rebiülahir',
+      'Cemaziyelevvel',
+      'Cemaziyelahir',
+      'Recep',
+      'Şaban',
+      'Ramazan',
+      'Şevval',
+      'Zilkade',
+      'Zilhicce',
     ];
     return aylar[ay];
   }
@@ -196,7 +239,8 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
 
     final now = DateTime.now();
     final hicri = HijriCalendar.now();
-    final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
+    final hicriTarih =
+        '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
     final miladiTarih = DateFormat('dd MMMM yyyy', 'tr_TR').format(now);
 
     // Tema kontrolü: Varsayılansa orijinal, değilse tema renkleri
@@ -204,10 +248,18 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
     final temaRenkleri = _temaService.renkler;
 
     // Orijinal renkler veya tema renkleri
-    final primaryColor = kullanTemaRenkleri ? temaRenkleri.vurgu : const Color(0xFF4A6741);
-    final bgColor1 = kullanTemaRenkleri ? temaRenkleri.kartArkaPlan : const Color(0xFFF5F5DC);
-    final bgColor2 = kullanTemaRenkleri ? temaRenkleri.arkaPlan : const Color(0xFFE8E4D9);
-    final textColor = kullanTemaRenkleri ? temaRenkleri.yaziPrimary : const Color(0xFF2D3A29);
+    final primaryColor = kullanTemaRenkleri
+        ? temaRenkleri.vurgu
+        : const Color(0xFF4A6741);
+    final bgColor1 = kullanTemaRenkleri
+        ? temaRenkleri.kartArkaPlan
+        : const Color(0xFFF5F5DC);
+    final bgColor2 = kullanTemaRenkleri
+        ? temaRenkleri.arkaPlan
+        : const Color(0xFFE8E4D9);
+    final textColor = kullanTemaRenkleri
+        ? temaRenkleri.yaziPrimary
+        : const Color(0xFF2D3A29);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -231,26 +283,25 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    bgColor1,
-                    bgColor2,
-                    bgColor2.withOpacity(0.9),
-                  ],
+                  colors: [bgColor1, bgColor2, bgColor2.withOpacity(0.9)],
                 ),
               ),
             ),
-            
+
             // Su dalgası efekti
             AnimatedBuilder(
               animation: _rippleController,
               builder: (context, child) {
                 return CustomPaint(
                   size: const Size(double.infinity, 240),
-                  painter: _ZenRipplePainter(progress: _rippleController.value, color: primaryColor),
+                  painter: _ZenRipplePainter(
+                    progress: _rippleController.value,
+                    color: primaryColor,
+                  ),
                 );
               },
             ),
-            
+
             // Bambu dekorasyonu
             Positioned(
               right: 20,
@@ -261,7 +312,7 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
                 painter: _BambooPainter(color: primaryColor),
               ),
             ),
-            
+
             // İçerik
             Padding(
               padding: const EdgeInsets.all(24),
@@ -314,11 +365,26 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
                       child: Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildZenTimeUnit(hours.toString().padLeft(2, '0'), '時', primaryColor, textColor),
+                          _buildZenTimeUnit(
+                            hours.toString().padLeft(2, '0'),
+                            '時',
+                            primaryColor,
+                            textColor,
+                          ),
                           const SizedBox(width: 16),
-                          _buildZenTimeUnit(minutes.toString().padLeft(2, '0'), '分', primaryColor, textColor),
+                          _buildZenTimeUnit(
+                            minutes.toString().padLeft(2, '0'),
+                            '分',
+                            primaryColor,
+                            textColor,
+                          ),
                           const SizedBox(width: 16),
-                          _buildZenTimeUnit(seconds.toString().padLeft(2, '0'), '秒', primaryColor, textColor),
+                          _buildZenTimeUnit(
+                            seconds.toString().padLeft(2, '0'),
+                            '秒',
+                            primaryColor,
+                            textColor,
+                          ),
                         ],
                       ),
                     ),
@@ -329,7 +395,10 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
                   // Alt: Tarihler
                   Center(
                     child: Container(
-                      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 8,
+                      ),
                       decoration: BoxDecoration(
                         border: Border.all(
                           color: primaryColor.withOpacity(0.3),
@@ -359,7 +428,12 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
     );
   }
 
-  Widget _buildZenTimeUnit(String value, String kanji, Color primaryColor, Color textColor) {
+  Widget _buildZenTimeUnit(
+    String value,
+    String kanji,
+    Color primaryColor,
+    Color textColor,
+  ) {
     return Column(
       children: [
         Container(
@@ -369,9 +443,7 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.6),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(
-              color: primaryColor.withOpacity(0.2),
-            ),
+            border: Border.all(color: primaryColor.withOpacity(0.2)),
           ),
           child: Text(
             value,
@@ -389,10 +461,7 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
         const SizedBox(height: 4),
         Text(
           kanji,
-          style: TextStyle(
-            fontSize: 14,
-            color: primaryColor.withOpacity(0.6),
-          ),
+          style: TextStyle(fontSize: 14, color: primaryColor.withOpacity(0.6)),
         ),
       ],
     );
@@ -412,7 +481,9 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
             borderRadius: BorderRadius.circular(4),
             child: CustomPaint(
               size: const Size(double.infinity, 8),
-              painter: _ProgressBarLinesPainter(lineColor: textColor.withOpacity(0.08)),
+              painter: _ProgressBarLinesPainter(
+                lineColor: textColor.withOpacity(0.08),
+              ),
             ),
           ),
           FractionallySizedBox(
@@ -421,9 +492,19 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(6),
                 gradient: LinearGradient(
-                  colors: [primaryColor.withOpacity(0.9), primaryColor, Color.lerp(primaryColor, Colors.white, 0.2)!],
+                  colors: [
+                    primaryColor.withOpacity(0.9),
+                    primaryColor,
+                    Color.lerp(primaryColor, Colors.white, 0.2)!,
+                  ],
                 ),
-                boxShadow: [BoxShadow(color: primaryColor.withOpacity(0.7), blurRadius: 8, spreadRadius: 1)],
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.7),
+                    blurRadius: 8,
+                    spreadRadius: 1,
+                  ),
+                ],
               ),
             ),
           ),
@@ -444,10 +525,12 @@ class _ZenRipplePainter extends CustomPainter {
     final paint = Paint()
       ..color = color.withOpacity(0.1)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 1;
+      ..strokeWidth = 0.8
+      ..strokeCap = StrokeCap.round
+      ..isAntiAlias = true;
 
     final center = Offset(size.width * 0.3, size.height * 0.7);
-    
+
     for (int i = 0; i < 3; i++) {
       final radius = 20 + (progress + i * 0.3) % 1.0 * 60;
       final opacity = (1 - ((progress + i * 0.3) % 1.0)) * 0.3;
@@ -472,7 +555,9 @@ class _BambooPainter extends CustomPainter {
     final paint = Paint()
       ..color = color.withOpacity(0.3)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = 3;
+      ..strokeWidth = 2.5
+      ..strokeCap = StrokeCap.round
+      ..isAntiAlias = true;
 
     // Bambu gövdesi
     canvas.drawLine(
@@ -494,16 +579,22 @@ class _BambooPainter extends CustomPainter {
     // Yapraklar
     paint.style = PaintingStyle.fill;
     paint.color = color.withOpacity(0.2);
-    
+
     final leafPath = Path();
     leafPath.moveTo(size.width / 2, 40);
-    leafPath.quadraticBezierTo(size.width / 2 + 20, 50, size.width / 2 + 25, 70);
+    leafPath.quadraticBezierTo(
+      size.width / 2 + 20,
+      50,
+      size.width / 2 + 25,
+      70,
+    );
     leafPath.quadraticBezierTo(size.width / 2 + 10, 60, size.width / 2, 40);
     canvas.drawPath(leafPath, paint);
   }
 
   @override
-  bool shouldRepaint(covariant _BambooPainter oldDelegate) => oldDelegate.color != color;
+  bool shouldRepaint(covariant _BambooPainter oldDelegate) =>
+      oldDelegate.color != color;
 }
 
 class _ProgressBarLinesPainter extends CustomPainter {
@@ -512,12 +603,18 @@ class _ProgressBarLinesPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = lineColor..strokeWidth = 1;
+    final paint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 0.8
+      ..strokeCap = StrokeCap.round
+      ..isAntiAlias = true;
     for (double x = 0; x < size.width; x += 8) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+      final dx = x + 0.5;
+      canvas.drawLine(Offset(dx, 0), Offset(dx, size.height), paint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant _ProgressBarLinesPainter oldDelegate) => oldDelegate.lineColor != lineColor;
+  bool shouldRepaint(covariant _ProgressBarLinesPainter oldDelegate) =>
+      oldDelegate.lineColor != lineColor;
 }

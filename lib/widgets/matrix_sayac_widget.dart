@@ -64,12 +64,17 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
 
   void _initMatrixColumns() {
     for (int i = 0; i < 25; i++) {
-      _columns.add(_MatrixColumn(
-        x: i * 15.0,
-        speed: 2 + _random.nextDouble() * 4,
-        chars: List.generate(15, (_) => _matrixChars[_random.nextInt(_matrixChars.length)]),
-        y: _random.nextDouble() * 300,
-      ));
+      _columns.add(
+        _MatrixColumn(
+          x: i * 15.0,
+          speed: 2 + _random.nextDouble() * 4,
+          chars: List.generate(
+            15,
+            (_) => _matrixChars[_random.nextInt(_matrixChars.length)],
+          ),
+          y: _random.nextDouble() * 300,
+        ),
+      );
     }
   }
 
@@ -81,12 +86,16 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
         if (column.y > 300) {
           column.y = -50;
           column.speed = 2 + _random.nextDouble() * 4;
-          column.chars = List.generate(15, (_) => _matrixChars[_random.nextInt(_matrixChars.length)]);
+          column.chars = List.generate(
+            15,
+            (_) => _matrixChars[_random.nextInt(_matrixChars.length)],
+          );
         }
         // Rastgele karakter değişimi
         if (_random.nextDouble() < 0.1) {
           final idx = _random.nextInt(column.chars.length);
-          column.chars[idx] = _matrixChars[_random.nextInt(_matrixChars.length)];
+          column.chars[idx] =
+              _matrixChars[_random.nextInt(_matrixChars.length)];
         }
       }
     });
@@ -133,18 +142,38 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
     final nowTotalSeconds = now.hour * 3600 + now.minute * 60 + now.second;
 
     final vakitListesi = [
-      {'adi': _languageService['imsak'] ?? 'İmsak', 'saat': _vakitSaatleri['imsak']!},
-      {'adi': _languageService['gunes'] ?? 'Güneş', 'saat': _vakitSaatleri['gunes']!},
-      {'adi': _languageService['ogle'] ?? 'Öğle', 'saat': _vakitSaatleri['ogle']!},
-      {'adi': _languageService['ikindi'] ?? 'İkindi', 'saat': _vakitSaatleri['ikindi']!},
-      {'adi': _languageService['aksam'] ?? 'Akşam', 'saat': _vakitSaatleri['aksam']!},
-      {'adi': _languageService['yatsi'] ?? 'Yatsı', 'saat': _vakitSaatleri['yatsi']!},
+      {
+        'adi': _languageService['imsak'] ?? 'İmsak',
+        'saat': _vakitSaatleri['imsak']!,
+      },
+      {
+        'adi': _languageService['gunes'] ?? 'Güneş',
+        'saat': _vakitSaatleri['gunes']!,
+      },
+      {
+        'adi': _languageService['ogle'] ?? 'Öğle',
+        'saat': _vakitSaatleri['ogle']!,
+      },
+      {
+        'adi': _languageService['ikindi'] ?? 'İkindi',
+        'saat': _vakitSaatleri['ikindi']!,
+      },
+      {
+        'adi': _languageService['aksam'] ?? 'Akşam',
+        'saat': _vakitSaatleri['aksam']!,
+      },
+      {
+        'adi': _languageService['yatsi'] ?? 'Yatsı',
+        'saat': _vakitSaatleri['yatsi']!,
+      },
     ];
 
     List<int> vakitSaniyeleri = [];
     for (final vakit in vakitListesi) {
       final parts = vakit['saat']!.split(':');
-      vakitSaniyeleri.add(int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60);
+      vakitSaniyeleri.add(
+        int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60,
+      );
     }
 
     DateTime? sonrakiVakitZamani;
@@ -162,8 +191,13 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
     if (sonrakiIndex == -1) {
       final yarin = now.add(const Duration(days: 1));
       final imsakParts = _vakitSaatleri['imsak']!.split(':');
-      sonrakiVakitZamani = DateTime(yarin.year, yarin.month, yarin.day,
-          int.parse(imsakParts[0]), int.parse(imsakParts[1]));
+      sonrakiVakitZamani = DateTime(
+        yarin.year,
+        yarin.month,
+        yarin.day,
+        int.parse(imsakParts[0]),
+        int.parse(imsakParts[1]),
+      );
       sonrakiVakitAdi = _languageService['imsak'] ?? 'İmsak';
       final yatsiSaniye = vakitSaniyeleri.last;
       final imsakSaniye = vakitSaniyeleri.first;
@@ -172,8 +206,13 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     } else if (sonrakiIndex == 0) {
       final imsakParts = _vakitSaatleri['imsak']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day,
-          int.parse(imsakParts[0]), int.parse(imsakParts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.parse(imsakParts[0]),
+        int.parse(imsakParts[1]),
+      );
       sonrakiVakitAdi = _languageService['imsak'] ?? 'İmsak';
       final yatsiSaniye = vakitSaniyeleri.last;
       final imsakSaniye = vakitSaniyeleri.first;
@@ -182,10 +221,16 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     } else {
       final parts = vakitListesi[sonrakiIndex]['saat']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day,
-          int.parse(parts[0]), int.parse(parts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
       sonrakiVakitAdi = vakitListesi[sonrakiIndex]['adi']!;
-      final toplamSure = vakitSaniyeleri[sonrakiIndex] - vakitSaniyeleri[sonrakiIndex - 1];
+      final toplamSure =
+          vakitSaniyeleri[sonrakiIndex] - vakitSaniyeleri[sonrakiIndex - 1];
       final gecenSure = nowTotalSeconds - vakitSaniyeleri[sonrakiIndex - 1];
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     }
@@ -210,7 +255,8 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
     final now = DateTime.now();
     final miladiTarih = DateFormat('dd.MM.yyyy').format(now);
     final hicri = HijriCalendar.now();
-    final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
+    final hicriTarih =
+        '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
 
     // Tema renklerini kullan
     final matrixGreen = renkler.vurgu;
@@ -233,8 +279,8 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
             ...List.generate(_columns.length, (index) {
               final column = _columns[index];
               return Positioned(
-                left: column.x,
-                top: column.y,
+                left: column.x.roundToDouble(),
+                top: column.y.roundToDouble(),
                 child: Column(
                   children: List.generate(column.chars.length, (charIndex) {
                     final opacity = 1.0 - (charIndex / column.chars.length);
@@ -242,15 +288,17 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                     return Text(
                       column.chars[charIndex],
                       style: TextStyle(
-                        color: isHead 
-                            ? renkler.yaziPrimary 
+                        color: isHead
+                            ? renkler.yaziPrimary
                             : matrixGreen.withOpacity(opacity * 0.8),
                         fontSize: 12,
                         fontFamily: 'monospace',
-                        fontWeight: isHead ? FontWeight.bold : FontWeight.normal,
-                        shadows: isHead ? [
-                          Shadow(color: matrixGreen, blurRadius: 10),
-                        ] : null,
+                        fontWeight: isHead
+                            ? FontWeight.bold
+                            : FontWeight.normal,
+                        shadows: isHead
+                            ? [Shadow(color: matrixGreen, blurRadius: 10)]
+                            : null,
                       ),
                     );
                   }),
@@ -312,7 +360,9 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                             padding: const EdgeInsets.all(8),
                             decoration: BoxDecoration(
                               border: Border.all(
-                                color: matrixGreen.withOpacity(0.3 + _glowController.value * 0.3),
+                                color: matrixGreen.withOpacity(
+                                  0.3 + _glowController.value * 0.3,
+                                ),
                                 width: 1,
                               ),
                               borderRadius: BorderRadius.circular(8),
@@ -335,55 +385,69 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                     child: Transform.translate(
                       offset: const Offset(0, -10),
                       child: Center(
-                      child: AnimatedBuilder(
-                        animation: _glowController,
-                        builder: (context, child) {
-                          return Container(
-                            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
-                            decoration: BoxDecoration(
-                              color: cardBg.withOpacity(0.8),
-                              border: Border.all(
-                                color: matrixGreen.withOpacity(0.3),
-                                width: 1,
+                        child: AnimatedBuilder(
+                          animation: _glowController,
+                          builder: (context, child) {
+                            return Container(
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 24,
+                                vertical: 16,
                               ),
-                              borderRadius: BorderRadius.circular(8),
-                              boxShadow: [
-                                BoxShadow(
-                                  color: matrixGreen.withOpacity(0.1 + _glowController.value * 0.1),
-                                  blurRadius: 15,
-                                  spreadRadius: 2,
+                              decoration: BoxDecoration(
+                                color: cardBg.withOpacity(0.8),
+                                border: Border.all(
+                                  color: matrixGreen.withOpacity(0.3),
+                                  width: 1,
                                 ),
-                              ],
-                            ),
-                            child: Column(
-                              mainAxisSize: MainAxisSize.min,
-                              children: [
-                                Text(
-                                  'COUNTDOWN.exe',
-                                  style: TextStyle(
-                                    color: darkGreen,
-                                    fontSize: 10,
-                                    fontFamily: 'monospace',
-                                    letterSpacing: 2,
+                                borderRadius: BorderRadius.circular(8),
+                                boxShadow: [
+                                  BoxShadow(
+                                    color: matrixGreen.withOpacity(
+                                      0.1 + _glowController.value * 0.1,
+                                    ),
+                                    blurRadius: 15,
+                                    spreadRadius: 2,
                                   ),
-                                ),
-                                const SizedBox(height: 8),
-                                Row(
-                                  mainAxisSize: MainAxisSize.min,
-                                  children: [
-                                    _buildDigit(hours.toString().padLeft(2, '0'), matrixGreen),
-                                    _buildColon(matrixGreen),
-                                    _buildDigit(minutes.toString().padLeft(2, '0'), matrixGreen),
-                                    _buildColon(matrixGreen),
-                                    _buildDigit(seconds.toString().padLeft(2, '0'), matrixGreen),
-                                  ],
-                                ),
-                              ],
-                            ),
-                          );
-                        },
+                                ],
+                              ),
+                              child: Column(
+                                mainAxisSize: MainAxisSize.min,
+                                children: [
+                                  Text(
+                                    'COUNTDOWN.exe',
+                                    style: TextStyle(
+                                      color: darkGreen,
+                                      fontSize: 10,
+                                      fontFamily: 'monospace',
+                                      letterSpacing: 2,
+                                    ),
+                                  ),
+                                  const SizedBox(height: 8),
+                                  Row(
+                                    mainAxisSize: MainAxisSize.min,
+                                    children: [
+                                      _buildDigit(
+                                        hours.toString().padLeft(2, '0'),
+                                        matrixGreen,
+                                      ),
+                                      _buildColon(matrixGreen),
+                                      _buildDigit(
+                                        minutes.toString().padLeft(2, '0'),
+                                        matrixGreen,
+                                      ),
+                                      _buildColon(matrixGreen),
+                                      _buildDigit(
+                                        seconds.toString().padLeft(2, '0'),
+                                        matrixGreen,
+                                      ),
+                                    ],
+                                  ),
+                                ],
+                              ),
+                            );
+                          },
+                        ),
                       ),
-                    ),
                     ),
                   ),
 
@@ -407,15 +471,16 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                           child: LayoutBuilder(
                             builder: (context, constraints) {
                               final chars = (constraints.maxWidth / 8).floor();
-                              final filledChars = (chars * _ilerlemeOrani).floor();
-                              
+                              final filledChars = (chars * _ilerlemeOrani)
+                                  .floor();
+
                               return Row(
                                 children: List.generate(chars, (index) {
                                   return Text(
                                     index < filledChars ? '█' : '░',
                                     style: TextStyle(
-                                      color: index < filledChars 
-                                          ? matrixGreen 
+                                      color: index < filledChars
+                                          ? matrixGreen
                                           : matrixGreen.withOpacity(0.3),
                                       fontSize: 12,
                                       fontFamily: 'monospace',
@@ -498,9 +563,21 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
   }
 
   String _getHicriAyAdi(int ay) {
-    const aylar = ['', 'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir', 
-      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban', 'Ramazan', 
-      'Şevval', 'Zilkade', 'Zilhicce'];
+    const aylar = [
+      '',
+      'Muharrem',
+      'Safer',
+      'Rebiülevvel',
+      'Rebiülahir',
+      'Cemaziyelevvel',
+      'Cemaziyelahir',
+      'Recep',
+      'Şaban',
+      'Ramazan',
+      'Şevval',
+      'Zilkade',
+      'Zilhicce',
+    ];
     return aylar[ay];
   }
 

@@ -1,4 +1,5 @@
 import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'diyanet_api_service.dart';
@@ -24,32 +25,33 @@ class DndService {
     // Önce izin var mı kontrol et
     final hasAccess = await hasPolicyAccess();
     if (!hasAccess) {
-      print('⚠️ DND izni yok! Kullanıcı ayarlardan izin vermelidir.');
+      debugPrint('⚠️ DND izni yok! Kullanıcı ayarlardan izin vermelidir.');
       return false;
     }
 
     final entries = await _buildEntries();
     if (entries.isEmpty) {
-      print('⚠️ DND planlanacak vakit bulunamadı.');
+      debugPrint('⚠️ DND planlanacak vakit bulunamadı.');
       return false;
     }
 
-    print('📵 ${entries.length} vakit için DND planlanıyor...');
+    debugPrint('📵 ${entries.length} vakit için DND planlanıyor...');
 
     final payload = entries
-        .map((entry) => {
-              'startAt': entry.startAt.millisecondsSinceEpoch,
-              'durationMinutes': entry.durationMinutes,
-              'label': entry.label,
-            })
+        .map(
+          (entry) => {
+            'startAt': entry.startAt.millisecondsSinceEpoch,
+            'durationMinutes': entry.durationMinutes,
+            'label': entry.label,
+          },
+        )
         .toList();
 
-    final result = await _channel.invokeMethod<bool>(
-      'scheduleDnd',
-      {'entries': payload},
-    );
-    
-    print(result == true ? '✅ DND planlandı' : '❌ DND planlanamadı');
+    final result = await _channel.invokeMethod<bool>('scheduleDnd', {
+      'entries': payload,
+    });
+
+    debugPrint(result == true ? '✅ DND planlandı' : '❌ DND planlanamadı');
     return result ?? false;
   }
 
@@ -90,7 +92,7 @@ class DndService {
   ) {
     final result = <_DndEntry>[];
     final isFriday = day.weekday == DateTime.friday;
-    
+
     const vakitler = [
       {'key': 'Ogle', 'label': 'Öğle', 'isCumaVakti': true},
       {'key': 'Ikindi', 'label': 'İkindi', 'isCumaVakti': false},
@@ -105,11 +107,11 @@ class DndService {
       if (startAt.isBefore(now)) {
         continue;
       }
-      
+
       // Sadece Cuma günü Öğle vakti (Cuma namazı) 60 dakika, diğerleri 30 dakika
       final isCumaVakti = isFriday && (vakit['isCumaVakti'] as bool);
       final duration = isCumaVakti ? 60 : 30;
-      
+
       result.add(
         _DndEntry(
           startAt: startAt,

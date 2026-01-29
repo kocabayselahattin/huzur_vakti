@@ -98,6 +98,9 @@ class AlarmService : Service() {
                 val isEarly = intent?.getBooleanExtra(AlarmReceiver.EXTRA_IS_EARLY, false) ?: false
                 val earlyMinutes = intent?.getIntExtra(AlarmReceiver.EXTRA_EARLY_MINUTES, 0) ?: 0
                 
+                // Alarm aktif flag'ini ayarla (DND beklesin diye)
+                setAlarmActiveFlag(true)
+                
                 // Foreground service olarak başlat
                 val notification = createAlarmNotification(currentVakitName, currentVakitTime, isEarly, earlyMinutes)
                 startForeground(NOTIFICATION_ID, notification)
@@ -193,9 +196,9 @@ class AlarmService : Service() {
         try {
             stopAlarmSound() // Önceki sesi durdur
             
-            // Ses dosyası boş veya ding_dong ise SharedPreferences'tan vakit bazlı sesi al
+            // Ses dosyası boş veya varsayılan ding_dong ise SharedPreferences'tan vakit bazlı sesi al
             var actualSoundFile = soundFile
-            if (actualSoundFile.isEmpty() || actualSoundFile == "ding_dong") {
+            if (actualSoundFile.isEmpty() || actualSoundFile == "ding_dong" || actualSoundFile == "ding_dong.mp3") {
                 val vakitName = currentVakitName.lowercase()
                     .replace("ı", "i").replace("ö", "o").replace("ü", "u")
                     .replace("ş", "s").replace("ğ", "g").replace("ç", "c")
@@ -223,10 +226,11 @@ class AlarmService : Service() {
             Log.d(TAG, "🔊 Alarm sesi başlatılıyor - Orijinal: $soundFile, Kullanılan: $actualSoundFile")
             
             mediaPlayer = MediaPlayer().apply {
-                // Ses kaynağını ayarla
+                // Ses kaynağını ayarla - RINGTONE stream kullan (medya sesi değil zil sesi)
                 val audioAttributes = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setFlags(AudioAttributes.FLAG_AUDIBILITY_ENFORCED)
                     .build()
                 setAudioAttributes(audioAttributes)
                 
@@ -312,6 +316,9 @@ class AlarmService : Service() {
             isPlaying = false
             
             stopVibration()
+            
+            // Alarm aktif flag'ini kapat
+            setAlarmActiveFlag(false)
             
             // Alarm durdurulduğunda sessize al ayarını kontrol et
             checkAndSetSilentMode()
@@ -485,6 +492,19 @@ class AlarmService : Service() {
         instance = null
         super.onDestroy()
         Log.d(TAG, "🔔 AlarmService sonlandırıldı")
+    }
+    
+    /**
+     * Alarm aktif flag'ini ayarla (DND'nin beklemesi için)
+     */
+    private fun setAlarmActiveFlag(active: Boolean) {
+        try {
+            val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+            prefs.edit().putBoolean("flutter.alarm_active", active).apply()
+            Log.d(TAG, "🚨 Alarm aktif flag: $active")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Alarm flag hatası: ${e.message}")
+        }
     }
     
     /**

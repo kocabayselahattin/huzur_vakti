@@ -254,6 +254,7 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
                 ),
                 onTap: () async {
                   await _languageService.changeLanguage(lang['code']!);
+                  if (!context.mounted) return;
                   Navigator.pop(context);
                   setState(() {});
                   ScaffoldMessenger.of(context).showSnackBar(

@@ -65,9 +65,7 @@ class _KalemSayacWidgetState extends State<KalemSayacWidget>
     final ilceId = konum.ilceId;
 
     try {
-      final vakitler = await DiyanetApiService.getBugunVakitler(
-        ilceId,
-      );
+      final vakitler = await DiyanetApiService.getBugunVakitler(ilceId);
 
       if (mounted && vakitler != null) {
         setState(() {
@@ -96,6 +94,8 @@ class _KalemSayacWidgetState extends State<KalemSayacWidget>
 
     DateTime? gelecekVakitZamani;
     String? gelecekVakitIsmi;
+    String? gelecekVakitKey;
+    final vakitTimes = <String, DateTime>{};
 
     for (final vakit in vakitSirasi) {
       final vakitStr = _vakitler[vakit];
@@ -112,39 +112,57 @@ class _KalemSayacWidgetState extends State<KalemSayacWidget>
         int.parse(parts[1]),
       );
 
-      if (vakitZamani.isAfter(now)) {
+      vakitTimes[vakit] = vakitZamani;
+
+      if (gelecekVakitZamani == null && vakitZamani.isAfter(now)) {
         gelecekVakitZamani = vakitZamani;
         gelecekVakitIsmi = vakitIsimleri[vakit];
-        break;
+        gelecekVakitKey = vakit;
       }
     }
 
     if (gelecekVakitZamani == null) {
-      final imsakStr = _vakitler['Imsak'];
-      if (imsakStr != null) {
-        final parts = imsakStr.split(':');
-        if (parts.length == 2) {
-          gelecekVakitZamani = DateTime(
-            now.year,
-            now.month,
-            now.day + 1,
-            int.parse(parts[0]),
-            int.parse(parts[1]),
-          );
-          gelecekVakitIsmi = 'İmsak';
-        }
+      final imsakZamani = vakitTimes['Imsak'];
+      if (imsakZamani != null) {
+        gelecekVakitZamani = imsakZamani.add(const Duration(days: 1));
+        gelecekVakitIsmi = 'İmsak';
+        gelecekVakitKey = 'Imsak';
       }
     }
 
-    if (gelecekVakitZamani != null && gelecekVakitIsmi != null) {
+    if (gelecekVakitZamani != null &&
+        gelecekVakitIsmi != null &&
+        gelecekVakitKey != null) {
       final kalan = gelecekVakitZamani.difference(now);
-      
-      // Ecir oranı hesaplama (gün içindeki ilerleme)
-      final gunBaslangic = DateTime(now.year, now.month, now.day, 0, 0);
-      final gunBitis = DateTime(now.year, now.month, now.day, 23, 59, 59);
-      final gunSuresi = gunBitis.difference(gunBaslangic).inSeconds;
-      final gecenSure = now.difference(gunBaslangic).inSeconds;
-      final oran = (gecenSure / gunSuresi).clamp(0.0, 1.0);
+
+      final imsakToday = vakitTimes['Imsak'];
+      final yatsiToday = vakitTimes['Yatsi'];
+      DateTime? onceVakitZamani;
+
+      if (gelecekVakitKey == 'Imsak' &&
+          imsakToday != null &&
+          now.isBefore(imsakToday) &&
+          yatsiToday != null) {
+        onceVakitZamani = yatsiToday.subtract(const Duration(days: 1));
+      } else {
+        final nextIndex = vakitSirasi.indexOf(gelecekVakitKey);
+        if (nextIndex != -1) {
+          final prevKey =
+              vakitSirasi[(nextIndex - 1 + vakitSirasi.length) %
+                  vakitSirasi.length];
+          onceVakitZamani = vakitTimes[prevKey];
+        }
+        onceVakitZamani ??= yatsiToday;
+      }
+
+      onceVakitZamani ??= now;
+      final toplamSure = gelecekVakitZamani
+          .difference(onceVakitZamani)
+          .inSeconds;
+      final gecenSure = now.difference(onceVakitZamani).inSeconds;
+      final oran = toplamSure <= 0
+          ? 0.0
+          : (gecenSure / toplamSure).clamp(0.0, 1.0);
 
       setState(() {
         _gelecekVakit = gelecekVakitIsmi ?? '';
@@ -162,7 +180,8 @@ class _KalemSayacWidgetState extends State<KalemSayacWidget>
 
     final hijriNow = HijriCalendar.now();
     final miladi = DateFormat('d MMM yyyy', 'tr_TR').format(DateTime.now());
-    final hicri = '${hijriNow.hDay} ${_getHijriMonth(hijriNow.hMonth)} ${hijriNow.hYear}';
+    final hicri =
+        '${hijriNow.hDay} ${_getHijriMonth(hijriNow.hMonth)} ${hijriNow.hYear}';
 
     return ScaleTransition(
       scale: _pulseAnimation,
@@ -172,11 +191,7 @@ class _KalemSayacWidgetState extends State<KalemSayacWidget>
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [
-              Color(0xFF1B4332),
-              Color(0xFF2D6A4F),
-              Color(0xFF40916C),
-            ],
+            colors: [Color(0xFF1B4332), Color(0xFF2D6A4F), Color(0xFF40916C)],
           ),
           borderRadius: BorderRadius.circular(30),
           boxShadow: [
@@ -207,10 +222,11 @@ class _KalemSayacWidgetState extends State<KalemSayacWidget>
               padding: const EdgeInsets.all(14),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // Tarih satırı (kompakt)
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       Text(
                         miladi,
@@ -219,7 +235,10 @@ class _KalemSayacWidgetState extends State<KalemSayacWidget>
                           fontSize: 11,
                         ),
                       ),
-                      const Text(' • ', style: TextStyle(color: Colors.white38)),
+                      const Text(
+                        ' • ',
+                        style: TextStyle(color: Colors.white38),
+                      ),
                       Text(
                         hicri,
                         style: const TextStyle(
@@ -239,52 +258,42 @@ class _KalemSayacWidgetState extends State<KalemSayacWidget>
                       letterSpacing: 3,
                       fontWeight: FontWeight.w300,
                     ),
+                    textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
                   // Kalan süre
                   Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
                       _buildTimeBlock(hours.toString().padLeft(2, '0'), 'SAAT'),
                       const SizedBox(width: 3),
-                      const Text(':', style: TextStyle(fontSize: 26, color: Colors.white70)),
+                      const Text(
+                        ':',
+                        style: TextStyle(fontSize: 26, color: Colors.white70),
+                      ),
                       const SizedBox(width: 3),
-                      _buildTimeBlock(minutes.toString().padLeft(2, '0'), 'DAKİKA'),
+                      _buildTimeBlock(
+                        minutes.toString().padLeft(2, '0'),
+                        'DAKİKA',
+                      ),
                       const SizedBox(width: 3),
-                      const Text(':', style: TextStyle(fontSize: 26, color: Colors.white70)),
+                      const Text(
+                        ':',
+                        style: TextStyle(fontSize: 26, color: Colors.white70),
+                      ),
                       const SizedBox(width: 3),
-                      _buildTimeBlock(seconds.toString().padLeft(2, '0'), 'SANİYE'),
+                      _buildTimeBlock(
+                        seconds.toString().padLeft(2, '0'),
+                        'SANİYE',
+                      ),
                     ],
                   ),
                   const SizedBox(height: 12),
                   // Ecir barı
                   Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Row(
-                        children: [
-                          Icon(Icons.auto_awesome, color: Colors.amber, size: 14),
-                          const SizedBox(width: 6),
-                          const Text(
-                            'Günün Bereketi',
-                            style: TextStyle(
-                              color: Colors.white70,
-                              fontSize: 11,
-                              fontWeight: FontWeight.w500,
-                            ),
-                          ),
-                          const Spacer(),
-                          Text(
-                            '${(_ecirOrani * 100).toInt()}%',
-                            style: const TextStyle(
-                              color: Colors.amber,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 5),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(8),
                         child: Stack(
@@ -363,9 +372,18 @@ class _KalemSayacWidgetState extends State<KalemSayacWidget>
 
   String _getHijriMonth(int month) {
     const months = [
-      'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir',
-      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban',
-      'Ramazan', 'Şevval', 'Zilkade', 'Zilhicce'
+      'Muharrem',
+      'Safer',
+      'Rebiülevvel',
+      'Rebiülahir',
+      'Cemaziyelevvel',
+      'Cemaziyelahir',
+      'Recep',
+      'Şaban',
+      'Ramazan',
+      'Şevval',
+      'Zilkade',
+      'Zilhicce',
     ];
     return months[month - 1];
   }

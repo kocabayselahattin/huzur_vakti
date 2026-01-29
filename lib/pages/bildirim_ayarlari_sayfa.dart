@@ -97,10 +97,19 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     {'ad': 'Best', 'dosya': 'best.mp3'},
     {'ad': 'Corner', 'dosya': 'corner.mp3'},
     {'ad': 'Ding Dong', 'dosya': 'ding_dong.mp3'},
-    {'ad': 'Es-Selatu Hayrun Minen Nevm 1', 'dosya': 'esselatu_hayrun_minen_nevm1.mp3'},
-    {'ad': 'Es-Selatu Hayrun Minen Nevm 2', 'dosya': 'esselatu_hayrun_minen_nevm2.mp3'},
+    {
+      'ad': 'Es-Selatu Hayrun Minen Nevm 1',
+      'dosya': 'esselatu_hayrun_minen_nevm1.mp3',
+    },
+    {
+      'ad': 'Es-Selatu Hayrun Minen Nevm 2',
+      'dosya': 'esselatu_hayrun_minen_nevm2.mp3',
+    },
     {'ad': 'Melodi', 'dosya': 'melodi.mp3'},
-    {'ad': 'Mescid-i Nebi Sabah Ezanı', 'dosya': 'mescid_i_nebi_sabah_ezani.mp3'},
+    {
+      'ad': 'Mescid-i Nebi Sabah Ezanı',
+      'dosya': 'mescid_i_nebi_sabah_ezani.mp3',
+    },
     {'ad': 'Snaps', 'dosya': 'snaps.mp3'},
     {'ad': 'Sweet Favour', 'dosya': 'sweet_favour.mp3'},
     {'ad': 'Violet', 'dosya': 'violet.mp3'},
@@ -236,7 +245,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
           _ozelSesDosyalari[vakit] = ozelSes;
         }
       }
-      _gunlukIcerikBildirimleri = 
+      _gunlukIcerikBildirimleri =
           prefs.getBool('daily_content_notifications_enabled') ?? true;
       _sessizeAl = prefs.getBool('sessize_al') ?? false;
       _kilitEkraniBildirimi =
@@ -355,7 +364,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       }
     }
     await prefs.setBool('sessize_al', _sessizeAl);
-    await prefs.setBool('gunluk_icerik_bildirimleri', _gunlukIcerikBildirimleri);
+    await prefs.setBool(
+      'daily_content_notifications_enabled',
+      _gunlukIcerikBildirimleri,
+    );
 
     if (_sessizeAl) {
       await DndService.schedulePrayerDnd();
@@ -365,7 +377,9 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
 
     // Zamanlanmış bildirimleri yeniden ayarla
     await ScheduledNotificationService.scheduleAllPrayerNotifications();
-    await DailyContentNotificationService.setDailyContentNotificationsEnabled(_gunlukIcerikBildirimleri);
+    await DailyContentNotificationService.setDailyContentNotificationsEnabled(
+      _gunlukIcerikBildirimleri,
+    );
 
     setState(() {
       _degisiklikYapildi = false;
@@ -871,7 +885,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                 children: [
                   Row(
                     children: [
-                      const Icon(Icons.calendar_today, color: Colors.tealAccent),
+                      const Icon(
+                        Icons.calendar_today,
+                        color: Colors.tealAccent,
+                      ),
                       const SizedBox(width: 12),
                       Expanded(
                         child: Text(
@@ -891,8 +908,9 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                             _gunlukIcerikBildirimleri = value;
                             _degisiklikYapildi = true;
                           });
-                          await DailyContentNotificationService
-                              .setDailyContentNotificationsEnabled(value);
+                          await DailyContentNotificationService.setDailyContentNotificationsEnabled(
+                            value,
+                          );
                         },
                         activeThumbColor: Colors.tealAccent,
                       ),
@@ -991,7 +1009,11 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                         const SizedBox(height: 8),
                         Row(
                           children: [
-                            const Icon(Icons.volume_up, size: 14, color: Colors.white54),
+                            const Icon(
+                              Icons.volume_up,
+                              size: 14,
+                              color: Colors.white54,
+                            ),
                             const SizedBox(width: 8),
                             const Text(
                               'Bildirim Sesi:',

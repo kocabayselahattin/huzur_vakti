@@ -396,7 +396,7 @@ class _YakinCamilerSayfaState extends State<YakinCamilerSayfa> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${_camiler.length} ${_languageService['mosques_found'] ?? 'cami bulundu'} (5 km ${_languageService['within_km'] ?? 'içinde'})',
+                        '${_camiler.length} ${_languageService['mosques_found'] ?? 'cami bulundu'} (2 km ${_languageService['within_km'] ?? 'içinde'})',
                         style: TextStyle(
                           color: renkler.yaziSecondary,
                           fontSize: 12,

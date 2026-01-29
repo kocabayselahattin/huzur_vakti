@@ -42,6 +42,21 @@ class PrayerDndReceiver : BroadcastReceiver() {
           Log.w(TAG, "⚠️ DND izni yok!")
           return
         }
+        // Alarm çalıyorsa bekle (AlarmService aktif mi kontrol et)
+        val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        val alarmActive = prefs.getBoolean("flutter.alarm_active", false)
+        if (alarmActive) {
+          Log.d(TAG, "⏳ Alarm aktif, sessiz mod 30 saniye erteleniyor...")
+          // Alarm aktifse 30 saniye sonra tekrar dene
+          android.os.Handler(android.os.Looper.getMainLooper()).postDelayed({
+            if (!prefs.getBoolean("flutter.alarm_active", false)) {
+              notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
+              showSilentModeNotification(context, notificationManager, label, duration)
+              Log.d(TAG, "📵 Ertelenmiş sessiz mod aktif: $label")
+            }
+          }, 30000)
+          return
+        }
         // Sessiz moda al
         notificationManager.setInterruptionFilter(NotificationManager.INTERRUPTION_FILTER_NONE)
         // Çık/Kal butonlu bildirim göster

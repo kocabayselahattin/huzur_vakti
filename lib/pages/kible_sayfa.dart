@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:flutter_compass/flutter_compass.dart';
 import 'package:geomag/geomag.dart';
@@ -13,12 +12,12 @@ import '../services/konum_service.dart';
 
 /// Pusula stilleri enum
 enum PusulaStili {
-  modern,      // Varsayılan modern stil
-  klasik,      // Klasik pusula görünümü
-  islami,      // İslami motifli
-  minimal,     // Minimalist tasarım
-  luks,        // Lüks altın tasarım
-  dijital,     // Dijital/Siber tasarım
+  modern, // Varsayılan modern stil
+  klasik, // Klasik pusula görünümü
+  islami, // İslami motifli
+  minimal, // Minimalist tasarım
+  luks, // Lüks altın tasarım
+  dijital, // Dijital/Siber tasarım
 }
 
 class KibleSayfa extends StatefulWidget {
@@ -157,7 +156,7 @@ class _KibleSayfaState extends State<KibleSayfa> {
       // Ses efekti
       await _audioPlayer?.play(AssetSource('sounds/ding_dong.mp3'));
     } catch (e) {
-      print('⚠️ Kıble geri bildirim hatası: $e');
+      debugPrint('⚠️ Kıble geri bildirim hatası: $e');
     }
   }
 
@@ -432,9 +431,7 @@ class _KibleSayfaState extends State<KibleSayfa> {
     final hasHeading = heading != null;
     final qibla = _kibleDerece ?? 0;
     final double? trueHeading = hasHeading
-        ? _normalizeAngle(
-            heading.toDouble() + (_declination ?? 0),
-          ).toDouble()
+        ? _normalizeAngle(heading.toDouble() + (_declination ?? 0)).toDouble()
         : null;
     final double? relative = trueHeading != null
         ? _normalizeAngle(qibla - trueHeading)
@@ -458,7 +455,11 @@ class _KibleSayfaState extends State<KibleSayfa> {
   }
 
   /// Seçili pusula stiline göre uygun pusulayı döndürür
-  Widget _seciliPusula(TemaRenkleri renkler, double? relative, double? trueHeading) {
+  Widget _seciliPusula(
+    TemaRenkleri renkler,
+    double? relative,
+    double? trueHeading,
+  ) {
     switch (_pusulaStili) {
       case PusulaStili.modern:
         return _modernPusula(renkler, relative, trueHeading);
@@ -478,7 +479,7 @@ class _KibleSayfaState extends State<KibleSayfa> {
   /// Pusula stili seçme dialog'u
   void _pusulaStiliSec() {
     final renkler = _temaService.renkler;
-    
+
     showModalBottomSheet(
       context: context,
       backgroundColor: renkler.kartArkaPlan,
@@ -528,9 +529,13 @@ class _KibleSayfaState extends State<KibleSayfa> {
     );
   }
 
-  Widget _pusulaStiliKarti(TemaRenkleri renkler, PusulaStili stil, bool isSelected) {
+  Widget _pusulaStiliKarti(
+    TemaRenkleri renkler,
+    PusulaStili stil,
+    bool isSelected,
+  ) {
     final stilBilgisi = _getPusulaStilBilgisi(stil);
-    
+
     return GestureDetector(
       onTap: () {
         _pusulaStiliniKaydet(stil);
@@ -538,8 +543,8 @@ class _KibleSayfaState extends State<KibleSayfa> {
       },
       child: Container(
         decoration: BoxDecoration(
-          color: isSelected 
-              ? renkler.vurgu.withOpacity(0.2) 
+          color: isSelected
+              ? renkler.vurgu.withOpacity(0.2)
               : renkler.arkaPlan.withOpacity(0.5),
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
@@ -556,8 +561,8 @@ class _KibleSayfaState extends State<KibleSayfa> {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 gradient: stilBilgisi['gradient'] as Gradient?,
-                color: stilBilgisi['gradient'] == null 
-                    ? stilBilgisi['color'] as Color 
+                color: stilBilgisi['gradient'] == null
+                    ? stilBilgisi['color'] as Color
                     : null,
                 border: Border.all(
                   color: stilBilgisi['borderColor'] as Color,
@@ -897,9 +902,15 @@ class _KibleSayfaState extends State<KibleSayfa> {
                             decoration: BoxDecoration(
                               color: const Color(0xFF8B4513),
                               shape: BoxShape.circle,
-                              border: Border.all(color: const Color(0xFFD4A574), width: 2),
+                              border: Border.all(
+                                color: const Color(0xFFD4A574),
+                                width: 2,
+                              ),
                             ),
-                            child: const Text('🕋', style: TextStyle(fontSize: 24)),
+                            child: const Text(
+                              '🕋',
+                              style: TextStyle(fontSize: 24),
+                            ),
                           ),
                         ],
                       ),
@@ -915,7 +926,10 @@ class _KibleSayfaState extends State<KibleSayfa> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: const Color(0xFF8B4513),
-                    border: Border.all(color: const Color(0xFFD4A574), width: 2),
+                    border: Border.all(
+                      color: const Color(0xFFD4A574),
+                      width: 2,
+                    ),
                   ),
                 ),
                 if (isCorrectDirection) _correctDirectionBadge(),
@@ -996,13 +1010,20 @@ class _KibleSayfaState extends State<KibleSayfa> {
                   decoration: BoxDecoration(
                     shape: BoxShape.circle,
                     color: const Color(0xFF004D40),
-                    border: Border.all(color: const Color(0xFFD4AF37), width: 2),
+                    border: Border.all(
+                      color: const Color(0xFFD4AF37),
+                      width: 2,
+                    ),
                   ),
                   child: const Center(
-                    child: Text('☪', style: TextStyle(fontSize: 20, color: Color(0xFFD4AF37))),
+                    child: Text(
+                      '☪',
+                      style: TextStyle(fontSize: 20, color: Color(0xFFD4AF37)),
+                    ),
                   ),
                 ),
-                if (isCorrectDirection) _correctDirectionBadge(color: const Color(0xFF00695C)),
+                if (isCorrectDirection)
+                  _correctDirectionBadge(color: const Color(0xFF00695C)),
               ],
             ),
           ),
@@ -1066,7 +1087,8 @@ class _KibleSayfaState extends State<KibleSayfa> {
                 ),
                 // Yön oku - kullanıcının baktığı yön
                 _directionArrow(color: Colors.grey.shade700),
-                if (isCorrectDirection) _correctDirectionBadge(color: Colors.grey.shade600),
+                if (isCorrectDirection)
+                  _correctDirectionBadge(color: Colors.grey.shade600),
               ],
             ),
           ),
@@ -1158,7 +1180,8 @@ class _KibleSayfaState extends State<KibleSayfa> {
                 ),
                 // Yön oku - kullanıcının baktığı yön
                 _directionArrow(color: const Color(0xFFFFD700)),
-                if (isCorrectDirection) _correctDirectionBadge(color: const Color(0xFFFFD700)),
+                if (isCorrectDirection)
+                  _correctDirectionBadge(color: const Color(0xFFFFD700)),
               ],
             ),
           ),
@@ -1199,9 +1222,7 @@ class _KibleSayfaState extends State<KibleSayfa> {
                 fontSize: 18,
                 fontFamily: 'monospace',
                 fontWeight: FontWeight.bold,
-                shadows: [
-                  Shadow(color: Color(0xFF00FF00), blurRadius: 10),
-                ],
+                shadows: [Shadow(color: Color(0xFF00FF00), blurRadius: 10)],
               ),
             ),
           ),
@@ -1248,7 +1269,10 @@ class _KibleSayfaState extends State<KibleSayfa> {
                         decoration: BoxDecoration(
                           color: const Color(0xFF0D0D0D),
                           shape: BoxShape.circle,
-                          border: Border.all(color: const Color(0xFF00FF00), width: 2),
+                          border: Border.all(
+                            color: const Color(0xFF00FF00),
+                            width: 2,
+                          ),
                           boxShadow: [
                             BoxShadow(
                               color: const Color(0xFF00FF00).withOpacity(0.5),
@@ -1263,7 +1287,8 @@ class _KibleSayfaState extends State<KibleSayfa> {
                 ),
                 // Yön oku - kullanıcının baktığı yön
                 _directionArrow(color: const Color(0xFF00FF00)),
-                if (isCorrectDirection) _correctDirectionBadge(color: const Color(0xFF00FF00)),
+                if (isCorrectDirection)
+                  _correctDirectionBadge(color: const Color(0xFF00FF00)),
               ],
             ),
           ),
@@ -1285,10 +1310,7 @@ class _KibleSayfaState extends State<KibleSayfa> {
             color: color.withOpacity(0.9),
             borderRadius: BorderRadius.circular(16),
             boxShadow: [
-              BoxShadow(
-                color: color.withOpacity(0.4),
-                blurRadius: 12,
-              ),
+              BoxShadow(color: color.withOpacity(0.4), blurRadius: 12),
             ],
           ),
           child: Row(
@@ -1646,7 +1668,7 @@ class _CompassDialPainter extends CustomPainter {
 /// Klasik Pusula Painter - Vintage tarzı
 class _KlasikCompassPainter extends CustomPainter {
   final List<String> directions;
-  
+
   _KlasikCompassPainter({required this.directions});
 
   @override
@@ -1700,7 +1722,7 @@ class _KlasikCompassPainter extends CustomPainter {
       const Color(0xFF5D4E37), // S
       const Color(0xFF5D4E37), // W
     ];
-    
+
     for (int i = 0; i < 4; i++) {
       final angle = (i * 90 - 90) * math.pi / 180;
       final textPainter = TextPainter(
@@ -1730,7 +1752,7 @@ class _KlasikCompassPainter extends CustomPainter {
 /// İslami Pusula Painter - Yeşil tonlar ve İslami motifler
 class _IslamiCompassPainter extends CustomPainter {
   final List<String> directions;
-  
+
   _IslamiCompassPainter({required this.directions});
 
   @override
@@ -1768,7 +1790,7 @@ class _IslamiCompassPainter extends CustomPainter {
       ..color = const Color(0xFFD4AF37).withOpacity(0.3)
       ..style = PaintingStyle.stroke
       ..strokeWidth = 1;
-    
+
     for (int i = 0; i < 8; i++) {
       final angle = i * math.pi / 4;
       final start = Offset(
@@ -1832,7 +1854,7 @@ class _IslamiCompassPainter extends CustomPainter {
 /// Minimal Pusula Painter - Sade ve temiz
 class _MinimalCompassPainter extends CustomPainter {
   final List<String> directions;
-  
+
   _MinimalCompassPainter({required this.directions});
 
   @override
@@ -1901,7 +1923,7 @@ class _MinimalCompassPainter extends CustomPainter {
 /// Lüks Pusula Painter - Altın ve premium görünüm
 class _LuksCompassPainter extends CustomPainter {
   final List<String> directions;
-  
+
   _LuksCompassPainter({required this.directions});
 
   @override
@@ -1941,14 +1963,14 @@ class _LuksCompassPainter extends CustomPainter {
         center.dx + math.cos(angle) * (radius - 20),
         center.dy + math.sin(angle) * (radius - 20),
       );
-      
+
       final path = Path();
       path.moveTo(pos.dx, pos.dy - 4);
       path.lineTo(pos.dx + 3, pos.dy);
       path.lineTo(pos.dx, pos.dy + 4);
       path.lineTo(pos.dx - 3, pos.dy);
       path.close();
-      
+
       canvas.drawPath(path, diamondPaint);
     }
 
@@ -1963,10 +1985,7 @@ class _LuksCompassPainter extends CustomPainter {
             fontSize: 22,
             fontWeight: FontWeight.bold,
             shadows: [
-              Shadow(
-                color: Colors.black.withOpacity(0.5),
-                blurRadius: 4,
-              ),
+              Shadow(color: Colors.black.withOpacity(0.5), blurRadius: 4),
             ],
           ),
         ),
@@ -1987,7 +2006,7 @@ class _LuksCompassPainter extends CustomPainter {
 /// Dijital Pusula Painter - Siber/Matrix tarzı
 class _DijitalCompassPainter extends CustomPainter {
   final List<String> directions;
-  
+
   _DijitalCompassPainter({required this.directions});
 
   @override
@@ -2024,10 +2043,10 @@ class _DijitalCompassPainter extends CustomPainter {
       final angle = (i - 90) * math.pi / 180;
       final isMajor = i % 30 == 0;
       final tickLength = isMajor ? 15.0 : 8.0;
-      final color = isMajor 
-          ? const Color(0xFF00FF00) 
+      final color = isMajor
+          ? const Color(0xFF00FF00)
           : const Color(0xFF00FF00).withOpacity(0.5);
-      
+
       final outer = Offset(
         center.dx + math.cos(angle) * (radius - 8),
         center.dy + math.sin(angle) * (radius - 8),
@@ -2074,8 +2093,9 @@ class _DijitalCompassPainter extends CustomPainter {
             fontFamily: 'monospace',
             shadows: [
               Shadow(
-                color: (i == 0 ? const Color(0xFFFF0040) : const Color(0xFF00FF00))
-                    .withOpacity(0.8),
+                color:
+                    (i == 0 ? const Color(0xFFFF0040) : const Color(0xFF00FF00))
+                        .withOpacity(0.8),
                 blurRadius: 10,
               ),
             ],

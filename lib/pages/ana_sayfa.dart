@@ -85,7 +85,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
     try {
       await ScheduledNotificationService.scheduleAllPrayerNotifications();
     } catch (e) {
-      print('⚠️ Bildirim zamanlama hatası: $e');
+      debugPrint('⚠️ Bildirim zamanlama hatası: $e');
     }
   }
 
@@ -158,7 +158,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
 
       // Widget'ları güncelle
       await HomeWidgetService.updateAllWidgets();
-      print('✅ Aktif konum değiştirildi: ${_konumlar[yeniIndex].tamAd}');
+      debugPrint('✅ Aktif konum değiştirildi: ${_konumlar[yeniIndex].tamAd}');
 
       // Vakit listesini ve tüm widgetları yenile
       if (mounted) {
@@ -731,15 +731,32 @@ class _AnaSayfaState extends State<AnaSayfa> {
                   end: Alignment.bottomRight,
                   colors: [renkler.vurgu, renkler.vurgu.withOpacity(0.7)],
                 ),
-                borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+                borderRadius: const BorderRadius.vertical(
+                  top: Radius.circular(25),
+                ),
               ),
               child: Row(
                 children: [
-                  Icon(Icons.apps, color: Colors.white.withOpacity(0.8), size: 28),
+                  Icon(
+                    Icons.apps,
+                    color: Colors.white.withOpacity(0.8),
+                    size: 28,
+                  ),
                   const SizedBox(width: 12),
-                  const Text('MENÜ', style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold, color: Colors.white, letterSpacing: 2)),
+                  const Text(
+                    'MENÜ',
+                    style: TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 2,
+                    ),
+                  ),
                   const Spacer(),
-                  IconButton(icon: const Icon(Icons.close, color: Colors.white), onPressed: () => Navigator.pop(context)),
+                  IconButton(
+                    icon: const Icon(Icons.close, color: Colors.white),
+                    onPressed: () => Navigator.pop(context),
+                  ),
                 ],
               ),
             ),
@@ -752,16 +769,147 @@ class _AnaSayfaState extends State<AnaSayfa> {
                   crossAxisSpacing: 10,
                   mainAxisSpacing: 10,
                   children: [
-                    _buildMenuCard(icon: Icons.schedule, title: _languageService['calendar'] ?? 'İmsakiye', color: Colors.blue, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const ImsakiyeSayfa())); }),
-                    _buildMenuCard(icon: Icons.auto_awesome, title: _languageService['dhikr'] ?? 'Zikir Matik', color: Colors.purple, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const ZikirMatikSayfa())); }),
-                    _buildMenuCard(icon: Icons.mosque, title: _languageService['worship'] ?? 'İbadet', color: Colors.green, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const IbadetSayfa())); }),
-                    _buildMenuCard(icon: Icons.explore, title: _languageService['qibla'] ?? 'Kıble Yönü', color: Colors.orange, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const KibleSayfa())); }),
-                    _buildMenuCard(icon: Icons.place, title: _languageService['nearby_mosques'] ?? 'Yakın Camiler', color: Colors.red, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const YakinCamilerSayfa())); }),
-                    _buildMenuCard(icon: Icons.celebration, title: _languageService['special_days'] ?? 'Özel Günler', color: Colors.pink, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const OzelGunlerSayfa())); }),
-                    _buildMenuCard(icon: Icons.menu_book, title: _languageService['hadith'] ?? '40 Hadis', color: Colors.teal, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const KirkHadisSayfa())); }),
-                    _buildMenuCard(icon: Icons.auto_stories, title: _languageService['quran'] ?? 'Kur\'an-ı Kerim', color: Colors.indigo, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const KuranSayfa())); }),
-                    _buildMenuCard(icon: Icons.settings, title: _languageService['settings'] ?? 'Ayarlar', color: Colors.blueGrey, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const AyarlarSayfa())); }),
-                    _buildMenuCard(icon: Icons.info, title: _languageService['about'] ?? 'Hakkında', color: Colors.amber, onTap: () { Navigator.pop(context); Navigator.push(context, MaterialPageRoute(builder: (context) => const HakkindaSayfa())); }),
+                    _buildMenuCard(
+                      icon: Icons.schedule,
+                      title: _languageService['calendar'] ?? 'İmsakiye',
+                      color: Colors.blue,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ImsakiyeSayfa(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildMenuCard(
+                      icon: Icons.auto_awesome,
+                      title: _languageService['dhikr'] ?? 'Zikir Matik',
+                      color: Colors.purple,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ZikirMatikSayfa(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildMenuCard(
+                      icon: Icons.mosque,
+                      title: _languageService['worship'] ?? 'İbadet',
+                      color: Colors.green,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const IbadetSayfa(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildMenuCard(
+                      icon: Icons.explore,
+                      title: _languageService['qibla'] ?? 'Kıble Yönü',
+                      color: Colors.orange,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const KibleSayfa(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildMenuCard(
+                      icon: Icons.place,
+                      title:
+                          _languageService['nearby_mosques'] ?? 'Yakın Camiler',
+                      color: Colors.red,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const YakinCamilerSayfa(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildMenuCard(
+                      icon: Icons.celebration,
+                      title: _languageService['special_days'] ?? 'Özel Günler',
+                      color: Colors.pink,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const OzelGunlerSayfa(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildMenuCard(
+                      icon: Icons.menu_book,
+                      title: _languageService['hadith'] ?? '40 Hadis',
+                      color: Colors.teal,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const KirkHadisSayfa(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildMenuCard(
+                      icon: Icons.auto_stories,
+                      title: _languageService['quran'] ?? 'Kur\'an-ı Kerim',
+                      color: Colors.indigo,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const KuranSayfa(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildMenuCard(
+                      icon: Icons.settings,
+                      title: _languageService['settings'] ?? 'Ayarlar',
+                      color: Colors.blueGrey,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const AyarlarSayfa(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildMenuCard(
+                      icon: Icons.info,
+                      title: _languageService['about'] ?? 'Hakkında',
+                      color: Colors.amber,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const HakkindaSayfa(),
+                          ),
+                        );
+                      },
+                    ),
                   ],
                 ),
               ),
@@ -772,27 +920,55 @@ class _AnaSayfaState extends State<AnaSayfa> {
     );
   }
 
-  Widget _buildMenuCard({required IconData icon, required String title, required Color color, required VoidCallback onTap}) {
+  Widget _buildMenuCard({
+    required IconData icon,
+    required String title,
+    required Color color,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         decoration: BoxDecoration(
-          gradient: LinearGradient(begin: Alignment.topLeft, end: Alignment.bottomRight, colors: [color.withOpacity(0.8), color.withOpacity(0.6)]),
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [color.withOpacity(0.8), color.withOpacity(0.6)],
+          ),
           borderRadius: BorderRadius.circular(20),
-          boxShadow: [BoxShadow(color: color.withOpacity(0.4), blurRadius: 10, offset: const Offset(0, 4))],
+          boxShadow: [
+            BoxShadow(
+              color: color.withOpacity(0.4),
+              blurRadius: 10,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
         child: Column(
           mainAxisAlignment: MainAxisAlignment.center,
           children: [
             Container(
               padding: const EdgeInsets.all(12),
-              decoration: BoxDecoration(color: Colors.white.withOpacity(0.2), shape: BoxShape.circle),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.2),
+                shape: BoxShape.circle,
+              ),
               child: Icon(icon, size: 28, color: Colors.white),
             ),
             const SizedBox(height: 12),
             Padding(
               padding: const EdgeInsets.symmetric(horizontal: 8),
-              child: Text(title, style: const TextStyle(color: Colors.white, fontSize: 12, fontWeight: FontWeight.bold), textAlign: TextAlign.center, maxLines: 2, overflow: TextOverflow.ellipsis),
+              child: Text(
+                title,
+                style: const TextStyle(
+                  color: Colors.white,
+                  fontSize: 12,
+                  fontWeight: FontWeight.bold,
+                ),
+                textAlign: TextAlign.center,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+              ),
             ),
           ],
         ),

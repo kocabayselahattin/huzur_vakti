@@ -12,7 +12,8 @@ class OnboardingPermissionsPage extends StatefulWidget {
       _OnboardingPermissionsPageState();
 }
 
-class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
+class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage>
+    with WidgetsBindingObserver {
   final LanguageService _languageService = LanguageService();
   int _currentStep = 0;
   bool _isProcessing = false;
@@ -29,10 +30,24 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this);
     print('🔐 OnboardingPermissions: initState başladı');
     _initSteps();
     _checkCurrentPermissions();
     print('🔐 OnboardingPermissions: initState bitti');
+  }
+
+  @override
+  void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
+    super.dispose();
+  }
+
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state == AppLifecycleState.resumed) {
+      _recheckSpecialPermissions();
+    }
   }
 
   void _initSteps() {
@@ -40,35 +55,44 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
       _PermissionStep(
         icon: Icons.location_on,
         title: _languageService['location_permission'] ?? 'Konum İzni',
-        description: _languageService['location_permission_desc'] ??
+        description:
+            _languageService['location_permission_desc'] ??
             'Bulunduğunuz konuma göre doğru namaz vakitlerini gösterebilmek için konum izni gereklidir.',
         color: Colors.blue,
       ),
       _PermissionStep(
         icon: Icons.notifications_active,
         title: _languageService['notification_permission'] ?? 'Bildirim İzni',
-        description: _languageService['notification_permission_desc'] ??
+        description:
+            _languageService['notification_permission_desc'] ??
             'Namaz vakitlerinde sizi bilgilendirmek için bildirim izni gereklidir.',
         color: Colors.orange,
       ),
       _PermissionStep(
         icon: Icons.alarm,
-        title: _languageService['exact_alarm_permission'] ?? 'Tam Zamanlı Alarm İzni',
-        description: _languageService['exact_alarm_permission_desc'] ??
+        title:
+            _languageService['exact_alarm_permission'] ??
+            'Tam Zamanlı Alarm İzni',
+        description:
+            _languageService['exact_alarm_permission_desc'] ??
             'Bildirimlerin tam vakitinde çalması için alarm izni gereklidir.',
         color: Colors.purple,
       ),
       _PermissionStep(
         icon: Icons.layers,
         title: _languageService['overlay_permission'] ?? 'Üstünde Göster İzni',
-        description: _languageService['overlay_permission_desc'] ??
+        description:
+            _languageService['overlay_permission_desc'] ??
             'Vakit girdiğinde ekranda bildirim gösterebilmek için bu izin gereklidir.',
         color: Colors.teal,
       ),
       _PermissionStep(
         icon: Icons.battery_charging_full,
-        title: _languageService['battery_permission'] ?? 'Pil Optimizasyonu Muafiyeti',
-        description: _languageService['battery_permission_desc'] ??
+        title:
+            _languageService['battery_permission'] ??
+            'Pil Optimizasyonu Muafiyeti',
+        description:
+            _languageService['battery_permission_desc'] ??
             'Arka planda bildirimlerin düzgün çalışması için pil optimizasyonunun kapatılması gerekir.',
         color: Colors.green,
       ),
@@ -97,6 +121,37 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
     }
   }
 
+  Future<void> _recheckSpecialPermissions() async {
+    if (!Platform.isAndroid) return;
+    final overlayStatus = await PermissionService.hasOverlayPermission();
+    final batteryStatus =
+        await PermissionService.isBatteryOptimizationDisabled();
+    if (mounted) {
+      setState(() {
+        _overlayGranted = overlayStatus;
+        _batteryOptDisabled = batteryStatus;
+      });
+    }
+  }
+
+  Future<bool> _checkOverlayWithRetry() async {
+    for (int i = 0; i < 4; i++) {
+      final granted = await PermissionService.hasOverlayPermission();
+      if (granted) return true;
+      await Future.delayed(const Duration(milliseconds: 700));
+    }
+    return await PermissionService.hasOverlayPermission();
+  }
+
+  Future<bool> _checkBatteryWithRetry() async {
+    for (int i = 0; i < 4; i++) {
+      final granted = await PermissionService.isBatteryOptimizationDisabled();
+      if (granted) return true;
+      await Future.delayed(const Duration(milliseconds: 700));
+    }
+    return await PermissionService.isBatteryOptimizationDisabled();
+  }
+
   Future<void> _requestCurrentPermission() async {
     if (_isProcessing) return;
 
@@ -109,40 +164,38 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
         case 0: // Konum
           granted = await PermissionService.requestLocationPermission();
           if (mounted) {
-            _locationGranted = await PermissionService.checkLocationPermission();
+            _locationGranted =
+                await PermissionService.checkLocationPermission();
             granted = _locationGranted;
           }
           break;
         case 1: // Bildirim
           granted = await PermissionService.requestNotificationPermission();
           if (mounted) {
-            _notificationGranted = await PermissionService.checkNotificationPermission();
+            _notificationGranted =
+                await PermissionService.checkNotificationPermission();
             granted = _notificationGranted;
           }
           break;
         case 2: // Exact Alarm
           granted = await PermissionService.requestExactAlarmPermission();
           if (mounted) {
-            _exactAlarmGranted = await PermissionService.hasExactAlarmPermission();
+            _exactAlarmGranted =
+                await PermissionService.hasExactAlarmPermission();
             granted = _exactAlarmGranted;
           }
           break;
         case 3: // Overlay
           await PermissionService.openOverlaySettings();
-          // Ayarlardan döndükten sonra kontrol et - kullanıcının ayar yapması için bekle
-          await Future.delayed(const Duration(milliseconds: 800));
           if (mounted) {
-            _overlayGranted = await PermissionService.hasOverlayPermission();
+            _overlayGranted = await _checkOverlayWithRetry();
             granted = _overlayGranted;
           }
           break;
         case 4: // Pil
           await PermissionService.requestBatteryOptimizationExemption();
-          // Ayarlardan döndükten sonra kontrol et - kullanıcının ayar yapması için bekle
-          await Future.delayed(const Duration(milliseconds: 800));
           if (mounted) {
-            _batteryOptDisabled =
-                await PermissionService.isBatteryOptimizationDisabled();
+            _batteryOptDisabled = await _checkBatteryWithRetry();
             granted = _batteryOptDisabled;
           }
           break;
@@ -157,26 +210,31 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
         } else {
           // İzin verilmedi - kullanıcıya açık bilgi ver
           if (!mounted) return;
-          
+
           String message = '';
           switch (_currentStep) {
             case 0: // Konum
-              message = 'Konum izni verilmedi. Manuel olarak konum seçebilirsiniz.\n\nAyarlar > Konum bölümünden il/ilçe seçin';
+              message =
+                  'Konum izni verilmedi. Manuel olarak konum seçebilirsiniz.\n\nAyarlar > Konum bölümünden il/ilçe seçin';
               break;
             case 1: // Bildirim
-              message = 'Bildirim izni verilmedi. Namaz vakti bildirimleri çalışmayacak.\n\nİsterseniz daha sonra telefonun Ayarlar menüsünden izin verebilirsiniz';
+              message =
+                  'Bildirim izni verilmedi. Namaz vakti bildirimleri çalışmayacak.\n\nİsterseniz daha sonra telefonun Ayarlar menüsünden izin verebilirsiniz';
               break;
             case 2: // Exact Alarm
-              message = 'Tam zamanlı alarm izni verilmedi. Bildirimler gecikmeli gelebilir.\n\nİsterseniz daha sonra telefonun Ayarlar menüsünden izin verebilirsiniz';
+              message =
+                  'Tam zamanlı alarm izni verilmedi. Bildirimler gecikmeli gelebilir.\n\nİsterseniz daha sonra telefonun Ayarlar menüsünden izin verebilirsiniz';
               break;
             case 3: // Overlay
-              message = 'Üst katman izni verilmedi. Tam ekran bildirimler gösterilemeyecek.\n\nİsterseniz daha sonra telefonun Ayarlar menüsünden izin verebilirsiniz';
+              message =
+                  'Üst katman izni verilmedi. Tam ekran bildirimler gösterilemeyecek.\n\nİsterseniz daha sonra telefonun Ayarlar menüsünden izin verebilirsiniz';
               break;
             case 4: // Pil
-              message = 'Pil optimizasyonu kapatılmadı. Arka plan bildirimleri sorun yaşayabilir.\n\nİsterseniz daha sonra telefonun Ayarlar menüsünden değiştirebilirsiniz';
+              message =
+                  'Pil optimizasyonu kapatılmadı. Arka plan bildirimleri sorun yaşayabilir.\n\nİsterseniz daha sonra telefonun Ayarlar menüsünden değiştirebilirsiniz';
               break;
           }
-          
+
           final shouldContinue = await showDialog<bool>(
             context: context,
             barrierDismissible: false, // Dialog dışına tıklayarak kapatılamaz
@@ -184,7 +242,11 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
               backgroundColor: const Color(0xFF2B3151),
               title: Row(
                 children: [
-                  const Icon(Icons.info_outline, color: Colors.orange, size: 28),
+                  const Icon(
+                    Icons.info_outline,
+                    color: Colors.orange,
+                    size: 28,
+                  ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Text(
@@ -203,7 +265,10 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
                   onPressed: () => Navigator.pop(context, false),
                   child: Text(
                     _languageService['try_again'] ?? 'Tekrar Dene',
-                    style: const TextStyle(color: Colors.orange, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Colors.orange,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 ElevatedButton(
@@ -220,7 +285,7 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
               ],
             ),
           );
-          
+
           if (shouldContinue == true && mounted) {
             _nextStep();
           }
@@ -256,13 +321,17 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
           style: const TextStyle(color: Colors.white),
         ),
         content: Text(
-          _languageService['skip_permissions_warning'] ?? 'Bazı özellikler (bildirimler, konum tabanlı vakitler) düzgün çalışmayabilir.',
+          _languageService['skip_permissions_warning'] ??
+              'Bazı özellikler (bildirimler, konum tabanlı vakitler) düzgün çalışmayabilir.',
           style: const TextStyle(color: Colors.white70),
         ),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
-            child: Text(_languageService['cancel'] ?? 'İptal', style: const TextStyle(color: Colors.white70)),
+            child: Text(
+              _languageService['cancel'] ?? 'İptal',
+              style: const TextStyle(color: Colors.white70),
+            ),
           ),
           ElevatedButton(
             onPressed: () {
@@ -270,7 +339,10 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
               _completeOnboarding();
             },
             style: ElevatedButton.styleFrom(backgroundColor: Colors.orange),
-            child: Text(_languageService['skip'] ?? 'Atla', style: const TextStyle(color: Colors.white)),
+            child: Text(
+              _languageService['skip'] ?? 'Atla',
+              style: const TextStyle(color: Colors.white),
+            ),
           ),
         ],
       ),
@@ -435,7 +507,8 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              _languageService['permission_granted'] ?? 'İzin Verildi',
+                              _languageService['permission_granted'] ??
+                                  'İzin Verildi',
                               style: const TextStyle(
                                 color: Colors.green,
                                 fontWeight: FontWeight.bold,
@@ -467,7 +540,10 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
                         ),
                         child: Text(
                           _languageService['back'] ?? 'Geri',
-                          style: const TextStyle(color: Colors.white70, fontSize: 16),
+                          style: const TextStyle(
+                            color: Colors.white70,
+                            fontSize: 16,
+                          ),
                         ),
                       ),
                     ),
@@ -497,9 +573,12 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
                           : Text(
                               isGranted
                                   ? (_currentStep < _steps.length - 1
-                                        ? (_languageService['continue_btn'] ?? 'Devam')
-                                        : (_languageService['complete'] ?? 'Tamamla'))
-                                  : (_languageService['grant_permission'] ?? 'İzin Ver'),
+                                        ? (_languageService['continue_btn'] ??
+                                              'Devam')
+                                        : (_languageService['complete'] ??
+                                              'Tamamla'))
+                                  : (_languageService['grant_permission'] ??
+                                        'İzin Ver'),
                               style: const TextStyle(
                                 color: Colors.white,
                                 fontSize: 16,
@@ -516,8 +595,10 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage> {
               // Alt bilgi
               Text(
                 _currentStep < _steps.length - 1
-                    ? (_languageService['permission_warning'] ?? 'Bu izni vermezseniz bazı özellikler çalışmayabilir')
-                    : (_languageService['all_permissions_granted'] ?? 'Tüm izinler alındı, uygulamayı kullanmaya başlayabilirsiniz'),
+                    ? (_languageService['permission_warning'] ??
+                          'Bu izni vermezseniz bazı özellikler çalışmayabilir')
+                    : (_languageService['all_permissions_granted'] ??
+                          'Tüm izinler alındı, uygulamayı kullanmaya başlayabilirsiniz'),
                 style: const TextStyle(color: Colors.white38, fontSize: 12),
                 textAlign: TextAlign.center,
               ),

@@ -1,3 +1,4 @@
+import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'dart:io';
 
@@ -13,14 +14,14 @@ class VibrationService {
         await _channel.invokeMethod('vibrate', {'duration': 25});
         return;
       } catch (e) {
-        print('⚠️ Native hafif titreşim hatası: $e');
+        debugPrint('⚠️ Native hafif titreşim hatası: $e');
       }
     }
     // iOS veya hata durumunda HapticFeedback dene
     try {
       await HapticFeedback.lightImpact();
     } catch (e) {
-      print('⚠️ HapticFeedback hatası: $e');
+      debugPrint('⚠️ HapticFeedback hatası: $e');
     }
   }
 
@@ -31,13 +32,13 @@ class VibrationService {
         await _channel.invokeMethod('vibrate', {'duration': 50});
         return;
       } catch (e) {
-        print('⚠️ Native orta titreşim hatası: $e');
+        debugPrint('⚠️ Native orta titreşim hatası: $e');
       }
     }
     try {
       await HapticFeedback.mediumImpact();
     } catch (e) {
-      print('⚠️ HapticFeedback hatası: $e');
+      debugPrint('⚠️ HapticFeedback hatası: $e');
     }
   }
 
@@ -48,13 +49,13 @@ class VibrationService {
         await _channel.invokeMethod('vibrate', {'duration': 80});
         return;
       } catch (e) {
-        print('⚠️ Native güçlü titreşim hatası: $e');
+        debugPrint('⚠️ Native güçlü titreşim hatası: $e');
       }
     }
     try {
       await HapticFeedback.heavyImpact();
     } catch (e) {
-      print('⚠️ HapticFeedback hatası: $e');
+      debugPrint('⚠️ HapticFeedback hatası: $e');
     }
   }
 
@@ -65,13 +66,13 @@ class VibrationService {
         await _channel.invokeMethod('vibrate', {'duration': 15});
         return;
       } catch (e) {
-        print('⚠️ Native seçim titreşimi hatası: $e');
+        debugPrint('⚠️ Native seçim titreşimi hatası: $e');
       }
     }
     try {
       await HapticFeedback.selectionClick();
     } catch (e) {
-      print('⚠️ Seçim titreşimi hatası: $e');
+      debugPrint('⚠️ Seçim titreşimi hatası: $e');
     }
   }
 
@@ -81,7 +82,7 @@ class VibrationService {
       try {
         await _channel.invokeMethod('vibrate', {'duration': durationMs});
       } catch (e) {
-        print('⚠️ Native titreşim hatası: $e');
+        debugPrint('⚠️ Native titreşim hatası: $e');
         await HapticFeedback.selectionClick();
       }
     } else {
@@ -95,7 +96,7 @@ class VibrationService {
       try {
         await _channel.invokeMethod('vibratePattern', {'pattern': pattern});
       } catch (e) {
-        print('⚠️ Pattern titreşim hatası: $e');
+        debugPrint('⚠️ Pattern titreşim hatası: $e');
       }
     }
   }

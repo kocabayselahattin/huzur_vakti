@@ -66,9 +66,7 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
     final ilceId = konum.ilceId;
 
     try {
-      final vakitler = await DiyanetApiService.getBugunVakitler(
-        ilceId,
-      );
+      final vakitler = await DiyanetApiService.getBugunVakitler(ilceId);
 
       if (mounted && vakitler != null) {
         setState(() {
@@ -97,6 +95,8 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
 
     DateTime? gelecekVakitZamani;
     String? gelecekVakitIsmi;
+    String? gelecekVakitKey;
+    final vakitTimes = <String, DateTime>{};
 
     for (final vakit in vakitSirasi) {
       final vakitStr = _vakitler[vakit];
@@ -113,37 +113,57 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
         int.parse(parts[1]),
       );
 
-      if (vakitZamani.isAfter(now)) {
+      vakitTimes[vakit] = vakitZamani;
+
+      if (gelecekVakitZamani == null && vakitZamani.isAfter(now)) {
         gelecekVakitZamani = vakitZamani;
         gelecekVakitIsmi = vakitIsimleri[vakit];
-        break;
+        gelecekVakitKey = vakit;
       }
     }
 
     if (gelecekVakitZamani == null) {
-      final imsakStr = _vakitler['Imsak'];
-      if (imsakStr != null) {
-        final parts = imsakStr.split(':');
-        if (parts.length == 2) {
-          gelecekVakitZamani = DateTime(
-            now.year,
-            now.month,
-            now.day + 1,
-            int.parse(parts[0]),
-            int.parse(parts[1]),
-          );
-          gelecekVakitIsmi = 'İmsak';
-        }
+      final imsakZamani = vakitTimes['Imsak'];
+      if (imsakZamani != null) {
+        gelecekVakitZamani = imsakZamani.add(const Duration(days: 1));
+        gelecekVakitIsmi = 'İmsak';
+        gelecekVakitKey = 'Imsak';
       }
     }
 
-    if (gelecekVakitZamani != null && gelecekVakitIsmi != null) {
+    if (gelecekVakitZamani != null &&
+        gelecekVakitIsmi != null &&
+        gelecekVakitKey != null) {
       final kalan = gelecekVakitZamani.difference(now);
-      final gunBaslangic = DateTime(now.year, now.month, now.day, 0, 0);
-      final gunBitis = DateTime(now.year, now.month, now.day, 23, 59, 59);
-      final gunSuresi = gunBitis.difference(gunBaslangic).inSeconds;
-      final gecenSure = now.difference(gunBaslangic).inSeconds;
-      final oran = (gecenSure / gunSuresi).clamp(0.0, 1.0);
+
+      final imsakToday = vakitTimes['Imsak'];
+      final yatsiToday = vakitTimes['Yatsi'];
+      DateTime? onceVakitZamani;
+
+      if (gelecekVakitKey == 'Imsak' &&
+          imsakToday != null &&
+          now.isBefore(imsakToday) &&
+          yatsiToday != null) {
+        onceVakitZamani = yatsiToday.subtract(const Duration(days: 1));
+      } else {
+        final nextIndex = vakitSirasi.indexOf(gelecekVakitKey);
+        if (nextIndex != -1) {
+          final prevKey =
+              vakitSirasi[(nextIndex - 1 + vakitSirasi.length) %
+                  vakitSirasi.length];
+          onceVakitZamani = vakitTimes[prevKey];
+        }
+        onceVakitZamani ??= yatsiToday;
+      }
+
+      onceVakitZamani ??= now;
+      final toplamSure = gelecekVakitZamani
+          .difference(onceVakitZamani)
+          .inSeconds;
+      final gecenSure = now.difference(onceVakitZamani).inSeconds;
+      final oran = toplamSure <= 0
+          ? 0.0
+          : (gecenSure / toplamSure).clamp(0.0, 1.0);
 
       setState(() {
         _gelecekVakit = gelecekVakitIsmi ?? '';
@@ -161,7 +181,8 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
 
     final hijriNow = HijriCalendar.now();
     final miladi = DateFormat('d MMM yyyy', 'tr_TR').format(DateTime.now());
-    final hicri = '${hijriNow.hDay} ${_getHijriMonth(hijriNow.hMonth)} ${hijriNow.hYear}';
+    final hicri =
+        '${hijriNow.hDay} ${_getHijriMonth(hijriNow.hMonth)} ${hijriNow.hYear}';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -169,11 +190,7 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
         gradient: const LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            Color(0xFF2C1810),
-            Color(0xFF5D4037),
-            Color(0xFF8D6E63),
-          ],
+          colors: [Color(0xFF2C1810), Color(0xFF5D4037), Color(0xFF8D6E63)],
         ),
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
@@ -207,7 +224,11 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
                 Row(
                   mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    const Icon(Icons.calendar_today, color: Colors.white60, size: 12),
+                    const Icon(
+                      Icons.calendar_today,
+                      color: Colors.white60,
+                      size: 12,
+                    ),
                     const SizedBox(width: 6),
                     Text(
                       miladi,
@@ -221,17 +242,17 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
                     const SizedBox(width: 4),
                     Text(
                       hicri,
-                      style: const TextStyle(
-                        color: Colors.amber,
-                        fontSize: 11,
-                      ),
+                      style: const TextStyle(color: Colors.amber, fontSize: 11),
                     ),
                   ],
                 ),
                 const SizedBox(height: 10),
                 // Vakit bilgisi
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 12,
+                    vertical: 6,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.black.withOpacity(0.3),
                     borderRadius: BorderRadius.circular(12),
@@ -254,9 +275,15 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
                   children: [
                     _buildTimePillar(hours.toString().padLeft(2, '0'), 'SAAT'),
                     const SizedBox(width: 10),
-                    _buildTimePillar(minutes.toString().padLeft(2, '0'), 'DAKİKA'),
+                    _buildTimePillar(
+                      minutes.toString().padLeft(2, '0'),
+                      'DAKİKA',
+                    ),
                     const SizedBox(width: 10),
-                    _buildTimePillar(seconds.toString().padLeft(2, '0'), 'SANİYE'),
+                    _buildTimePillar(
+                      seconds.toString().padLeft(2, '0'),
+                      'SANİYE',
+                    ),
                   ],
                 ),
                 const SizedBox(height: 10),
@@ -288,10 +315,7 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
             borderRadius: BorderRadius.circular(10),
             border: Border.all(color: Colors.amber.withOpacity(0.4), width: 2),
             boxShadow: [
-              BoxShadow(
-                color: Colors.amber.withOpacity(0.2),
-                blurRadius: 8,
-              ),
+              BoxShadow(color: Colors.amber.withOpacity(0.2), blurRadius: 8),
             ],
           ),
           child: Center(
@@ -321,34 +345,6 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
   Widget _buildEcirSection() {
     return Column(
       children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            const Row(
-              children: [
-                Icon(Icons.star, color: Colors.amber, size: 14),
-                SizedBox(width: 6),
-                Text(
-                  'İbadet Saati',
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 11,
-                    fontWeight: FontWeight.w600,
-                  ),
-                ),
-              ],
-            ),
-            Text(
-              '%${(_ecirOrani * 100).toInt()}',
-              style: const TextStyle(
-                color: Colors.amber,
-                fontSize: 12,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 6),
         Stack(
           children: [
             Container(
@@ -384,9 +380,18 @@ class _MihrapSayacWidgetState extends State<MihrapSayacWidget>
 
   String _getHijriMonth(int month) {
     const months = [
-      'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir',
-      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban',
-      'Ramazan', 'Şevval', 'Zilkade', 'Zilhicce'
+      'Muharrem',
+      'Safer',
+      'Rebiülevvel',
+      'Rebiülahir',
+      'Cemaziyelevvel',
+      'Cemaziyelahir',
+      'Recep',
+      'Şaban',
+      'Ramazan',
+      'Şevval',
+      'Zilkade',
+      'Zilhicce',
     ];
     return months[month - 1];
   }
@@ -428,30 +433,4 @@ class _MihrapPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(_MihrapPainter oldDelegate) => true;
-}
-
-class _IslamicPatternPainter extends CustomPainter {
-  @override
-  void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.amber.withOpacity(0.3)
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 2;
-
-    final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 3;
-
-    // Geometrik yıldız deseni
-    for (int i = 0; i < 8; i++) {
-      final angle = (i * math.pi / 4);
-      final x1 = center.dx + radius * math.cos(angle);
-      final y1 = center.dy + radius * math.sin(angle);
-      final x2 = center.dx + (radius / 2) * math.cos(angle + math.pi / 8);
-      final y2 = center.dy + (radius / 2) * math.sin(angle + math.pi / 8);
-      canvas.drawLine(Offset(x1, y1), Offset(x2, y2), paint);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => false;
 }

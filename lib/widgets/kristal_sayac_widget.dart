@@ -27,18 +27,18 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
   Map<String, String> _vakitSaatleri = {};
   final TemaService _temaService = TemaService();
   final LanguageService _languageService = LanguageService();
-  
+
   late AnimationController _sparkleController;
 
   @override
   void initState() {
     super.initState();
-    
+
     _sparkleController = AnimationController(
       duration: const Duration(seconds: 4),
       vsync: this,
     )..repeat();
-    
+
     if (widget.shouldLoadData) {
       _vakitleriYukle();
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -105,18 +105,38 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
     final nowTotalSeconds = now.hour * 3600 + now.minute * 60 + now.second;
 
     final vakitSaatleri = [
-      {'adi': _languageService['imsak'] ?? 'İmsak', 'saat': _vakitSaatleri['Imsak']!},
-      {'adi': _languageService['gunes'] ?? 'Güneş', 'saat': _vakitSaatleri['Gunes']!},
-      {'adi': _languageService['ogle'] ?? 'Öğle', 'saat': _vakitSaatleri['Ogle']!},
-      {'adi': _languageService['ikindi'] ?? 'İkindi', 'saat': _vakitSaatleri['Ikindi']!},
-      {'adi': _languageService['aksam'] ?? 'Akşam', 'saat': _vakitSaatleri['Aksam']!},
-      {'adi': _languageService['yatsi'] ?? 'Yatsı', 'saat': _vakitSaatleri['Yatsi']!},
+      {
+        'adi': _languageService['imsak'] ?? 'İmsak',
+        'saat': _vakitSaatleri['Imsak']!,
+      },
+      {
+        'adi': _languageService['gunes'] ?? 'Güneş',
+        'saat': _vakitSaatleri['Gunes']!,
+      },
+      {
+        'adi': _languageService['ogle'] ?? 'Öğle',
+        'saat': _vakitSaatleri['Ogle']!,
+      },
+      {
+        'adi': _languageService['ikindi'] ?? 'İkindi',
+        'saat': _vakitSaatleri['Ikindi']!,
+      },
+      {
+        'adi': _languageService['aksam'] ?? 'Akşam',
+        'saat': _vakitSaatleri['Aksam']!,
+      },
+      {
+        'adi': _languageService['yatsi'] ?? 'Yatsı',
+        'saat': _vakitSaatleri['Yatsi']!,
+      },
     ];
 
     List<int> vakitSaniyeleri = [];
     for (final vakit in vakitSaatleri) {
       final parts = vakit['saat']!.split(':');
-      vakitSaniyeleri.add(int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60);
+      vakitSaniyeleri.add(
+        int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60,
+      );
     }
 
     DateTime? sonrakiVakitZamani;
@@ -133,8 +153,13 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
 
     if (sonrakiIndex == -1) {
       final parts = vakitSaatleri[0]['saat']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day + 1,
-          int.parse(parts[0]), int.parse(parts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day + 1,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
       sonrakiVakitAdi = vakitSaatleri[0]['adi']!;
       final yatsiSaniye = vakitSaniyeleri.last;
       final imsakSaniye = vakitSaniyeleri.first;
@@ -143,8 +168,13 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     } else if (sonrakiIndex == 0) {
       final parts = vakitSaatleri[0]['saat']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day,
-          int.parse(parts[0]), int.parse(parts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
       sonrakiVakitAdi = vakitSaatleri[0]['adi']!;
       final yatsiSaniye = vakitSaniyeleri.last;
       final imsakSaniye = vakitSaniyeleri.first;
@@ -153,10 +183,16 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     } else {
       final parts = vakitSaatleri[sonrakiIndex]['saat']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day,
-          int.parse(parts[0]), int.parse(parts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
       sonrakiVakitAdi = vakitSaatleri[sonrakiIndex]['adi']!;
-      final toplamSure = vakitSaniyeleri[sonrakiIndex] - vakitSaniyeleri[sonrakiIndex - 1];
+      final toplamSure =
+          vakitSaniyeleri[sonrakiIndex] - vakitSaniyeleri[sonrakiIndex - 1];
       final gecenSure = nowTotalSeconds - vakitSaniyeleri[sonrakiIndex - 1];
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     }
@@ -170,9 +206,19 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
 
   String _getHicriAyAdi(int ay) {
     final aylar = [
-      '', 'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir',
-      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban', 'Ramazan',
-      'Şevval', 'Zilkade', 'Zilhicce'
+      '',
+      'Muharrem',
+      'Safer',
+      'Rebiülevvel',
+      'Rebiülahir',
+      'Cemaziyelevvel',
+      'Cemaziyelahir',
+      'Recep',
+      'Şaban',
+      'Ramazan',
+      'Şevval',
+      'Zilkade',
+      'Zilhicce',
     ];
     return aylar[ay];
   }
@@ -185,7 +231,8 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
 
     final now = DateTime.now();
     final hicri = HijriCalendar.now();
-    final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
+    final hicriTarih =
+        '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
     final miladiTarih = DateFormat('dd MMMM yyyy', 'tr_TR').format(now);
 
     // Tema kontrolü: Varsayılansa orijinal, değilse tema renkleri
@@ -193,10 +240,18 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
     final temaRenkleri = _temaService.renkler;
 
     // Orijinal renkler veya tema renkleri
-    final primaryColor = kullanTemaRenkleri ? temaRenkleri.vurgu : const Color(0xFF5C6BC0);
-    final secondaryColor = kullanTemaRenkleri ? temaRenkleri.vurguSecondary : const Color(0xFF64B5F6);
-    final bgColor = kullanTemaRenkleri ? temaRenkleri.kartArkaPlan : const Color(0xFFF5F7FA);
-    final textColor = kullanTemaRenkleri ? temaRenkleri.yaziPrimary : const Color(0xFF3D4F6F);
+    final primaryColor = kullanTemaRenkleri
+        ? temaRenkleri.vurgu
+        : const Color(0xFF5C6BC0);
+    final secondaryColor = kullanTemaRenkleri
+        ? temaRenkleri.vurguSecondary
+        : const Color(0xFF64B5F6);
+    final bgColor = kullanTemaRenkleri
+        ? temaRenkleri.kartArkaPlan
+        : const Color(0xFFF5F7FA);
+    final textColor = kullanTemaRenkleri
+        ? temaRenkleri.yaziPrimary
+        : const Color(0xFF3D4F6F);
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -233,7 +288,7 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
                 ),
               ),
             ),
-            
+
             // Cam yüzey efektleri
             Positioned(
               top: -50,
@@ -252,13 +307,13 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
                 ),
               ),
             ),
-            
+
             // Işık kırılması çizgileri
             CustomPaint(
               size: const Size(double.infinity, 240),
               painter: _CrystalFacetPainter(),
             ),
-            
+
             // Animasyonlu parıltılar
             AnimatedBuilder(
               animation: _sparkleController,
@@ -269,7 +324,7 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
                 );
               },
             ),
-            
+
             // Cam kenar efekti
             Container(
               decoration: BoxDecoration(
@@ -290,7 +345,7 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
                 ),
               ),
             ),
-            
+
             // İçerik
             Padding(
               padding: const EdgeInsets.all(24),
@@ -299,7 +354,10 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
                 children: [
                   // Üst: Vakit etiketi
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 20,
+                      vertical: 10,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.6),
                       borderRadius: BorderRadius.circular(30),
@@ -343,7 +401,13 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
                   Row(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
-                      _buildCrystalTimeUnit(hours.toString().padLeft(2, '0'), 'SA', primaryColor, secondaryColor, textColor),
+                      _buildCrystalTimeUnit(
+                        hours.toString().padLeft(2, '0'),
+                        'SA',
+                        primaryColor,
+                        secondaryColor,
+                        textColor,
+                      ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
@@ -355,7 +419,13 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
                           ),
                         ),
                       ),
-                      _buildCrystalTimeUnit(minutes.toString().padLeft(2, '0'), 'DK', primaryColor, secondaryColor, textColor),
+                      _buildCrystalTimeUnit(
+                        minutes.toString().padLeft(2, '0'),
+                        'DK',
+                        primaryColor,
+                        secondaryColor,
+                        textColor,
+                      ),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 8),
                         child: Text(
@@ -367,7 +437,13 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
                           ),
                         ),
                       ),
-                      _buildCrystalTimeUnit(seconds.toString().padLeft(2, '0'), 'SN', primaryColor, secondaryColor, textColor),
+                      _buildCrystalTimeUnit(
+                        seconds.toString().padLeft(2, '0'),
+                        'SN',
+                        primaryColor,
+                        secondaryColor,
+                        textColor,
+                      ),
                     ],
                   ),
 
@@ -375,7 +451,10 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
 
                   // Alt: Tarihler
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 16,
+                      vertical: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: Colors.white.withOpacity(0.4),
                       borderRadius: BorderRadius.circular(12),
@@ -411,9 +490,9 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
                       ],
                     ),
                   ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   // İlerleme Barı
                   _buildProgressBar(primaryColor, secondaryColor, textColor),
                 ],
@@ -425,16 +504,17 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
     );
   }
 
-  Widget _buildProgressBar(Color primaryColor, Color secondaryColor, Color textColor) {
+  Widget _buildProgressBar(
+    Color primaryColor,
+    Color secondaryColor,
+    Color textColor,
+  ) {
     return Container(
       height: 12,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(6),
         color: textColor.withOpacity(0.25),
-        border: Border.all(
-          color: textColor.withOpacity(0.2),
-          width: 1,
-        ),
+        border: Border.all(color: textColor.withOpacity(0.2), width: 1),
       ),
       child: Stack(
         children: [
@@ -474,7 +554,13 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
     );
   }
 
-  Widget _buildCrystalTimeUnit(String value, String label, Color primaryColor, Color secondaryColor, Color textColor) {
+  Widget _buildCrystalTimeUnit(
+    String value,
+    String label,
+    Color primaryColor,
+    Color secondaryColor,
+    Color textColor,
+  ) {
     return Container(
       width: 80,
       height: 85,
@@ -490,10 +576,7 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
           ],
         ),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(
-          color: Colors.white,
-          width: 2,
-        ),
+        border: Border.all(color: Colors.white, width: 2),
         boxShadow: [
           BoxShadow(
             color: secondaryColor.withOpacity(0.15),
@@ -543,7 +626,9 @@ class _CrystalFacetPainter extends CustomPainter {
     final paint = Paint()
       ..color = Colors.white.withOpacity(0.3)
       ..strokeWidth = 0.5
-      ..style = PaintingStyle.stroke;
+      ..style = PaintingStyle.stroke
+      ..strokeCap = StrokeCap.round
+      ..isAntiAlias = true;
 
     // Çapraz çizgiler - kristal yüzey efekti
     for (int i = 0; i < 5; i++) {
@@ -582,7 +667,8 @@ class _SparklePainter extends CustomPainter {
 
       if (opacity > 0.1) {
         final paint = Paint()
-          ..color = Colors.white.withOpacity(opacity * 0.8);
+          ..color = Colors.white.withOpacity(opacity * 0.8)
+          ..isAntiAlias = true;
 
         // Yıldız şekli
         _drawSparkle(canvas, sparklePositions[i], 4 * scale, paint);
@@ -596,13 +682,13 @@ class _SparklePainter extends CustomPainter {
       final angle = (i * math.pi / 2);
       final outerX = center.dx + math.cos(angle) * size;
       final outerY = center.dy + math.sin(angle) * size;
-      
+
       if (i == 0) {
         path.moveTo(outerX, outerY);
       } else {
         path.lineTo(outerX, outerY);
       }
-      
+
       final midAngle = angle + math.pi / 4;
       final innerX = center.dx + math.cos(midAngle) * (size * 0.3);
       final innerY = center.dy + math.sin(midAngle) * (size * 0.3);
@@ -628,10 +714,13 @@ class _ProgressBarLinesPainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final paint = Paint()
       ..color = lineColor
-      ..strokeWidth = 1;
+      ..strokeWidth = 0.8
+      ..strokeCap = StrokeCap.round
+      ..isAntiAlias = true;
 
     for (double x = 0; x < size.width; x += 8) {
-      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
+      final dx = x + 0.5;
+      canvas.drawLine(Offset(dx, 0), Offset(dx, size.height), paint);
     }
   }
 

@@ -62,9 +62,7 @@ class _HilalSayacWidgetState extends State<HilalSayacWidget>
     final ilceId = konum.ilceId;
 
     try {
-      final vakitler = await DiyanetApiService.getBugunVakitler(
-        ilceId,
-      );
+      final vakitler = await DiyanetApiService.getBugunVakitler(ilceId);
 
       if (mounted && vakitler != null) {
         setState(() {
@@ -93,6 +91,8 @@ class _HilalSayacWidgetState extends State<HilalSayacWidget>
 
     DateTime? gelecekVakitZamani;
     String? gelecekVakitIsmi;
+    String? gelecekVakitKey;
+    final vakitTimes = <String, DateTime>{};
 
     for (final vakit in vakitSirasi) {
       final vakitStr = _vakitler[vakit];
@@ -109,37 +109,57 @@ class _HilalSayacWidgetState extends State<HilalSayacWidget>
         int.parse(parts[1]),
       );
 
-      if (vakitZamani.isAfter(now)) {
+      vakitTimes[vakit] = vakitZamani;
+
+      if (gelecekVakitZamani == null && vakitZamani.isAfter(now)) {
         gelecekVakitZamani = vakitZamani;
         gelecekVakitIsmi = vakitIsimleri[vakit];
-        break;
+        gelecekVakitKey = vakit;
       }
     }
 
     if (gelecekVakitZamani == null) {
-      final imsakStr = _vakitler['Imsak'];
-      if (imsakStr != null) {
-        final parts = imsakStr.split(':');
-        if (parts.length == 2) {
-          gelecekVakitZamani = DateTime(
-            now.year,
-            now.month,
-            now.day + 1,
-            int.parse(parts[0]),
-            int.parse(parts[1]),
-          );
-          gelecekVakitIsmi = 'İmsak';
-        }
+      final imsakZamani = vakitTimes['Imsak'];
+      if (imsakZamani != null) {
+        gelecekVakitZamani = imsakZamani.add(const Duration(days: 1));
+        gelecekVakitIsmi = 'İmsak';
+        gelecekVakitKey = 'Imsak';
       }
     }
 
-    if (gelecekVakitZamani != null && gelecekVakitIsmi != null) {
+    if (gelecekVakitZamani != null &&
+        gelecekVakitIsmi != null &&
+        gelecekVakitKey != null) {
       final kalan = gelecekVakitZamani.difference(now);
-      final gunBaslangic = DateTime(now.year, now.month, now.day, 0, 0);
-      final gunBitis = DateTime(now.year, now.month, now.day, 23, 59, 59);
-      final gunSuresi = gunBitis.difference(gunBaslangic).inSeconds;
-      final gecenSure = now.difference(gunBaslangic).inSeconds;
-      final oran = (gecenSure / gunSuresi).clamp(0.0, 1.0);
+
+      final imsakToday = vakitTimes['Imsak'];
+      final yatsiToday = vakitTimes['Yatsi'];
+      DateTime? onceVakitZamani;
+
+      if (gelecekVakitKey == 'Imsak' &&
+          imsakToday != null &&
+          now.isBefore(imsakToday) &&
+          yatsiToday != null) {
+        onceVakitZamani = yatsiToday.subtract(const Duration(days: 1));
+      } else {
+        final nextIndex = vakitSirasi.indexOf(gelecekVakitKey);
+        if (nextIndex != -1) {
+          final prevKey =
+              vakitSirasi[(nextIndex - 1 + vakitSirasi.length) %
+                  vakitSirasi.length];
+          onceVakitZamani = vakitTimes[prevKey];
+        }
+        onceVakitZamani ??= yatsiToday;
+      }
+
+      onceVakitZamani ??= now;
+      final toplamSure = gelecekVakitZamani
+          .difference(onceVakitZamani)
+          .inSeconds;
+      final gecenSure = now.difference(onceVakitZamani).inSeconds;
+      final oran = toplamSure <= 0
+          ? 0.0
+          : (gecenSure / toplamSure).clamp(0.0, 1.0);
 
       setState(() {
         _gelecekVakit = gelecekVakitIsmi ?? '';
@@ -157,7 +177,8 @@ class _HilalSayacWidgetState extends State<HilalSayacWidget>
 
     final hijriNow = HijriCalendar.now();
     final miladi = DateFormat('d MMM yyyy', 'tr_TR').format(DateTime.now());
-    final hicri = '${hijriNow.hDay} ${_getHijriMonth(hijriNow.hMonth)} ${hijriNow.hYear}';
+    final hicri =
+        '${hijriNow.hDay} ${_getHijriMonth(hijriNow.hMonth)} ${hijriNow.hYear}';
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
@@ -165,11 +186,7 @@ class _HilalSayacWidgetState extends State<HilalSayacWidget>
         gradient: const LinearGradient(
           begin: Alignment.topRight,
           end: Alignment.bottomLeft,
-          colors: [
-            Color(0xFF0D1B2A),
-            Color(0xFF1B263B),
-            Color(0xFF415A77),
-          ],
+          colors: [Color(0xFF0D1B2A), Color(0xFF1B263B), Color(0xFF415A77)],
         ),
         borderRadius: BorderRadius.circular(30),
         boxShadow: [
@@ -199,7 +216,7 @@ class _HilalSayacWidgetState extends State<HilalSayacWidget>
             top: 16,
             child: CustomPaint(
               size: const Size(40, 40),
-              painter: _HilalPainter(),
+              painter: _HilalPainter(phase: _moonPhaseFraction(DateTime.now())),
             ),
           ),
           // İçerik
@@ -222,17 +239,17 @@ class _HilalSayacWidgetState extends State<HilalSayacWidget>
                     const Text(' • ', style: TextStyle(color: Colors.white38)),
                     Text(
                       hicri,
-                      style: const TextStyle(
-                        color: Colors.amber,
-                        fontSize: 11,
-                      ),
+                      style: const TextStyle(color: Colors.amber, fontSize: 11),
                     ),
                   ],
                 ),
                 const SizedBox(height: 12),
                 // Vakit
                 Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 10,
+                    vertical: 5,
+                  ),
                   decoration: BoxDecoration(
                     color: Colors.white.withOpacity(0.1),
                     borderRadius: BorderRadius.circular(15),
@@ -268,39 +285,14 @@ class _HilalSayacWidgetState extends State<HilalSayacWidget>
                   ),
                   child: Column(
                     children: [
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                        children: [
-                          const Row(
-                            children: [
-                              Icon(Icons.trending_up, color: Colors.amber, size: 14),
-                              SizedBox(width: 6),
-                              Text(
-                                'Sevap Kazanımı',
-                                style: TextStyle(
-                                  color: Colors.white70,
-                                  fontSize: 10,
-                                ),
-                              ),
-                            ],
-                          ),
-                          Text(
-                            '%${(_ecirOrani * 100).toInt()}',
-                            style: const TextStyle(
-                              color: Colors.amber,
-                              fontSize: 12,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ],
-                      ),
-                      const SizedBox(height: 6),
                       ClipRRect(
                         borderRadius: BorderRadius.circular(6),
                         child: LinearProgressIndicator(
                           value: _ecirOrani,
                           backgroundColor: Colors.white.withOpacity(0.1),
-                          valueColor: const AlwaysStoppedAnimation<Color>(Colors.amber),
+                          valueColor: const AlwaysStoppedAnimation<Color>(
+                            Colors.amber,
+                          ),
                           minHeight: 5,
                         ),
                       ),
@@ -329,9 +321,7 @@ class _HilalSayacWidgetState extends State<HilalSayacWidget>
           ],
         ),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: Colors.white.withOpacity(0.2),
-        ),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
       ),
       child: Column(
         children: [
@@ -347,10 +337,7 @@ class _HilalSayacWidgetState extends State<HilalSayacWidget>
           const SizedBox(height: 3),
           Text(
             label,
-            style: TextStyle(
-              fontSize: 8,
-              color: Colors.white.withOpacity(0.6),
-            ),
+            style: TextStyle(fontSize: 8, color: Colors.white.withOpacity(0.6)),
           ),
         ],
       ),
@@ -359,39 +346,66 @@ class _HilalSayacWidgetState extends State<HilalSayacWidget>
 
   String _getHijriMonth(int month) {
     const months = [
-      'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir',
-      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban',
-      'Ramazan', 'Şevval', 'Zilkade', 'Zilhicce'
+      'Muharrem',
+      'Safer',
+      'Rebiülevvel',
+      'Rebiülahir',
+      'Cemaziyelevvel',
+      'Cemaziyelahir',
+      'Recep',
+      'Şaban',
+      'Ramazan',
+      'Şevval',
+      'Zilkade',
+      'Zilhicce',
     ];
     return months[month - 1];
+  }
+
+  double _moonPhaseFraction(DateTime date) {
+    // 2000-01-06 18:14 UTC yeni ay referansı
+    final reference = DateTime.utc(2000, 1, 6, 18, 14);
+    final days = date.toUtc().difference(reference).inSeconds / 86400.0;
+    const synodicMonth = 29.53058867;
+    final phase = (days % synodicMonth) / synodicMonth;
+    return phase < 0 ? phase + 1 : phase;
   }
 }
 
 class _HilalPainter extends CustomPainter {
+  final double phase;
+
+  _HilalPainter({required this.phase});
+
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()
-      ..color = Colors.amber.withOpacity(0.8)
-      ..style = PaintingStyle.fill;
+    final center = Offset(size.width / 2, size.height / 2);
+    final radius = size.width / 2;
 
     final glowPaint = Paint()
-      ..color = Colors.amber.withOpacity(0.3)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 15);
+      ..color = Colors.amber.withOpacity(0.25)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10)
+      ..isAntiAlias = true;
 
-    final path = Path();
-    path.addArc(
-      Rect.fromCircle(center: Offset(size.width / 2, size.height / 2), radius: size.width / 2),
-      -math.pi / 2,
-      math.pi,
-    );
-    path.addArc(
-      Rect.fromCircle(center: Offset(size.width / 2 + 15, size.height / 2), radius: size.width / 2),
-      math.pi / 2,
-      math.pi,
-    );
+    final lightPaint = Paint()
+      ..color = Colors.amber.shade200
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
 
-    canvas.drawPath(path, glowPaint);
-    canvas.drawPath(path, paint);
+    final darkPaint = Paint()
+      ..color = Colors.black.withOpacity(0.75)
+      ..style = PaintingStyle.fill
+      ..isAntiAlias = true;
+
+    canvas.drawCircle(center, radius, glowPaint);
+
+    canvas.saveLayer(Offset.zero & size, Paint());
+    canvas.drawCircle(center, radius, lightPaint);
+
+    final t = phase <= 0.5 ? (phase / 0.5) : ((1 - phase) / 0.5);
+    final dx = (phase <= 0.5 ? -1 : 1) * (t * 2 * radius);
+    canvas.drawCircle(center.translate(dx, 0), radius, darkPaint);
+    canvas.restore();
   }
 
   @override

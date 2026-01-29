@@ -134,7 +134,9 @@ class ScheduledNotificationService {
     try {
       // 7 gün için zamanlama (1 hafta)
       const int zamanlamaSuresi = 7;
-      debugPrint('🔔 $zamanlamaSuresi günlük vakit bildirimleri zamanlanıyor...');
+      debugPrint(
+        '🔔 $zamanlamaSuresi günlük vakit bildirimleri zamanlanıyor...',
+      );
 
       // Önce mevcut bildirimleri iptal et
       await cancelAllNotifications();
@@ -153,10 +155,11 @@ class ScheduledNotificationService {
         now.year,
         now.month,
       );
-      
+
       // Gelecek ay da lazım olabilir (ay sonundaysak veya 7 gün için)
       List<Map<String, dynamic>> sonrakiAyVakitler = [];
-      if (now.day > 24) { // 7 gün için erken başla
+      if (now.day > 24) {
+        // 7 gün için erken başla
         final sonrakiAy = now.month == 12 ? 1 : now.month + 1;
         final sonrakiYil = now.month == 12 ? now.year + 1 : now.year;
         sonrakiAyVakitler = await DiyanetApiService.getAylikVakitler(
@@ -165,10 +168,10 @@ class ScheduledNotificationService {
           sonrakiAy,
         );
       }
-      
+
       // Tüm vakitleri birleştir
       final tumVakitler = [...aylikVakitler, ...sonrakiAyVakitler];
-      
+
       if (tumVakitler.isEmpty) {
         debugPrint('⚠️ Vakit bilgisi alınamadı');
         return;
@@ -180,18 +183,19 @@ class ScheduledNotificationService {
       final prefs = await SharedPreferences.getInstance();
       int scheduledCount = 0;
       int alarmCount = 0;
-      
+
       // 7 gün için döngü (1 hafta)
       for (int gun = 0; gun < zamanlamaSuresi; gun++) {
         final hedefTarih = now.add(Duration(days: gun));
-        final hedefTarihStr = '${hedefTarih.day.toString().padLeft(2, '0')}.${hedefTarih.month.toString().padLeft(2, '0')}.${hedefTarih.year}';
-        
+        final hedefTarihStr =
+            '${hedefTarih.day.toString().padLeft(2, '0')}.${hedefTarih.month.toString().padLeft(2, '0')}.${hedefTarih.year}';
+
         // O güne ait vakitleri bul
         final gunVakitler = tumVakitler.firstWhere(
           (v) => v['MiladiTarihKisa'] == hedefTarihStr,
           orElse: () => <String, dynamic>{},
         );
-        
+
         if (gunVakitler.isEmpty) {
           debugPrint('⚠️ $hedefTarihStr için vakit bulunamadı');
           continue;
@@ -204,7 +208,7 @@ class ScheduledNotificationService {
 
           // Bildirim açık mı kontrol et
           final bildirimAcik = prefs.getBool('bildirim_$vakitKeyLower') ?? true;
-          
+
           final vakitSaati = gunVakitler[vakitKey]?.toString();
           if (vakitSaati == null || vakitSaati == '—:—' || vakitSaati.isEmpty) {
             continue;
@@ -215,7 +219,8 @@ class ScheduledNotificationService {
 
           // Ses dosyası
           final sesDosyasi =
-              prefs.getString('bildirim_sesi_$vakitKeyLower') ?? 'ding_dong.mp3';
+              prefs.getString('bildirim_sesi_$vakitKeyLower') ??
+              'ding_dong.mp3';
 
           // Vakit saatini parse et
           final parts = vakitSaati.split(':');
@@ -277,7 +282,8 @@ class ScheduledNotificationService {
                 await _scheduleNotification(
                   id: bildirimId + 50,
                   title: '${_vakitTurkce[vakitKey]} Vakti Girdi',
-                  body: '${_vakitTurkce[vakitKey]} vakti girdi. Hayırlı ibadetler!',
+                  body:
+                      '${_vakitTurkce[vakitKey]} vakti girdi. Hayırlı ibadetler!',
                   scheduledTime: tamVakitZamani,
                   soundAsset: sesDosyasi,
                 );
@@ -289,7 +295,7 @@ class ScheduledNotificationService {
           // 🔔 ALARM: Alarm ayarları
           final alarmAcik = prefs.getBool('alarm_$vakitKeyLower') ?? false;
           debugPrint('🔔 Vakit: $vakitKey, Alarm açık: $alarmAcik');
-          
+
           if (alarmAcik) {
             // TAM VAKİT ALARMI
             var alarmZamani = DateTime(
@@ -299,18 +305,18 @@ class ScheduledNotificationService {
               saat,
               dakika,
             );
-            
+
             debugPrint('   Tam vakit alarm zamanı: $alarmZamani, Şu an: $now');
-            
+
             if (alarmZamani.isAfter(now)) {
               // TAM VAKİT ALARMI için ID (son 2 hane: vakit indexi)
               final alarmId = AlarmService.generateAlarmId(
                 vakitKeyLower, // Örn: "ogle"
                 alarmZamani,
               );
-              
+
               debugPrint('   Alarm ID: $alarmId, Ses: $sesDosyasi');
-              
+
               final success = await AlarmService.scheduleAlarm(
                 prayerName: _vakitTurkce[vakitKey] ?? vakitKey,
                 triggerAtMillis: alarmZamani.millisecondsSinceEpoch,
@@ -318,7 +324,7 @@ class ScheduledNotificationService {
                 useVibration: true,
                 alarmId: alarmId,
               );
-              
+
               if (success) {
                 alarmCount++;
                 debugPrint('   ✅ Tam vakit alarmı zamanlandı');
@@ -328,19 +334,23 @@ class ScheduledNotificationService {
             } else {
               debugPrint('   ⏭️ Tam vakit alarm zamanı geçmiş, atlanıyor');
             }
-            
+
             // ERKEN ALARM (Vaktinden önce)
             if (erkenDakika > 0) {
-              var erkenAlarmZamani = alarmZamani.subtract(Duration(minutes: erkenDakika));
-              
-              debugPrint('   Erken alarm zamanı: $erkenAlarmZamani ($erkenDakika dk önce)');
-              
+              var erkenAlarmZamani = alarmZamani.subtract(
+                Duration(minutes: erkenDakika),
+              );
+
+              debugPrint(
+                '   Erken alarm zamanı: $erkenAlarmZamani ($erkenDakika dk önce)',
+              );
+
               if (erkenAlarmZamani.isAfter(now)) {
                 final erkenAlarmId = AlarmService.generateAlarmId(
                   '${vakitKeyLower}_erken',
                   erkenAlarmZamani,
                 );
-                
+
                 final erkenSuccess = await AlarmService.scheduleAlarm(
                   prayerName: '${_vakitTurkce[vakitKey]} ($erkenDakika dk)',
                   triggerAtMillis: erkenAlarmZamani.millisecondsSinceEpoch,
@@ -348,7 +358,7 @@ class ScheduledNotificationService {
                   useVibration: true,
                   alarmId: erkenAlarmId,
                 );
-                
+
                 if (erkenSuccess) {
                   alarmCount++;
                   debugPrint('   ✅ Erken alarm zamanlandı');
@@ -363,8 +373,10 @@ class ScheduledNotificationService {
         }
       }
 
-      debugPrint('🔔 $zamanlamaSuresi günlük zamanlama tamamlandı: $scheduledCount bildirim, $alarmCount alarm');
-      
+      debugPrint(
+        '🔔 $zamanlamaSuresi günlük zamanlama tamamlandı: $scheduledCount bildirim, $alarmCount alarm',
+      );
+
       // Son zamanlama tarihini kaydet
       await prefs.setString('last_schedule_date', now.toIso8601String());
       await prefs.setInt('scheduled_days', zamanlamaSuresi);
@@ -424,7 +436,7 @@ class ScheduledNotificationService {
         fullScreenIntent: true,
         visibility: NotificationVisibility.public,
         ongoing: false,
-        autoCancel: true,
+        autoCancel: false,
         styleInformation: BigTextStyleInformation(body),
       );
 
@@ -481,6 +493,7 @@ class ScheduledNotificationService {
         enableVibration: true,
         category: AndroidNotificationCategory.alarm,
         fullScreenIntent: true,
+        autoCancel: false,
       );
 
       final notificationDetails = NotificationDetails(android: androidDetails);
@@ -488,7 +501,8 @@ class ScheduledNotificationService {
       await _notificationsPlugin.show(
         id: 999,
         title: '🧪 Test Bildirimi',
-        body: 'Bildirim sistemi çalışıyor! ${DateTime.now().toString().substring(11, 19)}',
+        body:
+            'Bildirim sistemi çalışıyor! ${DateTime.now().toString().substring(11, 19)}',
         notificationDetails: notificationDetails,
       );
       debugPrint('✅ Test bildirimi gönderildi');
@@ -518,6 +532,7 @@ class ScheduledNotificationService {
         visibility:
             NotificationVisibility.public, // Kilit ekranında tam görünür
         ticker: 'Kilit Ekranı Test Bildirimi',
+        autoCancel: false,
       );
 
       final notificationDetails = NotificationDetails(android: androidDetails);
@@ -525,7 +540,8 @@ class ScheduledNotificationService {
       await _notificationsPlugin.zonedSchedule(
         id: 998,
         title: '🔒 Kilit Ekranı Testi',
-        body: '5 saniye sonra zamanlandı - Kilit ekranında görüyorsan bildirimler çalışıyor!',
+        body:
+            '5 saniye sonra zamanlandı - Kilit ekranında görüyorsan bildirimler çalışıyor!',
         scheduledDate: scheduledTime,
         notificationDetails: notificationDetails,
         androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
