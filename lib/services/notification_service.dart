@@ -49,7 +49,7 @@ class NotificationService {
     );
     
     await _notificationsPlugin.initialize(
-      initializationSettings,
+      settings: initializationSettings,
       onDidReceiveNotificationResponse: (NotificationResponse response) {
         debugPrint('Bildirime tıklandı: ${response.payload}');
       },
@@ -128,10 +128,10 @@ class NotificationService {
         final notificationId = DateTime.now().millisecondsSinceEpoch.remainder(100000);
         
         await _notificationsPlugin.show(
-          notificationId,
-          title,
-          body,
-          notificationDetails,
+          id: notificationId,
+          title: title,
+          body: body,
+          notificationDetails: notificationDetails,
         );
         debugPrint('✅ Bildirim gönderildi: $title - $body (ID: $notificationId, Ses: $soundResourceName)');
       }

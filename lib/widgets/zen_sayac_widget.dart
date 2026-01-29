@@ -10,7 +10,8 @@ import '../services/language_service.dart';
 /// Zen temalı sayaç widget'ı
 /// Japon bahçesi esintisi, huzurlu renkler, bambu ve su efektleri
 class ZenSayacWidget extends StatefulWidget {
-  const ZenSayacWidget({super.key});
+  final bool shouldLoadData;
+  const ZenSayacWidget({super.key, this.shouldLoadData = true});
 
   @override
   State<ZenSayacWidget> createState() => _ZenSayacWidgetState();
@@ -37,10 +38,12 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
       vsync: this,
     )..repeat();
     
-    _vakitleriYukle();
-    _timer = Timer.periodic(const Duration(seconds: 1), (_) {
-      _hesaplaKalanSure();
-    });
+    if (widget.shouldLoadData) {
+      _vakitleriYukle();
+      _timer = Timer.periodic(const Duration(seconds: 1), (_) {
+        _hesaplaKalanSure();
+      });
+    }
     _temaService.addListener(_onTemaChanged);
     _languageService.addListener(_onTemaChanged);
   }
@@ -397,11 +400,11 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
 
   Widget _buildProgressBar(Color primaryColor, Color textColor) {
     return Container(
-      height: 8,
+      height: 12,
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(4),
-        color: textColor.withOpacity(0.15),
-        border: Border.all(color: textColor.withOpacity(0.1), width: 0.5),
+        borderRadius: BorderRadius.circular(6),
+        color: textColor.withOpacity(0.25),
+        border: Border.all(color: textColor.withOpacity(0.2), width: 1),
       ),
       child: Stack(
         children: [
@@ -416,11 +419,11 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
             widthFactor: _ilerlemeOrani.clamp(0.0, 1.0),
             child: Container(
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(4),
+                borderRadius: BorderRadius.circular(6),
                 gradient: LinearGradient(
-                  colors: [primaryColor.withOpacity(0.7), primaryColor, Color.lerp(primaryColor, Colors.white, 0.2)!],
+                  colors: [primaryColor.withOpacity(0.9), primaryColor, Color.lerp(primaryColor, Colors.white, 0.2)!],
                 ),
-                boxShadow: [BoxShadow(color: primaryColor.withOpacity(0.5), blurRadius: 6, spreadRadius: 0)],
+                boxShadow: [BoxShadow(color: primaryColor.withOpacity(0.7), blurRadius: 8, spreadRadius: 1)],
               ),
             ),
           ),
