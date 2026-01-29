@@ -244,51 +244,51 @@ class _SayacAyarlariSayfaState extends State<SayacAyarlariSayfa> {
     // isActive=true ise widget'ı oluştur ve veri yükle
     switch (index) {
       case 0:
-        return const IslamiSayacWidget(shouldLoadData: true);
+        return const IslamiSayacWidget();
       case 1:
-        return const KalemSayacWidget(shouldLoadData: true);
+        return const KalemSayacWidget();
       case 2:
-        return const NurSayacWidget(shouldLoadData: true);
+        return const NurSayacWidget();
       case 3:
-        return const HilalSayacWidget(shouldLoadData: true);
+        return const HilalSayacWidget();
       case 4:
-        return const MihrapSayacWidget(shouldLoadData: true);
+        return const MihrapSayacWidget();
       case 5:
-        return const DijitalSayacWidget(shouldLoadData: true);
+        return const DijitalSayacWidget();
       case 6:
-        return const PremiumSayacWidget(shouldLoadData: true);
+        return const PremiumSayacWidget();
       case 7:
-        return const GalaksiSayacWidget(shouldLoadData: true);
+        return const GalaksiSayacWidget();
       case 8:
-        return const NeonSayacWidget(shouldLoadData: true);
+        return const NeonSayacWidget();
       case 9:
-        return const OkyanusSayacWidget(shouldLoadData: true);
+        return const OkyanusSayacWidget();
       case 10:
-        return const MinimalSayacWidget(shouldLoadData: true);
+        return const MinimalSayacWidget();
       case 11:
-        return const RetroSayacWidget(shouldLoadData: true);
+        return const RetroSayacWidget();
       case 12:
-        return const AuroraSayacWidget(shouldLoadData: true);
+        return const AuroraSayacWidget();
       case 13:
-        return const KristalSayacWidget(shouldLoadData: true);
+        return const KristalSayacWidget();
       case 14:
-        return const VolkanikSayacWidget(shouldLoadData: true);
+        return const VolkanikSayacWidget();
       case 15:
-        return const ZenSayacWidget(shouldLoadData: true);
+        return const ZenSayacWidget();
       case 16:
-        return const SiberSayacWidget(shouldLoadData: true);
+        return const SiberSayacWidget();
       case 17:
-        return const GeceSayacWidget(shouldLoadData: true);
+        return const GeceSayacWidget();
       case 18:
-        return const MatrixSayacWidget(shouldLoadData: true);
+        return const MatrixSayacWidget();
       case 19:
-        return const NefesSayacWidget(shouldLoadData: true);
+        return const NefesSayacWidget();
       case 20:
-        return const GeometrikSayacWidget(shouldLoadData: true);
+        return const GeometrikSayacWidget();
       case 21:
-        return const TeslaSayacWidget(shouldLoadData: true);
+        return const TeslaSayacWidget();
       default:
-        return const IslamiSayacWidget(shouldLoadData: true);
+        return const IslamiSayacWidget();
     }
   }
 
