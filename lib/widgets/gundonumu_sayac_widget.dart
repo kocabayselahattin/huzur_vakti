@@ -156,6 +156,7 @@ class _GundonumuSayacWidgetState extends State<GundonumuSayacWidget> {
       'ikindi': _languageService['ikindi'] ?? 'İkindi',
       'aksam': _languageService['aksam'] ?? 'Akşam',
       'yatsi': _languageService['yatsi'] ?? 'Yatsı',
+      'gundonumu': _languageService['counter_gundonumu'] ?? 'Gün Dönümü',
     };
   }
 

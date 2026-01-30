@@ -884,6 +884,21 @@ class _IbadetSayfaState extends State<IbadetSayfa> {
           ],
         ),
         _IbadetSection(
+          title: 'Kureyş Suresi (106)',
+          items: [
+            'لِإِيلَافِ قُرَيْشٍ',
+            'إِيلَافِهِمْ رِحْلَةَ الشِّتَاءِ وَالصَّيْفِ',
+            'فَلْيَعْبُدُوا رَبَّ هَذَا الْبَيْتِ',
+            'الَّذِي أَطْعَمَهُمْ مِنْ جُوعٍ وَآمَنَهُمْ مِنْ خَوْفٍ',
+            '',
+            'Okunuşu:',
+            'Li îlâfi kureyş. Îlâfihim rihleteş-şitâi ve-s-seyf. Fel ya’budû rabbe hâzel beyt. Ellezî et’amehüm min cû’in ve âmenehüm min havf.',
+            '',
+            'Anlamı:',
+            'Kureyş’in alışkanlıkları için, onların kış ve yaz yolculuğuna alışmaları için, bu evin (Kâbe’nin) Rabbine kulluk etsinler. O ki onları açlıktan doyurdu ve korkudan emin kıldı.',
+          ],
+        ),
+        _IbadetSection(
           title: 'Maun Suresi (107)',
           items: [
             'أَرَأَيْتَ الَّذِي يُكَذِّبُ بِالدِّينِ',
