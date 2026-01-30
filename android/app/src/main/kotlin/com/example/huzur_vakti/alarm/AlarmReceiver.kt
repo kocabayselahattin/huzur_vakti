@@ -270,8 +270,9 @@ class AlarmReceiver : BroadcastReceiver() {
                     
                     Log.d(TAG, "🔔 AlarmService başlatılıyor: $vakitName - $vakitTime (Ses: $soundFile)")
                     
-                    // AlarmService'i başlat
+                    // AlarmService'i başlat - ACTION_PRAYER_ALARM set etmeli!
                     val serviceIntent = Intent(context, AlarmService::class.java).apply {
+                        action = ACTION_PRAYER_ALARM // ÖNEMLİ: Action set etmeliyiz!
                         putExtra(EXTRA_ALARM_ID, alarmId)
                         putExtra(EXTRA_VAKIT_NAME, vakitName)
                         putExtra(EXTRA_VAKIT_TIME, vakitTime)

@@ -9,6 +9,7 @@ import 'package:path_provider/path_provider.dart';
 import '../services/dnd_service.dart';
 import '../services/scheduled_notification_service.dart';
 import '../services/daily_content_notification_service.dart';
+import '../services/alarm_service.dart';
 import '../services/language_service.dart';
 
 class BildirimAyarlariSayfa extends StatefulWidget {
@@ -782,6 +783,48 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
         body: ListView(
           padding: const EdgeInsets.all(16),
           children: [
+            // TEST BUTONU - Alarm çalışıyor mu kontrol et
+            Container(
+              margin: const EdgeInsets.only(bottom: 16),
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  // Test alarmı
+                  final alarmResult = await AlarmService.testAlarm();
+
+                  // Test bildirimi
+                  await ScheduledNotificationService.sendTestNotification();
+
+                  if (mounted) {
+                    ScaffoldMessenger.of(context).showSnackBar(
+                      SnackBar(
+                        content: Text(
+                          alarmResult
+                              ? '✅ Test alarmı 5 saniye sonra çalacak!'
+                              : '❌ Test alarmı kurulamadı!',
+                        ),
+                        backgroundColor: alarmResult
+                            ? Colors.green
+                            : Colors.red,
+                        duration: const Duration(seconds: 3),
+                      ),
+                    );
+                  }
+                },
+                icon: const Icon(Icons.alarm, color: Colors.white),
+                label: const Text(
+                  '🧪 TEST: Alarm ve Bildirimi Dene (5 sn)',
+                  style: TextStyle(color: Colors.white),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.deepOrange,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+
             // Bilgilendirme kartı
             Container(
               padding: const EdgeInsets.all(16),

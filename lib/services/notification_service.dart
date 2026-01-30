@@ -121,6 +121,7 @@ class NotificationService {
           priority: Priority.high,
           playSound: true,
           sound: RawResourceAndroidNotificationSound(soundResourceName),
+          audioAttributesUsage: AudioAttributesUsage.notificationRingtone,
           enableVibration: true,
           enableLights: true,
           fullScreenIntent: true,

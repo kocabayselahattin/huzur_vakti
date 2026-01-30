@@ -10,6 +10,21 @@ class PermissionService {
   );
   static final FlutterLocalNotificationsPlugin _notificationsPlugin =
       FlutterLocalNotificationsPlugin();
+  static bool _notificationsInitialized = false;
+
+  static Future<void> _ensureNotificationsInitialized() async {
+    if (_notificationsInitialized) return;
+    try {
+      const androidSettings = AndroidInitializationSettings(
+        '@mipmap/ic_launcher',
+      );
+      const initSettings = InitializationSettings(android: androidSettings);
+      await _notificationsPlugin.initialize(initSettings);
+      _notificationsInitialized = true;
+    } catch (e) {
+      debugPrint('⚠️ Bildirim init hatası: $e');
+    }
+  }
 
   /// Konum izni kontrolü
   static Future<bool> checkLocationPermission() async {
@@ -51,16 +66,18 @@ class PermissionService {
   static Future<bool> checkNotificationPermission() async {
     if (!Platform.isAndroid) return true;
     try {
+      await _ensureNotificationsInitialized();
       final androidImpl = _notificationsPlugin
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
           >();
       if (androidImpl != null) {
-        return await androidImpl.areNotificationsEnabled() ?? false;
+        final enabled = await androidImpl.areNotificationsEnabled();
+        return enabled ?? true;
       }
-      return false;
+      return true;
     } catch (e) {
-      return false;
+      return true;
     }
   }
 
@@ -68,18 +85,21 @@ class PermissionService {
   static Future<bool> requestNotificationPermission() async {
     if (!Platform.isAndroid) return true;
     try {
+      await _ensureNotificationsInitialized();
       final androidImpl = _notificationsPlugin
           .resolvePlatformSpecificImplementation<
             AndroidFlutterLocalNotificationsPlugin
           >();
       if (androidImpl != null) {
         final result = await androidImpl.requestNotificationsPermission();
-        return result ?? false;
+        if (result != null) return result;
+        final enabled = await androidImpl.areNotificationsEnabled();
+        return enabled ?? true;
       }
-      return false;
+      return true;
     } catch (e) {
       debugPrint('⚠️ Bildirim izni hatası: $e');
-      return false;
+      return true;
     }
   }
 

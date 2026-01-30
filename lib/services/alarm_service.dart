@@ -22,17 +22,17 @@ class AlarmService {
     try {
       final now = DateTime.now().millisecondsSinceEpoch;
       final triggerTime = DateTime.fromMillisecondsSinceEpoch(triggerAtMillis);
-      
+
       debugPrint('🔔 Alarm kurulacak: $prayerName');
       debugPrint('   Zaman: $triggerTime');
       debugPrint('   Ses: $soundPath');
       debugPrint('   ID: ${alarmId ?? prayerName.hashCode}');
-      
+
       if (triggerAtMillis <= now) {
         debugPrint('⚠️ Alarm zamanı geçmiş, atlanıyor');
         return false;
       }
-      
+
       final result = await _channel.invokeMethod<bool>('scheduleAlarm', {
         'prayerName': prayerName,
         'triggerAtMillis': triggerAtMillis,
@@ -40,7 +40,7 @@ class AlarmService {
         'useVibration': useVibration,
         'alarmId': alarmId ?? prayerName.hashCode,
       });
-      
+
       debugPrint('✅ Alarm kuruldu: $prayerName - Sonuç: $result');
       return result ?? false;
     } catch (e) {
@@ -102,5 +102,28 @@ class AlarmService {
     // Tarih ve vakit bazında benzersiz ID
     final dateStr = '${date.year}${date.month}${date.day}';
     return '${dateStr}_$prayerKey'.hashCode.abs();
+  }
+
+  /// TEST: 5 saniye sonra çalacak test alarmı
+  /// Bu fonksiyon alarm sisteminin çalışıp çalışmadığını test etmek için
+  static Future<bool> testAlarm() async {
+    try {
+      final testTime = DateTime.now().add(const Duration(seconds: 5));
+      debugPrint('🧪 TEST ALARM: 5 saniye sonra çalacak - $testTime');
+
+      final result = await scheduleAlarm(
+        prayerName: 'Test Alarmı',
+        triggerAtMillis: testTime.millisecondsSinceEpoch,
+        soundPath: 'ding_dong.mp3',
+        useVibration: true,
+        alarmId: 99999, // Test için sabit ID
+      );
+
+      debugPrint('🧪 TEST ALARM sonucu: $result');
+      return result;
+    } catch (e) {
+      debugPrint('❌ TEST ALARM hatası: $e');
+      return false;
+    }
   }
 }

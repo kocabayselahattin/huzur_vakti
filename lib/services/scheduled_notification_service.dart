@@ -155,7 +155,8 @@ class ScheduledNotificationService {
       // Konum ID'sini al
       final ilceId = await KonumService.getIlceId();
       if (ilceId == null || ilceId.isEmpty) {
-        debugPrint('⚠️ Konum seçilmemiş, bildirimler zamanlanamadı');
+        debugPrint('⚠️ KRITIK: Konum seçilmemiş, bildirimler zamanlanamıyor!');
+        debugPrint('📍 Kullanıcı konum seçmeli (il/ilçe)');
         return;
       }
 
@@ -423,7 +424,7 @@ class ScheduledNotificationService {
     try {
       // Ses kaynağı adını al
       final soundResourceName = _getSoundResourceName(soundAsset);
-      final channelId = 'vakit_notification_channel';
+      final channelId = 'vakit_notification_channel_$soundResourceName';
 
       // Android implementation'ı al ve channel oluştur
       final androidImplementation = _notificationsPlugin
@@ -439,6 +440,7 @@ class ScheduledNotificationService {
           description: 'Namaz vakitleri için zamanlanmış bildirimler',
           importance: Importance.max,
           playSound: true,
+          sound: RawResourceAndroidNotificationSound(soundResourceName),
           enableVibration: true,
           enableLights: true,
           showBadge: true,
@@ -454,6 +456,8 @@ class ScheduledNotificationService {
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
+        sound: RawResourceAndroidNotificationSound(soundResourceName),
+        audioAttributesUsage: AudioAttributesUsage.notificationRingtone,
         enableVibration: true,
         enableLights: true,
         showWhen: true,
@@ -509,13 +513,36 @@ class ScheduledNotificationService {
   /// Hemen bir test bildirimi gönder
   static Future<void> sendTestNotification() async {
     try {
+      final soundResourceName = _getSoundResourceName(null);
+      final channelId = 'test_channel_$soundResourceName';
+
+      final androidImplementation = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+
+      if (androidImplementation != null) {
+        final channel = AndroidNotificationChannel(
+          channelId,
+          'Test Bildirimleri',
+          description: 'Test amaçlı bildirimler',
+          importance: Importance.max,
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound(soundResourceName),
+          enableVibration: true,
+        );
+        await androidImplementation.createNotificationChannel(channel);
+      }
+
       final androidDetails = AndroidNotificationDetails(
-        'test_channel',
+        channelId,
         'Test Bildirimleri',
         channelDescription: 'Test amaçlı bildirimler',
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
+        sound: RawResourceAndroidNotificationSound(soundResourceName),
+        audioAttributesUsage: AudioAttributesUsage.notificationRingtone,
         enableVibration: true,
         category: AndroidNotificationCategory.alarm,
         fullScreenIntent: true,
@@ -545,13 +572,36 @@ class ScheduledNotificationService {
         tz.local,
       ).add(const Duration(seconds: 5));
 
+      final soundResourceName = _getSoundResourceName(null);
+      final channelId = 'prayer_notifications_$soundResourceName';
+
+      final androidImplementation = _notificationsPlugin
+          .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin
+          >();
+
+      if (androidImplementation != null) {
+        final channel = AndroidNotificationChannel(
+          channelId,
+          'Vakit Bildirimleri',
+          description: 'Namaz vakti bildirimleri',
+          importance: Importance.max,
+          playSound: true,
+          sound: RawResourceAndroidNotificationSound(soundResourceName),
+          enableVibration: true,
+        );
+        await androidImplementation.createNotificationChannel(channel);
+      }
+
       final androidDetails = AndroidNotificationDetails(
-        'prayer_notifications',
+        channelId,
         'Vakit Bildirimleri',
         channelDescription: 'Namaz vakti bildirimleri',
         importance: Importance.max,
         priority: Priority.max,
         playSound: true,
+        sound: RawResourceAndroidNotificationSound(soundResourceName),
+        audioAttributesUsage: AudioAttributesUsage.notificationRingtone,
         enableVibration: true,
         category: AndroidNotificationCategory.alarm,
         fullScreenIntent: true,

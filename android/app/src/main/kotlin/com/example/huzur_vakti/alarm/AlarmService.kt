@@ -114,7 +114,10 @@ class AlarmService : Service() {
                 return START_NOT_STICKY
             }
             else -> {
-                // Alarm başlat
+                // Alarm başlat - default action (null veya bilinmeyen)
+                // Boş action veya alarm action'ı gelebilir
+                Log.d(TAG, "📢 Default/Alarm action: ${intent?.action ?: "null"}")
+                
                 val alarmId = intent?.getIntExtra(AlarmReceiver.EXTRA_ALARM_ID, 0) ?: 0
                 currentVakitName = intent?.getStringExtra(AlarmReceiver.EXTRA_VAKIT_NAME) ?: "Vakit"
                 currentVakitTime = intent?.getStringExtra(AlarmReceiver.EXTRA_VAKIT_TIME) ?: ""
@@ -139,14 +142,17 @@ class AlarmService : Service() {
                 val isSilentMode = audioManager.ringerMode == AudioManager.RINGER_MODE_SILENT ||
                                    audioManager.ringerMode == AudioManager.RINGER_MODE_VIBRATE
                 
-                // Sessiz modda değilse alarm sesini çal
+                Log.d(TAG, "📱 Telefon modu: ${audioManager.ringerMode} (NORMAL=2, VIBRATE=1, SILENT=0), Sessiz mi: $isSilentMode")
+                
+                // Telefon sessiz modda DEĞİLSE ses çal
                 if (!isSilentMode) {
+                    Log.d(TAG, "🔊 Telefon normal modda - ses çalınacak: $soundFile")
                     playAlarmSound(soundFile)
-                    // Normal modda standart titreşim
+                    // Normal modda standart titreşim paterni
                     startVibration(false)
                 } else {
-                    Log.d(TAG, "📵 Telefon sessiz modda - uzun titreşim çalacak (3 saniye)")
-                    // Sessiz modda uzun titreşim (3 saniye)
+                    Log.d(TAG, "📵 Telefon sessiz/titreşim modunda - ses çalmayacak, sadece uzun titreşim")
+                    // Sessiz modda sadece uzun titreşim (3 saniye)
                     startVibration(true)
                 }
                 
@@ -284,11 +290,10 @@ class AlarmService : Service() {
             Log.d(TAG, "🔊 Alarm sesi başlatılıyor - Orijinal: $soundFile, Kullanılan: $actualSoundFile")
             
             mediaPlayer = MediaPlayer().apply {
-                // Ses kaynağını ayarla - RINGTONE stream kullan (medya sesi değil zil sesi)
+                // Ses kaynağını ayarla - ZİL SESİ akışını kullan (telefon sessizde iken çalmaz)
                 val audioAttributes = AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .setFlags(AudioAttributes.FLAG_AUDIBILITY_ENFORCED)
                     .build()
                 setAudioAttributes(audioAttributes)
                 
