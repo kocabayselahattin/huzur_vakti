@@ -25,7 +25,7 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
   String _sonrakiVakit = '';
   double _ilerlemeOrani = 0.0;
   Map<String, String> _vakitSaatleri = {};
-  
+
   late AnimationController _glowController;
   late AnimationController _waveController;
   late Animation<double> _glowAnimation;
@@ -33,21 +33,21 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
   @override
   void initState() {
     super.initState();
-    
+
     _glowController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     _glowAnimation = Tween<double>(begin: 0.5, end: 1.0).animate(
       CurvedAnimation(parent: _glowController, curve: Curves.easeInOut),
     );
-    
+
     _waveController = AnimationController(
       duration: const Duration(seconds: 3),
       vsync: this,
     )..repeat();
-    
+
     if (widget.shouldLoadData) {
       _vakitleriYukle();
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -94,24 +94,44 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
 
   void _hesaplaKalanSure() {
     if (_vakitSaatleri.isEmpty) return;
-    
+
     final now = DateTime.now();
     final nowTotalSeconds = now.hour * 3600 + now.minute * 60 + now.second;
 
     final vakitListesi = [
-      {'adi': _languageService['imsak'] ?? 'İmsak', 'saat': _vakitSaatleri['imsak']!},
-      {'adi': _languageService['gunes'] ?? 'Güneş', 'saat': _vakitSaatleri['gunes']!},
-      {'adi': _languageService['ogle'] ?? 'Öğle', 'saat': _vakitSaatleri['ogle']!},
-      {'adi': _languageService['ikindi'] ?? 'İkindi', 'saat': _vakitSaatleri['ikindi']!},
-      {'adi': _languageService['aksam'] ?? 'Akşam', 'saat': _vakitSaatleri['aksam']!},
-      {'adi': _languageService['yatsi'] ?? 'Yatsı', 'saat': _vakitSaatleri['yatsi']!},
+      {
+        'adi': _languageService['imsak'] ?? 'İmsak',
+        'saat': _vakitSaatleri['imsak']!,
+      },
+      {
+        'adi': _languageService['gunes'] ?? 'Güneş',
+        'saat': _vakitSaatleri['gunes']!,
+      },
+      {
+        'adi': _languageService['ogle'] ?? 'Öğle',
+        'saat': _vakitSaatleri['ogle']!,
+      },
+      {
+        'adi': _languageService['ikindi'] ?? 'İkindi',
+        'saat': _vakitSaatleri['ikindi']!,
+      },
+      {
+        'adi': _languageService['aksam'] ?? 'Akşam',
+        'saat': _vakitSaatleri['aksam']!,
+      },
+      {
+        'adi': _languageService['yatsi'] ?? 'Yatsı',
+        'saat': _vakitSaatleri['yatsi']!,
+      },
     ];
 
     // Vakit saniyelerini hesapla
     List<int> vakitSaniyeleri = [];
     for (final vakit in vakitListesi) {
       final parts = vakit['saat']!.split(':');
-      vakitSaniyeleri.add(int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60);
+      vakitSaniyeleri.add(
+        int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60,
+      );
     }
 
     DateTime? sonrakiVakitZamani;
@@ -131,10 +151,15 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
       // Tüm vakitler geçmiş, yarın imsak
       final yarin = now.add(const Duration(days: 1));
       final imsakParts = _vakitSaatleri['imsak']!.split(':');
-      sonrakiVakitZamani = DateTime(yarin.year, yarin.month, yarin.day,
-          int.parse(imsakParts[0]), int.parse(imsakParts[1]));
+      sonrakiVakitZamani = DateTime(
+        yarin.year,
+        yarin.month,
+        yarin.day,
+        int.parse(imsakParts[0]),
+        int.parse(imsakParts[1]),
+      );
       sonrakiVakitAdi = _languageService['imsak'] ?? 'İmsak';
-      
+
       // Yatsıdan yarın imsaka kadar ilerleme
       final yatsiSaniye = vakitSaniyeleri.last;
       final imsakSaniye = vakitSaniyeleri.first;
@@ -144,10 +169,15 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
     } else if (sonrakiIndex == 0) {
       // İmsak henüz olmadı (gece yarısından sonra, imsak öncesi)
       final imsakParts = _vakitSaatleri['imsak']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day,
-          int.parse(imsakParts[0]), int.parse(imsakParts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.parse(imsakParts[0]),
+        int.parse(imsakParts[1]),
+      );
       sonrakiVakitAdi = _languageService['imsak'] ?? 'İmsak';
-      
+
       // Dün yatsıdan bugün imsaka kadar ilerleme
       final yatsiSaniye = vakitSaniyeleri.last;
       final imsakSaniye = vakitSaniyeleri.first;
@@ -157,11 +187,17 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
     } else {
       // Normal durum: gündüz vakitleri
       final parts = vakitListesi[sonrakiIndex]['saat']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day,
-          int.parse(parts[0]), int.parse(parts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
       sonrakiVakitAdi = vakitListesi[sonrakiIndex]['adi']!;
-      
-      final toplamSure = vakitSaniyeleri[sonrakiIndex] - vakitSaniyeleri[sonrakiIndex - 1];
+
+      final toplamSure =
+          vakitSaniyeleri[sonrakiIndex] - vakitSaniyeleri[sonrakiIndex - 1];
       final gecenSure = nowTotalSeconds - vakitSaniyeleri[sonrakiIndex - 1];
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     }
@@ -203,7 +239,7 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
                 ),
               ),
             ),
-            
+
             // Ana içerik
             AnimatedBuilder(
               animation: _glowAnimation,
@@ -216,35 +252,51 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
                     children: [
                       // Üst neon bar
                       _buildNeonBar(renkler),
-                      
-                      const SizedBox(height: 10),
-                      
+
+                      const SizedBox(height: 30),
+
                       // Dijital saat
                       Row(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
-                          _buildNeonDigit(hours.toString().padLeft(2, '0'), renkler),
+                          _buildNeonDigit(
+                            hours.toString().padLeft(2, '0'),
+                            renkler,
+                          ),
                           _buildNeonColon(renkler),
-                          _buildNeonDigit(minutes.toString().padLeft(2, '0'), renkler),
+                          _buildNeonDigit(
+                            minutes.toString().padLeft(2, '0'),
+                            renkler,
+                          ),
                           _buildNeonColon(renkler),
-                          _buildNeonDigit(seconds.toString().padLeft(2, '0'), renkler),
+                          _buildNeonDigit(
+                            seconds.toString().padLeft(2, '0'),
+                            renkler,
+                          ),
                         ],
                       ),
-                      
+
                       const SizedBox(height: 10),
-                      
+
                       // Vakit bilgisi
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 20,
+                          vertical: 6,
+                        ),
                         decoration: BoxDecoration(
                           borderRadius: BorderRadius.circular(8),
                           border: Border.all(
-                            color: renkler.vurgu.withValues(alpha: _glowAnimation.value),
+                            color: renkler.vurgu.withValues(
+                              alpha: _glowAnimation.value,
+                            ),
                             width: 1,
                           ),
                           boxShadow: [
                             BoxShadow(
-                              color: renkler.vurgu.withValues(alpha: 0.3 * _glowAnimation.value),
+                              color: renkler.vurgu.withValues(
+                                alpha: 0.3 * _glowAnimation.value,
+                              ),
                               blurRadius: 10,
                               spreadRadius: 2,
                             ),
@@ -258,22 +310,19 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
                             fontWeight: FontWeight.bold,
                             letterSpacing: 4,
                             shadows: [
-                              Shadow(
-                                color: renkler.vurgu,
-                                blurRadius: 10,
-                              ),
+                              Shadow(color: renkler.vurgu, blurRadius: 10),
                             ],
                           ),
                         ),
                       ),
-                      
+
                       const SizedBox(height: 10),
-                      
+
                       // İlerleme çubuğu
                       _buildProgressBar(renkler.vurgu, renkler.yaziPrimary),
-                      
+
                       const SizedBox(height: 8),
-                      
+
                       // Miladi ve Hicri Takvim
                       _buildTakvimRow(renkler),
                     ],
@@ -333,10 +382,7 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
           fontFamily: 'monospace',
           fontFeatures: const [FontFeature.tabularFigures()],
           shadows: [
-            Shadow(
-              color: renkler.vurgu,
-              blurRadius: 15 * _glowAnimation.value,
-            ),
+            Shadow(color: renkler.vurgu, blurRadius: 15 * _glowAnimation.value),
             Shadow(
               color: renkler.vurgu.withValues(alpha: 0.5),
               blurRadius: 30 * _glowAnimation.value,
@@ -356,12 +402,7 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
           fontSize: 42,
           fontWeight: FontWeight.w300,
           color: renkler.vurgu.withValues(alpha: _glowAnimation.value),
-          shadows: [
-            Shadow(
-              color: renkler.vurgu,
-              blurRadius: 10,
-            ),
-          ],
+          shadows: [Shadow(color: renkler.vurgu, blurRadius: 10)],
         ),
       ),
     );
@@ -381,7 +422,9 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
             borderRadius: BorderRadius.circular(4),
             child: CustomPaint(
               size: const Size(double.infinity, 8),
-              painter: _ProgressBarLinesPainter(lineColor: textColor.withOpacity(0.08)),
+              painter: _ProgressBarLinesPainter(
+                lineColor: textColor.withOpacity(0.08),
+              ),
             ),
           ),
           FractionallySizedBox(
@@ -390,9 +433,19 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(4),
                 gradient: LinearGradient(
-                  colors: [primaryColor.withOpacity(0.7), primaryColor, Color.lerp(primaryColor, Colors.white, 0.2)!],
+                  colors: [
+                    primaryColor.withOpacity(0.7),
+                    primaryColor,
+                    Color.lerp(primaryColor, Colors.white, 0.2)!,
+                  ],
                 ),
-                boxShadow: [BoxShadow(color: primaryColor.withOpacity(0.5), blurRadius: 6, spreadRadius: 0)],
+                boxShadow: [
+                  BoxShadow(
+                    color: primaryColor.withOpacity(0.5),
+                    blurRadius: 6,
+                    spreadRadius: 0,
+                  ),
+                ],
               ),
             ),
           ),
@@ -405,8 +458,9 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
     final now = DateTime.now();
     final miladiTarih = DateFormat('dd MMM yyyy', 'tr_TR').format(now);
     final hicri = HijriCalendar.now();
-    final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
-    
+    final hicriTarih =
+        '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -424,7 +478,10 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
               fontSize: 9,
               letterSpacing: 1,
               shadows: [
-                Shadow(color: renkler.vurgu.withValues(alpha: 0.3), blurRadius: 4),
+                Shadow(
+                  color: renkler.vurgu.withValues(alpha: 0.3),
+                  blurRadius: 4,
+                ),
               ],
             ),
           ),
@@ -449,20 +506,30 @@ class _NeonSayacWidgetState extends State<NeonSayacWidget>
               fontSize: 9,
               letterSpacing: 1,
               fontWeight: FontWeight.w500,
-              shadows: [
-                Shadow(color: renkler.vurgu, blurRadius: 8),
-              ],
+              shadows: [Shadow(color: renkler.vurgu, blurRadius: 8)],
             ),
           ),
         ),
       ],
     );
   }
-  
+
   String _getHicriAyAdi(int ay) {
-    const aylar = ['', 'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir', 
-      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban', 'Ramazan', 
-      'Şevval', 'Zilkade', 'Zilhicce'];
+    const aylar = [
+      '',
+      'Muharrem',
+      'Safer',
+      'Rebiülevvel',
+      'Rebiülahir',
+      'Cemaziyelevvel',
+      'Cemaziyelahir',
+      'Recep',
+      'Şaban',
+      'Ramazan',
+      'Şevval',
+      'Zilkade',
+      'Zilhicce',
+    ];
     return aylar[ay];
   }
 }
@@ -484,15 +551,16 @@ class _NeonGridPainter extends CustomPainter {
     for (int i = 0; i < 15; i++) {
       final y = (size.height / 15) * i;
       final waveOffset = math.sin(waveValue * 2 * math.pi + i * 0.3) * 2;
-      
+
       final path = Path();
       path.moveTo(0, y + waveOffset);
-      
+
       for (double x = 0; x < size.width; x += 5) {
-        final localWave = math.sin(waveValue * 2 * math.pi + x * 0.02 + i * 0.3) * 2;
+        final localWave =
+            math.sin(waveValue * 2 * math.pi + x * 0.02 + i * 0.3) * 2;
         path.lineTo(x, y + localWave);
       }
-      
+
       canvas.drawPath(path, paint);
     }
 
@@ -514,12 +582,15 @@ class _ProgressBarLinesPainter extends CustomPainter {
 
   @override
   void paint(Canvas canvas, Size size) {
-    final paint = Paint()..color = lineColor..strokeWidth = 1;
+    final paint = Paint()
+      ..color = lineColor
+      ..strokeWidth = 1;
     for (double x = 0; x < size.width; x += 8) {
       canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
   }
 
   @override
-  bool shouldRepaint(covariant _ProgressBarLinesPainter oldDelegate) => oldDelegate.lineColor != lineColor;
+  bool shouldRepaint(covariant _ProgressBarLinesPainter oldDelegate) =>
+      oldDelegate.lineColor != lineColor;
 }

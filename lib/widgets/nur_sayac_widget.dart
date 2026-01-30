@@ -360,31 +360,20 @@ class _NurSayacWidgetState extends State<NurSayacWidget>
     return Column(
       children: [
         Container(
-          height: 10,
-          margin: const EdgeInsets.symmetric(horizontal: 20),
+          padding: const EdgeInsets.all(8),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: Colors.black.withOpacity(0.3),
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: Colors.white.withOpacity(0.3), width: 1),
           ),
-          child: Stack(
+          child: Column(
             children: [
-              FractionallySizedBox(
-                widthFactor: _ecirOrani,
-                child: Container(
-                  decoration: BoxDecoration(
-                    gradient: const LinearGradient(
-                      colors: [Colors.cyan, Colors.teal, Colors.blueAccent],
-                    ),
-                    borderRadius: BorderRadius.circular(12),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.cyan.withOpacity(0.4),
-                        blurRadius: 8,
-                        spreadRadius: 0,
-                      ),
-                    ],
-                  ),
+              ClipRRect(
+                borderRadius: BorderRadius.circular(6),
+                child: LinearProgressIndicator(
+                  value: _ecirOrani,
+                  backgroundColor: Colors.white.withOpacity(0.1),
+                  valueColor: AlwaysStoppedAnimation<Color>(Colors.cyanAccent),
+                  minHeight: 5,
                 ),
               ),
             ],

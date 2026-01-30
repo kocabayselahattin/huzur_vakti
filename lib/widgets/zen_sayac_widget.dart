@@ -445,8 +445,8 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
     return Column(
       children: [
         Container(
-          width: 70,
-          height: 55,
+          width: 105,
+          height: 82,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: Colors.white.withOpacity(0.6),
@@ -460,7 +460,7 @@ class _ZenSayacWidgetState extends State<ZenSayacWidget>
             softWrap: false,
             textScaler: TextScaler.noScaling,
             style: TextStyle(
-              fontSize: 30,
+              fontSize: 45,
               fontWeight: FontWeight.w300,
               color: textColor,
               fontFeatures: const [FontFeature.tabularFigures()],

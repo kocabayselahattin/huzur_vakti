@@ -319,7 +319,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                   ],
                 ),
               ),
-              padding: const EdgeInsets.all(12),
+              padding: const EdgeInsets.all(8),
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
@@ -335,7 +335,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                             textScaler: TextScaler.noScaling,
                             style: TextStyle(
                               color: matrixGreen,
-                              fontSize: 18,
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
                               fontFamily: 'monospace',
                               inherit: false,
@@ -361,7 +361,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                         animation: _glowController,
                         builder: (context, child) {
                           return Container(
-                            padding: const EdgeInsets.all(6),
+                            padding: const EdgeInsets.all(4),
                             decoration: BoxDecoration(
                               border: Border.all(
                                 color: matrixGreen.withOpacity(
@@ -382,82 +382,65 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                     ],
                   ),
 
-                  const SizedBox(height: 4),
+                  const SizedBox(height: 20),
 
-                  // Zaman göstergesi - Terminal stili (yukarı kaydırıldı)
-                  Expanded(
-                    child: Transform.translate(
-                      offset: const Offset(0, -10),
-                      child: Center(
-                        child: AnimatedBuilder(
-                          animation: _glowController,
-                          builder: (context, child) {
-                            return Container(
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 20,
-                                vertical: 12,
-                              ),
-                              decoration: BoxDecoration(
-                                color: cardBg.withOpacity(0.8),
-                                border: Border.all(
-                                  color: matrixGreen.withOpacity(0.3),
-                                  width: 1,
+                  // Zaman göstergesi - Terminal stili
+                  Center(
+                    child: AnimatedBuilder(
+                      animation: _glowController,
+                      builder: (context, child) {
+                        return Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: cardBg.withOpacity(0.8),
+                            border: Border.all(
+                              color: matrixGreen.withOpacity(0.3),
+                              width: 1,
+                            ),
+                            borderRadius: BorderRadius.circular(8),
+                            boxShadow: [
+                              BoxShadow(
+                                color: matrixGreen.withOpacity(
+                                  0.1 + _glowController.value * 0.1,
                                 ),
-                                borderRadius: BorderRadius.circular(8),
-                                boxShadow: [
-                                  BoxShadow(
-                                    color: matrixGreen.withOpacity(
-                                      0.1 + _glowController.value * 0.1,
-                                    ),
-                                    blurRadius: 15,
-                                    spreadRadius: 2,
-                                  ),
-                                ],
+                                blurRadius: 15,
+                                spreadRadius: 2,
                               ),
-                              child: Column(
+                            ],
+                          ),
+                          child: Column(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              Row(
                                 mainAxisSize: MainAxisSize.min,
                                 children: [
-                                  Text(
-                                    'COUNTDOWN.exe',
-                                    textScaler: TextScaler.noScaling,
-                                    style: TextStyle(
-                                      color: darkGreen,
-                                      fontSize: 9,
-                                      fontFamily: 'monospace',
-                                      letterSpacing: 1,
-                                      inherit: false,
-                                    ),
+                                  _buildDigit(
+                                    hours.toString().padLeft(2, '0'),
+                                    matrixGreen,
                                   ),
-                                  const SizedBox(height: 6),
-                                  Row(
-                                    mainAxisSize: MainAxisSize.min,
-                                    children: [
-                                      _buildDigit(
-                                        hours.toString().padLeft(2, '0'),
-                                        matrixGreen,
-                                      ),
-                                      _buildColon(matrixGreen),
-                                      _buildDigit(
-                                        minutes.toString().padLeft(2, '0'),
-                                        matrixGreen,
-                                      ),
-                                      _buildColon(matrixGreen),
-                                      _buildDigit(
-                                        seconds.toString().padLeft(2, '0'),
-                                        matrixGreen,
-                                      ),
-                                    ],
+                                  _buildColon(matrixGreen),
+                                  _buildDigit(
+                                    minutes.toString().padLeft(2, '0'),
+                                    matrixGreen,
+                                  ),
+                                  _buildColon(matrixGreen),
+                                  _buildDigit(
+                                    seconds.toString().padLeft(2, '0'),
+                                    matrixGreen,
                                   ),
                                 ],
                               ),
-                            );
-                          },
-                        ),
-                      ),
+                            ],
+                          ),
+                        );
+                      },
                     ),
                   ),
 
-                  const SizedBox(height: 2),
+                  const SizedBox(height: 8),
 
                   // İlerleme çubuğu - ASCII style
                   Row(
@@ -466,13 +449,13 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                         '[',
                         style: TextStyle(
                           color: matrixGreen,
-                          fontSize: 14,
+                          fontSize: 12,
                           fontFamily: 'monospace',
                         ),
                       ),
                       Expanded(
                         child: Container(
-                          height: 16,
+                          height: 12,
                           margin: const EdgeInsets.symmetric(horizontal: 4),
                           child: LayoutBuilder(
                             builder: (context, constraints) {
@@ -488,7 +471,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                                       color: index < filledChars
                                           ? matrixGreen
                                           : matrixGreen.withOpacity(0.3),
-                                      fontSize: 12,
+                                      fontSize: 10,
                                       fontFamily: 'monospace',
                                     ),
                                   );
@@ -502,14 +485,14 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                         '] ${(_ilerlemeOrani * 100).toInt()}%',
                         style: TextStyle(
                           color: matrixGreen,
-                          fontSize: 12,
+                          fontSize: 10,
                           fontFamily: 'monospace',
                         ),
                       ),
                     ],
                   ),
 
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
 
                   // Miladi ve Hicri Takvim
                   Row(
@@ -522,7 +505,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                             '// ${_languageService['gregorian_date'] ?? 'Miladi'}',
                             style: TextStyle(
                               color: darkGreen,
-                              fontSize: 9,
+                              fontSize: 10,
                               fontFamily: 'monospace',
                             ),
                           ),
@@ -530,7 +513,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                             miladiTarih,
                             style: TextStyle(
                               color: matrixGreen.withOpacity(0.8),
-                              fontSize: 11,
+                              fontSize: 12,
                               fontFamily: 'monospace',
                             ),
                           ),
@@ -543,7 +526,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                             '// ${_languageService['hijri_date'] ?? 'Hicri'}',
                             style: TextStyle(
                               color: darkGreen,
-                              fontSize: 9,
+                              fontSize: 10,
                               fontFamily: 'monospace',
                             ),
                           ),
@@ -551,7 +534,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                             hicriTarih,
                             style: TextStyle(
                               color: matrixGreen.withOpacity(0.8),
-                              fontSize: 11,
+                              fontSize: 12,
                               fontFamily: 'monospace',
                             ),
                           ),
@@ -593,7 +576,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
       textScaler: TextScaler.noScaling,
       style: TextStyle(
         color: color,
-        fontSize: 36,
+        fontSize: 64,
         fontWeight: FontWeight.bold,
         fontFamily: 'monospace',
         letterSpacing: 2,
@@ -608,13 +591,13 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
 
   Widget _buildColon(Color color) {
     return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 4),
+      padding: const EdgeInsets.symmetric(horizontal: 8),
       child: Text(
         ':',
         textScaler: TextScaler.noScaling,
         style: TextStyle(
           color: color.withOpacity(0.7),
-          fontSize: 30,
+          fontSize: 56,
           fontWeight: FontWeight.bold,
           fontFamily: 'monospace',
           inherit: false,
