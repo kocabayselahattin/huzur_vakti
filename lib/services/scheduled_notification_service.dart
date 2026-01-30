@@ -217,8 +217,18 @@ class ScheduledNotificationService {
           final vakitKey = _vakitler[i];
           final vakitKeyLower = vakitKey.toLowerCase();
 
-          // Bildirim açık mı kontrol et
+          // Ana bildirim switch'i - bu vakit için tüm bildirimler açık mı?
           final bildirimAcik = prefs.getBool('bildirim_$vakitKeyLower') ?? true;
+
+          // Vaktinde bildirim - tam vakitte bildirim gönder
+          // Varsayılan: öğle, ikindi, akşam, yatsı için true
+          final varsayilanVaktinde =
+              (vakitKeyLower == 'ogle' ||
+              vakitKeyLower == 'ikindi' ||
+              vakitKeyLower == 'aksam' ||
+              vakitKeyLower == 'yatsi');
+          final vaktindeBildirim =
+              prefs.getBool('vaktinde_$vakitKeyLower') ?? varsayilanVaktinde;
 
           final vakitSaati = gunVakitler[vakitKey]?.toString();
           if (vakitSaati == null || vakitSaati == '—:—' || vakitSaati.isEmpty) {
@@ -243,8 +253,8 @@ class ScheduledNotificationService {
           final dakika = int.tryParse(parts[1]);
           if (saat == null || dakika == null) continue;
 
-          // Bildirim zamanını hesapla (o günün tarihi ile)
-          var bildirimZamani = DateTime(
+          // Tam vakit zamanı
+          final tamVakitZamani = DateTime(
             hedefTarih.year,
             hedefTarih.month,
             hedefTarih.day,
@@ -253,65 +263,59 @@ class ScheduledNotificationService {
           );
 
           debugPrint(
-            '📌 $vakitKey: Vakit saati $saat:$dakika, Erken dakika: $erkenDakika, Bildirim açık: $bildirimAcik',
+            '📌 $vakitKey: Vakit saati $saat:$dakika, Erken dakika: $erkenDakika, Bildirim açık: $bildirimAcik, Vaktinde: $vaktindeBildirim',
           );
-
-          // Erken bildirim süresi varsa çıkar
-          if (erkenDakika > 0) {
-            final tamVakitZamani = bildirimZamani;
-            bildirimZamani = bildirimZamani.subtract(
-              Duration(minutes: erkenDakika),
-            );
-            debugPrint(
-              '   ⏰ Erken bildirim zamanı: $bildirimZamani (tam vakit: $tamVakitZamani)',
-            );
-          }
-
-          // Eğer zaman geçmişse, bu bildirimi atla
-          if (bildirimZamani.isBefore(now)) {
-            debugPrint('   ⏭️ Zaman geçmiş, atlanıyor: $bildirimZamani');
-            continue;
-          }
 
           // Benzersiz ID: gun * 100 + vakit index
           final bildirimId = gun * 100 + i + 1;
 
-          // Bildirimi zamanla (eğer bildirim açıksa)
-          if (bildirimAcik) {
+          // Ana bildirim switch'i kapalıysa hiçbir bildirim gönderme
+          if (!bildirimAcik) {
+            debugPrint('   ⏭️ Bildirim kapalı, atlanıyor');
+            continue;
+          }
+
+          // 1. ERKEN BİLDİRİM: Erken dakika > 0 ise erken hatırlatma gönder
+          if (erkenDakika > 0) {
+            final erkenBildirimZamani = tamVakitZamani.subtract(
+              Duration(minutes: erkenDakika),
+            );
+
+            if (erkenBildirimZamani.isAfter(now)) {
+              await _scheduleNotification(
+                id: bildirimId,
+                title: '${_vakitTurkce[vakitKey]} Vakti Yaklaşıyor',
+                body:
+                    '${_vakitTurkce[vakitKey]} vaktine $erkenDakika dakika kaldı',
+                scheduledTime: erkenBildirimZamani,
+                soundAsset: sesDosyasi,
+              );
+              scheduledCount++;
+              debugPrint(
+                '   ✅ Erken bildirim zamanlandı: $erkenBildirimZamani',
+              );
+            } else {
+              debugPrint(
+                '   ⏭️ Erken bildirim zamanı geçmiş: $erkenBildirimZamani',
+              );
+            }
+          }
+
+          // 2. VAKTİNDE BİLDİRİM: vaktindeBildirim açıksa tam vakitte bildirim gönder
+          if (vaktindeBildirim && tamVakitZamani.isAfter(now)) {
             await _scheduleNotification(
-              id: bildirimId,
-              title:
-                  '${_vakitTurkce[vakitKey]} Vakti ${erkenDakika > 0 ? "Yaklaşıyor" : "Girdi"}',
-              body: erkenDakika > 0
-                  ? '${_vakitTurkce[vakitKey]} vaktine $erkenDakika dakika kaldı'
-                  : '${_vakitTurkce[vakitKey]} vakti girdi. Hayırlı ibadetler!',
-              scheduledTime: bildirimZamani,
+              id: bildirimId + 50,
+              title: '${_vakitTurkce[vakitKey]} Vakti Girdi',
+              body: '${_vakitTurkce[vakitKey]} vakti girdi. Hayırlı ibadetler!',
+              scheduledTime: tamVakitZamani,
               soundAsset: sesDosyasi,
             );
             scheduledCount++;
-
-            // Erken bildirim varsa, ayrıca vaktinde de bildirim gönder
-            if (erkenDakika > 0) {
-              var tamVakitZamani = DateTime(
-                hedefTarih.year,
-                hedefTarih.month,
-                hedefTarih.day,
-                saat,
-                dakika,
-              );
-
-              if (tamVakitZamani.isAfter(now)) {
-                await _scheduleNotification(
-                  id: bildirimId + 50,
-                  title: '${_vakitTurkce[vakitKey]} Vakti Girdi',
-                  body:
-                      '${_vakitTurkce[vakitKey]} vakti girdi. Hayırlı ibadetler!',
-                  scheduledTime: tamVakitZamani,
-                  soundAsset: sesDosyasi,
-                );
-                scheduledCount++;
-              }
-            }
+            debugPrint('   ✅ Vaktinde bildirim zamanlandı: $tamVakitZamani');
+          } else if (!vaktindeBildirim) {
+            debugPrint('   ⏭️ Vaktinde bildirim kapalı');
+          } else {
+            debugPrint('   ⏭️ Tam vakit zamanı geçmiş: $tamVakitZamani');
           }
 
           // 🔔 ALARM: Alarm ayarları
@@ -457,8 +461,8 @@ class ScheduledNotificationService {
         category: AndroidNotificationCategory.alarm,
         fullScreenIntent: true,
         visibility: NotificationVisibility.public,
-        ongoing: false,
-        autoCancel: false,
+        ongoing: true, // Kullanıcı silene kadar kalsın
+        autoCancel: false, // Tıklayınca otomatik kapanmasın
         styleInformation: BigTextStyleInformation(body),
       );
 

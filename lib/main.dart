@@ -54,6 +54,17 @@ Future<void> _initializeDefaultNotificationSettings(
     'yatsi': 'best.mp3',
   };
 
+  // Varsayılan vaktinde hatırlat durumları
+  // İmsak ve güneş kapalı, öğle, ikindi, akşam, yatsı açık
+  const defaultVaktindeBildirim = {
+    'imsak': false,
+    'gunes': false,
+    'ogle': true,
+    'ikindi': true,
+    'aksam': true,
+    'yatsi': true,
+  };
+
   // Her vakit için varsayılan değerleri kaydet
   for (final vakit in defaultErkenBildirim.keys) {
     // Erken bildirim süresi
@@ -70,6 +81,10 @@ Future<void> _initializeDefaultNotificationSettings(
         'bildirim_sesi_$vakit',
         defaultBildirimSesi[vakit]!,
       );
+    }
+    // Vaktinde hatırlat
+    if (!prefs.containsKey('vaktinde_$vakit')) {
+      await prefs.setBool('vaktinde_$vakit', defaultVaktindeBildirim[vakit]!);
     }
   }
 

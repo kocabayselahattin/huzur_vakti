@@ -37,6 +37,8 @@ class AlarmService : Service() {
         const val CHANNEL_ID = "alarm_channel"
         const val ACTION_STOP_ALARM = "com.example.huzur_vakti.STOP_ALARM"
         const val ACTION_SNOOZE_ALARM = "com.example.huzur_vakti.SNOOZE_ALARM"
+        const val ACTION_STAY_SILENT = "com.example.huzur_vakti.STAY_SILENT"  // "Kal" butonu - sessize al ve kapat
+        const val ACTION_EXIT_SILENT = "com.example.huzur_vakti.EXIT_SILENT"  // "Çık" butonu - normal moda dön
         
         // Singleton instance - alarm durumunu kontrol etmek için
         @Volatile
@@ -57,6 +59,7 @@ class AlarmService : Service() {
     private var isPlaying = false
     private var currentVakitName = ""
     private var currentVakitTime = ""
+    private var isSessizeAlEnabled = false  // Vakitlerde sessize al ayarı
     private var mediaSession: MediaSession? = null
     private var screenOffReceiver: BroadcastReceiver? = null
     
@@ -89,6 +92,27 @@ class AlarmService : Service() {
                 stopSelf()
                 return START_NOT_STICKY
             }
+            ACTION_STAY_SILENT -> {
+                // "Kal" butonu - telefonu sessize al ve kapat
+                Log.d(TAG, "🔇 'Kal' butonu tıklandı - telefon sessize alınıyor")
+                setSilentMode(true)
+                showSilentModeNotification() // Bilgi bildirimi göster
+                stopAlarmSound()
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+                return START_NOT_STICKY
+            }
+            ACTION_EXIT_SILENT -> {
+                // "Çık" butonu - normal moda dön ve kapat
+                Log.d(TAG, "🔊 'Çık' butonu tıklandı - telefon normale dönüyor")
+                setSilentMode(false)
+                // Sessiz mod bildirimini kaldır
+                cancelSilentModeNotification()
+                stopAlarmSound()
+                stopForeground(STOP_FOREGROUND_REMOVE)
+                stopSelf()
+                return START_NOT_STICKY
+            }
             else -> {
                 // Alarm başlat
                 val alarmId = intent?.getIntExtra(AlarmReceiver.EXTRA_ALARM_ID, 0) ?: 0
@@ -98,10 +122,15 @@ class AlarmService : Service() {
                 val isEarly = intent?.getBooleanExtra(AlarmReceiver.EXTRA_IS_EARLY, false) ?: false
                 val earlyMinutes = intent?.getIntExtra(AlarmReceiver.EXTRA_EARLY_MINUTES, 0) ?: 0
                 
+                // Vakitlerde sessize al ayarını kontrol et
+                val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+                isSessizeAlEnabled = prefs.getBoolean("flutter.sessize_al", false)
+                Log.d(TAG, "📵 Vakitlerde sessize al ayarı: $isSessizeAlEnabled")
+                
                 // Alarm aktif flag'ini ayarla (DND beklesin diye)
                 setAlarmActiveFlag(true)
                 
-                // Foreground service olarak başlat
+                // Foreground service olarak başlat - sessize al ayarına göre bildirim oluştur
                 val notification = createAlarmNotification(currentVakitName, currentVakitTime, isEarly, earlyMinutes)
                 startForeground(NOTIFICATION_ID, notification)
                 
@@ -113,12 +142,13 @@ class AlarmService : Service() {
                 // Sessiz modda değilse alarm sesini çal
                 if (!isSilentMode) {
                     playAlarmSound(soundFile)
+                    // Normal modda standart titreşim
+                    startVibration(false)
                 } else {
-                    Log.d(TAG, "📵 Telefon sessiz modda - sadece titreşim çalacak")
+                    Log.d(TAG, "📵 Telefon sessiz modda - uzun titreşim çalacak (3 saniye)")
+                    // Sessiz modda uzun titreşim (3 saniye)
+                    startVibration(true)
                 }
-                
-                // Titreşim her zaman başlat (sessiz modda da)
-                startVibration()
                 
                 // Kilit ekranı activity'sini başlat
                 startLockScreenActivity(currentVakitName, currentVakitTime, isEarly, earlyMinutes)
@@ -156,12 +186,30 @@ class AlarmService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         
-        // Alarmı durdur butonu
+        // Alarmı durdur butonu (varsayılan)
         val stopIntent = Intent(this, AlarmService::class.java).apply {
             action = ACTION_STOP_ALARM
         }
         val stopPendingIntent = PendingIntent.getService(
             this, 1, stopIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        
+        // "Kal" butonu - telefonu sessize al
+        val stayIntent = Intent(this, AlarmService::class.java).apply {
+            action = ACTION_STAY_SILENT
+        }
+        val stayPendingIntent = PendingIntent.getService(
+            this, 2, stayIntent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
+        
+        // "Çık" butonu - normal moda dön
+        val exitIntent = Intent(this, AlarmService::class.java).apply {
+            action = ACTION_EXIT_SILENT
+        }
+        val exitPendingIntent = PendingIntent.getService(
+            this, 3, exitIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         
@@ -177,7 +225,7 @@ class AlarmService : Service() {
             "$vakitName vakti girdi. Hayırlı ibadetler!"
         }
         
-        return NotificationCompat.Builder(this, CHANNEL_ID)
+        val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(body)
@@ -188,8 +236,18 @@ class AlarmService : Service() {
             .setFullScreenIntent(mainPendingIntent, true)
             .setAutoCancel(false)
             .setOngoing(true)
-            .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Kapat", stopPendingIntent)
-            .build()
+        
+        // Vakitlerde sessize al ayarı açıksa "Kal" ve "Çık" butonları göster
+        if (isSessizeAlEnabled) {
+            builder.addAction(android.R.drawable.ic_lock_silent_mode, "Kal (Sessize Al)", stayPendingIntent)
+            builder.addAction(android.R.drawable.ic_lock_silent_mode_off, "Çık (Normal)", exitPendingIntent)
+            Log.d(TAG, "📵 Bildirimde 'Kal' ve 'Çık' butonları eklendi")
+        } else {
+            // Normal mod - sadece Kapat butonu
+            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "Kapat", stopPendingIntent)
+        }
+        
+        return builder.build()
     }
     
     private fun playAlarmSound(soundFile: String) {
@@ -258,10 +316,10 @@ class AlarmService : Service() {
                     setDataSource(this@AlarmService, defaultUri)
                 }
                 
-                // ⚠️ ÖNEMLİ: Ses sonsuz döngüde çalacak (kullanıcı uyansın diye)
-                isLooping = true
+                // Ses dosyası bittiğinde durur (sonsuz döngü yok)
+                isLooping = false
                 
-                // Ses bittiginde (isLooping true olduğu için asla tetiklenmez)
+                // Ses bittiğinde servisi kapat
                 setOnCompletionListener {
                     Log.d(TAG, "🔊 Alarm sesi tamamlandı")
                     this@AlarmService.stopVibration()
@@ -269,6 +327,10 @@ class AlarmService : Service() {
                     
                     // Vakitlerde sessize al ayarı açıksa telefonu sessize al
                     this@AlarmService.checkAndSetSilentMode()
+                    
+                    // Servisi kapat
+                    this@AlarmService.stopForeground(STOP_FOREGROUND_REMOVE)
+                    this@AlarmService.stopSelf()
                 }
                 
                 prepare()
@@ -339,7 +401,11 @@ class AlarmService : Service() {
         }
     }
     
-    private fun startVibration() {
+    /**
+     * Titreşimi başlat
+     * @param longVibration true ise sessiz mod için uzun titreşim (3 saniye tek seferde)
+     */
+    private fun startVibration(longVibration: Boolean = false) {
         try {
             vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
                 val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
@@ -349,18 +415,29 @@ class AlarmService : Service() {
                 getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
             }
             
-            // Titreşim paterni: bekle, titret, bekle, titret... (sonsuz döngü: 0)
-            val pattern = longArrayOf(0, 500, 200, 500, 200, 500, 200, 500)
-            
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                // 0 = sonsuz döngü, patern tekrar eder
-                vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0))
+            if (longVibration) {
+                // Sessiz modda: 3 saniye kesintisiz titreşim (tekrar yok)
+                Log.d(TAG, "📳 Uzun titreşim başlatılıyor (3 saniye)")
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    vibrator?.vibrate(VibrationEffect.createOneShot(3000, VibrationEffect.DEFAULT_AMPLITUDE))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator?.vibrate(3000)
+                }
             } else {
-                @Suppress("DEPRECATION")
-                vibrator?.vibrate(pattern, 0)
+                // Normal mod: Titreşim paterni - bekle, titret, bekle, titret... (sonsuz döngü: 0)
+                val pattern = longArrayOf(0, 500, 200, 500, 200, 500, 200, 500)
+                
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    // 0 = sonsuz döngü, patern tekrar eder
+                    vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0))
+                } else {
+                    @Suppress("DEPRECATION")
+                    vibrator?.vibrate(pattern, 0)
+                }
             }
             
-            Log.d(TAG, "📳 Titreşim başlatıldı")
+            Log.d(TAG, "📳 Titreşim başlatıldı (uzun: $longVibration)")
         } catch (e: Exception) {
             Log.e(TAG, "❌ Titreşim hatası: ${e.message}")
         }
@@ -508,30 +585,124 @@ class AlarmService : Service() {
     }
     
     /**
-     * Vakitlerde sessize al ayarı açıksa telefonu sessize alır
+     * Telefonu sessize al veya normale döndür
+     * @param silent true ise sessize al, false ise normale döndür
+     */
+    private fun setSilentMode(silent: Boolean) {
+        try {
+            val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            
+            if (silent) {
+                // Önceki ringer mode'u kaydet (çıkınca geri yüklemek için)
+                val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+                val currentMode = audioManager.ringerMode
+                prefs.edit().putInt("flutter.previous_ringer_mode", currentMode).apply()
+                
+                // Sessize al
+                audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
+                Log.d(TAG, "🔇 Telefon sessize alındı (önceki mod: $currentMode)")
+            } else {
+                // Önceki moda geri dön
+                val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+                val previousMode = prefs.getInt("flutter.previous_ringer_mode", AudioManager.RINGER_MODE_NORMAL)
+                
+                audioManager.ringerMode = previousMode
+                Log.d(TAG, "🔊 Telefon normale döndü (mod: $previousMode)")
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Ses modu değiştirme hatası: ${e.message}")
+        }
+    }
+    
+    /**
+     * Vakitlerde sessize al ayarı açıksa ve alarm durdurulduğunda telefonu sessize alır
+     * Bu fonksiyon alarm susturulduğunda (güç/ses tuşu) çağrılır
      */
     private fun checkAndSetSilentMode() {
         try {
-            // SharedPreferences'tan ayarı kontrol et
-            val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-            val sessizeAl = prefs.getBoolean("flutter.sessize_al", false)
-            
-            if (!sessizeAl) {
-                Log.d(TAG, "ℹ️ Vakitlerde sessize al ayarı kapalı")
+            // Vakitlerde sessize al ayarı açık mı?
+            if (!isSessizeAlEnabled) {
+                Log.d(TAG, "ℹ️ Vakitlerde sessize al ayarı kapalı - otomatik sessize alma yapılmayacak")
                 return
             }
             
             Log.d(TAG, "🔇 Vakitlerde sessize al aktif - telefon sessize alınıyor...")
+            setSilentMode(true)
             
-            val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            // Kullanıcıya bilgi ver - bildirim göster
+            showSilentModeNotification()
             
-            // Telefonu sessize al (RINGER_MODE_SILENT)
-            audioManager.ringerMode = AudioManager.RINGER_MODE_SILENT
-            
-            Log.d(TAG, "✅ Telefon sessize alındı (alarm sesi bittikten sonra)")
+            Log.d(TAG, "✅ Telefon sessize alındı (alarm susturulduktan sonra)")
             
         } catch (e: Exception) {
             Log.e(TAG, "❌ Telefonu sessize alma hatası: ${e.message}")
+        }
+    }
+    
+    /**
+     * Sessize alındığını bildiren bildirim göster
+     * Kullanıcı bu bildirimden normale dönebilir
+     */
+    private fun showSilentModeNotification() {
+        try {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            
+            // Bildirim kanalı oluştur (Android 8+)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                val channel = NotificationChannel(
+                    "silent_mode_channel",
+                    "Sessiz Mod Bildirimleri",
+                    NotificationManager.IMPORTANCE_HIGH
+                ).apply {
+                    description = "Vakitlerde sessize al bildirimleri"
+                    setShowBadge(true)
+                }
+                notificationManager.createNotificationChannel(channel)
+            }
+            
+            // "Normale Dön" butonu için intent
+            val normalModeIntent = Intent(this, AlarmService::class.java).apply {
+                action = ACTION_EXIT_SILENT
+            }
+            val normalModePendingIntent = PendingIntent.getService(
+                this, 100, normalModeIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            
+            // Bildirim oluştur
+            val notification = NotificationCompat.Builder(this, "silent_mode_channel")
+                .setSmallIcon(R.mipmap.ic_launcher)
+                .setContentTitle("🔇 Telefon Sessize Alındı")
+                .setContentText("$currentVakitName vakti için telefon sessize alındı. Normale dönmek için tıklayın.")
+                .setStyle(NotificationCompat.BigTextStyle()
+                    .bigText("$currentVakitName vakti için telefon sessize alındı.\n\nNamaz bittiğinde normale dönmek için aşağıdaki butona basın veya bu bildirimi kaydırarak kapatın."))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_STATUS)
+                .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setAutoCancel(true)
+                .setOngoing(true) // Kullanıcı kaydırana kadar kalsın
+                .addAction(android.R.drawable.ic_lock_silent_mode_off, "🔊 Normale Dön", normalModePendingIntent)
+                .build()
+            
+            // Bildirimi göster
+            notificationManager.notify(2001, notification)
+            Log.d(TAG, "📢 Sessiz mod bildirimi gösterildi")
+            
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Sessiz mod bildirimi hatası: ${e.message}")
+        }
+    }
+    
+    /**
+     * Sessiz mod bildirimini kaldır
+     */
+    private fun cancelSilentModeNotification() {
+        try {
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.cancel(2001)
+            Log.d(TAG, "📢 Sessiz mod bildirimi kaldırıldı")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Bildirim kaldırma hatası: ${e.message}")
         }
     }
 }

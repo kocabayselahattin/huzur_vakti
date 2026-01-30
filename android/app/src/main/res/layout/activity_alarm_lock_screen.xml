@@ -182,7 +182,7 @@
                 android:orientation="horizontal"
                 android:gravity="center">
 
-                <!-- Kapat Butonu -->
+                <!-- Kapat Butonu (Normal mod) -->
                 <Button
                     android:id="@+id/btn_dismiss"
                     android:layout_width="200dp"
@@ -193,7 +193,40 @@
                     android:textStyle="bold"
                     android:textAllCaps="false"
                     android:background="@drawable/btn_alarm_dismiss"
-                    android:elevation="8dp" />
+                    android:elevation="8dp"
+                    android:visibility="visible" />
+
+                <!-- Kal Butonu (Sessize Al modu) -->
+                <Button
+                    android:id="@+id/btn_stay"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="56dp"
+                    android:layout_marginEnd="8dp"
+                    android:text="🔇 Kal"
+                    android:textColor="#FFFFFF"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textAllCaps="false"
+                    android:background="@drawable/btn_alarm_stay"
+                    android:elevation="8dp"
+                    android:visibility="gone" />
+
+                <!-- Çık Butonu (Sessize Al modu) -->
+                <Button
+                    android:id="@+id/btn_exit"
+                    android:layout_width="0dp"
+                    android:layout_weight="1"
+                    android:layout_height="56dp"
+                    android:layout_marginStart="8dp"
+                    android:text="🔊 Çık"
+                    android:textColor="#1B2741"
+                    android:textSize="15sp"
+                    android:textStyle="bold"
+                    android:textAllCaps="false"
+                    android:background="@drawable/btn_alarm_dismiss"
+                    android:elevation="8dp"
+                    android:visibility="gone" />
 
             </LinearLayout>
 

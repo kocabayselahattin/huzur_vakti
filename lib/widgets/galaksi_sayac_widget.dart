@@ -26,7 +26,7 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
   String _mevcutVakit = '';
   double _ilerlemeOrani = 0.0;
   Map<String, String> _vakitSaatleri = {};
-  
+
   late AnimationController _rotationController;
   late AnimationController _pulseController;
   late AnimationController _starController;
@@ -35,29 +35,29 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
   @override
   void initState() {
     super.initState();
-    
+
     // Galaksi dönüş animasyonu
     _rotationController = AnimationController(
       duration: const Duration(seconds: 60),
       vsync: this,
     )..repeat();
-    
+
     // Nabız animasyonu
     _pulseController = AnimationController(
       duration: const Duration(milliseconds: 2000),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     _pulseAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
       CurvedAnimation(parent: _pulseController, curve: Curves.easeInOut),
     );
-    
+
     // Yıldız parıldama animasyonu
     _starController = AnimationController(
       duration: const Duration(milliseconds: 1500),
       vsync: this,
     )..repeat(reverse: true);
-    
+
     if (widget.shouldLoadData) {
       _vakitleriYukle();
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -105,23 +105,43 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
 
   void _hesaplaKalanSure() {
     if (_vakitSaatleri.isEmpty) return;
-    
+
     final now = DateTime.now();
     final nowTotalSeconds = now.hour * 3600 + now.minute * 60 + now.second;
 
     final vakitListesi = [
-      {'adi': _languageService['imsak'] ?? 'İmsak', 'saat': _vakitSaatleri['imsak']!},
-      {'adi': _languageService['gunes'] ?? 'Güneş', 'saat': _vakitSaatleri['gunes']!},
-      {'adi': _languageService['ogle'] ?? 'Öğle', 'saat': _vakitSaatleri['ogle']!},
-      {'adi': _languageService['ikindi'] ?? 'İkindi', 'saat': _vakitSaatleri['ikindi']!},
-      {'adi': _languageService['aksam'] ?? 'Akşam', 'saat': _vakitSaatleri['aksam']!},
-      {'adi': _languageService['yatsi'] ?? 'Yatsı', 'saat': _vakitSaatleri['yatsi']!},
+      {
+        'adi': _languageService['imsak'] ?? 'İmsak',
+        'saat': _vakitSaatleri['imsak']!,
+      },
+      {
+        'adi': _languageService['gunes'] ?? 'Güneş',
+        'saat': _vakitSaatleri['gunes']!,
+      },
+      {
+        'adi': _languageService['ogle'] ?? 'Öğle',
+        'saat': _vakitSaatleri['ogle']!,
+      },
+      {
+        'adi': _languageService['ikindi'] ?? 'İkindi',
+        'saat': _vakitSaatleri['ikindi']!,
+      },
+      {
+        'adi': _languageService['aksam'] ?? 'Akşam',
+        'saat': _vakitSaatleri['aksam']!,
+      },
+      {
+        'adi': _languageService['yatsi'] ?? 'Yatsı',
+        'saat': _vakitSaatleri['yatsi']!,
+      },
     ];
 
     List<int> vakitSaniyeleri = [];
     for (final vakit in vakitListesi) {
       final parts = vakit['saat']!.split(':');
-      vakitSaniyeleri.add(int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60);
+      vakitSaniyeleri.add(
+        int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60,
+      );
     }
 
     DateTime? sonrakiVakitZamani;
@@ -140,8 +160,13 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
     if (sonrakiIndex == -1) {
       final yarin = now.add(const Duration(days: 1));
       final imsakParts = _vakitSaatleri['imsak']!.split(':');
-      sonrakiVakitZamani = DateTime(yarin.year, yarin.month, yarin.day,
-          int.parse(imsakParts[0]), int.parse(imsakParts[1]));
+      sonrakiVakitZamani = DateTime(
+        yarin.year,
+        yarin.month,
+        yarin.day,
+        int.parse(imsakParts[0]),
+        int.parse(imsakParts[1]),
+      );
       sonrakiVakitAdi = _languageService['imsak'] ?? 'İmsak';
       mevcutVakitAdi = _languageService['yatsi'] ?? 'Yatsı';
       final yatsiSaniye = vakitSaniyeleri.last;
@@ -151,8 +176,13 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     } else if (sonrakiIndex == 0) {
       final imsakParts = _vakitSaatleri['imsak']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day,
-          int.parse(imsakParts[0]), int.parse(imsakParts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.parse(imsakParts[0]),
+        int.parse(imsakParts[1]),
+      );
       sonrakiVakitAdi = _languageService['imsak'] ?? 'İmsak';
       mevcutVakitAdi = _languageService['yatsi'] ?? 'Yatsı';
       final yatsiSaniye = vakitSaniyeleri.last;
@@ -162,11 +192,19 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     } else {
       final parts = vakitListesi[sonrakiIndex]['saat']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day,
-          int.parse(parts[0]), int.parse(parts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
       sonrakiVakitAdi = vakitListesi[sonrakiIndex]['adi']!;
-      mevcutVakitAdi = sonrakiIndex > 0 ? vakitListesi[sonrakiIndex - 1]['adi']! : (_languageService['yatsi'] ?? 'Yatsı');
-      final toplamSure = vakitSaniyeleri[sonrakiIndex] - vakitSaniyeleri[sonrakiIndex - 1];
+      mevcutVakitAdi = sonrakiIndex > 0
+          ? vakitListesi[sonrakiIndex - 1]['adi']!
+          : (_languageService['yatsi'] ?? 'Yatsı');
+      final toplamSure =
+          vakitSaniyeleri[sonrakiIndex] - vakitSaniyeleri[sonrakiIndex - 1];
       final gecenSure = nowTotalSeconds - vakitSaniyeleri[sonrakiIndex - 1];
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     }
@@ -230,7 +268,7 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
                 },
               ),
             ),
-            
+
             // Merkez içerik
             Center(
               child: AnimatedBuilder(
@@ -243,7 +281,10 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
                       children: [
                         // Mevcut vakit
                         Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 16,
+                            vertical: 6,
+                          ),
                           decoration: BoxDecoration(
                             color: renkler.vurgu.withValues(alpha: 0.2),
                             borderRadius: BorderRadius.circular(20),
@@ -261,9 +302,9 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
                             ),
                           ),
                         ),
-                        
+
                         const SizedBox(height: 12),
-                        
+
                         // Geri sayım
                         ShaderMask(
                           shaderCallback: (bounds) => LinearGradient(
@@ -285,9 +326,9 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
                             ),
                           ),
                         ),
-                        
+
                         const SizedBox(height: 8),
-                        
+
                         // Sonraki vakit
                         Row(
                           mainAxisSize: MainAxisSize.min,
@@ -299,7 +340,7 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
                             ),
                             const SizedBox(width: 8),
                             Text(
-                              '${_languageService['time_to'] ?? 'vaktine'} $_sonrakiVakit ${_languageService['remaining'] ?? 'Kalan'}',
+                              '$_sonrakiVakit ${_languageService['time_to'] ?? 'vaktine kalan'}',
                               style: TextStyle(
                                 color: renkler.yaziSecondary,
                                 fontSize: 13,
@@ -307,21 +348,25 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
                             ),
                           ],
                         ),
-                        
+
                         const SizedBox(height: 16),
-                        
+
                         // Vakit çemberleri
                         _buildVakitOrbits(renkler),
-                        
+
                         const SizedBox(height: 12),
-                        
+
                         // Miladi ve Hicri Takvim
                         _buildTakvimRow(renkler),
-                        
+
                         const SizedBox(height: 12),
 
                         // İlerleme Barı
-                        _buildProgressBar(renkler.vurgu, renkler.yaziSecondary, renkler.yaziPrimary),
+                        _buildProgressBar(
+                          renkler.vurgu,
+                          renkler.yaziSecondary,
+                          renkler.yaziPrimary,
+                        ),
                       ],
                     ),
                   );
@@ -334,16 +379,17 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
     );
   }
 
-  Widget _buildProgressBar(Color primaryColor, Color secondaryColor, Color textColor) {
+  Widget _buildProgressBar(
+    Color primaryColor,
+    Color secondaryColor,
+    Color textColor,
+  ) {
     return Container(
       height: 8,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4),
         color: textColor.withOpacity(0.15),
-        border: Border.all(
-          color: textColor.withOpacity(0.1),
-          width: 0.5,
-        ),
+        border: Border.all(color: textColor.withOpacity(0.1), width: 0.5),
       ),
       child: Stack(
         children: [
@@ -385,43 +431,46 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
 
   Widget _buildVakitOrbits(TemaRenkleri renkler) {
     final vakitler = ['İmsak', 'Güneş', 'Öğle', 'İkindi', 'Akşam', 'Yatsı'];
-    
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: vakitler.map((vakit) {
         final aktif = vakit == _mevcutVakit;
         final sonraki = vakit == _sonrakiVakit;
-        
+
         return Container(
           margin: const EdgeInsets.symmetric(horizontal: 4),
           width: aktif ? 12 : 8,
           height: aktif ? 12 : 8,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color: aktif 
-                ? renkler.vurgu 
-                : sonraki 
-                    ? Colors.orange 
-                    : renkler.yaziSecondary.withValues(alpha: 0.3),
-            boxShadow: aktif ? [
-              BoxShadow(
-                color: renkler.vurgu.withValues(alpha: 0.6),
-                blurRadius: 8,
-                spreadRadius: 2,
-              ),
-            ] : null,
+            color: aktif
+                ? renkler.vurgu
+                : sonraki
+                ? Colors.orange
+                : renkler.yaziSecondary.withValues(alpha: 0.3),
+            boxShadow: aktif
+                ? [
+                    BoxShadow(
+                      color: renkler.vurgu.withValues(alpha: 0.6),
+                      blurRadius: 8,
+                      spreadRadius: 2,
+                    ),
+                  ]
+                : null,
           ),
         );
       }).toList(),
     );
   }
-  
+
   Widget _buildTakvimRow(TemaRenkleri renkler) {
     final now = DateTime.now();
     final miladiTarih = DateFormat('dd MMM yyyy', 'tr_TR').format(now);
     final hicri = HijriCalendar.now();
-    final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
-    
+    final hicriTarih =
+        '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
+
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
       children: [
@@ -429,7 +478,11 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.calendar_today, size: 14, color: renkler.yaziSecondary.withValues(alpha: 0.8)),
+            Icon(
+              Icons.calendar_today,
+              size: 14,
+              color: renkler.yaziSecondary.withValues(alpha: 0.8),
+            ),
             const SizedBox(width: 4),
             Text(
               miladiTarih,
@@ -443,13 +496,23 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
         ),
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 10),
-          child: Text('•', style: TextStyle(color: renkler.vurgu.withValues(alpha: 0.6), fontSize: 12)),
+          child: Text(
+            '•',
+            style: TextStyle(
+              color: renkler.vurgu.withValues(alpha: 0.6),
+              fontSize: 12,
+            ),
+          ),
         ),
         // Hicri
         Row(
           mainAxisSize: MainAxisSize.min,
           children: [
-            Icon(Icons.brightness_3, size: 14, color: renkler.vurgu.withValues(alpha: 0.8)),
+            Icon(
+              Icons.brightness_3,
+              size: 14,
+              color: renkler.vurgu.withValues(alpha: 0.8),
+            ),
             const SizedBox(width: 4),
             Text(
               hicriTarih,
@@ -464,23 +527,42 @@ class _GalaksiSayacWidgetState extends State<GalaksiSayacWidget>
       ],
     );
   }
-  
+
   String _getHicriAyAdi(int ay) {
-    const aylar = ['', 'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir', 
-      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban', 'Ramazan', 
-      'Şevval', 'Zilkade', 'Zilhicce'];
+    const aylar = [
+      '',
+      'Muharrem',
+      'Safer',
+      'Rebiülevvel',
+      'Rebiülahir',
+      'Cemaziyelevvel',
+      'Cemaziyelahir',
+      'Recep',
+      'Şaban',
+      'Ramazan',
+      'Şevval',
+      'Zilkade',
+      'Zilhicce',
+    ];
     return aylar[ay];
   }
 
   IconData _getVakitIcon(String vakit) {
     switch (vakit) {
-      case 'İmsak': return Icons.dark_mode;
-      case 'Güneş': return Icons.wb_sunny;
-      case 'Öğle': return Icons.light_mode;
-      case 'İkindi': return Icons.wb_twilight;
-      case 'Akşam': return Icons.nights_stay;
-      case 'Yatsı': return Icons.bedtime;
-      default: return Icons.access_time;
+      case 'İmsak':
+        return Icons.dark_mode;
+      case 'Güneş':
+        return Icons.wb_sunny;
+      case 'Öğle':
+        return Icons.light_mode;
+      case 'İkindi':
+        return Icons.wb_twilight;
+      case 'Akşam':
+        return Icons.nights_stay;
+      case 'Yatsı':
+        return Icons.bedtime;
+      default:
+        return Icons.access_time;
     }
   }
 }
@@ -505,25 +587,25 @@ class _GalaksiPainter extends CustomPainter {
     // Spiral galaksi kolları
     for (int arm = 0; arm < 3; arm++) {
       final armOffset = arm * (2 * math.pi / 3);
-      
+
       for (int i = 0; i < 80; i++) {
         final t = i / 80.0;
         final spiralAngle = rotation + armOffset + t * 4 * math.pi;
         final radius = t * maxRadius * 0.9;
-        
+
         final x = center.dx + radius * math.cos(spiralAngle);
         final y = center.dy + radius * math.sin(spiralAngle);
-        
+
         final starSize = (1 - t) * 2.5 + random.nextDouble() * 1.5;
         final alpha = (1 - t * 0.7) * (0.3 + starBrightness * 0.4);
-        
+
         final paint = Paint()
           ..color = Color.lerp(
             vurguRenk,
             Colors.white,
             random.nextDouble() * 0.5,
           )!.withValues(alpha: alpha);
-        
+
         canvas.drawCircle(Offset(x, y), starSize, paint);
       }
     }
@@ -534,13 +616,12 @@ class _GalaksiPainter extends CustomPainter {
       final radius = random.nextDouble() * maxRadius;
       final x = center.dx + radius * math.cos(angle);
       final y = center.dy + radius * math.sin(angle);
-      
+
       final brightness = 0.2 + random.nextDouble() * 0.5 * starBrightness;
       final starSize = random.nextDouble() * 1.5 + 0.5;
-      
-      final paint = Paint()
-        ..color = Colors.white.withValues(alpha: brightness);
-      
+
+      final paint = Paint()..color = Colors.white.withValues(alpha: brightness);
+
       canvas.drawCircle(Offset(x, y), starSize, paint);
     }
 
@@ -553,13 +634,14 @@ class _GalaksiPainter extends CustomPainter {
           Colors.transparent,
         ],
       ).createShader(Rect.fromCircle(center: center, radius: maxRadius * 0.4));
-    
+
     canvas.drawCircle(center, maxRadius * 0.4, centerGlow);
   }
 
   @override
   bool shouldRepaint(covariant _GalaksiPainter oldDelegate) =>
-      rotation != oldDelegate.rotation || starBrightness != oldDelegate.starBrightness;
+      rotation != oldDelegate.rotation ||
+      starBrightness != oldDelegate.starBrightness;
 }
 
 class _ProgressBarLinesPainter extends CustomPainter {

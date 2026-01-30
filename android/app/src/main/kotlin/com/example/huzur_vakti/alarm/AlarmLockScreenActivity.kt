@@ -28,6 +28,7 @@ class AlarmLockScreenActivity : Activity() {
     private var vakitTime = ""
     private var isEarly = false
     private var earlyMinutes = 0
+    private var isSessizeAlEnabled = false  // Vakitlerde sessize al ayarı
     
     // Motivasyon sözleri
     private val motivasyonSozleri = listOf(
@@ -53,6 +54,10 @@ class AlarmLockScreenActivity : Activity() {
         vakitTime = intent.getStringExtra(AlarmReceiver.EXTRA_VAKIT_TIME) ?: ""
         isEarly = intent.getBooleanExtra(AlarmReceiver.EXTRA_IS_EARLY, false)
         earlyMinutes = intent.getIntExtra(AlarmReceiver.EXTRA_EARLY_MINUTES, 0)
+        
+        // Vakitlerde sessize al ayarını kontrol et
+        val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+        isSessizeAlEnabled = prefs.getBoolean("flutter.sessize_al", false)
         
         // UI'ı oluştur
         setContentView(R.layout.activity_alarm_lock_screen)
@@ -138,14 +143,43 @@ class AlarmLockScreenActivity : Activity() {
         }
         findViewById<TextView>(R.id.tv_moon_icon)?.text = moonIcon
         
-        // Kapat butonu
-        findViewById<Button>(R.id.btn_dismiss)?.setOnClickListener {
-            dismissAlarm()
-        }
+        // Butonları ayarla - sessize al durumuna göre
+        val btnDismiss = findViewById<Button>(R.id.btn_dismiss)
+        val btnStay = findViewById<Button>(R.id.btn_stay)
+        val btnExit = findViewById<Button>(R.id.btn_exit)
         
-        // Ekrana dokununca talimat göster
-        findViewById<TextView>(R.id.tv_hint)?.text = 
-            "Ses veya kilit tuşuna basarak kapatabilirsiniz"
+        if (isSessizeAlEnabled) {
+            // Vakitlerde sessize al açık - Kal ve Çık butonlarını göster
+            btnDismiss?.visibility = View.GONE
+            btnStay?.visibility = View.VISIBLE
+            btnExit?.visibility = View.VISIBLE
+            
+            // "Kal" butonu - sessize al ve kapat
+            btnStay?.setOnClickListener {
+                dismissAlarmWithSilentMode(true)
+            }
+            
+            // "Çık" butonu - normale dön ve kapat
+            btnExit?.setOnClickListener {
+                dismissAlarmWithSilentMode(false)
+            }
+            
+            // Talimat metnini güncelle
+            findViewById<TextView>(R.id.tv_hint)?.text = 
+                "Kal: Telefonu sessize alır • Çık: Normal moda döner"
+        } else {
+            // Normal mod - sadece Kapat butonu
+            btnDismiss?.visibility = View.VISIBLE
+            btnStay?.visibility = View.GONE
+            btnExit?.visibility = View.GONE
+            
+            btnDismiss?.setOnClickListener {
+                dismissAlarm()
+            }
+            
+            findViewById<TextView>(R.id.tv_hint)?.text = 
+                "Ses veya kilit tuşuna basarak kapatabilirsiniz"
+        }
     }
     
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
@@ -154,8 +188,12 @@ class AlarmLockScreenActivity : Activity() {
             KeyEvent.KEYCODE_VOLUME_DOWN,
             KeyEvent.KEYCODE_POWER,
             KeyEvent.KEYCODE_HEADSETHOOK -> {
-                // Alarmı tamamen kapat ve activity'yi de kapat
-                dismissAlarm()
+                // Vakitlerde sessize al açıksa, tuşla susturunca sessize al
+                if (isSessizeAlEnabled) {
+                    dismissAlarmWithSilentMode(true)
+                } else {
+                    dismissAlarm()
+                }
                 return true
             }
         }
@@ -165,7 +203,11 @@ class AlarmLockScreenActivity : Activity() {
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
         // Geri tuşu ile de alarmı kapat
-        dismissAlarm()
+        if (isSessizeAlEnabled) {
+            dismissAlarmWithSilentMode(true)
+        } else {
+            dismissAlarm()
+        }
     }
     
     /**
@@ -173,6 +215,22 @@ class AlarmLockScreenActivity : Activity() {
      */
     private fun dismissAlarm() {
         AlarmService.stopAlarm(this)
+        finish()
+    }
+    
+    /**
+     * Alarmı kapat ve sessize al modunu ayarla
+     * @param setSilent true ise telefonu sessize al, false ise normale döndür
+     */
+    private fun dismissAlarmWithSilentMode(setSilent: Boolean) {
+        val intent = Intent(this, AlarmService::class.java).apply {
+            action = if (setSilent) {
+                AlarmService.ACTION_STAY_SILENT
+            } else {
+                AlarmService.ACTION_EXIT_SILENT
+            }
+        }
+        startService(intent)
         finish()
     }
     

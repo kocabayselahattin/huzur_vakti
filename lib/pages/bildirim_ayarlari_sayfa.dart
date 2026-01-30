@@ -23,8 +23,9 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
   final LanguageService _languageService = LanguageService();
 
   // Bildirim açık/kapalı durumları
+  // Varsayılanlar main.dart'taki ile tutarlı olmalı
   final Map<String, bool> _bildirimAcik = {
-    'imsak': false,
+    'imsak': true,
     'gunes': true,
     'ogle': true,
     'ikindi': true,
@@ -33,13 +34,14 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
   };
 
   // Vaktinde bildirim (tam vakitte göster)
+  // Varsayılan: öğle, ikindi, akşam, yatsı için açık
   final Map<String, bool> _vaktindeBildirim = {
     'imsak': false,
     'gunes': false,
-    'ogle': false,
-    'ikindi': false,
-    'aksam': false,
-    'yatsi': false,
+    'ogle': true,
+    'ikindi': true,
+    'aksam': true,
+    'yatsi': true,
   };
 
   // Alarm açık/kapalı durumları (kilit ekranında alarm çalar)
@@ -232,7 +234,14 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       for (final vakit in _bildirimAcik.keys) {
         _bildirimAcik[vakit] =
             prefs.getBool('bildirim_$vakit') ?? _bildirimAcik[vakit]!;
-        _vaktindeBildirim[vakit] = prefs.getBool('vaktinde_$vakit') ?? false;
+        // Vaktinde bildirim varsayılanları: öğle, ikindi, akşam, yatsı için true
+        final varsayilanVaktinde =
+            (vakit == 'ogle' ||
+            vakit == 'ikindi' ||
+            vakit == 'aksam' ||
+            vakit == 'yatsi');
+        _vaktindeBildirim[vakit] =
+            prefs.getBool('vaktinde_$vakit') ?? varsayilanVaktinde;
         _alarmAcik[vakit] = prefs.getBool('alarm_$vakit') ?? false;
         _erkenBildirim[vakit] =
             prefs.getInt('erken_$vakit') ?? _erkenBildirim[vakit]!;
@@ -1204,7 +1213,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     String aciklama,
   ) {
     final acik = _bildirimAcik[key]!;
-    final alarmAcik = _alarmAcik[key]!;
+    final vaktindeAcik = _vaktindeBildirim[key]!;
     final erkenDakika = _erkenBildirim[key]!;
     final seciliSes = _bildirimSesi[key]!;
 
@@ -1263,25 +1272,25 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
             ),
           ),
 
-          // Alt kısım - Alarm toggle, erken bildirim ve ses seçimi
+          // Alt kısım - Vaktinde bildirim, erken bildirim ve ses seçimi
           if (acik)
             Padding(
               padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
               child: Column(
                 children: [
-                  // Vaktinde Hatırlat - Ana switch
+                  // Vaktinde Hatırlat - Tam vakitte bildirim
                   Container(
                     padding: const EdgeInsets.symmetric(
                       vertical: 8,
                       horizontal: 12,
                     ),
                     decoration: BoxDecoration(
-                      color: alarmAcik
+                      color: vaktindeAcik
                           ? Colors.orangeAccent.withOpacity(0.15)
                           : Colors.white.withOpacity(0.05),
                       borderRadius: BorderRadius.circular(12),
                       border: Border.all(
-                        color: alarmAcik
+                        color: vaktindeAcik
                             ? Colors.orangeAccent.withOpacity(0.5)
                             : Colors.white12,
                       ),
@@ -1289,8 +1298,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                     child: Row(
                       children: [
                         Icon(
-                          Icons.alarm,
-                          color: alarmAcik
+                          Icons.notifications_active,
+                          color: vaktindeAcik
                               ? Colors.orangeAccent
                               : Colors.white54,
                           size: 24,
@@ -1301,7 +1310,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                             _languageService['notify_at_prayer'] ??
                                 'Vaktinde Hatırlat',
                             style: TextStyle(
-                              color: alarmAcik
+                              color: vaktindeAcik
                                   ? Colors.orangeAccent
                                   : Colors.white,
                               fontSize: 15,
@@ -1310,18 +1319,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                           ),
                         ),
                         Switch(
-                          value: alarmAcik,
-                          onChanged: (value) async {
-                            if (value) {
-                              // Alarm açılırken izin kontrolü yap
-                              final hasPermission =
-                                  await _checkAlarmPermission();
-                              if (!hasPermission) {
-                                return;
-                              }
-                            }
+                          value: vaktindeAcik,
+                          onChanged: (value) {
                             setState(() {
-                              _alarmAcik[key] = value;
+                              _vaktindeBildirim[key] = value;
                               _degisiklikYapildi = true;
                             });
                           },

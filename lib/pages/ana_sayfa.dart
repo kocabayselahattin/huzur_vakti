@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:http/http.dart' as http;
+import 'dart:convert';
 import '../widgets/premium_sayac_widget.dart';
 import '../widgets/vakit_listesi_widget.dart';
 import '../widgets/gunun_icerigi_widget.dart';
@@ -78,6 +81,8 @@ class _AnaSayfaState extends State<AnaSayfa> {
       _checkOzelGun();
       // Zamanlanmış bildirimleri ayarla
       _scheduleNotifications();
+      // Konum otomatik güncelleme kontrolü
+      _checkLocationChange();
     });
   }
 
@@ -87,6 +92,261 @@ class _AnaSayfaState extends State<AnaSayfa> {
     } catch (e) {
       debugPrint('⚠️ Bildirim zamanlama hatası: $e');
     }
+  }
+
+  /// Konum değişikliği kontrolü - kullanıcı farklı bir şehre gittiyse uyarı göster
+  Future<void> _checkLocationChange() async {
+    try {
+      // Mevcut kayıtlı konumu al
+      final aktifKonum = await KonumService.getAktifKonum();
+      if (aktifKonum == null) {
+        debugPrint('📍 Kayıtlı konum yok, kontrol atlanıyor');
+        return;
+      }
+
+      // GPS izni kontrolü
+      bool serviceEnabled = await Geolocator.isLocationServiceEnabled();
+      if (!serviceEnabled) {
+        debugPrint('📍 GPS kapalı, konum kontrolü atlanıyor');
+        return;
+      }
+
+      LocationPermission permission = await Geolocator.checkPermission();
+      if (permission == LocationPermission.denied ||
+          permission == LocationPermission.deniedForever) {
+        debugPrint('📍 Konum izni yok, kontrol atlanıyor');
+        return;
+      }
+
+      // Mevcut konumu al
+      Position? position;
+      try {
+        position = await Geolocator.getCurrentPosition(
+          desiredAccuracy:
+              LocationAccuracy.low, // Hızlı sonuç için düşük hassasiyet
+          timeLimit: const Duration(seconds: 10),
+        );
+      } catch (e) {
+        debugPrint('📍 Konum alınamadı: $e');
+        return;
+      }
+
+      // Reverse geocoding ile şehir bilgisini al
+      final locationInfo = await _reverseGeocode(
+        position.latitude,
+        position.longitude,
+      );
+      if (locationInfo == null) {
+        debugPrint('📍 Şehir bilgisi alınamadı');
+        return;
+      }
+
+      final currentCity = locationInfo['city']?.toString().toUpperCase() ?? '';
+      final currentDistrict = locationInfo['district']?.toString() ?? '';
+      final savedCity = aktifKonum.ilAdi.toUpperCase();
+
+      // Türkçe karakterleri normalize et
+      final normalizedCurrentCity = _normalizeString(currentCity);
+      final normalizedSavedCity = _normalizeString(savedCity);
+
+      debugPrint('📍 Mevcut şehir: $currentCity ($normalizedCurrentCity)');
+      debugPrint('📍 Kayıtlı şehir: $savedCity ($normalizedSavedCity)');
+
+      // Şehir değişmiş mi kontrol et
+      if (normalizedCurrentCity.isNotEmpty &&
+          normalizedSavedCity.isNotEmpty &&
+          !normalizedCurrentCity.contains(normalizedSavedCity) &&
+          !normalizedSavedCity.contains(normalizedCurrentCity)) {
+        debugPrint('🔄 Şehir değişikliği tespit edildi!');
+
+        // Kullanıcıya soru sor
+        if (mounted) {
+          _showLocationChangeDialog(currentCity, currentDistrict, savedCity);
+        }
+      }
+    } catch (e) {
+      debugPrint('📍 Konum kontrol hatası: $e');
+    }
+  }
+
+  /// Reverse geocoding ile koordinatlardan şehir/ilçe bilgisi al
+  Future<Map<String, String>?> _reverseGeocode(double lat, double lon) async {
+    try {
+      final url =
+          'https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lon&zoom=10&addressdetails=1&accept-language=tr';
+
+      final response = await http
+          .get(Uri.parse(url), headers: {'User-Agent': 'HuzurVakti/2.0'})
+          .timeout(const Duration(seconds: 10));
+
+      if (response.statusCode == 200) {
+        final data = json.decode(response.body);
+        final address = data['address'] as Map<String, dynamic>?;
+
+        if (address != null) {
+          return {
+            'city':
+                address['province'] ??
+                address['state'] ??
+                address['city'] ??
+                '',
+            'district':
+                address['town'] ??
+                address['county'] ??
+                address['district'] ??
+                '',
+            'country_code':
+                address['country_code']?.toString().toUpperCase() ?? '',
+          };
+        }
+      }
+    } catch (e) {
+      debugPrint('⚠️ Reverse geocoding hatası: $e');
+    }
+    return null;
+  }
+
+  /// Türkçe karakterleri normalize et
+  String _normalizeString(String input) {
+    return input
+        .replaceAll('İ', 'I')
+        .replaceAll('Ş', 'S')
+        .replaceAll('Ğ', 'G')
+        .replaceAll('Ü', 'U')
+        .replaceAll('Ö', 'O')
+        .replaceAll('Ç', 'C')
+        .replaceAll('ı', 'i')
+        .replaceAll('ş', 's')
+        .replaceAll('ğ', 'g')
+        .replaceAll('ü', 'u')
+        .replaceAll('ö', 'o')
+        .replaceAll('ç', 'c')
+        .replaceAll(' PROVINCE', '')
+        .replaceAll(' İLİ', '')
+        .trim();
+  }
+
+  /// Konum değişikliği dialogu göster
+  void _showLocationChangeDialog(
+    String newCity,
+    String newDistrict,
+    String savedCity,
+  ) {
+    final renkler = _temaService.renkler;
+
+    showDialog(
+      context: context,
+      builder: (ctx) => AlertDialog(
+        backgroundColor: renkler.kartArkaPlan,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Icon(Icons.location_on, color: renkler.vurgu),
+            const SizedBox(width: 12),
+            Flexible(
+              child: Text(
+                _languageService['location_changed'] ?? 'Konum Değişti',
+                style: TextStyle(color: renkler.yaziPrimary, fontSize: 18),
+              ),
+            ),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              _languageService['location_change_detected'] ??
+                  'Farklı bir şehirde olduğunuzu tespit ettik.',
+              style: TextStyle(color: renkler.yaziSecondary),
+            ),
+            const SizedBox(height: 16),
+            Container(
+              padding: const EdgeInsets.all(12),
+              decoration: BoxDecoration(
+                color: renkler.arkaPlan,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: Column(
+                children: [
+                  Row(
+                    children: [
+                      Icon(Icons.my_location, color: renkler.vurgu, size: 18),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          '${_languageService['current_location'] ?? 'Mevcut'}: $newCity${newDistrict.isNotEmpty ? ' / $newDistrict' : ''}',
+                          style: TextStyle(
+                            color: renkler.yaziPrimary,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    children: [
+                      Icon(
+                        Icons.location_city,
+                        color: renkler.yaziSecondary,
+                        size: 18,
+                      ),
+                      const SizedBox(width: 8),
+                      Flexible(
+                        child: Text(
+                          '${_languageService['saved_location'] ?? 'Kayıtlı'}: $savedCity',
+                          style: TextStyle(
+                            color: renkler.yaziSecondary,
+                            fontSize: 13,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              _languageService['update_location_question'] ??
+                  'Namaz vakitlerini yeni konuma göre güncellemek ister misiniz?',
+              style: TextStyle(color: renkler.yaziSecondary, fontSize: 13),
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(ctx),
+            child: Text(
+              _languageService['no_keep_current'] ?? 'Hayır, Mevcut Kalsın',
+              style: TextStyle(color: renkler.yaziSecondary),
+            ),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: renkler.vurgu,
+              foregroundColor: Colors.white,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+            onPressed: () {
+              Navigator.pop(ctx);
+              // Konum seçim sayfasına git
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (context) => const IlIlceSecSayfa()),
+              ).then((_) {
+                // Geri dönünce konumu yeniden yükle
+                _konumYukle();
+              });
+            },
+            child: Text(_languageService['yes_update'] ?? 'Evet, Güncelle'),
+          ),
+        ],
+      ),
+    );
   }
 
   Future<void> _checkOzelGun() async {

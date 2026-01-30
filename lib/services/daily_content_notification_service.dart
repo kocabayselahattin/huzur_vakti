@@ -256,7 +256,7 @@ class DailyContentNotificationService {
     final soundName = soundFile.replaceAll('.mp3', '');
 
     final androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'daily_content_channel',
+      'daily_content_channel_v2', // Yeni channel ID - eski ayarları geçersiz kılar
       'Günlük İçerik',
       channelDescription: 'Günün ayeti, hadisi ve duası bildirimleri',
       importance: Importance.high,
@@ -266,6 +266,7 @@ class DailyContentNotificationService {
       enableVibration: true,
       enableLights: true,
       visibility: NotificationVisibility.public,
+      ongoing: true, // Kullanıcı silene kadar bildirim çubuğunda kalsın
       autoCancel: false,
       ticker: 'Günlük içerik',
       largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
