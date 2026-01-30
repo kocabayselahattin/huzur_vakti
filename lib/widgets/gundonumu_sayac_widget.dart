@@ -125,8 +125,9 @@ class _GundonumuSayacWidgetState extends State<GundonumuSayacWidget> {
       aktifKey = 'yatsi';
       sonrakiKey = 'imsak';
     } else {
-      final parts = _vakitSaatleri[vakitListesi[sonrakiIndex]['key']!]!
-          .split(':');
+      final parts = _vakitSaatleri[vakitListesi[sonrakiIndex]['key']!]!.split(
+        ':',
+      );
       sonrakiVakitZamani = DateTime(
         now.year,
         now.month,
@@ -193,10 +194,7 @@ class _GundonumuSayacWidgetState extends State<GundonumuSayacWidget> {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            surfaceBg,
-            baseBg,
-          ],
+          colors: [surfaceBg, baseBg],
         ),
         boxShadow: [
           BoxShadow(
@@ -516,7 +514,9 @@ class _GundonumuPainter extends CustomPainter {
     const int steps = 120;
     for (int i = 0; i < steps; i++) {
       final t = i / steps;
-      final minutes = (sunriseMinutes + t * ((sunsetMinutes - sunriseMinutes) % 1440)).round();
+      final minutes =
+          (sunriseMinutes + t * ((sunsetMinutes - sunriseMinutes) % 1440))
+              .round();
       final angle = _angleFromSunrise(minutes, sunriseMinutes);
       final p1 = Offset(
         center.dx + math.cos(angle) * a,
@@ -531,7 +531,9 @@ class _GundonumuPainter extends CustomPainter {
 
     for (int i = 0; i < steps; i++) {
       final t = i / steps;
-      final minutes = (sunsetMinutes + t * ((sunriseMinutes - sunsetMinutes) % 1440)).round();
+      final minutes =
+          (sunsetMinutes + t * ((sunriseMinutes - sunsetMinutes) % 1440))
+              .round();
       final angle = _angleFromSunrise(minutes, sunriseMinutes);
       final p1 = Offset(
         center.dx + math.cos(angle) * a,
@@ -572,18 +574,17 @@ class _GundonumuPainter extends CustomPainter {
       );
 
       final isActive = entry.key == aktifVakitKey;
-        markerPaint.color =
-          isActive ? secondary : primary.withValues(alpha: 0.35);
-        final radius = isActive ? 6.5 : 4.0;
+      markerPaint.color = isActive
+          ? secondary
+          : primary.withValues(alpha: 0.35);
+      final radius = isActive ? 6.5 : 4.0;
       canvas.drawCircle(point, radius, markerPaint);
 
       final label = vakitIsimleri[entry.key] ?? entry.key;
       final textPainter = TextPainter(
         text: TextSpan(
           text: label,
-          style: isActive
-              ? textStyle.copyWith(fontSize: 13.5)
-              : textStyle,
+          style: isActive ? textStyle.copyWith(fontSize: 13.5) : textStyle,
         ),
         textDirection: TextDirection.ltr,
       )..layout();
@@ -601,8 +602,7 @@ class _GundonumuPainter extends CustomPainter {
         textPainter.width + 8,
         textPainter.height + 4,
       );
-      final bgPaint = Paint()
-        ..color = cardColor.withValues(alpha: 0.65);
+      final bgPaint = Paint()..color = cardColor.withValues(alpha: 0.65);
       canvas.drawRRect(
         RRect.fromRectAndRadius(bgRect, const Radius.circular(6)),
         bgPaint,
@@ -627,8 +627,7 @@ class _GundonumuPainter extends CustomPainter {
     final dayDuration = (sunsetMinutes - sunriseMinutes) % 1440;
     final noonMinutes = (sunriseMinutes + (dayDuration / 2).round()) % 1440;
 
-    final isDay =
-        nowMinutes >= sunriseMinutes && nowMinutes < sunsetMinutes;
+    final isDay = nowMinutes >= sunriseMinutes && nowMinutes < sunsetMinutes;
     final angle = _angleFromSunrise(nowMinutes, sunriseMinutes);
     final point = Offset(
       center.dx + math.cos(angle) * (a - 8),
@@ -681,7 +680,8 @@ class _GundonumuPainter extends CustomPainter {
     final direction = phase < 0.5 ? 1.0 : -1.0;
     final phaseOffset = offsetMagnitude * direction;
     final shadowPaint = Paint()..color = nightDeep.withValues(alpha: 0.95);
-    final clipPath = Path()..addOval(Rect.fromCircle(center: center, radius: radius));
+    final clipPath = Path()
+      ..addOval(Rect.fromCircle(center: center, radius: radius));
     canvas.save();
     canvas.clipPath(clipPath);
     canvas.drawCircle(

@@ -3,19 +3,19 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 enum AppTema {
-  gece,         // Varsayılan koyu mavi
-  seher,        // Mor-pembe tonları (sahur vakti)
-  tan,          // Turuncu-sarı tonları (güneş doğuşu)
-  ogle,         // Açık mavi tonları (gündüz)
-  aksam,        // Kırmızı-turuncu tonları (gün batımı)
-  yildizli,     // Derin siyah + yıldız efekti
-  zumrut,       // Yeşil tonları (huzur)
-  okyanus,      // Derin mavi-yeşil
-  lavanta,      // Yumuşak mor tonları
-  altin,        // Altın sarısı lüks tema
-  karbon,       // Siyah-gri minimalist
-  sakura,       // Pembe-beyaz (bahar)
-  ozel,         // Kullanıcının özel teması
+  gece, // Varsayılan koyu mavi
+  seher, // Mor-pembe tonları (sahur vakti)
+  tan, // Turuncu-sarı tonları (güneş doğuşu)
+  ogle, // Açık mavi tonları (gündüz)
+  aksam, // Kırmızı-turuncu tonları (gün batımı)
+  yildizli, // Derin siyah + yıldız efekti
+  zumrut, // Yeşil tonları (huzur)
+  okyanus, // Derin mavi-yeşil
+  lavanta, // Yumuşak mor tonları
+  altin, // Altın sarısı lüks tema
+  karbon, // Siyah-gri minimalist
+  sakura, // Pembe-beyaz (bahar)
+  ozel, // Kullanıcının özel teması
 }
 
 /// Sayaç bazlı tema tanımları
@@ -129,7 +129,7 @@ class TemaService extends ChangeNotifier {
     'Quicksand',
     'Work Sans',
   ];
-  
+
   AppTema get mevcutTema => _mevcutTema;
   String get fontFamily => _fontFamily;
   bool get sayacTemasiKullan => _sayacTemasiKullan;
@@ -451,9 +451,13 @@ class TemaService extends ChangeNotifier {
       isim: 'Gece',
       aciklama: 'Huzurlu gece mavisi',
       ikon: Icons.nights_stay,
-      dekoratifRenkler: [Color(0xFF00838F), Color(0xFF006064), Color(0xFF004D40)],
+      dekoratifRenkler: [
+        Color(0xFF00838F),
+        Color(0xFF006064),
+        Color(0xFF004D40),
+      ],
     ),
-    
+
     // 2. Seher - Sahur vakti
     AppTema.seher: TemaRenkleri(
       arkaPlan: Color(0xFF2D1B4E),
@@ -471,9 +475,13 @@ class TemaService extends ChangeNotifier {
       isim: 'Seher',
       aciklama: 'Sahur vakti huzuru',
       ikon: Icons.brightness_3,
-      dekoratifRenkler: [Color(0xFF9C27B0), Color(0xFF7B1FA2), Color(0xFF4A148C)],
+      dekoratifRenkler: [
+        Color(0xFF9C27B0),
+        Color(0xFF7B1FA2),
+        Color(0xFF4A148C),
+      ],
     ),
-    
+
     // 3. Tan - Güneş doğuşu
     AppTema.tan: TemaRenkleri(
       arkaPlan: Color(0xFF3E2723),
@@ -491,9 +499,13 @@ class TemaService extends ChangeNotifier {
       isim: 'Tan',
       aciklama: 'Güneş doğuşu sıcaklığı',
       ikon: Icons.wb_sunny,
-      dekoratifRenkler: [Color(0xFFFF6F00), Color(0xFFE65100), Color(0xFFBF360C)],
+      dekoratifRenkler: [
+        Color(0xFFFF6F00),
+        Color(0xFFE65100),
+        Color(0xFFBF360C),
+      ],
     ),
-    
+
     // 4. Öğle - Gündüz
     AppTema.ogle: TemaRenkleri(
       arkaPlan: Color(0xFF1565C0),
@@ -511,9 +523,13 @@ class TemaService extends ChangeNotifier {
       isim: 'Öğle',
       aciklama: 'Berrak gökyüzü',
       ikon: Icons.light_mode,
-      dekoratifRenkler: [Color(0xFF0097A7), Color(0xFF00838F), Color(0xFF006064)],
+      dekoratifRenkler: [
+        Color(0xFF0097A7),
+        Color(0xFF00838F),
+        Color(0xFF006064),
+      ],
     ),
-    
+
     // 5. Akşam - Gün batımı
     AppTema.aksam: TemaRenkleri(
       arkaPlan: Color(0xFF4A1C1C),
@@ -531,9 +547,13 @@ class TemaService extends ChangeNotifier {
       isim: 'Akşam',
       aciklama: 'Gün batımı kızıllığı',
       ikon: Icons.wb_twilight,
-      dekoratifRenkler: [Color(0xFFD84315), Color(0xFFBF360C), Color(0xFF8D1717)],
+      dekoratifRenkler: [
+        Color(0xFFD84315),
+        Color(0xFFBF360C),
+        Color(0xFF8D1717),
+      ],
     ),
-    
+
     // 6. Yıldızlı - Gece gökyüzü
     AppTema.yildizli: TemaRenkleri(
       arkaPlan: Color(0xFF0D0D1A),
@@ -551,9 +571,13 @@ class TemaService extends ChangeNotifier {
       isim: 'Yıldızlı',
       aciklama: 'Derin gece gökyüzü',
       ikon: Icons.star,
-      dekoratifRenkler: [Color(0xFF7C4DFF), Color(0xFF651FFF), Color(0xFF6200EA)],
+      dekoratifRenkler: [
+        Color(0xFF7C4DFF),
+        Color(0xFF651FFF),
+        Color(0xFF6200EA),
+      ],
     ),
-    
+
     // 7. Zümrüt - Huzur ve doğa
     AppTema.zumrut: TemaRenkleri(
       arkaPlan: Color(0xFF1B3D2F),
@@ -571,9 +595,13 @@ class TemaService extends ChangeNotifier {
       isim: 'Zümrüt',
       aciklama: 'Cennet bahçesi huzuru',
       ikon: Icons.eco,
-      dekoratifRenkler: [Color(0xFF00E676), Color(0xFF00C853), Color(0xFF1B5E20)],
+      dekoratifRenkler: [
+        Color(0xFF00E676),
+        Color(0xFF00C853),
+        Color(0xFF1B5E20),
+      ],
     ),
-    
+
     // 8. Okyanus - Derin deniz
     AppTema.okyanus: TemaRenkleri(
       arkaPlan: Color(0xFF0D2137),
@@ -591,9 +619,13 @@ class TemaService extends ChangeNotifier {
       isim: 'Okyanus',
       aciklama: 'Derin deniz mavisi',
       ikon: Icons.water,
-      dekoratifRenkler: [Color(0xFF00ACC1), Color(0xFF0097A7), Color(0xFF00838F)],
+      dekoratifRenkler: [
+        Color(0xFF00ACC1),
+        Color(0xFF0097A7),
+        Color(0xFF00838F),
+      ],
     ),
-    
+
     // 9. Lavanta - Yumuşak mor
     AppTema.lavanta: TemaRenkleri(
       arkaPlan: Color(0xFF2E2240),
@@ -611,9 +643,13 @@ class TemaService extends ChangeNotifier {
       isim: 'Lavanta',
       aciklama: 'Sakinleştirici lavanta',
       ikon: Icons.local_florist,
-      dekoratifRenkler: [Color(0xFFAB47BC), Color(0xFF8E24AA), Color(0xFF6A1B9A)],
+      dekoratifRenkler: [
+        Color(0xFFAB47BC),
+        Color(0xFF8E24AA),
+        Color(0xFF6A1B9A),
+      ],
     ),
-    
+
     // 10. Altın - Lüks görünüm
     AppTema.altin: TemaRenkleri(
       arkaPlan: Color(0xFF1A1A1A),
@@ -631,9 +667,13 @@ class TemaService extends ChangeNotifier {
       isim: 'Altın',
       aciklama: 'Zarif altın parıltısı',
       ikon: Icons.diamond,
-      dekoratifRenkler: [Color(0xFFFFB300), Color(0xFFFFA000), Color(0xFFFF8F00)],
+      dekoratifRenkler: [
+        Color(0xFFFFB300),
+        Color(0xFFFFA000),
+        Color(0xFFFF8F00),
+      ],
     ),
-    
+
     // 11. Karbon - Minimalist siyah
     AppTema.karbon: TemaRenkleri(
       arkaPlan: Color(0xFF121212),
@@ -646,9 +686,13 @@ class TemaService extends ChangeNotifier {
       isim: 'Karbon',
       aciklama: 'Modern minimalist',
       ikon: Icons.dark_mode,
-      dekoratifRenkler: [Color(0xFF00BFA5), Color(0xFF00897B), Color(0xFF004D40)],
+      dekoratifRenkler: [
+        Color(0xFF00BFA5),
+        Color(0xFF00897B),
+        Color(0xFF004D40),
+      ],
     ),
-    
+
     // 12. Sakura - Bahar çiçeği
     AppTema.sakura: TemaRenkleri(
       arkaPlan: Color(0xFF2D2133),
@@ -666,9 +710,13 @@ class TemaService extends ChangeNotifier {
       isim: 'Sakura',
       aciklama: 'Bahar çiçeği pembesi',
       ikon: Icons.spa,
-      dekoratifRenkler: [Color(0xFFF48FB1), Color(0xFFEC407A), Color(0xFFD81B60)],
+      dekoratifRenkler: [
+        Color(0xFFF48FB1),
+        Color(0xFFEC407A),
+        Color(0xFFD81B60),
+      ],
     ),
-    
+
     // 13. Özel - Kullanıcı tanımlı
     AppTema.ozel: TemaRenkleri(
       arkaPlan: Color(0xFF1B2741),
@@ -681,7 +729,11 @@ class TemaService extends ChangeNotifier {
       isim: 'Özel Tema',
       aciklama: 'Kendi renkleriniz',
       ikon: Icons.palette,
-      dekoratifRenkler: [Color(0xFF00838F), Color(0xFF006064), Color(0xFF004D40)],
+      dekoratifRenkler: [
+        Color(0xFF00838F),
+        Color(0xFF006064),
+        Color(0xFF004D40),
+      ],
     ),
   };
 
@@ -718,7 +770,7 @@ class TemaService extends ChangeNotifier {
     final vurguSecondary = prefs.getInt('ozel_tema_vurguSecondary');
     final yaziPrimary = prefs.getInt('ozel_tema_yaziPrimary');
     final yaziSecondary = prefs.getInt('ozel_tema_yaziSecondary');
-    
+
     if (arkaPlan != null && vurgu != null) {
       _ozelTema = TemaRenkleri(
         arkaPlan: Color(arkaPlan),
@@ -754,7 +806,8 @@ class TemaService extends ChangeNotifier {
   /// Sayaç değiştiğinde temayı güncelle
   Future<void> sayacTemasiGuncelle(int sayacIndex) async {
     _aktifSayacIndex = sayacIndex;
-    _sayacTemasiKullan = true; // Sayaç değiştirildiğinde tema sayaca göre güncellenmeli
+    _sayacTemasiKullan =
+        true; // Sayaç değiştirildiğinde tema sayaca göre güncellenmeli
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt('secili_sayac_index', sayacIndex);
     await prefs.setBool('sayac_temasi_kullan', true);
@@ -784,7 +837,7 @@ class TemaService extends ChangeNotifier {
     await prefs.setInt('ozel_tema_vurguSecondary', vurguSecondary.value);
     await prefs.setInt('ozel_tema_yaziPrimary', yaziPrimary.value);
     await prefs.setInt('ozel_tema_yaziSecondary', yaziSecondary.value);
-    
+
     _ozelTema = TemaRenkleri(
       arkaPlan: arkaPlan,
       kartArkaPlan: kartArkaPlan,
@@ -797,7 +850,7 @@ class TemaService extends ChangeNotifier {
       aciklama: 'Sizin seçtiğiniz renkler',
       ikon: Icons.palette,
     );
-    
+
     _mevcutTema = AppTema.ozel;
     await prefs.setInt('tema_index', AppTema.ozel.index);
     notifyListeners();
@@ -806,48 +859,172 @@ class TemaService extends ChangeNotifier {
   // Hazır renk paletleri
   static const List<Map<String, dynamic>> hazirPaletler = [
     // Klasik Tonlar
-    {'isim': 'Gece Mavisi', 'arkaPlan': Color(0xFF1B2741), 'vurgu': Color(0xFF00BCD4)},
-    {'isim': 'Orman Yeşili', 'arkaPlan': Color(0xFF1B3D2F), 'vurgu': Color(0xFF4CAF50)},
-    {'isim': 'Bordo', 'arkaPlan': Color(0xFF3E1A1A), 'vurgu': Color(0xFFE53935)},
-    {'isim': 'Mor Rüya', 'arkaPlan': Color(0xFF2E1F47), 'vurgu': Color(0xFF9C27B0)},
-    {'isim': 'Turkuaz', 'arkaPlan': Color(0xFF0D3B3E), 'vurgu': Color(0xFF00BCD4)},
-    {'isim': 'Karamel', 'arkaPlan': Color(0xFF3E2723), 'vurgu': Color(0xFFFF9800)},
-    {'isim': 'Gül Kurusu', 'arkaPlan': Color(0xFF3D2429), 'vurgu': Color(0xFFE91E63)},
-    {'isim': 'Zeytin', 'arkaPlan': Color(0xFF2E3D1B), 'vurgu': Color(0xFF8BC34A)},
-    
+    {
+      'isim': 'Gece Mavisi',
+      'arkaPlan': Color(0xFF1B2741),
+      'vurgu': Color(0xFF00BCD4),
+    },
+    {
+      'isim': 'Orman Yeşili',
+      'arkaPlan': Color(0xFF1B3D2F),
+      'vurgu': Color(0xFF4CAF50),
+    },
+    {
+      'isim': 'Bordo',
+      'arkaPlan': Color(0xFF3E1A1A),
+      'vurgu': Color(0xFFE53935),
+    },
+    {
+      'isim': 'Mor Rüya',
+      'arkaPlan': Color(0xFF2E1F47),
+      'vurgu': Color(0xFF9C27B0),
+    },
+    {
+      'isim': 'Turkuaz',
+      'arkaPlan': Color(0xFF0D3B3E),
+      'vurgu': Color(0xFF00BCD4),
+    },
+    {
+      'isim': 'Karamel',
+      'arkaPlan': Color(0xFF3E2723),
+      'vurgu': Color(0xFFFF9800),
+    },
+    {
+      'isim': 'Gül Kurusu',
+      'arkaPlan': Color(0xFF3D2429),
+      'vurgu': Color(0xFFE91E63),
+    },
+    {
+      'isim': 'Zeytin',
+      'arkaPlan': Color(0xFF2E3D1B),
+      'vurgu': Color(0xFF8BC34A),
+    },
+
     // Lüks & Elegant
-    {'isim': 'Altın Siyah', 'arkaPlan': Color(0xFF0D0D0D), 'vurgu': Color(0xFFFFD700)},
-    {'isim': 'Rose Gold', 'arkaPlan': Color(0xFF1A1215), 'vurgu': Color(0xFFB76E79)},
-    {'isim': 'Platin', 'arkaPlan': Color(0xFF1C1C1E), 'vurgu': Color(0xFFE5E4E2)},
-    {'isim': 'Bronz', 'arkaPlan': Color(0xFF1F1710), 'vurgu': Color(0xFFCD7F32)},
-    
+    {
+      'isim': 'Altın Siyah',
+      'arkaPlan': Color(0xFF0D0D0D),
+      'vurgu': Color(0xFFFFD700),
+    },
+    {
+      'isim': 'Rose Gold',
+      'arkaPlan': Color(0xFF1A1215),
+      'vurgu': Color(0xFFB76E79),
+    },
+    {
+      'isim': 'Platin',
+      'arkaPlan': Color(0xFF1C1C1E),
+      'vurgu': Color(0xFFE5E4E2),
+    },
+    {
+      'isim': 'Bronz',
+      'arkaPlan': Color(0xFF1F1710),
+      'vurgu': Color(0xFFCD7F32),
+    },
+
     // Doğa Tonları
-    {'isim': 'Okyanus', 'arkaPlan': Color(0xFF0A192F), 'vurgu': Color(0xFF64FFDA)},
-    {'isim': 'Orman Gece', 'arkaPlan': Color(0xFF0D1F0D), 'vurgu': Color(0xFF00E676)},
-    {'isim': 'Çöl Gece', 'arkaPlan': Color(0xFF2D1F14), 'vurgu': Color(0xFFFFAB40)},
-    {'isim': 'Gün Batımı', 'arkaPlan': Color(0xFF2D1B2D), 'vurgu': Color(0xFFFF6B6B)},
-    
+    {
+      'isim': 'Okyanus',
+      'arkaPlan': Color(0xFF0A192F),
+      'vurgu': Color(0xFF64FFDA),
+    },
+    {
+      'isim': 'Orman Gece',
+      'arkaPlan': Color(0xFF0D1F0D),
+      'vurgu': Color(0xFF00E676),
+    },
+    {
+      'isim': 'Çöl Gece',
+      'arkaPlan': Color(0xFF2D1F14),
+      'vurgu': Color(0xFFFFAB40),
+    },
+    {
+      'isim': 'Gün Batımı',
+      'arkaPlan': Color(0xFF2D1B2D),
+      'vurgu': Color(0xFFFF6B6B),
+    },
+
     // Neon & Cyberpunk
-    {'isim': 'Neon Pembe', 'arkaPlan': Color(0xFF0F0A1A), 'vurgu': Color(0xFFFF00FF)},
-    {'isim': 'Neon Mavi', 'arkaPlan': Color(0xFF0A0A14), 'vurgu': Color(0xFF00FFFF)},
-    {'isim': 'Neon Yeşil', 'arkaPlan': Color(0xFF0A140A), 'vurgu': Color(0xFF00FF41)},
-    {'isim': 'Elektrik Mor', 'arkaPlan': Color(0xFF14081F), 'vurgu': Color(0xFF9D00FF)},
-    
+    {
+      'isim': 'Neon Pembe',
+      'arkaPlan': Color(0xFF0F0A1A),
+      'vurgu': Color(0xFFFF00FF),
+    },
+    {
+      'isim': 'Neon Mavi',
+      'arkaPlan': Color(0xFF0A0A14),
+      'vurgu': Color(0xFF00FFFF),
+    },
+    {
+      'isim': 'Neon Yeşil',
+      'arkaPlan': Color(0xFF0A140A),
+      'vurgu': Color(0xFF00FF41),
+    },
+    {
+      'isim': 'Elektrik Mor',
+      'arkaPlan': Color(0xFF14081F),
+      'vurgu': Color(0xFF9D00FF),
+    },
+
     // Pastel & Soft
-    {'isim': 'Lavanta', 'arkaPlan': Color(0xFF1E1A26), 'vurgu': Color(0xFFB39DDB)},
+    {
+      'isim': 'Lavanta',
+      'arkaPlan': Color(0xFF1E1A26),
+      'vurgu': Color(0xFFB39DDB),
+    },
     {'isim': 'Mint', 'arkaPlan': Color(0xFF142021), 'vurgu': Color(0xFF80CBC4)},
-    {'isim': 'Şeftali', 'arkaPlan': Color(0xFF211A17), 'vurgu': Color(0xFFFFAB91)},
-    {'isim': 'Buz Mavisi', 'arkaPlan': Color(0xFF141B21), 'vurgu': Color(0xFF81D4FA)},
-    
+    {
+      'isim': 'Şeftali',
+      'arkaPlan': Color(0xFF211A17),
+      'vurgu': Color(0xFFFFAB91),
+    },
+    {
+      'isim': 'Buz Mavisi',
+      'arkaPlan': Color(0xFF141B21),
+      'vurgu': Color(0xFF81D4FA),
+    },
+
     // Premium & Özel
-    {'isim': 'Galaksi', 'arkaPlan': Color(0xFF0B0B1A), 'vurgu': Color(0xFF7C4DFF)},
-    {'isim': 'Aurora', 'arkaPlan': Color(0xFF0D1418), 'vurgu': Color(0xFF00E5FF)},
-    {'isim': 'Nar Çiçeği', 'arkaPlan': Color(0xFF1A0A0F), 'vurgu': Color(0xFFFF4081)},
-    {'isim': 'Safir', 'arkaPlan': Color(0xFF0A1628), 'vurgu': Color(0xFF448AFF)},
-    {'isim': 'Kehribar', 'arkaPlan': Color(0xFF1A1408), 'vurgu': Color(0xFFFFB300)},
-    {'isim': 'Yakut', 'arkaPlan': Color(0xFF1A080A), 'vurgu': Color(0xFFFF1744)},
-    {'isim': 'Zümrüt', 'arkaPlan': Color(0xFF081A12), 'vurgu': Color(0xFF00E676)},
-    {'isim': 'Ametist', 'arkaPlan': Color(0xFF150A1F), 'vurgu': Color(0xFFAA00FF)},
+    {
+      'isim': 'Galaksi',
+      'arkaPlan': Color(0xFF0B0B1A),
+      'vurgu': Color(0xFF7C4DFF),
+    },
+    {
+      'isim': 'Aurora',
+      'arkaPlan': Color(0xFF0D1418),
+      'vurgu': Color(0xFF00E5FF),
+    },
+    {
+      'isim': 'Nar Çiçeği',
+      'arkaPlan': Color(0xFF1A0A0F),
+      'vurgu': Color(0xFFFF4081),
+    },
+    {
+      'isim': 'Safir',
+      'arkaPlan': Color(0xFF0A1628),
+      'vurgu': Color(0xFF448AFF),
+    },
+    {
+      'isim': 'Kehribar',
+      'arkaPlan': Color(0xFF1A1408),
+      'vurgu': Color(0xFFFFB300),
+    },
+    {
+      'isim': 'Yakut',
+      'arkaPlan': Color(0xFF1A080A),
+      'vurgu': Color(0xFFFF1744),
+    },
+    {
+      'isim': 'Zümrüt',
+      'arkaPlan': Color(0xFF081A12),
+      'vurgu': Color(0xFF00E676),
+    },
+    {
+      'isim': 'Ametist',
+      'arkaPlan': Color(0xFF150A1F),
+      'vurgu': Color(0xFFAA00FF),
+    },
   ];
 
   ThemeData buildThemeData() {
@@ -857,7 +1034,9 @@ class TemaService extends ChangeNotifier {
     try {
       fontTextTheme = GoogleFonts.getTextTheme(_fontFamily);
     } catch (e) {
-      print('⚠️ Font yüklenemedi ($_fontFamily), varsayılan font kullanılıyor: $e');
+      print(
+        '⚠️ Font yüklenemedi ($_fontFamily), varsayılan font kullanılıyor: $e',
+      );
       fontTextTheme = GoogleFonts.poppinsTextTheme();
       _fontFamily = 'Poppins';
     }

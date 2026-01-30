@@ -86,30 +86,15 @@ class _SayacAyarlariSayfaState extends State<SayacAyarlariSayfa> {
       'color': Colors.cyan,
       'index': 5,
     },
-    {
-      'id': 'premium',
-      'icon': Icons.star,
-      'color': Colors.amber,
-      'index': 6,
-    },
+    {'id': 'premium', 'icon': Icons.star, 'color': Colors.amber, 'index': 6},
     {
       'id': 'galaksi',
       'icon': Icons.auto_awesome,
       'color': Colors.purple,
       'index': 7,
     },
-    {
-      'id': 'neon',
-      'icon': Icons.lightbulb,
-      'color': Colors.green,
-      'index': 8,
-    },
-    {
-      'id': 'okyanus',
-      'icon': Icons.water,
-      'color': Colors.blue,
-      'index': 9,
-    },
+    {'id': 'neon', 'icon': Icons.lightbulb, 'color': Colors.green, 'index': 8},
+    {'id': 'okyanus', 'icon': Icons.water, 'color': Colors.blue, 'index': 9},
     {
       'id': 'minimal',
       'icon': Icons.crop_square,
