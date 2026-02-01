@@ -267,6 +267,12 @@ class ScheduledNotificationService {
             dakika,
           );
 
+          // 🔔 ÖNEMLİ: Vakit saatini SharedPreferences'a kaydet (BootReceiver için)
+          // BootReceiver bu bilgiyi kullanarak telefon yeniden başlatıldığında alarmları yeniden zamanlar
+          final dateKey =
+              '${hedefTarih.year}-${hedefTarih.month.toString().padLeft(2, '0')}-${hedefTarih.day.toString().padLeft(2, '0')}';
+          await prefs.setString('vakit_${vakitKeyLower}_$dateKey', vakitSaati);
+
           debugPrint(
             '📌 $vakitKey: Vakit saati $saat:$dakika, Erken dakika: $erkenDakika, Bildirim açık: $bildirimAcik, Vaktinde: $vaktindeBildirim',
           );

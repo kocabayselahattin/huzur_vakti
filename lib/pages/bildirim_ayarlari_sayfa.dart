@@ -9,7 +9,6 @@ import 'package:path_provider/path_provider.dart';
 import '../services/dnd_service.dart';
 import '../services/scheduled_notification_service.dart';
 import '../services/daily_content_notification_service.dart';
-import '../services/alarm_service.dart';
 import '../services/language_service.dart';
 
 class BildirimAyarlariSayfa extends StatefulWidget {
@@ -66,7 +65,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
   bool _gunlukIcerikBildirimleri = true;
 
   // Ses çalma durumu (play/pause toggle için)
-  bool _sesCaliyor = false;
+  String? _sesCalanKey; // Hangi vakit için ses çalıyor
 
   // Kilit ekranı servisi için MethodChannel
   static const _lockScreenChannel = MethodChannel('huzur_vakti/lockscreen');
@@ -504,77 +503,16 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     }
   }
 
-  /// Alarm izni kontrolü
-  Future<bool> _checkAlarmPermission() async {
-    final notificationsPlugin = FlutterLocalNotificationsPlugin();
-    final androidImpl = notificationsPlugin
-        .resolvePlatformSpecificImplementation<
-          AndroidFlutterLocalNotificationsPlugin
-        >();
-
-    if (androidImpl == null) return true;
-
-    final canScheduleExact =
-        await androidImpl.canScheduleExactNotifications() ?? true;
-
-    if (!canScheduleExact) {
-      if (mounted) {
-        final shouldRequest = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(
-              _languageService['exact_alarm_permission_required'] ??
-                  'Alarm İzni Gerekli',
-            ),
-            content: Text(
-              _languageService['exact_alarm_permission_message'] ??
-                  'Namaz vakti alarmlarının tam zamanında çalması için "Alarm ve hatırlatıcı" iznini vermeniz gerekiyor. Ayarlar açılacak.',
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(context, false),
-                child: Text(_languageService['give_up'] ?? 'Vazgeç'),
-              ),
-              ElevatedButton(
-                onPressed: () => Navigator.pop(context, true),
-                child: Text(_languageService['open_settings'] ?? 'Ayarları Aç'),
-              ),
-            ],
-          ),
-        );
-
-        if (shouldRequest == true) {
-          await androidImpl.requestExactAlarmsPermission();
-          // Kullanıcı ayarlardan döndükten sonra tekrar kontrol et
-          final nowHasPermission =
-              await androidImpl.canScheduleExactNotifications() ?? true;
-          if (!nowHasPermission && mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  _languageService['alarm_permission_denied'] ??
-                      'Alarm izni verilmedi. Alarmlar çalışmayabilir.',
-                ),
-                backgroundColor: Colors.orange,
-              ),
-            );
-          }
-          return nowHasPermission;
-        }
-        return false;
-      }
-    }
-    return true;
-  }
-
   Future<void> _sesCal(String key, String sesDosyasi) async {
     try {
-      if (_sesCaliyor) {
-        // Ses çalıyorsa durdur
+      if (_sesCalanKey == key) {
+        // Aynı tuşa basıldıysa durdur
         await _audioPlayer.stop();
-        setState(() => _sesCaliyor = false);
+        setState(() => _sesCalanKey = null);
       } else {
-        // Ses çalmıyorsa çal
+        // Farklı tuşa basıldıysa önce durdur sonra yenisini çal
+        await _audioPlayer.stop();
+
         if (sesDosyasi == 'custom' && _ozelSesDosyalari.containsKey(key)) {
           // Özel ses çal
           await _audioPlayer.play(DeviceFileSource(_ozelSesDosyalari[key]!));
@@ -583,17 +521,17 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
           await _audioPlayer.play(AssetSource('sounds/$sesDosyasi'));
         }
 
-        setState(() => _sesCaliyor = true);
+        setState(() => _sesCalanKey = key);
 
         // Ses bitince otomatik toggle
         _audioPlayer.onPlayerStateChanged.listen((state) {
           if (state == PlayerState.stopped || state == PlayerState.completed) {
-            setState(() => _sesCaliyor = false);
+            setState(() => _sesCalanKey = null);
           }
         });
       }
     } catch (e) {
-      setState(() => _sesCaliyor = false);
+      setState(() => _sesCalanKey = null);
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
@@ -819,8 +757,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
           children: [
             // Bilgilendirme kartı
             Container(
-              padding: const EdgeInsets.all(16),
-              margin: const EdgeInsets.only(bottom: 24),
+              padding: const EdgeInsets.all(12),
+              margin: const EdgeInsets.only(bottom: 16),
               decoration: BoxDecoration(
                 color: Colors.cyanAccent.withOpacity(0.1),
                 borderRadius: BorderRadius.circular(12),
@@ -844,7 +782,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Text(
                     _languageService['notification_info_text'] ??
                         '• Her vakit için bildirimi açıp kapatabilirsiniz\n'
@@ -860,8 +798,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
 
             // Vakitlerde sessize al seçeneği
             Container(
-              margin: const EdgeInsets.only(bottom: 24),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(12),
@@ -918,8 +856,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
 
             // Günlük içerik bildirimleri
             Container(
-              margin: const EdgeInsets.only(bottom: 24),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(12),
@@ -1050,33 +988,6 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                             ),
                           ],
                         ),
-                        const SizedBox(height: 8),
-                        Row(
-                          children: [
-                            const Icon(
-                              Icons.volume_up,
-                              size: 14,
-                              color: Colors.white54,
-                            ),
-                            const SizedBox(width: 8),
-                            const Text(
-                              'Bildirim Sesi:',
-                              style: TextStyle(
-                                color: Colors.white70,
-                                fontSize: 13,
-                              ),
-                            ),
-                            const Spacer(),
-                            const Text(
-                              'Ding Dong',
-                              style: TextStyle(
-                                color: Colors.white54,
-                                fontSize: 13,
-                                fontStyle: FontStyle.italic,
-                              ),
-                            ),
-                          ],
-                        ),
                       ],
                     ),
                   ),
@@ -1086,8 +997,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
 
             // Kilit ekranı bildirimi seçeneği
             Container(
-              margin: const EdgeInsets.only(bottom: 24),
-              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              margin: const EdgeInsets.only(bottom: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
               decoration: BoxDecoration(
                 color: Colors.white.withOpacity(0.05),
                 borderRadius: BorderRadius.circular(12),
@@ -1194,7 +1105,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
               ],
             ),
 
-            const SizedBox(height: 16),
+            const SizedBox(height: 10),
 
             // Vakit bildirimleri
             _vakitBildirimKarti(
@@ -1366,7 +1277,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                       ],
                     ),
                   ),
-                  const SizedBox(height: 12),
+                  const SizedBox(height: 8),
                   Row(
                     children: [
                       const Icon(Icons.timer, color: Colors.white54, size: 18),
@@ -1430,7 +1341,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 10),
+                  const SizedBox(height: 6),
                   Row(
                     children: [
                       const Icon(
@@ -1500,7 +1411,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                       // Ses önizleme butonu - Play/Pause toggle
                       Container(
                         decoration: BoxDecoration(
-                          color: _sesCaliyor
+                          color: _sesCalanKey == key
                               ? Colors.red.withOpacity(0.3)
                               : Colors.green.withOpacity(0.2),
                           borderRadius: BorderRadius.circular(6),
@@ -1508,11 +1419,15 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                         child: IconButton(
                           onPressed: () => _sesCal(key, seciliSes),
                           icon: Icon(
-                            _sesCaliyor ? Icons.stop_circle : Icons.play_circle,
-                            color: _sesCaliyor ? Colors.red : Colors.green,
+                            _sesCalanKey == key
+                                ? Icons.stop_circle
+                                : Icons.play_circle,
+                            color: _sesCalanKey == key
+                                ? Colors.red
+                                : Colors.green,
                             size: 28,
                           ),
-                          tooltip: _sesCaliyor ? 'Durdur' : 'Dinle',
+                          tooltip: _sesCalanKey == key ? 'Durdur' : 'Dinle',
                           padding: EdgeInsets.zero,
                           constraints: const BoxConstraints(
                             minWidth: 40,

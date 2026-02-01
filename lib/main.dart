@@ -12,6 +12,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'services/notification_service.dart';
 import 'services/scheduled_notification_service.dart';
 import 'services/daily_content_notification_service.dart';
+import 'services/ozel_gunler_service.dart';
 
 /// İlk kurulumda varsayılan bildirim ayarlarını SharedPreferences'a kaydet
 Future<void> _initializeDefaultNotificationSettings(
@@ -148,6 +149,9 @@ void main() async {
   // Günlük içerik bildirimleri servisini başlat
   await DailyContentNotificationService.initialize();
   await DailyContentNotificationService.scheduleDailyContentNotifications();
+
+  // 🔔 Özel gün bildirimleri (kandiller, bayramlar vb.)
+  await OzelGunlerService.scheduleOzelGunBildirimleri();
 
   // 🔔 Uygulama başlatıldığında alarmları yeniden zamanla
   // Bu boot sonrası veya uygulama güncellemesi sonrası alarmları geri yükler

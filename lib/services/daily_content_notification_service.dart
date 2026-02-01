@@ -58,6 +58,22 @@ class DailyContentNotificationService {
       tz.setLocalLocation(tz.getLocation('Europe/Istanbul'));
       debugPrint('🕐 Timezone başlatıldı: ${tz.local.name}');
 
+      // Notification plugin'i başlat
+      const AndroidInitializationSettings initializationSettingsAndroid =
+          AndroidInitializationSettings('@mipmap/ic_launcher');
+
+      const InitializationSettings initializationSettings =
+          InitializationSettings(android: initializationSettingsAndroid);
+
+      await _notificationsPlugin.initialize(
+        settings: initializationSettings,
+        onDidReceiveNotificationResponse: (NotificationResponse response) {
+          debugPrint(
+            '🔔 Günlük içerik bildirimine tıklandı: ${response.payload}',
+          );
+        },
+      );
+
       // Android notification channel oluştur
       final androidImplementation = _notificationsPlugin
           .resolvePlatformSpecificImplementation<
@@ -65,6 +81,27 @@ class DailyContentNotificationService {
           >();
 
       if (androidImplementation != null) {
+        // Bildirim izni kontrolü ve isteği
+        final hasPermission =
+            await androidImplementation.areNotificationsEnabled() ?? false;
+        debugPrint('📱 Günlük içerik bildirim izni: $hasPermission');
+
+        if (!hasPermission) {
+          debugPrint('⚠️ Günlük içerik bildirim izni verilmemiş, isteniyor...');
+          await androidImplementation.requestNotificationsPermission();
+        }
+
+        // Exact alarm izni kontrolü
+        final canScheduleExact =
+            await androidImplementation.canScheduleExactNotifications() ??
+            false;
+        debugPrint('⏰ Exact alarm izni: $canScheduleExact');
+
+        if (!canScheduleExact) {
+          debugPrint('⚠️ Exact alarm izni verilmemiş, isteniyor...');
+          await androidImplementation.requestExactAlarmsPermission();
+        }
+
         // Ses ayarını al
         final soundFile = await getDailyContentNotificationSound();
         final soundName = soundFile.replaceAll('.mp3', '');
@@ -220,7 +257,64 @@ class DailyContentNotificationService {
     await languageService.load();
 
     final titleText = languageService[title] ?? title;
-    final bodyText = languageService[body] ?? body;
+
+    // Gerçek içeriği hesapla - gün bazlı
+    final dayOfYear = scheduledDate
+        .difference(DateTime(scheduledDate.year, 1, 1))
+        .inDays;
+    String bodyText = '';
+
+    if (title == 'todays_verse') {
+      // Günün Ayeti - verses listesinden al
+      final versesList = languageService['verses'];
+      if (versesList is List && versesList.isNotEmpty) {
+        final index = dayOfYear % versesList.length;
+        final verse = versesList[index];
+        if (verse is Map) {
+          final text = verse['text']?.toString() ?? '';
+          final source = verse['source']?.toString() ?? '';
+          bodyText = '$text\n📖 $source';
+        }
+      }
+      if (bodyText.isEmpty) {
+        bodyText =
+            'Şüphesiz namaz, hayâsızlıktan ve kötülükten alıkoyar.\n📖 Ankebût, 45';
+      }
+    } else if (title == 'todays_hadith') {
+      // Günün Hadisi - hadiths listesinden al
+      final hadithsList = languageService['hadiths'];
+      if (hadithsList is List && hadithsList.isNotEmpty) {
+        final index = (dayOfYear + 14) % hadithsList.length;
+        final hadith = hadithsList[index];
+        if (hadith is Map) {
+          final text = hadith['text']?.toString() ?? '';
+          final source = hadith['source']?.toString() ?? '';
+          bodyText = '$text\n📿 $source';
+        }
+      }
+      if (bodyText.isEmpty) {
+        bodyText =
+            'Ameller niyetlere göredir. Herkesin niyeti ne ise eline geçecek odur.\n📿 Buhârî, Müslim';
+      }
+    } else if (title == 'todays_dua') {
+      // Günün Duası - prayers listesinden al
+      final prayersList = languageService['prayers'];
+      if (prayersList is List && prayersList.isNotEmpty) {
+        final index = (dayOfYear + 7) % prayersList.length;
+        final prayer = prayersList[index];
+        if (prayer is Map) {
+          final text = prayer['text']?.toString() ?? '';
+          final source = prayer['source']?.toString() ?? '';
+          bodyText = '$text\n🤲 $source';
+        }
+      }
+      if (bodyText.isEmpty) {
+        bodyText =
+            'Rabbim! Bana, ana-babama ve müminlere mağfiret et.\n🤲 İbrâhîm, 41';
+      }
+    } else {
+      bodyText = languageService[body] ?? body;
+    }
 
     // Ses ayarını al
     final soundFile = await getDailyContentNotificationSound();
@@ -238,10 +332,19 @@ class DailyContentNotificationService {
       enableVibration: true,
       enableLights: true,
       visibility: NotificationVisibility.public,
-      ongoing: true, // Bildirim kullanıcı kapatana kadar kalsın
-      autoCancel: false, // Otomatik kaybolmasın
+      ongoing: false, // Kullanıcı kaydırarak kaldırabilsin
+      autoCancel: true, // Tıklanınca kapansın
       ticker: 'Günlük içerik',
-      largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      // BigText style - tam içerik göster
+      styleInformation: BigTextStyleInformation(
+        bodyText,
+        htmlFormatBigText: false,
+        contentTitle: titleText,
+        htmlFormatContentTitle: false,
+        summaryText: 'Huzur Vakti',
+        htmlFormatSummaryText: false,
+      ),
     );
 
     await _notificationsPlugin.zonedSchedule(
@@ -290,23 +393,76 @@ class DailyContentNotificationService {
     final languageService = LanguageService();
     await languageService.load();
 
-    String title, body;
+    String title;
+    String body;
     int id;
+
+    // Bugünün içeriğini hesapla
+    final now = DateTime.now();
+    final dayOfYear = now.difference(DateTime(now.year, 1, 1)).inDays;
 
     switch (type) {
       case 'verse':
         title = languageService['todays_verse'] ?? 'Günün Ayeti';
-        body = 'Test bildirimi - Bu günün ayeti bildirimi örneğidir';
+        // Günün gerçek ayetini al
+        final versesList = languageService['verses'];
+        if (versesList is List && versesList.isNotEmpty) {
+          final index = dayOfYear % versesList.length;
+          final verse = versesList[index];
+          if (verse is Map) {
+            final text = verse['text']?.toString() ?? '';
+            final source = verse['source']?.toString() ?? '';
+            body = '$text\n📖 $source';
+          } else {
+            body =
+                'Şüphesiz namaz, hayâsızlıktan ve kötülükten alıkoyar.\n📖 Ankebût, 45';
+          }
+        } else {
+          body =
+              'Şüphesiz namaz, hayâsızlıktan ve kötülükten alıkoyar.\n📖 Ankebût, 45';
+        }
         id = 9000;
         break;
       case 'hadith':
         title = languageService['todays_hadith'] ?? 'Günün Hadisi';
-        body = 'Test bildirimi - Bu günün hadisi bildirimi örneğidir';
+        // Günün gerçek hadisini al
+        final hadithsList = languageService['hadiths'];
+        if (hadithsList is List && hadithsList.isNotEmpty) {
+          final index = (dayOfYear + 14) % hadithsList.length;
+          final hadith = hadithsList[index];
+          if (hadith is Map) {
+            final text = hadith['text']?.toString() ?? '';
+            final source = hadith['source']?.toString() ?? '';
+            body = '$text\n📿 $source';
+          } else {
+            body =
+                'Ameller niyetlere göredir. Herkesin niyeti ne ise eline geçecek odur.\n📿 Buhârî, Müslim';
+          }
+        } else {
+          body =
+              'Ameller niyetlere göredir. Herkesin niyeti ne ise eline geçecek odur.\n📿 Buhârî, Müslim';
+        }
         id = 9001;
         break;
       case 'prayer':
         title = languageService['todays_dua'] ?? 'Günün Duası';
-        body = 'Test bildirimi - Bu günün duası bildirimi örneğidir';
+        // Günün gerçek duasını al
+        final prayersList = languageService['prayers'];
+        if (prayersList is List && prayersList.isNotEmpty) {
+          final index = (dayOfYear + 7) % prayersList.length;
+          final prayer = prayersList[index];
+          if (prayer is Map) {
+            final text = prayer['text']?.toString() ?? '';
+            final source = prayer['source']?.toString() ?? '';
+            body = '$text\n🤲 $source';
+          } else {
+            body =
+                'Rabbim! Bana, ana-babama ve müminlere mağfiret et.\n🤲 İbrâhîm, 41';
+          }
+        } else {
+          body =
+              'Rabbim! Bana, ana-babama ve müminlere mağfiret et.\n🤲 İbrâhîm, 41';
+        }
         id = 9002;
         break;
       default:
@@ -328,9 +484,18 @@ class DailyContentNotificationService {
       enableVibration: true,
       enableLights: true,
       visibility: NotificationVisibility.public,
-      autoCancel: false,
-      ticker: 'Test bildirimi',
-      largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      autoCancel: true,
+      ticker: 'Günlük içerik',
+      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+      // BigText style - tam içerik göster
+      styleInformation: BigTextStyleInformation(
+        body,
+        htmlFormatBigText: false,
+        contentTitle: title,
+        htmlFormatContentTitle: false,
+        summaryText: 'Huzur Vakti',
+        htmlFormatSummaryText: false,
+      ),
     );
 
     await _notificationsPlugin.show(

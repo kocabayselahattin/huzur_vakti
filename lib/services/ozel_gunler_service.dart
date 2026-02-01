@@ -1,6 +1,8 @@
 import 'package:flutter/foundation.dart';
 import 'package:hijri/hijri_calendar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:flutter_local_notifications/flutter_local_notifications.dart';
+import 'package:timezone/timezone.dart' as tz;
 import 'language_service.dart';
 
 /// Özel gün ve gece türleri
@@ -348,5 +350,157 @@ class OzelGunlerService {
       return languageService['hijri_month_$ay'] ?? '';
     }
     return '';
+  }
+
+  // ========== ÖZEL GÜN BİLDİRİMLERİ ==========
+
+  static final FlutterLocalNotificationsPlugin _notificationsPlugin =
+      FlutterLocalNotificationsPlugin();
+  static const int _ozelGunBildirimIdBase = 5000;
+
+  /// Özel gün bildirimlerini zamanla
+  /// 7 gün içindeki özel günler için bildirim zamanlar
+  static Future<void> scheduleOzelGunBildirimleri() async {
+    final prefs = await SharedPreferences.getInstance();
+    final enabled = prefs.getBool('ozel_gun_bildirimleri_aktif') ?? true;
+
+    if (!enabled) {
+      debugPrint('📅 Özel gün bildirimleri devre dışı');
+      await cancelOzelGunBildirimleri();
+      return;
+    }
+
+    debugPrint('📅 Özel gün bildirimleri zamanlanıyor...');
+
+    // Önce mevcut bildirimleri iptal et
+    await cancelOzelGunBildirimleri();
+
+    // Yaklaşan özel günleri al (7 gün içinde)
+    final yaklasanlar = yaklasanOzelGunler();
+    int zamanlanandi = 0;
+
+    for (int i = 0; i < yaklasanlar.length && i < 10; i++) {
+      final item = yaklasanlar[i];
+      final ozelGun = item['ozelGun'] as OzelGun;
+      final tarih = item['tarih'] as DateTime;
+      final kalanGun = item['kalanGun'] as int;
+
+      // Sadece 7 gün içindeki özel günler için bildirim zamanla
+      if (kalanGun > 7) continue;
+
+      // Bildirim zamanı - gece 20:00 (kandiller için bir önceki gece)
+      DateTime bildirimZamani;
+      if (ozelGun.geceOncesiMi) {
+        // Kandiller: bir gün önceki akşam 20:00
+        bildirimZamani = DateTime(
+          tarih.year,
+          tarih.month,
+          tarih.day - 1,
+          20,
+          0,
+        );
+      } else {
+        // Diğer günler: o günün sabahı 08:00
+        bildirimZamani = DateTime(tarih.year, tarih.month, tarih.day, 8, 0);
+      }
+
+      // Geçmiş tarihler için zamanlamama
+      if (bildirimZamani.isBefore(DateTime.now())) continue;
+
+      final tzBildirimZamani = tz.TZDateTime.from(bildirimZamani, tz.local);
+
+      try {
+        await _scheduleOzelGunBildirimi(
+          id: _ozelGunBildirimIdBase + i,
+          ozelGun: ozelGun,
+          scheduledDate: tzBildirimZamani,
+        );
+        zamanlanandi++;
+      } catch (e) {
+        debugPrint('❌ Özel gün bildirimi zamanlanamadı: ${ozelGun.ad} - $e');
+      }
+    }
+
+    debugPrint('✅ $zamanlanandi özel gün bildirimi zamanlandı');
+  }
+
+  /// Tek bir özel gün bildirimi zamanla
+  static Future<void> _scheduleOzelGunBildirimi({
+    required int id,
+    required OzelGun ozelGun,
+    required tz.TZDateTime scheduledDate,
+  }) async {
+    final languageService = LanguageService();
+    await languageService.load();
+
+    // Bildirim içeriği
+    String icon;
+    switch (ozelGun.tur) {
+      case OzelGunTuru.bayram:
+        icon = '🎉';
+        break;
+      case OzelGunTuru.kandil:
+        icon = '🕯️';
+        break;
+      case OzelGunTuru.mubarekGece:
+        icon = '🌙';
+        break;
+      case OzelGunTuru.onemliGun:
+        icon = '📿';
+        break;
+    }
+
+    final title = '$icon ${ozelGun.ad}';
+    final body = ozelGun.tebrikMesaji;
+
+    const androidPlatformChannelSpecifics = AndroidNotificationDetails(
+      'ozel_gunler_channel',
+      'Özel Günler',
+      channelDescription: 'Kandiller, bayramlar ve mübarek geceler',
+      importance: Importance.high,
+      priority: Priority.high,
+      playSound: true,
+      enableVibration: true,
+      enableLights: true,
+      visibility: NotificationVisibility.public,
+      autoCancel: true,
+      largeIcon: DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
+    );
+
+    await _notificationsPlugin.zonedSchedule(
+      id: id,
+      title: title,
+      body: body,
+      scheduledDate: scheduledDate,
+      notificationDetails: const NotificationDetails(
+        android: androidPlatformChannelSpecifics,
+      ),
+      androidScheduleMode: AndroidScheduleMode.exactAllowWhileIdle,
+      payload: 'ozel_gun_${ozelGun.adKey}',
+    );
+
+    final tarihStr =
+        '${scheduledDate.day}/${scheduledDate.month} ${scheduledDate.hour}:${scheduledDate.minute.toString().padLeft(2, '0')}';
+    debugPrint('   📅 ${ozelGun.ad} - $tarihStr (ID: $id)');
+  }
+
+  /// Özel gün bildirimlerini iptal et
+  static Future<void> cancelOzelGunBildirimleri() async {
+    for (int i = 0; i < 10; i++) {
+      await _notificationsPlugin.cancel(id: _ozelGunBildirimIdBase + i);
+    }
+    debugPrint('🚫 Özel gün bildirimleri iptal edildi');
+  }
+
+  /// Özel gün bildirimlerini aç/kapat
+  static Future<void> setOzelGunBildirimleriEnabled(bool enabled) async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool('ozel_gun_bildirimleri_aktif', enabled);
+
+    if (enabled) {
+      await scheduleOzelGunBildirimleri();
+    } else {
+      await cancelOzelGunBildirimleri();
+    }
   }
 }

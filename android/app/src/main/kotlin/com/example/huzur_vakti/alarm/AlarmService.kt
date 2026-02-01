@@ -325,20 +325,24 @@ class AlarmService : Service() {
                     setDataSource(this@AlarmService, defaultUri)
                 }
                 
-                // Ses dosyası bittiğinde durur (sonsuz döngü yok)
+                // SES DAVRANIŞI: Tüm bildirimlerde ses sadece 1 kez çalar
+                // Kullanıcı güç/ses tuşuna basarsa veya bildirimden kapatırsa ses durur
                 isLooping = false
+                Log.d(TAG, "🔁 Ses ayarı: isLooping=false (ses 1 kez çalacak)")
                 
-                // Ses bittiğinde servisi kapat
+                // Ses bittiğinde
                 setOnCompletionListener {
                     Log.d(TAG, "🔊 Alarm sesi tamamlandı")
                     this@AlarmService.stopVibration()
                     this@AlarmService.isPlaying = false
-                    
-                    // Vakitlerde sessize al ayarı açıksa telefonu sessize al
-                    this@AlarmService.checkAndSetSilentMode()
-                    
-                    // Alarm aktif flag'ini kapat (DND aktif olabilir diye)
                     this@AlarmService.setAlarmActiveFlag(false)
+                    
+                    // Vaktinde bildirim ve sessize al ayarı açıksa telefonu sessize al
+                    if (!isCurrentAlarmEarly && isSessizeAlEnabled) {
+                        Log.d(TAG, "🔇 Vaktinde bildirim sesi bitti - telefon sessize alınıyor")
+                        this@AlarmService.setSilentMode(true)
+                        this@AlarmService.showSilentModeNotification()
+                    }
                     
                     // Servisi kapat
                     this@AlarmService.stopForeground(STOP_FOREGROUND_REMOVE)
@@ -364,9 +368,16 @@ class AlarmService : Service() {
                         Log.d(TAG, "🔊 Fallback alarm sesi tamamlandı")
                         this@AlarmService.stopVibration()
                         this@AlarmService.isPlaying = false
+                        this@AlarmService.setAlarmActiveFlag(false)
                         
-                        // Vakitlerde sessize al ayarı açıksa telefonu sessize al
-                        this@AlarmService.checkAndSetSilentMode()
+                        // Vaktinde bildirim ve sessize al ayarı açıksa telefonu sessize al
+                        if (!isCurrentAlarmEarly && isSessizeAlEnabled) {
+                            this@AlarmService.setSilentMode(true)
+                            this@AlarmService.showSilentModeNotification()
+                        }
+                        
+                        this@AlarmService.stopForeground(STOP_FOREGROUND_REMOVE)
+                        this@AlarmService.stopSelf()
                     }
                     prepare()
                     start()
