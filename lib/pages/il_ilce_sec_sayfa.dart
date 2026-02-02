@@ -41,25 +41,47 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
   final ScrollController _ilceScrollController = ScrollController();
 
   // Ülke seçimi
-  String secilenUlke = '🇹🇷 Türkiye';
+  String secilenUlkeKodu = 'TR';
   final List<Map<String, String>> ulkeler = [
-    {'kod': 'TR', 'ad': '🇹🇷 Türkiye'},
-    {'kod': 'DE', 'ad': '🇩🇪 Almanya'},
-    {'kod': 'NL', 'ad': '🇳🇱 Hollanda'},
-    {'kod': 'BE', 'ad': '🇧🇪 Belçika'},
-    {'kod': 'FR', 'ad': '🇫🇷 Fransa'},
-    {'kod': 'GB', 'ad': '🇬🇧 İngiltere'},
-    {'kod': 'AT', 'ad': '🇦🇹 Avusturya'},
-    {'kod': 'SA', 'ad': '🇸🇦 Suudi Arabistan'},
-    {'kod': 'AE', 'ad': '🇦🇪 BAE'},
-    {'kod': 'QA', 'ad': '🇶🇦 Katar'},
-    {'kod': 'KW', 'ad': '🇰🇼 Kuveyt'},
-    {'kod': 'US', 'ad': '🇺🇸 ABD'},
-    {'kod': 'CA', 'ad': '🇨🇦 Kanada'},
+    {'kod': 'TR', 'emoji': '🇹🇷', 'adKey': 'country_turkey'},
+    {'kod': 'DE', 'emoji': '🇩🇪', 'adKey': 'country_germany'},
+    {'kod': 'NL', 'emoji': '🇳🇱', 'adKey': 'country_netherlands'},
+    {'kod': 'BE', 'emoji': '🇧🇪', 'adKey': 'country_belgium'},
+    {'kod': 'FR', 'emoji': '🇫🇷', 'adKey': 'country_france'},
+    {'kod': 'GB', 'emoji': '🇬🇧', 'adKey': 'country_uk'},
+    {'kod': 'AT', 'emoji': '🇦🇹', 'adKey': 'country_austria'},
+    {'kod': 'SA', 'emoji': '🇸🇦', 'adKey': 'country_saudi_arabia'},
+    {'kod': 'AE', 'emoji': '🇦🇪', 'adKey': 'country_uae'},
+    {'kod': 'QA', 'emoji': '🇶🇦', 'adKey': 'country_qatar'},
+    {'kod': 'KW', 'emoji': '🇰🇼', 'adKey': 'country_kuwait'},
+    {'kod': 'US', 'emoji': '🇺🇸', 'adKey': 'country_usa'},
+    {'kod': 'CA', 'emoji': '🇨🇦', 'adKey': 'country_canada'},
   ];
 
   final TextEditingController _ilAramaController = TextEditingController();
   final TextEditingController _ilceAramaController = TextEditingController();
+
+  String _ulkeAdi(String kod) {
+    final ulke = ulkeler.firstWhere(
+      (u) => u['kod'] == kod,
+      orElse: () => <String, String>{},
+    );
+    final adKey = ulke['adKey'] ?? '';
+    if (adKey.isEmpty) return '';
+    return _languageService[adKey] ?? '';
+  }
+
+  String _ulkeGorunenAd(String kod) {
+    final ulke = ulkeler.firstWhere(
+      (u) => u['kod'] == kod,
+      orElse: () => <String, String>{},
+    );
+    final emoji = ulke['emoji'] ?? '';
+    final ad = _ulkeAdi(kod);
+    if (emoji.isEmpty) return ad;
+    if (ad.isEmpty) return emoji;
+    return '$emoji $ad';
+  }
 
   @override
   void initState() {
@@ -174,7 +196,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
   String? _ipCity;
   String? _ipCountry;
   String? _ipCountryCode;
-  
+
   // Reverse geocoding ile gelen bilgiler
   String? _geoCity;
   String? _geoDistrict;
@@ -205,8 +227,10 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
               desiredAccuracy: LocationAccuracy.high,
               timeLimit: const Duration(seconds: 15),
             );
-            print('📍 GPS başarılı: ${position.latitude}, ${position.longitude}');
-            
+            print(
+              '📍 GPS başarılı: ${position.latitude}, ${position.longitude}',
+            );
+
             // GPS koordinatlarından il/ilçe bilgisi al (reverse geocoding)
             await _reverseGeocode(position.latitude, position.longitude);
           } catch (e) {
@@ -232,7 +256,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
 
       // Ülke kodunu belirle (önce GPS reverse geocoding, sonra IP)
       final countryCode = _geoCountryCode ?? _ipCountryCode;
-      
+
       // Ülkeye göre dil ayarla
       if (countryCode != null) {
         await _setLanguageByCountry(countryCode);
@@ -240,7 +264,8 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
 
       if (position == null) {
         _konumHatasi(
-          'Konum alınamadı. Lütfen GPS\'i açın veya manuel seçim yapın.',
+          _languageService['location_unavailable_enable_gps'] ??
+              'Konum alınamadı. Lütfen GPS\'i açın veya manuel seçim yapın.',
         );
         return;
       }
@@ -256,43 +281,50 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
       }
     } catch (e) {
       print('❌ Konum tespit hatası: $e');
+      final errorDetails = e.toString().substring(
+        0,
+        e.toString().length > 50 ? 50 : e.toString().length,
+      );
       _konumHatasi(
-        'Konum alınırken hata oluştu: ${e.toString().substring(0, e.toString().length > 50 ? 50 : e.toString().length)}...',
+        (_languageService['location_error_detail'] ??
+                'Konum alınırken hata oluştu: {error}')
+            .replaceAll('{error}', '$errorDetails...'),
       );
     }
   }
-  
+
   /// Koordinatlardan il/ilçe bilgisi al (Nominatim reverse geocoding)
   Future<void> _reverseGeocode(double lat, double lon) async {
     try {
-      final url = 'https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lon&zoom=10&addressdetails=1&accept-language=tr';
-      
-      final response = await http.get(
-        Uri.parse(url),
-        headers: {'User-Agent': 'HuzurVakti/1.0'},
-      ).timeout(const Duration(seconds: 10));
+      final url =
+          'https://nominatim.openstreetmap.org/reverse?format=json&lat=$lat&lon=$lon&zoom=10&addressdetails=1&accept-language=tr';
+
+      final response = await http
+          .get(Uri.parse(url), headers: {'User-Agent': 'HuzurVakti/1.0'})
+          .timeout(const Duration(seconds: 10));
 
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
         final address = data['address'] as Map<String, dynamic>?;
-        
+
         if (address != null) {
           // İlçe bilgisi (town, county, district, suburb sırasıyla dene)
-          _geoDistrict = address['town'] ?? 
-                         address['county'] ?? 
-                         address['district'] ?? 
-                         address['suburb'] ??
-                         address['city_district'];
-          
+          _geoDistrict =
+              address['town'] ??
+              address['county'] ??
+              address['district'] ??
+              address['suburb'] ??
+              address['city_district'];
+
           // İl bilgisi (province, state, city sırasıyla dene)
-          _geoCity = address['province'] ?? 
-                     address['state'] ?? 
-                     address['city'];
-          
+          _geoCity = address['province'] ?? address['state'] ?? address['city'];
+
           // Ülke kodu
           _geoCountryCode = address['country_code']?.toString().toUpperCase();
-          
-          print('🗺️ Reverse Geocoding: $_geoCity / $_geoDistrict ($_geoCountryCode)');
+
+          print(
+            '🗺️ Reverse Geocoding: $_geoCity / $_geoDistrict ($_geoCountryCode)',
+          );
         }
       }
     } catch (e) {
@@ -396,7 +428,10 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
       // En uygun ilçeyi bul
       await _enUygunIlceyiBul(ilAdi);
     } else {
-      _konumHatasi('Konum tespit edilemedi. Lütfen manuel seçim yapın.');
+      _konumHatasi(
+        _languageService['location_not_found_manual'] ??
+            'Konum tespit edilemedi. Lütfen manuel seçim yapın.',
+      );
     }
   }
 
@@ -449,7 +484,10 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
           ScaffoldMessenger.of(context).showSnackBar(
             SnackBar(
               content: Text(
-                'Konumunuz: $_ipCity, $_ipCountry. Lütfen listeden şehir seçin.',
+                (_languageService['location_from_ip_prompt'] ??
+                        'Konumunuz: {city}, {country}. Lütfen listeden şehir seçin.')
+                    .replaceAll('{city}', _ipCity ?? '')
+                    .replaceAll('{country}', _ipCountry ?? ''),
               ),
               backgroundColor: Colors.orange,
             ),
@@ -457,7 +495,10 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
         }
       }
     } else {
-      _konumHatasi('Şehir bilgisi alınamadı. Lütfen manuel seçim yapın.');
+      _konumHatasi(
+        _languageService['city_info_unavailable'] ??
+            'Şehir bilgisi alınamadı. Lütfen manuel seçim yapın.',
+      );
     }
   }
 
@@ -497,7 +538,9 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
               .replaceAll('Ü', 'U')
               .replaceAll('Ö', 'O')
               .replaceAll('Ç', 'C');
-          return ilceAdi == aramaIlce || ilceAdi.contains(aramaIlce) || aramaIlce.contains(ilceAdi);
+          return ilceAdi == aramaIlce ||
+              ilceAdi.contains(aramaIlce) ||
+              aramaIlce.contains(ilceAdi);
         });
         print('🏘️ GPS reverse geocoding ile ilçe eşleşti: $_geoDistrict');
       } catch (_) {
@@ -588,7 +631,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
     if (secilenIlce != null) {
       final ilceId = secilenIlce['IlceID']?.toString();
       final ilceAdi = secilenIlce['IlceAdi']?.toString();
-      
+
       setState(() {
         secilenIlceId = ilceId;
         secilenIlceAdi = ilceAdi;
@@ -596,7 +639,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
       });
 
       print('🏘️ İlçe seçildi: $secilenIlceAdi (ID: $secilenIlceId)');
-      
+
       // İlçeyi listede bul ve scroll yap
       _scrollToSelectedIlce();
     } else {
@@ -609,22 +652,22 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
   /// Seçilen ilçeye scroll yap
   void _scrollToSelectedIlce() {
     if (secilenIlceId == null || filtrelenmisIlceler.isEmpty) return;
-    
+
     // İlçenin index'ini bul
     final index = filtrelenmisIlceler.indexWhere(
-      (ilce) => ilce['IlceID']?.toString() == secilenIlceId
+      (ilce) => ilce['IlceID']?.toString() == secilenIlceId,
     );
-    
+
     if (index != -1) {
       // Biraz bekleyip scroll yap (ListView'ın oluşması için)
       Future.delayed(const Duration(milliseconds: 300), () {
         if (_ilceScrollController.hasClients) {
           // Her item yaklaşık 56 pixel yüksekliğinde
           final scrollOffset = (index * 56.0).clamp(
-            0.0, 
-            _ilceScrollController.position.maxScrollExtent
+            0.0,
+            _ilceScrollController.position.maxScrollExtent,
           );
-          
+
           _ilceScrollController.animateTo(
             scrollOffset,
             duration: const Duration(milliseconds: 500),
@@ -764,7 +807,10 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
             content: Text(
-              'Uygulama dili $countryCode için $languageCode olarak ayarlandı',
+              (_languageService['language_set_for_country'] ??
+                      'Uygulama dili {country} için {language} olarak ayarlandı')
+                  .replaceAll('{country}', countryCode)
+                  .replaceAll('{language}', languageCode),
             ),
             backgroundColor: Colors.blue,
             duration: const Duration(seconds: 2),
@@ -996,23 +1042,24 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                   const SizedBox(width: 8),
                   Expanded(
                     child: DropdownButton<String>(
-                      value: secilenUlke,
+                      value: secilenUlkeKodu,
                       isExpanded: true,
                       underline: const SizedBox(),
                       dropdownColor: const Color(0xFF2A3F5F),
                       style: const TextStyle(color: Colors.white, fontSize: 16),
                       items: ulkeler.map((ulke) {
+                        final kod = ulke['kod'] ?? '';
                         return DropdownMenuItem<String>(
-                          value: ulke['ad'],
-                          child: Text(ulke['ad']!),
+                          value: kod,
+                          child: Text(_ulkeGorunenAd(kod)),
                         );
                       }).toList(),
                       onChanged: (yeniUlke) {
                         if (yeniUlke != null) {
                           setState(() {
-                            secilenUlke = yeniUlke;
+                            secilenUlkeKodu = yeniUlke;
                             // Türkiye dışındaki ülkeler için şehir listesini temizle
-                            if (!yeniUlke.contains('Türkiye')) {
+                            if (yeniUlke != 'TR') {
                               iller = [];
                               filtrelenmisIller = [];
                               ilceler = [];
@@ -1034,7 +1081,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
             ),
 
             // Türkiye dışındaki ülkeler için şehir adı girişi
-            if (!secilenUlke.contains('Türkiye'))
+            if (secilenUlkeKodu != 'TR')
               Container(
                 margin: const EdgeInsets.all(16),
                 padding: const EdgeInsets.all(16),
@@ -1055,7 +1102,8 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                         ),
                         const SizedBox(width: 8),
                         Text(
-                          'Şehir Bilgisi',
+                          _languageService['city_info_title'] ??
+                              'Şehir Bilgisi',
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 16,
@@ -1066,7 +1114,8 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                     ),
                     const SizedBox(height: 12),
                     Text(
-                      'GPS ile konumunuzu tespit edin veya aşağıya şehir adını yazın:',
+                      _languageService['city_info_desc'] ??
+                          'GPS ile konumunuzu tespit edin veya aşağıya şehir adını yazın:',
                       style: TextStyle(color: Colors.white70, fontSize: 13),
                     ),
                     const SizedBox(height: 16),
@@ -1074,7 +1123,9 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                       controller: _ilAramaController,
                       style: const TextStyle(color: Colors.white),
                       decoration: InputDecoration(
-                        hintText: 'Örn: Berlin, London, Paris...',
+                        hintText:
+                            _languageService['city_example_hint'] ??
+                            'Örn: Berlin, London, Paris...',
                         hintStyle: const TextStyle(color: Colors.white54),
                         prefixIcon: const Icon(
                           Icons.location_city,
@@ -1091,9 +1142,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                         if (value.isNotEmpty) {
                           setState(() {
                             secilenIlAdi = value;
-                            secilenIlceAdi = secilenUlke.split(
-                              ' ',
-                            )[1]; // Ülke adı
+                            secilenIlceAdi = _ulkeAdi(secilenUlkeKodu);
                             // Koordinatlar GPS ile alınacak
                           });
                         }
@@ -1115,7 +1164,8 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                           const SizedBox(width: 8),
                           Expanded(
                             child: Text(
-                              'Namaz vakitleri GPS koordinatlarınıza göre hesaplanacaktır.',
+                              _languageService['prayer_times_based_on_gps'] ??
+                                  'Namaz vakitleri GPS koordinatlarınıza göre hesaplanacaktır.',
                               style: TextStyle(
                                 color: Colors.orange,
                                 fontSize: 11,
@@ -1222,7 +1272,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
             ),
 
             // İl Arama ve Seçimi (sadece Türkiye için)
-            if (secilenUlke.contains('Türkiye'))
+            if (secilenUlkeKodu == 'TR')
               Padding(
                 padding: const EdgeInsets.symmetric(horizontal: 16.0),
                 child: TextField(
@@ -1312,7 +1362,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
               ),
 
             // Seçili il göstergesi ve ilçe seçimi (sadece Türkiye için)
-            if (secilenUlke.contains('Türkiye') && secilenIlId != null) ...[
+            if (secilenUlkeKodu == 'TR' && secilenIlId != null) ...[
               // Seçili il
               Container(
                 margin: const EdgeInsets.all(16),
@@ -1344,7 +1394,11 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                             const SizedBox(height: 4),
                             Row(
                               children: [
-                                const Icon(Icons.location_on, color: Colors.greenAccent, size: 14),
+                                const Icon(
+                                  Icons.location_on,
+                                  color: Colors.greenAccent,
+                                  size: 14,
+                                ),
                                 const SizedBox(width: 4),
                                 Text(
                                   secilenIlceAdi!,
@@ -1356,7 +1410,10 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                                 ),
                                 const SizedBox(width: 8),
                                 Container(
-                                  padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                                  padding: const EdgeInsets.symmetric(
+                                    horizontal: 6,
+                                    vertical: 2,
+                                  ),
                                   decoration: BoxDecoration(
                                     color: Colors.greenAccent.withOpacity(0.2),
                                     borderRadius: BorderRadius.circular(4),
@@ -1457,49 +1514,49 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                           return AnimatedContainer(
                             duration: const Duration(milliseconds: 300),
                             decoration: BoxDecoration(
-                              color: isSelected 
+                              color: isSelected
                                   ? Colors.cyanAccent.withOpacity(0.15)
                                   : Colors.transparent,
                               borderRadius: BorderRadius.circular(8),
                             ),
                             child: ListTile(
-                            leading: Icon(
-                              isSelected
-                                  ? Icons.check_circle
-                                  : Icons.location_on_outlined,
-                              color: isSelected
-                                  ? Colors.cyanAccent
-                                  : Colors.white54,
-                            ),
-                            title: Text(
-                              ilceAdi,
-                              style: TextStyle(
+                              leading: Icon(
+                                isSelected
+                                    ? Icons.check_circle
+                                    : Icons.location_on_outlined,
                                 color: isSelected
                                     ? Colors.cyanAccent
-                                    : Colors.white,
-                                fontWeight: isSelected
-                                    ? FontWeight.bold
-                                    : FontWeight.normal,
+                                    : Colors.white54,
                               ),
+                              title: Text(
+                                ilceAdi,
+                                style: TextStyle(
+                                  color: isSelected
+                                      ? Colors.cyanAccent
+                                      : Colors.white,
+                                  fontWeight: isSelected
+                                      ? FontWeight.bold
+                                      : FontWeight.normal,
+                                ),
+                              ),
+                              trailing: isSelected
+                                  ? const Icon(
+                                      Icons.check,
+                                      color: Colors.cyanAccent,
+                                    )
+                                  : null,
+                              onTap: () {
+                                setState(() {
+                                  secilenIlceId = ilce['IlceID'].toString();
+                                  secilenIlceAdi = ilce['IlceAdi'];
+                                });
+                              },
                             ),
-                            trailing: isSelected
-                                ? const Icon(
-                                    Icons.check,
-                                    color: Colors.cyanAccent,
-                                  )
-                                : null,
-                            onTap: () {
-                              setState(() {
-                                secilenIlceId = ilce['IlceID'].toString();
-                                secilenIlceAdi = ilce['IlceAdi'];
-                              });
-                            },
-                          ),
                           );
                         },
                       ),
               ),
-              
+
               // İlçe seçildiyse Tamam butonu göster
               if (secilenIlceId != null)
                 Transform.translate(

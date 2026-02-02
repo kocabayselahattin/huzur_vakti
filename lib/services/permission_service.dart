@@ -222,4 +222,26 @@ class PermissionService {
       debugPrint('⚠️ Pil ayarları açılamadı: $e');
     }
   }
+
+  /// Rahatsız Etme Modu (DND) politika erişimi kontrolü
+  static Future<bool> hasDndPolicyAccess() async {
+    if (!Platform.isAndroid) return false;
+    try {
+      final result = await _channel.invokeMethod<bool>('hasDndPolicyAccess');
+      return result ?? false;
+    } catch (e) {
+      debugPrint('⚠️ DND izin kontrolü hatası: $e');
+      return false;
+    }
+  }
+
+  /// Rahatsız Etme Modu (DND) politika ayarlarını aç
+  static Future<void> openDndPolicySettings() async {
+    if (!Platform.isAndroid) return;
+    try {
+      await _channel.invokeMethod<void>('openDndPolicySettings');
+    } catch (e) {
+      debugPrint('⚠️ DND ayarları açılamadı: $e');
+    }
+  }
 }

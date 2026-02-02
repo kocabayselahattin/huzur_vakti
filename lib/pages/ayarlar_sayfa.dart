@@ -95,7 +95,7 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
           _ayarSatiri(
             icon: Icons.language,
             iconColor: Colors.blue,
-            baslik: 'Dil / Language',
+            baslik: _languageService['language'] ?? 'Dil',
             altBaslik: _languageService.supportedLanguages.firstWhere(
               (lang) => lang['code'] == _languageService.currentLanguage,
             )['name']!,

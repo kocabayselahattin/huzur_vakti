@@ -24,6 +24,7 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage>
   bool _overlayGranted = false;
   bool _batteryOptDisabled = false;
   bool _exactAlarmGranted = false;
+  bool _dndGranted = false;
 
   late List<_PermissionStep> _steps;
 
@@ -57,7 +58,7 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage>
         title: _languageService['location_permission'] ?? 'Konum İzni',
         description:
             _languageService['location_permission_desc'] ??
-            'Bulunduğunuz konuma göre doğru namaz vakitlerini gösterebilmek için konum izni gereklidir.',
+            'Bu izin ile:\n\n• Bulunduğunuz şehir ve ilçeye göre otomatik olarak doğru namaz vakitleri gösterilir\n• Konumunuz değiştiğinde (seyahat, taşınma) vakitler otomatik güncellenir\n• Manuel il/ilçe seçme zahmetinden kurtulursunuz\n\nDİKKAT: Bu izin verilmezse vakitleri manuel olarak il/ilçe seçerek ayarlayabilirsiniz.',
         color: Colors.blue,
       ),
       _PermissionStep(
@@ -65,7 +66,7 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage>
         title: _languageService['notification_permission'] ?? 'Bildirim İzni',
         description:
             _languageService['notification_permission_desc'] ??
-            'Namaz vakitlerinde sizi bilgilendirmek için bildirim izni gereklidir.',
+            'Bu izin ile:\n\n• Namaz vakitlerinde bildirim alırsınız\n• İmsak, Öğle, İkindi, Akşam, Yatsı vakitlerinde hatırlatma\n• Özel seçtiğiniz ezan sesi ile uyarı\n• Günlük içerikler (hadis, dua, ayet) bildirimi\n\nDİKKAT: Bu izin olmadan hiçbir bildirim alamazsınız.',
         color: Colors.orange,
       ),
       _PermissionStep(
@@ -75,7 +76,7 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage>
             'Tam Zamanlı Alarm İzni',
         description:
             _languageService['exact_alarm_permission_desc'] ??
-            'Bildirimlerin tam vakitinde çalması için alarm izni gereklidir.',
+            'Bu izin ile:\n\n• Bildirimler TAM namaz vaktinde gelir (saniye hassasiyetinde)\n• Gecikmeli bildirim sorunu yaşamazsınız\n• Öğle 12:30 ise tam 12:30:00\'da bildirim\n• Android sistem kısıtlamaları bildirimleri engellemez\n\nDİKKAT: Bu izin olmadan bildirimler dakikalarca gecikebilir.',
         color: Colors.purple,
       ),
       _PermissionStep(
@@ -83,7 +84,7 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage>
         title: _languageService['overlay_permission'] ?? 'Üstünde Göster İzni',
         description:
             _languageService['overlay_permission_desc'] ??
-            'Vakit girdiğinde ekranda bildirim gösterebilmek için bu izin gereklidir.',
+            'Bu izin ile:\n\n• Namaz vakti geldiğinde tam ekran bildirim görürsünüz\n• Hangi uygulamada olursanız olun vakit bildirimi üstte gösterilir\n• Oyun oynarken, video izlerken bile bildirim alırsınız\n• Daha dikkat çekici ve fark edilebilir uyarılar\n\nDİKKAT: Bu izin olmadan sadece bildirim çubuğunda gösterilir.',
         color: Colors.teal,
       ),
       _PermissionStep(
@@ -93,8 +94,16 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage>
             'Pil Optimizasyonu Muafiyeti',
         description:
             _languageService['battery_permission_desc'] ??
-            'Arka planda bildirimlerin düzgün çalışması için pil optimizasyonunun kapatılması gerekir.',
+            'Bu izin ile:\n\n• Android pil tasarrufu modu uygulamamızı durdurmaz\n• Arka planda bildirimleri kesintisiz gönderebiliriz\n• Telefon uyku modundayken bile vakitler zamanında gelir\n• Uygulama kapalıyken bile bildirimler çalışır\n\nDİKKAT: Bu izin olmadan Android bildirimleri engelleyebilir.',
         color: Colors.green,
+      ),
+      _PermissionStep(
+        icon: Icons.do_not_disturb,
+        title: _languageService['dnd_permission'] ?? 'Rahatsız Etme Modu İzni',
+        description:
+            _languageService['dnd_permission_desc'] ??
+            'Bu izin ile:\n\n• Namaz vakitlerinde telefonunuz otomatik sessiz moda geçer\n• Namaz kılarken rahatsız edilmezsiniz\n• Vakit bitince telefon normal moda döner\n• Sosyal medya, arama, mesaj bildirimleri geçici engellenir\n\nDİKKAT: İsteğe bağlı bir özelliktir, isterseniz kullanmayabilirsiniz.',
+        color: Colors.red,
       ),
     ];
   }
@@ -109,6 +118,7 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage>
     final overlayStatus = await PermissionService.hasOverlayPermission();
     final batteryStatus =
         await PermissionService.isBatteryOptimizationDisabled();
+    final dndStatus = await PermissionService.hasDndPolicyAccess();
 
     if (mounted) {
       setState(() {
@@ -117,6 +127,7 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage>
         _exactAlarmGranted = exactAlarmStatus;
         _overlayGranted = overlayStatus;
         _batteryOptDisabled = batteryStatus;
+        _dndGranted = dndStatus;
       });
     }
   }
@@ -126,10 +137,12 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage>
     final overlayStatus = await PermissionService.hasOverlayPermission();
     final batteryStatus =
         await PermissionService.isBatteryOptimizationDisabled();
+    final dndStatus = await PermissionService.hasDndPolicyAccess();
     if (mounted) {
       setState(() {
         _overlayGranted = overlayStatus;
         _batteryOptDisabled = batteryStatus;
+        _dndGranted = dndStatus;
       });
     }
   }
@@ -199,6 +212,14 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage>
             granted = _batteryOptDisabled;
           }
           break;
+        case 5: // DND
+          await PermissionService.openDndPolicySettings();
+          if (mounted) {
+            await Future.delayed(const Duration(milliseconds: 500));
+            _dndGranted = await PermissionService.hasDndPolicyAccess();
+            granted = _dndGranted;
+          }
+          break;
       }
 
       if (mounted) {
@@ -232,6 +253,10 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage>
             case 4: // Pil
               message =
                   'Pil optimizasyonu kapatılmadı. Arka plan bildirimleri sorun yaşayabilir.\n\nİsterseniz daha sonra telefonun Ayarlar menüsünden değiştirebilirsiniz';
+              break;
+            case 5: // DND
+              message =
+                  'Rahatsız Etme Modu izni verilmedi. Namaz vakitlerinde telefonunuz otomatik sessiz moda alınamayacak.\n\nİsterseniz daha sonra telefonun Ayarlar menüsünden izin verebilirsiniz';
               break;
           }
 
@@ -361,6 +386,8 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage>
         return _overlayGranted;
       case 4:
         return _batteryOptDisabled;
+      case 5:
+        return _dndGranted;
       default:
         return false;
     }
@@ -476,14 +503,17 @@ class _OnboardingPermissionsPageState extends State<OnboardingPermissionsPage>
                     const SizedBox(height: 16),
 
                     // Açıklama
-                    Text(
-                      step.description,
-                      style: const TextStyle(
-                        color: Colors.white70,
-                        fontSize: 16,
-                        height: 1.5,
+                    Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 8),
+                      child: Text(
+                        step.description,
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                          height: 1.6,
+                        ),
+                        textAlign: TextAlign.left,
                       ),
-                      textAlign: TextAlign.center,
                     ),
 
                     if (isGranted) ...[

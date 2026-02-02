@@ -28,6 +28,7 @@ import '../widgets/hilal_sayac_widget.dart';
 import '../widgets/mihrap_sayac_widget.dart';
 import '../widgets/gun_donumu_sayac_widget.dart';
 import '../widgets/esmaul_husna_widget.dart';
+import '../widgets/ramazan_banner_widget.dart';
 import '../widgets/ozel_gun_popup.dart';
 import '../widgets/ozel_gun_banner_widget.dart';
 import '../services/konum_service.dart';
@@ -477,13 +478,13 @@ class _AnaSayfaState extends State<AnaSayfa> {
             ),
             const SizedBox(height: 8),
             Text(
-              '${_languageService['version'] ?? 'Versiyon'}: 2.3.0',
+              '${_languageService['version'] ?? 'Versiyon'}: 1.0.0+1',
               style: TextStyle(color: renkler.yaziSecondary, fontSize: 14),
             ),
             const SizedBox(height: 4),
             Text(
               _languageService['prayer_times_assistant'] ??
-                  'Namaz Vakitleri ve İbadet Asistanı',
+                  'Namaz Vakitleri, bildirimler, alarm, kıble pusulası, yakın camiler, imsakiye, özel günler, zikirmatik, Kur\'an, hadis, dualar, Esmaül Hüsna, otomatik sessize alma, çoklu konum, tema/dil seçenekleri ve ana ekran sayaç & widget desteği ile kapsamlı bir ibadet asistanı.',
               style: TextStyle(color: renkler.yaziSecondary, fontSize: 12),
               textAlign: TextAlign.center,
             ),
@@ -884,6 +885,11 @@ class _AnaSayfaState extends State<AnaSayfa> {
                     ? _buildSelectedCounter()
                     : const Center(child: CircularProgressIndicator()),
               ),
+
+              const SizedBox(height: 10),
+
+              // --- RAMAZAN BANNER ---
+              const RamazanBannerWidget(),
 
               const SizedBox(height: 10),
 

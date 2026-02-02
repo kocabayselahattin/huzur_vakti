@@ -27,8 +27,8 @@ Future<void> _initializeDefaultNotificationSettings(
 
   // Varsayılan erken bildirim süreleri (dakika)
   const defaultErkenBildirim = {
-    'imsak': 45,
-    'gunes': 30,
+    'imsak': 5,
+    'gunes': 45,
     'ogle': 15,
     'ikindi': 15,
     'aksam': 15,
@@ -113,6 +113,20 @@ Future<void> _initializeDefaultNotificationSettings(
   // Ayarların başlatıldığını işaretle
   await prefs.setBool('notification_settings_initialized', true);
   debugPrint('✅ Varsayılan bildirim ayarları kaydedildi');
+
+  // Sayaç: İlk kurulumda varsayılan olarak Gündönümü (index 22)
+  if (!prefs.containsKey('aktif_sayac_index')) {
+    await prefs.setInt('aktif_sayac_index', 22);
+    debugPrint(
+      '🌞 Sayaç: Varsayılan Gündönümü olarak ayarlandı (aktif_sayac_index=22)',
+    );
+  }
+  if (!prefs.containsKey('secili_sayac_index')) {
+    await prefs.setInt('secili_sayac_index', 22);
+    debugPrint(
+      '🌞 Sayaç: Varsayılan Gündönümü olarak ayarlandı (secili_sayac_index=22)',
+    );
+  }
 }
 
 void main() async {

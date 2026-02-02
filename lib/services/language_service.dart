@@ -9,6 +9,7 @@ class LanguageService extends ChangeNotifier {
   LanguageService._internal();
 
   Map<String, dynamic> _localizedStrings = {};
+  Map<String, dynamic> _fallbackStrings = {};
   String _currentLanguage = 'tr';
 
   String get currentLanguage => _currentLanguage;
@@ -43,7 +44,19 @@ class LanguageService extends ChangeNotifier {
       _localizedStrings = json.decode(jsonString);
     }
 
+    await _ensureFallbackLoaded();
+
     notifyListeners();
+  }
+
+  Future<void> _ensureFallbackLoaded() async {
+    if (_fallbackStrings.isNotEmpty) return;
+    try {
+      String jsonString = await rootBundle.loadString('assets/lang/en.json');
+      _fallbackStrings = json.decode(jsonString);
+    } catch (e) {
+      _fallbackStrings = {};
+    }
   }
 
   Future<void> changeLanguage(String languageCode) async {
@@ -57,7 +70,7 @@ class LanguageService extends ChangeNotifier {
   }
 
   String? translate(String key) {
-    final value = _localizedStrings[key];
+    final value = _localizedStrings[key] ?? _fallbackStrings[key];
     if (value is String) {
       return value;
     }
@@ -66,7 +79,9 @@ class LanguageService extends ChangeNotifier {
 
   /// String olmayan değerleri de (List, Map vb.) döndürmek için
   dynamic get(String key) {
-    return _localizedStrings[key];
+    return _localizedStrings.containsKey(key)
+        ? _localizedStrings[key]
+        : _fallbackStrings[key];
   }
 
   dynamic operator [](String key) => get(key);

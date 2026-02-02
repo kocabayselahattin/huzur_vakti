@@ -301,6 +301,16 @@ class MainActivity : FlutterActivity() {
 						startActivity(intent)
 						result.success(true)
 					}
+					"hasDndPolicyAccess" -> {
+						val notificationManager = getSystemService(NotificationManager::class.java)
+						result.success(notificationManager.isNotificationPolicyAccessGranted)
+					}
+					"openDndPolicySettings" -> {
+						val intent = Intent(Settings.ACTION_NOTIFICATION_POLICY_ACCESS_SETTINGS)
+						intent.addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+						startActivity(intent)
+						result.success(true)
+					}
 					else -> result.notImplemented()
 				}
 			}

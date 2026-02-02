@@ -44,6 +44,7 @@ class _KuranSayfaState extends State<KuranSayfa>
 
   void _kaldirKaldiginYerden() {
     if (_sonOkunanSureNo != null) {
+      final resumeAyetNo = _getResumeAyetNo();
       final sure = _sureler.firstWhere(
         (s) => s.no == _sonOkunanSureNo,
         orElse: () => _sureler.first,
@@ -51,13 +52,45 @@ class _KuranSayfaState extends State<KuranSayfa>
       Navigator.push(
         context,
         MaterialPageRoute(
-          builder: (context) => SureDetaySayfa(
-            sure: sure,
-            baslangicAyetNo: _sonOkunanAyetNo,
-          ),
+          builder: (context) =>
+              SureDetaySayfa(sure: sure, baslangicAyetNo: resumeAyetNo),
         ),
       ).then((_) => _sonOkunanYeriYukle());
     }
+  }
+
+  int? _getResumeAyetNo() {
+    if (_sonOkunanAyetNo == null || _sonOkunanSureNo == null) {
+      return null;
+    }
+
+    final sure = _sureler.firstWhere(
+      (s) => s.no == _sonOkunanSureNo,
+      orElse: () => _sureler.first,
+    );
+
+    final nextAyet = _sonOkunanAyetNo! + 1;
+    if (nextAyet <= sure.ayetSayisi) {
+      return nextAyet;
+    }
+
+    return sure.ayetSayisi;
+  }
+
+  int? _getCuzNoForSureAyet(int sureNo, int ayetNo) {
+    for (final cuz in _cuzler) {
+      final afterStart =
+          (sureNo > cuz.baslangicSureNo) ||
+          (sureNo == cuz.baslangicSureNo && ayetNo >= cuz.baslangicAyetNo);
+      final beforeEnd =
+          (sureNo < cuz.bitisSureNo) ||
+          (sureNo == cuz.bitisSureNo && ayetNo <= cuz.bitisAyetNo);
+
+      if (afterStart && beforeEnd) {
+        return cuz.no;
+      }
+    }
+    return null;
   }
 
   @override
@@ -104,9 +137,9 @@ class _KuranSayfaState extends State<KuranSayfa>
             fontSize: 14,
             fontWeight: FontWeight.bold,
           ),
-          tabs: const [
-            Tab(text: 'SURELER'),
-            Tab(text: 'CÜZLER'),
+          tabs: [
+            Tab(text: _languageService['surahs_tab'] ?? 'SURELER'),
+            Tab(text: _languageService['juzs_tab'] ?? 'CÜZLER'),
           ],
         ),
       ),
@@ -122,14 +155,17 @@ class _KuranSayfaState extends State<KuranSayfa>
                   // Sureler Tab
                   ListView.builder(
                     padding: const EdgeInsets.all(12),
-                    itemCount: _sureler.length + (_sonOkunanSureNo != null ? 1 : 0),
+                    itemCount:
+                        _sureler.length + (_sonOkunanSureNo != null ? 1 : 0),
                     itemBuilder: (context, index) {
                       // İlk sırada "Kaldığınız Yerden" kartı
                       if (index == 0 && _sonOkunanSureNo != null) {
                         return _buildKaldiginYerdenKarti(renkler);
                       }
                       // Normal sure kartları
-                      final sureIndex = _sonOkunanSureNo != null ? index - 1 : index;
+                      final sureIndex = _sonOkunanSureNo != null
+                          ? index - 1
+                          : index;
                       final sure = _sureler[sureIndex];
                       return _buildSureKarti(sure, renkler);
                     },
@@ -137,14 +173,17 @@ class _KuranSayfaState extends State<KuranSayfa>
                   // Cüzler Tab
                   ListView.builder(
                     padding: const EdgeInsets.all(12),
-                    itemCount: _cuzler.length + (_sonOkunanSureNo != null ? 1 : 0),
+                    itemCount:
+                        _cuzler.length + (_sonOkunanSureNo != null ? 1 : 0),
                     itemBuilder: (context, index) {
                       // İlk sırada "Kaldığınız Yerden" kartı
                       if (index == 0 && _sonOkunanSureNo != null) {
                         return _buildKaldiginYerdenKarti(renkler);
                       }
                       // Normal cüz kartları
-                      final cuzIndex = _sonOkunanSureNo != null ? index - 1 : index;
+                      final cuzIndex = _sonOkunanSureNo != null
+                          ? index - 1
+                          : index;
                       final cuz = _cuzler[cuzIndex];
                       return _buildCuzKarti(cuz, renkler);
                     },
@@ -156,6 +195,10 @@ class _KuranSayfaState extends State<KuranSayfa>
   }
 
   Widget _buildKaldiginYerdenKarti(TemaRenkleri renkler) {
+    final resumeAyetNo = _getResumeAyetNo();
+    final cuzNo = (_sonOkunanSureNo != null && resumeAyetNo != null)
+        ? _getCuzNoForSureAyet(_sonOkunanSureNo!, resumeAyetNo)
+        : null;
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
@@ -203,9 +246,10 @@ class _KuranSayfaState extends State<KuranSayfa>
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text(
-                        'KALDIĞINIZ YERDEN DEVAM EDİN',
-                        style: TextStyle(
+                      Text(
+                        _languageService['resume_reading'] ??
+                            'KALDIĞINIZ YERDEN DEVAM EDİN',
+                        style: const TextStyle(
                           color: Colors.white,
                           fontSize: 13,
                           fontWeight: FontWeight.bold,
@@ -214,16 +258,17 @@ class _KuranSayfaState extends State<KuranSayfa>
                       ),
                       const SizedBox(height: 6),
                       Text(
-                        _sonOkunanSureAd ?? 'Sure',
+                        _sonOkunanSureAd ??
+                            (_languageService['chapter'] ?? 'Sure'),
                         style: const TextStyle(
                           color: Colors.white,
                           fontSize: 18,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
-                      if (_sonOkunanAyetNo != null)
+                      if (resumeAyetNo != null)
                         Text(
-                          'Ayet $_sonOkunanAyetNo',
+                          '${cuzNo != null ? '${_languageService['juz'] ?? 'Cüz'} $cuzNo • ' : ''}${_sonOkunanSureAd ?? (_languageService['chapter'] ?? 'Sure')} • ${_languageService['verse'] ?? 'Ayet'} $resumeAyetNo',
                           style: TextStyle(
                             color: Colors.white.withOpacity(0.9),
                             fontSize: 13,
@@ -317,6 +362,8 @@ class _KuranSayfaState extends State<KuranSayfa>
                 // Arapça isim
                 Text(
                   sure.arapca,
+                  textDirection: TextDirection.rtl,
+                  textAlign: TextAlign.right,
                   style: TextStyle(
                     color: renkler.vurgu,
                     fontSize: 22,
@@ -346,12 +393,9 @@ class _KuranSayfaState extends State<KuranSayfa>
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () {
-            // Cüz detay sayfasına git
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => CuzDetaySayfa(cuz: cuz),
-              ),
+              MaterialPageRoute(builder: (context) => CuzDetaySayfa(cuz: cuz)),
             );
           },
           child: Padding(
@@ -383,7 +427,7 @@ class _KuranSayfaState extends State<KuranSayfa>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'CÜZ ${cuz.no}',
+                        '${_languageService['juz'] ?? 'Cüz'} ${cuz.no}',
                         style: TextStyle(
                           color: renkler.yaziPrimary,
                           fontSize: 16,
@@ -404,6 +448,8 @@ class _KuranSayfaState extends State<KuranSayfa>
                 // Arapça yazı (Juz)
                 Text(
                   'جُزْءُ ${_getArabicNumber(cuz.no)}',
+                  textDirection: TextDirection.rtl,
+                  textAlign: TextAlign.right,
                   style: TextStyle(
                     color: renkler.vurgu,
                     fontSize: 20,
@@ -420,48 +466,312 @@ class _KuranSayfaState extends State<KuranSayfa>
 
   String _getArabicNumber(int number) {
     final arabicNumbers = {
-      1: '١', 2: '٢', 3: '٣', 4: '٤', 5: '٥',
-      6: '٦', 7: '٧', 8: '٨', 9: '٩', 10: '١٠',
-      11: '١١', 12: '١٢', 13: '١٣', 14: '١٤', 15: '١٥',
-      16: '١٦', 17: '١٧', 18: '١٨', 19: '١٩', 20: '٢٠',
-      21: '٢١', 22: '٢٢', 23: '٢٣', 24: '٢٤', 25: '٢٥',
-      26: '٢٦', 27: '٢٧', 28: '٢٨', 29: '٢٩', 30: '٣٠',
+      1: '١',
+      2: '٢',
+      3: '٣',
+      4: '٤',
+      5: '٥',
+      6: '٦',
+      7: '٧',
+      8: '٨',
+      9: '٩',
+      10: '١٠',
+      11: '١١',
+      12: '١٢',
+      13: '١٣',
+      14: '١٤',
+      15: '١٥',
+      16: '١٦',
+      17: '١٧',
+      18: '١٨',
+      19: '١٩',
+      20: '٢٠',
+      21: '٢١',
+      22: '٢٢',
+      23: '٢٣',
+      24: '٢٤',
+      25: '٢٥',
+      26: '٢٦',
+      27: '٢٧',
+      28: '٢٨',
+      29: '٢٩',
+      30: '٣٠',
     };
     return arabicNumbers[number] ?? '$number';
   }
 
   // Cüzler listesi (30 cüz)
   final List<Cuz> _cuzler = [
-    Cuz(no: 1, baslangicSure: 'Fatiha', bitisSure: 'Bakara 141'),
-    Cuz(no: 2, baslangicSure: 'Bakara 142', bitisSure: 'Bakara 252'),
-    Cuz(no: 3, baslangicSure: 'Bakara 253', bitisSure: 'Âl-i İmrân 92'),
-    Cuz(no: 4, baslangicSure: 'Âl-i İmrân 93', bitisSure: 'Nisâ 23'),
-    Cuz(no: 5, baslangicSure: 'Nisâ 24', bitisSure: 'Nisâ 147'),
-    Cuz(no: 6, baslangicSure: 'Nisâ 148', bitisSure: 'Mâide 81'),
-    Cuz(no: 7, baslangicSure: 'Mâide 82', bitisSure: 'En\'âm 110'),
-    Cuz(no: 8, baslangicSure: 'En\'âm 111', bitisSure: 'A\'râf 87'),
-    Cuz(no: 9, baslangicSure: 'A\'râf 88', bitisSure: 'Enfâl 40'),
-    Cuz(no: 10, baslangicSure: 'Enfâl 41', bitisSure: 'Tevbe 92'),
-    Cuz(no: 11, baslangicSure: 'Tevbe 93', bitisSure: 'Hûd 5'),
-    Cuz(no: 12, baslangicSure: 'Hûd 6', bitisSure: 'Yûsuf 52'),
-    Cuz(no: 13, baslangicSure: 'Yûsuf 53', bitisSure: 'İbrâhîm 52'),
-    Cuz(no: 14, baslangicSure: 'Hicr 1', bitisSure: 'Nahl 128'),
-    Cuz(no: 15, baslangicSure: 'İsrâ 1', bitisSure: 'Kehf 74'),
-    Cuz(no: 16, baslangicSure: 'Kehf 75', bitisSure: 'Tâhâ 135'),
-    Cuz(no: 17, baslangicSure: 'Enbiyâ 1', bitisSure: 'Hac 78'),
-    Cuz(no: 18, baslangicSure: 'Mü\'minûn 1', bitisSure: 'Furkân 20'),
-    Cuz(no: 19, baslangicSure: 'Furkân 21', bitisSure: 'Neml 55'),
-    Cuz(no: 20, baslangicSure: 'Neml 56', bitisSure: 'Ankebût 45'),
-    Cuz(no: 21, baslangicSure: 'Ankebût 46', bitisSure: 'Ahzâb 30'),
-    Cuz(no: 22, baslangicSure: 'Ahzâb 31', bitisSure: 'Yâsîn 27'),
-    Cuz(no: 23, baslangicSure: 'Yâsîn 28', bitisSure: 'Zuhruf 89'),
-    Cuz(no: 24, baslangicSure: 'Zuhruf 90', bitisSure: 'Câsiye 37'),
-    Cuz(no: 25, baslangicSure: 'Câsiye 38', bitisSure: 'Zâriyât 30'),
-    Cuz(no: 26, baslangicSure: 'Zâriyât 31', bitisSure: 'Hadîd 29'),
-    Cuz(no: 27, baslangicSure: 'Mücâdele 1', bitisSure: 'Tahrîm 12'),
-    Cuz(no: 28, baslangicSure: 'Mülk 1', bitisSure: 'Mürselât 50'),
-    Cuz(no: 29, baslangicSure: 'Nebe\' 1', bitisSure: 'Burûc 22'),
-    Cuz(no: 30, baslangicSure: 'Târık 1', bitisSure: 'Nâs 6'),
+    Cuz(
+      no: 1,
+      baslangicSure: 'Fatiha 1',
+      bitisSure: 'Bakara 141',
+      baslangicSureNo: 1,
+      baslangicAyetNo: 1,
+      bitisSureNo: 2,
+      bitisAyetNo: 141,
+    ),
+    Cuz(
+      no: 2,
+      baslangicSure: 'Bakara 142',
+      bitisSure: 'Bakara 252',
+      baslangicSureNo: 2,
+      baslangicAyetNo: 142,
+      bitisSureNo: 2,
+      bitisAyetNo: 252,
+    ),
+    Cuz(
+      no: 3,
+      baslangicSure: 'Bakara 253',
+      bitisSure: 'Âl-i İmrân 92',
+      baslangicSureNo: 2,
+      baslangicAyetNo: 253,
+      bitisSureNo: 3,
+      bitisAyetNo: 92,
+    ),
+    Cuz(
+      no: 4,
+      baslangicSure: 'Âl-i İmrân 93',
+      bitisSure: 'Nisâ 23',
+      baslangicSureNo: 3,
+      baslangicAyetNo: 93,
+      bitisSureNo: 4,
+      bitisAyetNo: 23,
+    ),
+    Cuz(
+      no: 5,
+      baslangicSure: 'Nisâ 24',
+      bitisSure: 'Nisâ 147',
+      baslangicSureNo: 4,
+      baslangicAyetNo: 24,
+      bitisSureNo: 4,
+      bitisAyetNo: 147,
+    ),
+    Cuz(
+      no: 6,
+      baslangicSure: 'Nisâ 148',
+      bitisSure: 'Mâide 81',
+      baslangicSureNo: 4,
+      baslangicAyetNo: 148,
+      bitisSureNo: 5,
+      bitisAyetNo: 81,
+    ),
+    Cuz(
+      no: 7,
+      baslangicSure: 'Mâide 82',
+      bitisSure: 'En\'âm 110',
+      baslangicSureNo: 5,
+      baslangicAyetNo: 82,
+      bitisSureNo: 6,
+      bitisAyetNo: 110,
+    ),
+    Cuz(
+      no: 8,
+      baslangicSure: 'En\'âm 111',
+      bitisSure: 'A\'râf 87',
+      baslangicSureNo: 6,
+      baslangicAyetNo: 111,
+      bitisSureNo: 7,
+      bitisAyetNo: 87,
+    ),
+    Cuz(
+      no: 9,
+      baslangicSure: 'A\'râf 88',
+      bitisSure: 'Enfâl 40',
+      baslangicSureNo: 7,
+      baslangicAyetNo: 88,
+      bitisSureNo: 8,
+      bitisAyetNo: 40,
+    ),
+    Cuz(
+      no: 10,
+      baslangicSure: 'Enfâl 41',
+      bitisSure: 'Tevbe 92',
+      baslangicSureNo: 8,
+      baslangicAyetNo: 41,
+      bitisSureNo: 9,
+      bitisAyetNo: 92,
+    ),
+    Cuz(
+      no: 11,
+      baslangicSure: 'Tevbe 93',
+      bitisSure: 'Hûd 5',
+      baslangicSureNo: 9,
+      baslangicAyetNo: 93,
+      bitisSureNo: 11,
+      bitisAyetNo: 5,
+    ),
+    Cuz(
+      no: 12,
+      baslangicSure: 'Hûd 6',
+      bitisSure: 'Yûsuf 52',
+      baslangicSureNo: 11,
+      baslangicAyetNo: 6,
+      bitisSureNo: 12,
+      bitisAyetNo: 52,
+    ),
+    Cuz(
+      no: 13,
+      baslangicSure: 'Yûsuf 53',
+      bitisSure: 'İbrâhîm 52',
+      baslangicSureNo: 12,
+      baslangicAyetNo: 53,
+      bitisSureNo: 14,
+      bitisAyetNo: 52,
+    ),
+    Cuz(
+      no: 14,
+      baslangicSure: 'Hicr 1',
+      bitisSure: 'Nahl 128',
+      baslangicSureNo: 15,
+      baslangicAyetNo: 1,
+      bitisSureNo: 16,
+      bitisAyetNo: 128,
+    ),
+    Cuz(
+      no: 15,
+      baslangicSure: 'İsrâ 1',
+      bitisSure: 'Kehf 74',
+      baslangicSureNo: 17,
+      baslangicAyetNo: 1,
+      bitisSureNo: 18,
+      bitisAyetNo: 74,
+    ),
+    Cuz(
+      no: 16,
+      baslangicSure: 'Kehf 75',
+      bitisSure: 'Tâhâ 135',
+      baslangicSureNo: 18,
+      baslangicAyetNo: 75,
+      bitisSureNo: 20,
+      bitisAyetNo: 135,
+    ),
+    Cuz(
+      no: 17,
+      baslangicSure: 'Enbiyâ 1',
+      bitisSure: 'Hac 78',
+      baslangicSureNo: 21,
+      baslangicAyetNo: 1,
+      bitisSureNo: 22,
+      bitisAyetNo: 78,
+    ),
+    Cuz(
+      no: 18,
+      baslangicSure: 'Mü\'minûn 1',
+      bitisSure: 'Furkân 20',
+      baslangicSureNo: 23,
+      baslangicAyetNo: 1,
+      bitisSureNo: 25,
+      bitisAyetNo: 20,
+    ),
+    Cuz(
+      no: 19,
+      baslangicSure: 'Furkân 21',
+      bitisSure: 'Neml 55',
+      baslangicSureNo: 25,
+      baslangicAyetNo: 21,
+      bitisSureNo: 27,
+      bitisAyetNo: 55,
+    ),
+    Cuz(
+      no: 20,
+      baslangicSure: 'Neml 56',
+      bitisSure: 'Ankebût 45',
+      baslangicSureNo: 27,
+      baslangicAyetNo: 56,
+      bitisSureNo: 29,
+      bitisAyetNo: 45,
+    ),
+    Cuz(
+      no: 21,
+      baslangicSure: 'Ankebût 46',
+      bitisSure: 'Ahzâb 30',
+      baslangicSureNo: 29,
+      baslangicAyetNo: 46,
+      bitisSureNo: 33,
+      bitisAyetNo: 30,
+    ),
+    Cuz(
+      no: 22,
+      baslangicSure: 'Ahzâb 31',
+      bitisSure: 'Yâsîn 27',
+      baslangicSureNo: 33,
+      baslangicAyetNo: 31,
+      bitisSureNo: 36,
+      bitisAyetNo: 27,
+    ),
+    Cuz(
+      no: 23,
+      baslangicSure: 'Yâsîn 28',
+      bitisSure: 'Zuhruf 89',
+      baslangicSureNo: 36,
+      baslangicAyetNo: 28,
+      bitisSureNo: 43,
+      bitisAyetNo: 89,
+    ),
+    Cuz(
+      no: 24,
+      baslangicSure: 'Zuhruf 90',
+      bitisSure: 'Câsiye 37',
+      baslangicSureNo: 43,
+      baslangicAyetNo: 90,
+      bitisSureNo: 45,
+      bitisAyetNo: 37,
+    ),
+    Cuz(
+      no: 25,
+      baslangicSure: 'Câsiye 38',
+      bitisSure: 'Zâriyât 30',
+      baslangicSureNo: 45,
+      baslangicAyetNo: 38,
+      bitisSureNo: 51,
+      bitisAyetNo: 30,
+    ),
+    Cuz(
+      no: 26,
+      baslangicSure: 'Zâriyât 31',
+      bitisSure: 'Hadîd 29',
+      baslangicSureNo: 51,
+      baslangicAyetNo: 31,
+      bitisSureNo: 57,
+      bitisAyetNo: 29,
+    ),
+    Cuz(
+      no: 27,
+      baslangicSure: 'Mücâdele 1',
+      bitisSure: 'Tahrîm 12',
+      baslangicSureNo: 58,
+      baslangicAyetNo: 1,
+      bitisSureNo: 66,
+      bitisAyetNo: 12,
+    ),
+    Cuz(
+      no: 28,
+      baslangicSure: 'Mülk 1',
+      bitisSure: 'Mürselât 50',
+      baslangicSureNo: 67,
+      baslangicAyetNo: 1,
+      bitisSureNo: 77,
+      bitisAyetNo: 50,
+    ),
+    Cuz(
+      no: 29,
+      baslangicSure: 'Nebe\' 1',
+      bitisSure: 'Burûc 22',
+      baslangicSureNo: 78,
+      baslangicAyetNo: 1,
+      bitisSureNo: 85,
+      bitisAyetNo: 22,
+    ),
+    Cuz(
+      no: 30,
+      baslangicSure: 'Târık 1',
+      bitisSure: 'Nâs 6',
+      baslangicSureNo: 86,
+      baslangicAyetNo: 1,
+      bitisSureNo: 114,
+      bitisAyetNo: 6,
+    ),
   ];
 
   // 114 Sure listesi
@@ -1288,11 +1598,19 @@ class Cuz {
   final int no;
   final String baslangicSure;
   final String bitisSure;
+  final int baslangicSureNo;
+  final int baslangicAyetNo;
+  final int bitisSureNo;
+  final int bitisAyetNo;
 
   Cuz({
     required this.no,
     required this.baslangicSure,
     required this.bitisSure,
+    required this.baslangicSureNo,
+    required this.baslangicAyetNo,
+    required this.bitisSureNo,
+    required this.bitisAyetNo,
   });
 }
 
@@ -1300,11 +1618,13 @@ class Cuz {
 class SureDetaySayfa extends StatefulWidget {
   final Sure sure;
   final int? baslangicAyetNo;
+  final int? bitisAyetNo;
 
   const SureDetaySayfa({
     super.key,
     required this.sure,
     this.baslangicAyetNo,
+    this.bitisAyetNo,
   });
 
   @override
@@ -1345,10 +1665,10 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
       final scrollOffset = _scrollController.offset;
       // Her ayet kartı yaklaşık 200-300 piksel yüksekliğinde
       final tahminiIndex = (scrollOffset / 250).floor();
-      final yeniAyetNo = tahminiIndex < _ayetler.length 
-          ? _ayetler[tahminiIndex].no 
+      final yeniAyetNo = tahminiIndex < _ayetler.length
+          ? _ayetler[tahminiIndex].no
           : _ayetler.last.no;
-      
+
       if (_gorunenAyetNo != yeniAyetNo) {
         _gorunenAyetNo = yeniAyetNo;
       }
@@ -1378,9 +1698,20 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
             duration: const Duration(milliseconds: 500),
             curve: Curves.easeInOut,
           );
+        } else if (_scrollController.hasClients) {
+          _scrollController.jumpTo(0);
         }
       });
     }
+  }
+
+  List<Ayet> _filtreAyetler(List<Ayet> ayetler) {
+    if (ayetler.isEmpty) return ayetler;
+
+    final baslangic = widget.baslangicAyetNo ?? ayetler.first.no;
+    final bitis = widget.bitisAyetNo ?? ayetler.last.no;
+
+    return ayetler.where((a) => a.no >= baslangic && a.no <= bitis).toList();
   }
 
   Future<void> _loadOkumaModu() async {
@@ -1479,7 +1810,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     final hazirAyetler = _getHazirAyetler(widget.sure.no);
     if (hazirAyetler.isNotEmpty) {
       setState(() {
-        _ayetler = hazirAyetler;
+        _ayetler = _filtreAyetler(hazirAyetler);
         _yukleniyor = false;
       });
       _scrollToBaslangicAyet();
@@ -1505,7 +1836,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
               : null;
 
           setState(() {
-            _ayetler = List.generate(arapca.length, (i) {
+            final tumAyetler = List.generate(arapca.length, (i) {
               return Ayet(
                 no: arapca[i]['numberInSurah'],
                 arapca: arapca[i]['text'],
@@ -1513,19 +1844,23 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                 meal: turkce[i]['text'],
               );
             });
+            _ayetler = _filtreAyetler(tumAyetler);
             _yukleniyor = false;
           });
           _scrollToBaslangicAyet();
         }
       } else {
         setState(() {
-          _hata = 'Ayetler yüklenemedi';
+          _hata =
+              _languageService['verses_load_failed'] ?? 'Ayetler yüklenemedi';
           _yukleniyor = false;
         });
       }
     } catch (e) {
       setState(() {
-        _hata = 'Bağlantı hatası: Lütfen internet bağlantınızı kontrol edin';
+        _hata =
+            _languageService['connection_error_check_internet'] ??
+            'Bağlantı hatası: Lütfen internet bağlantınızı kontrol edin';
         _yukleniyor = false;
       });
     }
@@ -1564,7 +1899,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
         actions: [
           PopupMenuButton<String>(
             icon: Icon(Icons.palette_outlined, color: _yaziRengi),
-            tooltip: 'Okuma Modu',
+            tooltip: _languageService['reading_mode'] ?? 'Okuma Modu',
             onSelected: (value) {
               if (value == 'toggle') {
                 _toggleOkumaModu();
@@ -1576,22 +1911,27 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                 child: Row(
                   children: [
                     Icon(
-                      _okumaModu ? Icons.check_box : Icons.check_box_outline_blank,
+                      _okumaModu
+                          ? Icons.check_box
+                          : Icons.check_box_outline_blank,
                       color: _okumaModu ? Colors.green : Colors.grey,
                       size: 20,
                     ),
                     const SizedBox(width: 12),
-                    const Text('Siyah-Beyaz Mod'),
+                    Text(
+                      _languageService['black_white_mode'] ?? 'Siyah-Beyaz Mod',
+                    ),
                   ],
                 ),
               ),
-              const PopupMenuItem(
+              PopupMenuItem(
                 enabled: false,
                 child: Padding(
                   padding: EdgeInsets.only(left: 32),
                   child: Text(
-                    'Okumayı rahatlatır',
-                    style: TextStyle(fontSize: 11, color: Colors.grey),
+                    _languageService['reading_mode_desc'] ??
+                        'Okumayı rahatlatır',
+                    style: const TextStyle(fontSize: 11, color: Colors.grey),
                   ),
                 ),
               ),
@@ -1600,21 +1940,21 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
           IconButton(
             icon: Icon(Icons.text_decrease, color: _yaziRengi),
             onPressed: _decreaseFontSize,
-            tooltip: 'Yazı Küçült',
+            tooltip: _languageService['font_decrease'] ?? 'Yazı Küçült',
           ),
           IconButton(
             icon: Icon(Icons.text_increase, color: _yaziRengi),
             onPressed: _increaseFontSize,
-            tooltip: 'Yazı Büyüt',
+            tooltip: _languageService['font_increase'] ?? 'Yazı Büyüt',
           ),
         ],
       ),
       body: Container(
-        decoration: _okumaModu 
-            ? null 
+        decoration: _okumaModu
+            ? null
             : (renkler.arkaPlanGradient != null
-                ? BoxDecoration(gradient: renkler.arkaPlanGradient)
-                : null),
+                  ? BoxDecoration(gradient: renkler.arkaPlanGradient)
+                  : null),
         child: _yukleniyor
             ? Center(
                 child: Column(
@@ -1623,7 +1963,8 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                     CircularProgressIndicator(color: _vurguRengi),
                     const SizedBox(height: 16),
                     Text(
-                      'Ayetler yükleniyor...',
+                      _languageService['verses_loading'] ??
+                          'Ayetler yükleniyor...',
                       style: TextStyle(color: _yaziSecondaryRengi),
                     ),
                   ],
@@ -1655,7 +1996,9 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                         style: ElevatedButton.styleFrom(
                           backgroundColor: _vurguRengi,
                         ),
-                        child: Text(_languageService['try_again'] ?? 'Tekrar Dene'),
+                        child: Text(
+                          _languageService['try_again'] ?? 'Tekrar Dene',
+                        ),
                       ),
                     ],
                   ),
@@ -1709,17 +2052,20 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     // Arapça veya Farsça dil seçiliyse okunuş ve meal gizlenecek
     final currentLang = _languageService.currentLanguage;
     final hideTranslation = currentLang == 'ar' || currentLang == 'fa';
-    
+
     return Container(
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: _kartRengi,
         borderRadius: BorderRadius.circular(16),
         border: _okumaModu ? Border.all(color: Colors.grey.shade200) : null,
-        boxShadow: _okumaModu 
+        boxShadow: _okumaModu
             ? []
             : [
-                BoxShadow(color: renkler.vurgu.withOpacity(0.05), blurRadius: 8),
+                BoxShadow(
+                  color: renkler.vurgu.withOpacity(0.05),
+                  blurRadius: 8,
+                ),
               ],
       ),
       child: Column(
@@ -1729,7 +2075,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
-              color: _okumaModu 
+              color: _okumaModu
                   ? Colors.grey.shade100
                   : renkler.vurgu.withOpacity(0.1),
               borderRadius: const BorderRadius.vertical(
@@ -1789,16 +2135,18 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-              color: _okumaModu 
+              color: _okumaModu
                   ? Colors.grey.shade50
                   : renkler.vurguSecondary.withOpacity(0.1),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Okunuş',
+                    _languageService['recitation'] ?? 'Okunuş',
                     style: TextStyle(
-                      color: _okumaModu ? Colors.black54 : renkler.vurguSecondary,
+                      color: _okumaModu
+                          ? Colors.black54
+                          : renkler.vurguSecondary,
                       fontSize: 10,
                       fontWeight: FontWeight.w500,
                     ),
@@ -1825,7 +2173,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Meal',
+                    _languageService['translation'] ?? 'Meal',
                     style: TextStyle(
                       color: _okumaModu ? Colors.black87 : renkler.vurgu,
                       fontSize: 10,
@@ -2199,14 +2547,23 @@ class Ayet {
   });
 }
 
+class _CuzSureSegment {
+  final Sure sure;
+  final int baslangicAyet;
+  final int bitisAyet;
+
+  const _CuzSureSegment({
+    required this.sure,
+    required this.baslangicAyet,
+    required this.bitisAyet,
+  });
+}
+
 // Cüz Detay Sayfası
 class CuzDetaySayfa extends StatefulWidget {
   final Cuz cuz;
 
-  const CuzDetaySayfa({
-    super.key,
-    required this.cuz,
-  });
+  const CuzDetaySayfa({super.key, required this.cuz});
 
   @override
   State<CuzDetaySayfa> createState() => _CuzDetaySayfaState();
@@ -2215,24 +2572,34 @@ class CuzDetaySayfa extends StatefulWidget {
 class _CuzDetaySayfaState extends State<CuzDetaySayfa> {
   final TemaService _temaService = TemaService();
 
-  // Cüzdeki sureleri al
-  List<Sure> _getCuzSureleri() {
-    // Cüzün başlangıç ve bitiş surelerini parse et
-    final baslangic = widget.cuz.baslangicSure.split(' ')[0];
-    final bitis = widget.cuz.bitisSure.split(' ')[0];
-    
-    // Tüm sureleri al
+  List<_CuzSureSegment> _getCuzSureleri() {
     final tumSureler = _KuranSayfaState()._tumSureler;
-    
-    // Başlangıç ve bitiş sure indexlerini bul
-    int baslangicIndex = tumSureler.indexWhere((s) => s.turkceAd == baslangic);
-    int bitisIndex = tumSureler.indexWhere((s) => s.turkceAd == bitis);
-    
+
+    int baslangicIndex = tumSureler.indexWhere(
+      (s) => s.no == widget.cuz.baslangicSureNo,
+    );
+    int bitisIndex = tumSureler.indexWhere(
+      (s) => s.no == widget.cuz.bitisSureNo,
+    );
+
     if (baslangicIndex == -1) baslangicIndex = 0;
     if (bitisIndex == -1) bitisIndex = tumSureler.length - 1;
-    
-    // Cüzdeki sureleri döndür
-    return tumSureler.sublist(baslangicIndex, bitisIndex + 1);
+
+    final sureler = tumSureler.sublist(baslangicIndex, bitisIndex + 1);
+
+    return sureler.map((sure) {
+      final baslangicAyet = sure.no == widget.cuz.baslangicSureNo
+          ? widget.cuz.baslangicAyetNo
+          : 1;
+      final bitisAyet = sure.no == widget.cuz.bitisSureNo
+          ? widget.cuz.bitisAyetNo
+          : sure.ayetSayisi;
+      return _CuzSureSegment(
+        sure: sure,
+        baslangicAyet: baslangicAyet,
+        bitisAyet: bitisAyet,
+      );
+    }).toList();
   }
 
   @override
@@ -2282,6 +2649,8 @@ class _CuzDetaySayfaState extends State<CuzDetaySayfa> {
                 children: [
                   Text(
                     'جُزْءُ ${_getArabicNumber(widget.cuz.no)}',
+                    textDirection: TextDirection.rtl,
+                    textAlign: TextAlign.center,
                     style: TextStyle(
                       color: renkler.vurgu,
                       fontSize: 32,
@@ -2292,10 +2661,7 @@ class _CuzDetaySayfaState extends State<CuzDetaySayfa> {
                   const SizedBox(height: 12),
                   Text(
                     '${widget.cuz.baslangicSure} - ${widget.cuz.bitisSure}',
-                    style: TextStyle(
-                      color: renkler.yaziPrimary,
-                      fontSize: 14,
-                    ),
+                    style: TextStyle(color: renkler.yaziPrimary, fontSize: 14),
                     textAlign: TextAlign.center,
                   ),
                   const SizedBox(height: 8),
@@ -2309,15 +2675,15 @@ class _CuzDetaySayfaState extends State<CuzDetaySayfa> {
                 ],
               ),
             ),
-            
+
             // Sureler listesi
             Expanded(
               child: ListView.builder(
                 padding: const EdgeInsets.symmetric(horizontal: 12),
                 itemCount: cuzSureleri.length,
                 itemBuilder: (context, index) {
-                  final sure = cuzSureleri[index];
-                  return _buildSureKarti(sure, renkler);
+                  final segment = cuzSureleri[index];
+                  return _buildCuzSureKarti(segment, renkler);
                 },
               ),
             ),
@@ -2327,7 +2693,8 @@ class _CuzDetaySayfaState extends State<CuzDetaySayfa> {
     );
   }
 
-  Widget _buildSureKarti(Sure sure, TemaRenkleri renkler) {
+  Widget _buildCuzSureKarti(_CuzSureSegment segment, TemaRenkleri renkler) {
+    final sure = segment.sure;
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
       decoration: BoxDecoration(
@@ -2345,7 +2712,11 @@ class _CuzDetaySayfaState extends State<CuzDetaySayfa> {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => SureDetaySayfa(sure: sure),
+                builder: (context) => SureDetaySayfa(
+                  sure: sure,
+                  baslangicAyetNo: segment.baslangicAyet,
+                  bitisAyetNo: segment.bitisAyet,
+                ),
               ),
             );
           },
@@ -2387,7 +2758,7 @@ class _CuzDetaySayfaState extends State<CuzDetaySayfa> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${sure.indirildigiYer} • ${sure.ayetSayisi} Ayet',
+                        '${segment.baslangicAyet}-${segment.bitisAyet} Ayet',
                         style: TextStyle(
                           color: renkler.yaziSecondary,
                           fontSize: 12,
@@ -2399,6 +2770,8 @@ class _CuzDetaySayfaState extends State<CuzDetaySayfa> {
                 // Arapça
                 Text(
                   sure.arapca,
+                  textDirection: TextDirection.rtl,
+                  textAlign: TextAlign.right,
                   style: TextStyle(
                     color: renkler.vurgu,
                     fontSize: 20,
@@ -2415,12 +2788,36 @@ class _CuzDetaySayfaState extends State<CuzDetaySayfa> {
 
   String _getArabicNumber(int number) {
     final arabicNumbers = {
-      1: '١', 2: '٢', 3: '٣', 4: '٤', 5: '٥',
-      6: '٦', 7: '٧', 8: '٨', 9: '٩', 10: '١٠',
-      11: '١١', 12: '١٢', 13: '١٣', 14: '١٤', 15: '١٥',
-      16: '١٦', 17: '١٧', 18: '١٨', 19: '١٩', 20: '٢٠',
-      21: '٢١', 22: '٢٢', 23: '٢٣', 24: '٢٤', 25: '٢٥',
-      26: '٢٦', 27: '٢٧', 28: '٢٨', 29: '٢٩', 30: '٣٠',
+      1: '١',
+      2: '٢',
+      3: '٣',
+      4: '٤',
+      5: '٥',
+      6: '٦',
+      7: '٧',
+      8: '٨',
+      9: '٩',
+      10: '١٠',
+      11: '١١',
+      12: '١٢',
+      13: '١٣',
+      14: '١٤',
+      15: '١٥',
+      16: '١٦',
+      17: '١٧',
+      18: '١٨',
+      19: '١٩',
+      20: '٢٠',
+      21: '٢١',
+      22: '٢٢',
+      23: '٢٣',
+      24: '٢٤',
+      25: '٢٥',
+      26: '٢٦',
+      27: '٢٧',
+      28: '٢٨',
+      29: '٢٩',
+      30: '٣٠',
     };
     return arabicNumbers[number] ?? '$number';
   }

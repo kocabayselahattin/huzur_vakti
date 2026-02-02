@@ -108,27 +108,73 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
 
   // Ses seçenekleri - getter olarak tanımlanıyor çünkü languageService'e ihtiyaç var
   List<Map<String, String>> get _sesSecenekleri => [
-    {'ad': 'Akşam Ezanı', 'dosya': 'aksam_ezani.mp3'},
-    {'ad': 'Ayasofya Ezan Sesi', 'dosya': 'ayasofya_ezan_sesi.mp3'},
-    {'ad': 'Best', 'dosya': 'best.mp3'},
-    {'ad': 'Corner', 'dosya': 'corner.mp3'},
-    {'ad': 'Ding Dong', 'dosya': 'ding_dong.mp3'},
     {
-      'ad': 'Es-Selatu Hayrun Minen Nevm 1',
+      'ad': _languageService['sound_aksam_ezani'] ?? 'Akşam Ezanı',
+      'dosya': 'aksam_ezani.mp3',
+    },
+    {
+      'ad': _languageService['sound_ayasofya_ezan'] ?? 'Ayasofya Ezan Sesi',
+      'dosya': 'ayasofya_ezan_sesi.mp3',
+    },
+    {'ad': _languageService['sound_best'] ?? 'Best', 'dosya': 'best.mp3'},
+    {'ad': _languageService['sound_corner'] ?? 'Corner', 'dosya': 'corner.mp3'},
+    {
+      'ad': _languageService['sound_ding_dong'] ?? 'Ding Dong',
+      'dosya': 'ding_dong.mp3',
+    },
+    {
+      'ad':
+          _languageService['sound_esselatu_1'] ??
+          'Es-Selatu Hayrun Minen Nevm 1',
       'dosya': 'esselatu_hayrun_minen_nevm1.mp3',
     },
     {
-      'ad': 'Es-Selatu Hayrun Minen Nevm 2',
+      'ad':
+          _languageService['sound_esselatu_2'] ??
+          'Es-Selatu Hayrun Minen Nevm 2',
       'dosya': 'esselatu_hayrun_minen_nevm2.mp3',
     },
-    {'ad': 'Melodi', 'dosya': 'melodi.mp3'},
+    {'ad': _languageService['sound_melodi'] ?? 'Melodi', 'dosya': 'melodi.mp3'},
     {
-      'ad': 'Mescid-i Nebi Sabah Ezanı',
+      'ad':
+          _languageService['sound_mescid_nebi_sabah'] ??
+          'Mescid-i Nebi Sabah Ezanı',
       'dosya': 'mescid_i_nebi_sabah_ezani.mp3',
     },
-    {'ad': 'Snaps', 'dosya': 'snaps.mp3'},
-    {'ad': 'Sweet Favour', 'dosya': 'sweet_favour.mp3'},
-    {'ad': 'Violet', 'dosya': 'violet.mp3'},
+    {'ad': _languageService['sound_snaps'] ?? 'Snaps', 'dosya': 'snaps.mp3'},
+    {
+      'ad': _languageService['sound_sweet_favour'] ?? 'Sweet Favour',
+      'dosya': 'sweet_favour.mp3',
+    },
+    {'ad': _languageService['sound_violet'] ?? 'Violet', 'dosya': 'violet.mp3'},
+    {
+      'ad': _languageService['sound_sabah_ezani_saba'] ?? 'Sabah Ezanı (Saba)',
+      'dosya': 'sabah_ezani_saba.mp3',
+    },
+    {
+      'ad': _languageService['sound_ogle_ezani_rast'] ?? 'Öğle Ezanı (Rast)',
+      'dosya': 'ogle_ezani_rast.mp3',
+    },
+    {
+      'ad':
+          _languageService['sound_ikindi_ezani_hicaz'] ??
+          'İkindi Ezanı (Hicaz)',
+      'dosya': 'ikindi_ezani_hicaz.mp3',
+    },
+    {
+      'ad':
+          _languageService['sound_aksam_ezani_segah'] ?? 'Akşam Ezanı (Segah)',
+      'dosya': 'aksam_ezani_segah.mp3',
+    },
+    {
+      'ad':
+          _languageService['sound_yatsi_ezani_ussak'] ?? 'Yatsı Ezanı (Uşşak)',
+      'dosya': 'yatsi_ezani_ussak.mp3',
+    },
+    {
+      'ad': _languageService['sound_ney_uyan'] ?? 'Ney - Uyan',
+      'dosya': 'ney_uyan.mp3',
+    },
     {
       'ad': _languageService['custom_sound'] ?? 'Özel Ses Seç',
       'dosya': 'custom',
@@ -562,7 +608,9 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ses hatası: $e'),
+            content: Text(
+              '${_languageService['sound_error'] ?? 'Ses hatası'}: $e',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -668,7 +716,9 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
           SnackBar(
-            content: Text('Ses seçilemedi: $e'),
+            content: Text(
+              '${_languageService['sound_select_error'] ?? 'Ses seçilemedi'}: $e',
+            ),
             backgroundColor: Colors.red,
           ),
         );
@@ -951,9 +1001,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                           children: [
                             const Text('📖', style: TextStyle(fontSize: 16)),
                             const SizedBox(width: 8),
-                            const Text(
-                              'Günün Ayeti:',
-                              style: TextStyle(
+                            Text(
+                              _languageService['daily_verse_label'] ??
+                                  'Günün Ayeti:',
+                              style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 13,
                               ),
@@ -974,9 +1025,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                           children: [
                             const Text('📿', style: TextStyle(fontSize: 16)),
                             const SizedBox(width: 8),
-                            const Text(
-                              'Günün Hadisi:',
-                              style: TextStyle(
+                            Text(
+                              _languageService['daily_hadith_label'] ??
+                                  'Günün Hadisi:',
+                              style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 13,
                               ),
@@ -997,9 +1049,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                           children: [
                             const Text('🤲', style: TextStyle(fontSize: 16)),
                             const SizedBox(width: 8),
-                            const Text(
-                              'Günün Duası:',
-                              style: TextStyle(
+                            Text(
+                              _languageService['daily_dua_label'] ??
+                                  'Günün Duası:',
+                              style: const TextStyle(
                                 color: Colors.white70,
                                 fontSize: 13,
                               ),
@@ -1475,8 +1528,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                                     size: 28,
                                   ),
                                   tooltip: _sesCalanKey == key
-                                      ? 'Durdur'
-                                      : 'Dinle',
+                                      ? (_languageService['stop'] ?? 'Durdur')
+                                      : (_languageService['listen'] ?? 'Dinle'),
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(
                                     minWidth: 40,
@@ -1610,8 +1663,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                                     size: 28,
                                   ),
                                   tooltip: _sesCalanKey == '${key}_erken'
-                                      ? 'Durdur'
-                                      : 'Dinle',
+                                      ? (_languageService['stop'] ?? 'Durdur')
+                                      : (_languageService['listen'] ?? 'Dinle'),
                                   padding: EdgeInsets.zero,
                                   constraints: const BoxConstraints(
                                     minWidth: 40,

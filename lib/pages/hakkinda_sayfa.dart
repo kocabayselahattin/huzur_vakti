@@ -168,12 +168,13 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
           const SizedBox(height: 8),
           Text(
             _languageService['prayer_times_assistant'] ??
-                'Namaz Vakitleri ve İbadet Asistanı',
+                'Namaz Vakitleri, bildirimler, alarm, kıble pusulası, yakın camiler, imsakiye, özel günler, zikirmatik, Kur\'an, hadis, dualar, Esmaül Hüsna, otomatik sessize alma, çoklu konum, tema/dil seçenekleri ve ana ekran sayaç & widget desteği ile kapsamlı bir ibadet asistanı.',
             style: TextStyle(color: renkler.yaziSecondary, fontSize: 14),
+            textAlign: TextAlign.center,
           ),
           const SizedBox(height: 4),
           Text(
-            '${_languageService['version'] ?? 'Versiyon'} 2.3.0',
+            '${_languageService['version'] ?? 'Versiyon'} 1.0.0+1',
             style: TextStyle(
               color: renkler.yaziSecondary.withValues(alpha: 0.7),
               fontSize: 12,
@@ -216,58 +217,76 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
         'ikon': Icons.access_time,
         'renk': Colors.blue,
         'baslik': _languageService['feature_prayer_times'] ?? 'Namaz Vakitleri',
-        'aciklama': 'Diyanet verileriyle konuma göre günlük vakitler',
+        'aciklama':
+            _languageService['feature_prayer_times_desc'] ??
+            'Diyanet verileriyle konuma göre günlük vakitler',
       },
       {
         'ikon': Icons.calendar_month,
         'renk': Colors.green,
         'baslik': _languageService['feature_imsakiye'] ?? 'İmsakiye',
-        'aciklama': 'Aylık vakit tablosu ve güncelleme',
+        'aciklama':
+            _languageService['feature_imsakiye_desc'] ??
+            'Aylık vakit tablosu ve güncelleme',
       },
       {
         'ikon': Icons.alarm,
         'renk': Colors.red,
         'baslik':
             _languageService['feature_notifications'] ?? 'Bildirim ve Alarm',
-        'aciklama': 'Erken hatırlatma, vaktinde alarm ve ses seçimi',
+        'aciklama':
+            _languageService['feature_notifications_desc'] ??
+            'Erken hatırlatma, vaktinde alarm ve ses seçimi',
       },
       {
         'ikon': Icons.do_not_disturb_on,
         'renk': Colors.amber,
         'baslik':
             _languageService['feature_auto_silent'] ?? 'Otomatik Sessiz Mod',
-        'aciklama': 'Vakitlerde otomatik sessize alma',
+        'aciklama':
+            _languageService['feature_auto_silent_desc'] ??
+            'Vakitlerde otomatik sessize alma',
       },
       {
         'ikon': Icons.explore,
         'renk': Colors.green,
         'baslik': _languageService['feature_qibla'] ?? 'Kıble Pusulası',
-        'aciklama': 'GPS ve pusula ile Kıble yönü',
+        'aciklama':
+            _languageService['feature_qibla_desc'] ??
+            'GPS ve pusula ile Kıble yönü',
       },
       {
         'ikon': Icons.mosque,
         'renk': Colors.lightGreen,
         'baslik':
             _languageService['feature_nearby_mosques'] ?? 'Yakındaki Camiler',
-        'aciklama': 'Harita üzerinde çevredeki camiler',
+        'aciklama':
+            _languageService['feature_nearby_mosques_desc'] ??
+            'Harita üzerinde çevredeki camiler',
       },
       {
         'ikon': Icons.menu_book,
         'renk': Colors.deepOrange,
         'baslik': _languageService['feature_content'] ?? 'Dini İçerikler',
-        'aciklama': 'Kur\'an, hadis, dualar, farzlar, Esmaül Hüsna',
+        'aciklama':
+            _languageService['feature_content_desc'] ??
+            'Kur\'an, hadis, dualar, farzlar, Esmaül Hüsna',
       },
       {
         'ikon': Icons.blur_circular,
         'renk': Colors.purple,
         'baslik': _languageService['feature_dhikr'] ?? 'Zikir Matik',
-        'aciklama': 'Dijital tesbih ve zikir yönetimi',
+        'aciklama':
+            _languageService['feature_dhikr_desc'] ??
+            'Dijital tesbih ve zikir yönetimi',
       },
       {
         'ikon': Icons.auto_awesome,
         'renk': Colors.indigo,
         'baslik': _languageService['feature_special_days'] ?? 'Özel Günler',
-        'aciklama': 'Kandiller, bayramlar ve önemli günler',
+        'aciklama':
+            _languageService['feature_special_days_desc'] ??
+            'Kandiller, bayramlar ve önemli günler',
       },
       {
         'ikon': Icons.date_range,
@@ -275,39 +294,51 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
         'baslik':
             _languageService['feature_dual_calendar'] ??
             'Miladi & Hicri Takvim',
-        'aciklama': 'Tarihler ve günün hicri bilgisi',
+        'aciklama':
+            _languageService['feature_dual_calendar_desc'] ??
+            'Tarihler ve günün hicri bilgisi',
       },
       {
         'ikon': Icons.palette,
         'renk': Colors.pinkAccent,
         'baslik': _languageService['feature_themes'] ?? 'Tema Seçenekleri',
-        'aciklama': 'Uygulama teması ve görünüm seçenekleri',
+        'aciklama':
+            _languageService['feature_themes_desc'] ??
+            'Uygulama teması ve görünüm seçenekleri',
       },
       {
         'ikon': Icons.language,
         'renk': Colors.blueGrey,
         'baslik': _languageService['feature_languages'] ?? 'Çoklu Dil Desteği',
-        'aciklama': 'TR, EN, DE, FR, AR, FA',
+        'aciklama':
+            _languageService['feature_languages_desc'] ??
+            'TR, EN, DE, FR, AR, FA',
       },
       {
         'ikon': Icons.location_city,
         'renk': Colors.blue,
         'baslik':
             _languageService['feature_multiple_locations'] ?? 'Çoklu Konum',
-        'aciklama': 'Birden fazla şehir/ilçe kaydı',
+        'aciklama':
+            _languageService['feature_multiple_locations_desc'] ??
+            'Birden fazla şehir/ilçe kaydı',
       },
       {
         'ikon': Icons.timer,
         'renk': Colors.cyan,
         'baslik': _languageService['feature_counters'] ?? 'Sayaç ve Görünümler',
-        'aciklama': 'Farklı sayaç temaları ve görünümler',
+        'aciklama':
+            _languageService['feature_counters_desc'] ??
+            'Farklı sayaç temaları ve görünümler',
       },
       {
         'ikon': Icons.widgets,
         'renk': Colors.pink,
         'baslik':
             _languageService['feature_widgets'] ?? 'Ana Ekran Widget\'ları',
-        'aciklama': 'Ana ekranda vakit ve sayaç gösterimi',
+        'aciklama':
+            _languageService['feature_widgets_desc'] ??
+            'Ana ekranda vakit ve sayaç gösterimi',
       },
     ];
 
