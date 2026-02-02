@@ -76,6 +76,8 @@ class MainActivity : FlutterActivity() {
 						val soundPath = call.argument<String>("soundPath")
 						val useVibration = call.argument<Boolean>("useVibration") ?: true
 						val alarmId = call.argument<Int>("alarmId") ?: prayerName.hashCode()
+						val isEarly = call.argument<Boolean>("isEarly") ?: false
+						val earlyMinutes = call.argument<Int>("earlyMinutes") ?: 0
 
 						if (prayerName.isNotEmpty() && triggerAtMillis > System.currentTimeMillis()) {
 							AlarmReceiver.scheduleAlarm(
@@ -84,7 +86,28 @@ class MainActivity : FlutterActivity() {
 								prayerName = prayerName,
 								triggerAtMillis = triggerAtMillis,
 								soundPath = soundPath,
-								useVibration = useVibration
+								useVibration = useVibration,
+								isEarly = isEarly,
+								earlyMinutes = earlyMinutes
+							)
+							result.success(true)
+						} else {
+							result.success(false)
+						}
+					}
+					"scheduleOzelGunAlarm" -> {
+						val title = call.argument<String>("title") ?: ""
+						val body = call.argument<String>("body") ?: ""
+						val triggerAtMillis = call.argument<Number>("triggerAtMillis")?.toLong() ?: 0L
+						val alarmId = call.argument<Int>("alarmId") ?: title.hashCode()
+
+						if (title.isNotEmpty() && triggerAtMillis > System.currentTimeMillis()) {
+							AlarmReceiver.scheduleOzelGunAlarm(
+								context = this,
+								alarmId = alarmId,
+								title = title,
+								body = body,
+								triggerAtMillis = triggerAtMillis
 							)
 							result.success(true)
 						} else {

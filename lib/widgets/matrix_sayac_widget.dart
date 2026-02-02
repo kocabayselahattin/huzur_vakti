@@ -47,8 +47,8 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
     // Matrix sütunlarını başlat
     _initMatrixColumns();
 
-    // Matrix animasyonu için timer
-    _matrixTimer = Timer.periodic(const Duration(milliseconds: 50), (_) {
+    // Matrix animasyonu için timer (pil tasarrufu için 100ms)
+    _matrixTimer = Timer.periodic(const Duration(milliseconds: 100), (_) {
       _updateMatrixColumns();
     });
 

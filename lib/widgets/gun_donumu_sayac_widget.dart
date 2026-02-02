@@ -242,37 +242,62 @@ class _GunDonumuSayacWidgetState extends State<GunDonumuSayacWidget>
   }
 
   /// API'den hava durumu çek ve cache'e kaydet
+  /// Önce seçili konum koordinatlarını kontrol et, yoksa il/ilçe verilerinden al
   Future<void> _fetchWeatherFromApi() async {
     try {
-      // Seçili konum bilgisini al
+      double lat = 41.02; // Varsayılan İstanbul
+      double lon = 29.0;
+      String konumKaynagi = 'varsayılan';
+
+      // 1. Önce seçili konumları kontrol et
       final konumlar = await KonumService.getKonumlar();
       final aktifIndex = await KonumService.getAktifKonumIndex();
 
-      double lat = 41.02; // Varsayılan İstanbul
-      double lon = 29.0;
-
       if (konumlar.isNotEmpty && aktifIndex < konumlar.length) {
         final konum = konumlar[aktifIndex];
-        final ilAdi = konum.ilAdi;
 
-        // İl koordinatlarını bul
+        // İl adından koordinat al
+        final ilAdi = konum.ilAdi;
         if (_ilKoordinatlari.containsKey(ilAdi)) {
           lat = _ilKoordinatlari[ilAdi]![0];
           lon = _ilKoordinatlari[ilAdi]![1];
+          konumKaynagi = 'il koordinatları ($ilAdi)';
         } else {
           // Büyük/küçük harf farkını kontrol et
           for (final entry in _ilKoordinatlari.entries) {
             if (entry.key.toLowerCase() == ilAdi.toLowerCase()) {
               lat = entry.value[0];
               lon = entry.value[1];
+              konumKaynagi = 'il koordinatları (${entry.key})';
               break;
+            }
+          }
+        }
+      } else {
+        // 4. Konum yoksa il/ilçe seçiminden bak
+        final ilceId = await KonumService.getIlceId();
+        final ilAdi = await KonumService.getIl();
+
+        if (ilAdi != null && ilAdi.isNotEmpty) {
+          if (_ilKoordinatlari.containsKey(ilAdi)) {
+            lat = _ilKoordinatlari[ilAdi]![0];
+            lon = _ilKoordinatlari[ilAdi]![1];
+            konumKaynagi = 'seçili il ($ilAdi)';
+          } else {
+            for (final entry in _ilKoordinatlari.entries) {
+              if (entry.key.toLowerCase() == ilAdi.toLowerCase()) {
+                lat = entry.value[0];
+                lon = entry.value[1];
+                konumKaynagi = 'seçili il (${entry.key})';
+                break;
+              }
             }
           }
         }
       }
 
       debugPrint(
-        '🌤️ Hava durumu API\'den çekiliyor... (lat: $lat, lon: $lon)',
+        '🌤️ Hava durumu API\'den çekiliyor... (lat: $lat, lon: $lon, kaynak: $konumKaynagi)',
       );
 
       final url = Uri.parse(

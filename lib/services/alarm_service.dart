@@ -12,19 +12,23 @@ class AlarmService {
   /// [soundPath] - Ses dosyası yolu (null ise varsayılan ses kullanılır)
   /// [useVibration] - Titreşim kullanılsın mı
   /// [alarmId] - Benzersiz alarm ID'si (varsayılan: prayerName.hashCode)
+  /// [isEarly] - Erken bildirim mi (vaktinden önce)
+  /// [earlyMinutes] - Erken bildirim için kaç dakika önce
   static Future<bool> scheduleAlarm({
     required String prayerName,
     required int triggerAtMillis,
     String? soundPath,
     bool useVibration = true,
     int? alarmId,
+    bool isEarly = false,
+    int earlyMinutes = 0,
   }) async {
     try {
       final now = DateTime.now().millisecondsSinceEpoch;
       final triggerTime = DateTime.fromMillisecondsSinceEpoch(triggerAtMillis);
 
       debugPrint(
-        '🔔 [ALARM SCHEDULE] prayerName=$prayerName, triggerTime=$triggerTime, soundPath=$soundPath, alarmId=${alarmId ?? prayerName.hashCode}',
+        '🔔 [ALARM SCHEDULE] prayerName=$prayerName, triggerTime=$triggerTime, soundPath=$soundPath, alarmId=${alarmId ?? prayerName.hashCode}, isEarly=$isEarly, earlyMinutes=$earlyMinutes',
       );
 
       if (triggerAtMillis <= now) {
@@ -38,6 +42,8 @@ class AlarmService {
         'soundPath': soundPath,
         'useVibration': useVibration,
         'alarmId': alarmId ?? prayerName.hashCode,
+        'isEarly': isEarly,
+        'earlyMinutes': earlyMinutes,
       });
       debugPrint(
         '✅ [ALARM SCHEDULE RESULT] prayerName=$prayerName, result=$result',
@@ -102,6 +108,41 @@ class AlarmService {
     // Tarih ve vakit bazında benzersiz ID
     final dateStr = '${date.year}${date.month}${date.day}';
     return '${dateStr}_$prayerKey'.hashCode.abs();
+  }
+
+  /// Özel gün/gece bildirimi için alarm kur
+  /// Bu bildirimler uygulama kapalı olsa bile çalmalı
+  static Future<bool> scheduleOzelGunAlarm({
+    required String title,
+    required String body,
+    required int triggerAtMillis,
+    required int alarmId,
+  }) async {
+    try {
+      final triggerTime = DateTime.fromMillisecondsSinceEpoch(triggerAtMillis);
+      final now = DateTime.now().millisecondsSinceEpoch;
+
+      debugPrint(
+        '🕌 [ÖZEL GÜN ALARM] title=$title, triggerTime=$triggerTime, alarmId=$alarmId',
+      );
+
+      if (triggerAtMillis <= now) {
+        debugPrint('⚠️ Özel gün alarm zamanı geçmiş, atlanıyor');
+        return false;
+      }
+
+      final result = await _channel.invokeMethod<bool>('scheduleOzelGunAlarm', {
+        'title': title,
+        'body': body,
+        'triggerAtMillis': triggerAtMillis,
+        'alarmId': alarmId,
+      });
+      debugPrint('✅ [ÖZEL GÜN ALARM RESULT] title=$title, result=$result');
+      return result ?? false;
+    } catch (e) {
+      debugPrint('❌ Özel gün alarm kurma hatası: $e');
+      return false;
+    }
   }
 
   /// TEST: 5 saniye sonra çalacak test alarmı

@@ -27,6 +27,8 @@ class AlarmReceiver : BroadcastReceiver() {
         
         /**
          * Alarm zamanla
+         * @param isEarly true ise erken bildirim (vaktinden önce)
+         * @param earlyMinutes erken bildirim için kaç dakika önce
          */
         fun scheduleAlarm(
             context: Context,
@@ -34,7 +36,9 @@ class AlarmReceiver : BroadcastReceiver() {
             prayerName: String,
             triggerAtMillis: Long,
             soundPath: String?,
-            useVibration: Boolean = true
+            useVibration: Boolean = true,
+            isEarly: Boolean = false,
+            earlyMinutes: Int = 0
         ) {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
             
@@ -79,8 +83,8 @@ class AlarmReceiver : BroadcastReceiver() {
                 putExtra(EXTRA_VAKIT_NAME, prayerName)
                 putExtra(EXTRA_VAKIT_TIME, "")
                 putExtra(EXTRA_SOUND_FILE, actualSoundPath)
-                putExtra(EXTRA_IS_EARLY, false)
-                putExtra(EXTRA_EARLY_MINUTES, 0)
+                putExtra(EXTRA_IS_EARLY, isEarly)
+                putExtra(EXTRA_EARLY_MINUTES, earlyMinutes)
             }
             
             val pendingIntent = PendingIntent.getBroadcast(
@@ -92,7 +96,7 @@ class AlarmReceiver : BroadcastReceiver() {
             
             val triggerTime = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm:ss", java.util.Locale.getDefault())
                 .format(java.util.Date(triggerAtMillis))
-            Log.d(TAG, "🕐 Alarm zamanlanıyor: $prayerName - $triggerTime (ID: $alarmId, Ses: $actualSoundPath)")
+            Log.d(TAG, "🕐 Alarm zamanlanıyor: $prayerName - $triggerTime (ID: $alarmId, Ses: $actualSoundPath, Erken: $isEarly, ErkenDk: $earlyMinutes)")
             
             try {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
@@ -215,6 +219,77 @@ class AlarmReceiver : BroadcastReceiver() {
             val alarmIds = prefs.getStringSet("active_alarms", mutableSetOf())?.toMutableSet() ?: mutableSetOf()
             alarmIds.remove(alarmId.toString())
             prefs.edit().putStringSet("active_alarms", alarmIds).apply()
+        }
+        
+        /**
+         * Özel gün/gece bildirimi için alarm zamanla
+         * Bu bildirimler uygulama kapalı olsa bile çalır
+         */
+        fun scheduleOzelGunAlarm(
+            context: Context,
+            alarmId: Int,
+            title: String,
+            body: String,
+            triggerAtMillis: Long
+        ) {
+            val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
+            
+            val intent = Intent(context, OzelGunReceiver::class.java).apply {
+                action = "com.example.huzur_vakti.OZEL_GUN_ALARM"
+                putExtra("alarm_id", alarmId)
+                putExtra("title", title)
+                putExtra("body", body)
+            }
+            
+            val pendingIntent = PendingIntent.getBroadcast(
+                context,
+                alarmId,
+                intent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            
+            val triggerTime = java.text.SimpleDateFormat("dd.MM.yyyy HH:mm:ss", java.util.Locale.getDefault())
+                .format(java.util.Date(triggerAtMillis))
+            Log.d(TAG, "🕌 Özel gün alarmı zamanlanıyor: $title - $triggerTime (ID: $alarmId)")
+            
+            try {
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                    val canScheduleExact = alarmManager.canScheduleExactAlarms()
+                    if (canScheduleExact) {
+                        alarmManager.setAlarmClock(
+                            AlarmManager.AlarmClockInfo(triggerAtMillis, pendingIntent),
+                            pendingIntent
+                        )
+                        Log.d(TAG, "✅ Özel gün alarmı setAlarmClock ile zamanlandı")
+                    } else {
+                        alarmManager.setAndAllowWhileIdle(
+                            AlarmManager.RTC_WAKEUP,
+                            triggerAtMillis,
+                            pendingIntent
+                        )
+                        Log.w(TAG, "⚠️ Özel gün: Exact alarm izni yok, setAndAllowWhileIdle kullanıldı")
+                    }
+                } else if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                    alarmManager.setAlarmClock(
+                        AlarmManager.AlarmClockInfo(triggerAtMillis, pendingIntent),
+                        pendingIntent
+                    )
+                    Log.d(TAG, "✅ Özel gün alarmı setAlarmClock ile zamanlandı (M+)")
+                } else {
+                    alarmManager.setExact(
+                        AlarmManager.RTC_WAKEUP,
+                        triggerAtMillis,
+                        pendingIntent
+                    )
+                    Log.d(TAG, "✅ Özel gün alarmı setExact ile zamanlandı")
+                }
+                
+                // Alarm ID'sini kaydet
+                saveAlarmId(context, alarmId)
+                
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Özel gün alarmı zamanlama hatası: ${e.message}")
+            }
         }
     }
     

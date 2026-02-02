@@ -104,11 +104,31 @@ class AlarmService : Service() {
                 return START_NOT_STICKY
             }
             ACTION_EXIT_SILENT -> {
-                // "Çık" butonu - normal moda dön ve kapat
-                Log.d(TAG, "🔊 'Çık' butonu tıklandı - telefon normale dönüyor")
-                setSilentMode(false)
+                // "Çık" butonu veya bildirime tıklama - normal moda dön
+                Log.d(TAG, "🔊 'Çık/Normale Dön' tıklandı - telefon normale dönüyor")
+                
+                // Telefonu normale döndür
+                try {
+                    val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                    val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+                    val previousMode = prefs.getInt("flutter.previous_ringer_mode", AudioManager.RINGER_MODE_NORMAL)
+                    audioManager.ringerMode = previousMode
+                    Log.d(TAG, "🔊 Telefon normale döndü (mod: $previousMode)")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Normal moda dönme hatası: ${e.message}")
+                    // Fallback - direkt normal moda al
+                    try {
+                        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+                        audioManager.ringerMode = AudioManager.RINGER_MODE_NORMAL
+                    } catch (e2: Exception) {
+                        Log.e(TAG, "❌ Fallback normal mod hatası: ${e2.message}")
+                    }
+                }
+                
                 // Sessiz mod bildirimini kaldır
                 cancelSilentModeNotification()
+                
+                // Service'i temizle ve kapat
                 stopAlarmSound()
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
@@ -196,30 +216,12 @@ class AlarmService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         
-        // Alarmı durdur butonu (varsayılan)
+        // Alarmı durdur butonu
         val stopIntent = Intent(this, AlarmService::class.java).apply {
             action = ACTION_STOP_ALARM
         }
         val stopPendingIntent = PendingIntent.getService(
             this, 1, stopIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        
-        // "Kal" butonu - telefonu sessize al
-        val stayIntent = Intent(ACTION_STAY_SILENT).apply {
-            setPackage(packageName)
-        }
-        val stayPendingIntent = PendingIntent.getBroadcast(
-            this, 2, stayIntent,
-            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
-        )
-        
-        // "Çık" butonu - normal moda dön
-        val exitIntent = Intent(ACTION_EXIT_SILENT).apply {
-            setPackage(packageName)
-        }
-        val exitPendingIntent = PendingIntent.getBroadcast(
-            this, 3, exitIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
         
@@ -247,15 +249,9 @@ class AlarmService : Service() {
             .setAutoCancel(true)
             .setOngoing(false)
         
-        // Vakitlerde sessize al ayarı açıksa VE bu erken bildirim DEĞİLSE "Kal" ve "Çık" butonları göster
-        if (isSessizeAlEnabled && !isEarly) {
-            builder.addAction(android.R.drawable.ic_lock_silent_mode, "Kal (Sessize Al)", stayPendingIntent)
-            builder.addAction(android.R.drawable.ic_lock_silent_mode_off, "Çık (Normal)", exitPendingIntent)
-            Log.d(TAG, "📵 Bildirimde 'Kal' ve 'Çık' butonları eklendi (vaktinde bildirim)")
-        } else {
-            // Normal mod - sadece Kapat butonu
-            builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "Kapat", stopPendingIntent)
-        }
+        // ERKEN BİLDİRİMLERDE: Sadece Kapat butonu (sessize al YOK)
+        // VAKTİNDE BİLDİRİMLERDE: Sadece Kapat butonu (sessize al alarm bittikten sonra otomatik yapılacak)
+        builder.addAction(android.R.drawable.ic_menu_close_clear_cancel, "Kapat", stopPendingIntent)
         
         return builder.build()
     }
@@ -690,12 +686,21 @@ class AlarmService : Service() {
                 notificationManager.createNotificationChannel(channel)
             }
             
-            // "Normale Dön" butonu için intent
+            // "Normale Dön" butonu için intent - Service'e gönder
             val normalModeIntent = Intent(this, AlarmService::class.java).apply {
                 action = ACTION_EXIT_SILENT
             }
             val normalModePendingIntent = PendingIntent.getService(
                 this, 100, normalModeIntent,
+                PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+            )
+            
+            // Bildirimin kendisine tıklanınca da normale dönsün (contentIntent)
+            val contentIntent = Intent(this, AlarmService::class.java).apply {
+                action = ACTION_EXIT_SILENT
+            }
+            val contentPendingIntent = PendingIntent.getService(
+                this, 101, contentIntent,
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             
@@ -709,6 +714,7 @@ class AlarmService : Service() {
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_STATUS)
                 .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
+                .setContentIntent(contentPendingIntent)  // Tıklandığında normale dön
                 .setAutoCancel(true)
                 .setOngoing(true) // Kullanıcı kaydırana kadar kalsın
                 .addAction(android.R.drawable.ic_lock_silent_mode_off, "🔊 Normale Dön", normalModePendingIntent)

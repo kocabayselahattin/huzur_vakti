@@ -202,6 +202,15 @@
             </intent-filter>
         </receiver>
         
+        <!-- Özel Gün Receiver - Kandil ve bayram bildirimlerini alır -->
+        <receiver
+            android:name=".alarm.OzelGunReceiver"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.example.huzur_vakti.OZEL_GUN_ALARM" />
+            </intent-filter>
+        </receiver>
+        
         <!-- Boot Receiver - Cihaz yeniden başlatıldığında alarmları geri yükler -->
         <receiver
             android:name=".alarm.BootReceiver"
@@ -237,7 +246,11 @@
         <service
             android:name=".alarm.AlarmService"
             android:exported="false"
-            android:foregroundServiceType="mediaPlayback" />
+            android:foregroundServiceType="mediaPlayback">
+            <intent-filter>
+                <action android:name="com.example.huzur_vakti.EXIT_SILENT" />
+            </intent-filter>
+        </service>
 
         <!-- Kilit Ekranı Bildirim Servisi - Kilit ekranında vakit bilgisi gösterir -->
         <service

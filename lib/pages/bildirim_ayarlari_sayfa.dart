@@ -84,7 +84,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     'yatsi': 15,
   };
 
-  // Bildirim sesi seçimi (her vakit için) - default: Best
+  // Vaktinde bildirim sesi seçimi (her vakit için) - default: Best
   final Map<String, String> _bildirimSesi = {
     'imsak': 'best.mp3',
     'gunes': 'best.mp3',
@@ -92,6 +92,16 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     'ikindi': 'best.mp3',
     'aksam': 'best.mp3',
     'yatsi': 'best.mp3',
+  };
+
+  // Erken bildirim sesi seçimi (her vakit için) - default: Ding Dong
+  final Map<String, String> _erkenBildirimSesi = {
+    'imsak': 'ding_dong.mp3',
+    'gunes': 'ding_dong.mp3',
+    'ogle': 'ding_dong.mp3',
+    'ikindi': 'ding_dong.mp3',
+    'aksam': 'ding_dong.mp3',
+    'yatsi': 'ding_dong.mp3',
   };
 
   final List<int> _erkenSureler = [0, 5, 10, 15, 20, 30, 45, 60];
@@ -263,11 +273,18 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
             prefs.getInt('erken_$vakit') ?? _erkenBildirim[vakit]!;
         _bildirimSesi[vakit] =
             prefs.getString('bildirim_sesi_$vakit') ?? _bildirimSesi[vakit]!;
+        _erkenBildirimSesi[vakit] =
+            prefs.getString('erken_bildirim_sesi_$vakit') ??
+            _erkenBildirimSesi[vakit]!;
 
         // Özel ses yollarını yükle
         final ozelSes = prefs.getString('ozel_ses_$vakit');
         if (ozelSes != null) {
           _ozelSesDosyalari[vakit] = ozelSes;
+        }
+        final ozelErkenSes = prefs.getString('ozel_erken_ses_$vakit');
+        if (ozelErkenSes != null) {
+          _ozelSesDosyalari['${vakit}_erken'] = ozelErkenSes;
         }
       }
       _gunlukIcerikBildirimleri =
@@ -382,13 +399,23 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       await prefs.setBool('alarm_$vakit', _alarmAcik[vakit]!);
       await prefs.setInt('erken_$vakit', _erkenBildirim[vakit]!);
       await prefs.setString('bildirim_sesi_$vakit', _bildirimSesi[vakit]!);
+      await prefs.setString(
+        'erken_bildirim_sesi_$vakit',
+        _erkenBildirimSesi[vakit]!,
+      );
       debugPrint(
-        '💾 [$vakit] Kaydedildi: bildirim=${_bildirimAcik[vakit]}, vaktinde=${_vaktindeBildirim[vakit]}, alarm=${_alarmAcik[vakit]}, erken=${_erkenBildirim[vakit]}',
+        '💾 [$vakit] Kaydedildi: bildirim=${_bildirimAcik[vakit]}, vaktinde=${_vaktindeBildirim[vakit]}, alarm=${_alarmAcik[vakit]}, erken=${_erkenBildirim[vakit]}, ses=${_bildirimSesi[vakit]}, erkenSes=${_erkenBildirimSesi[vakit]}',
       );
 
       // Özel ses yollarını kaydet
       if (_ozelSesDosyalari.containsKey(vakit)) {
         await prefs.setString('ozel_ses_$vakit', _ozelSesDosyalari[vakit]!);
+      }
+      if (_ozelSesDosyalari.containsKey('${vakit}_erken')) {
+        await prefs.setString(
+          'ozel_erken_ses_$vakit',
+          _ozelSesDosyalari['${vakit}_erken']!,
+        );
       }
     }
     await prefs.setBool('sessize_al', _sessizeAl);
@@ -1162,6 +1189,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     final vaktindeAcik = _vaktindeBildirim[key]!;
     final erkenDakika = _erkenBildirim[key]!;
     final seciliSes = _bildirimSesi[key]!;
+    final erkenSeciliSes = _erkenBildirimSesi[key]!;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -1341,136 +1369,275 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                       ),
                     ],
                   ),
-                  const SizedBox(height: 6),
-                  Row(
-                    children: [
-                      const Icon(
-                        Icons.music_note,
-                        color: Colors.white54,
-                        size: 18,
-                      ),
-                      const SizedBox(width: 8),
-                      Text(
-                        _languageService['notification_sound'] ??
-                            'Bildirim sesi:',
-                        style: const TextStyle(
-                          color: Colors.white54,
-                          fontSize: 13,
+                  const SizedBox(height: 12),
+                  // === VAKTİNDE ALARM SESİ ===
+                  if (vaktindeAcik) ...[
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.orangeAccent.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.orangeAccent.withOpacity(0.3),
                         ),
                       ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Container(
-                          height: 36,
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(8),
-                          ),
-                          child: DropdownButtonHideUnderline(
-                            child: DropdownButton<String>(
-                              value:
-                                  _sesSecenekleri.any(
-                                    (s) => s['dosya'] == seciliSes,
-                                  )
-                                  ? seciliSes
-                                  : _sesSecenekleri.first['dosya'],
-                              isExpanded: true,
-                              dropdownColor: const Color(0xFF2B3151),
-                              icon: const Icon(
-                                Icons.arrow_drop_down,
-                                color: Colors.cyanAccent,
-                              ),
-                              padding: const EdgeInsets.symmetric(
-                                horizontal: 12,
-                              ),
-                              style: const TextStyle(color: Colors.white),
-                              items: _sesSecenekleri.map((ses) {
-                                return DropdownMenuItem(
-                                  value: ses['dosya'],
-                                  child: Text(ses['ad']!),
-                                );
-                              }).toList(),
-                              onChanged: (value) async {
-                                if (value != null) {
-                                  if (value == 'custom') {
-                                    // Özel ses seç
-                                    await _ozelSesSec(key);
-                                  } else {
-                                    setState(() {
-                                      _bildirimSesi[key] = value;
-                                      _degisiklikYapildi = true;
-                                    });
-                                  }
-                                }
-                              },
-                            ),
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Ses önizleme butonu - Play/Pause toggle
-                      Container(
-                        decoration: BoxDecoration(
-                          color: _sesCalanKey == key
-                              ? Colors.red.withOpacity(0.3)
-                              : Colors.green.withOpacity(0.2),
-                          borderRadius: BorderRadius.circular(6),
-                        ),
-                        child: IconButton(
-                          onPressed: () => _sesCal(key, seciliSes),
-                          icon: Icon(
-                            _sesCalanKey == key
-                                ? Icons.stop_circle
-                                : Icons.play_circle,
-                            color: _sesCalanKey == key
-                                ? Colors.red
-                                : Colors.green,
-                            size: 28,
-                          ),
-                          tooltip: _sesCalanKey == key ? 'Durdur' : 'Dinle',
-                          padding: EdgeInsets.zero,
-                          constraints: const BoxConstraints(
-                            minWidth: 40,
-                            minHeight: 40,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 8),
-                      // Özel ses seçme butonu
-                      if (seciliSes == 'custom' ||
-                          _ozelSesDosyalari.containsKey(key))
-                        IconButton(
-                          onPressed: () => _ozelSesSec(key),
-                          icon: const Icon(
-                            Icons.folder_open,
-                            color: Colors.amber,
-                            size: 24,
-                          ),
-                          tooltip: 'Dosya seç',
-                        ),
-                    ],
-                  ),
-                  // Özel ses seçildiyse dosya adını göster
-                  if (seciliSes == 'custom' &&
-                      _ozelSesDosyalari.containsKey(key))
-                    Padding(
-                      padding: const EdgeInsets.only(top: 8),
-                      child: Row(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
                         children: [
-                          const SizedBox(width: 34),
-                          Expanded(
-                            child: Text(
-                              '${_languageService['custom'] ?? 'Özel'}: ${_ozelSesDosyalari[key]!.split('/').last.split('\\').last}',
-                              style: const TextStyle(
-                                color: Colors.white38,
-                                fontSize: 11,
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.alarm,
+                                color: Colors.orangeAccent,
+                                size: 18,
                               ),
-                              overflow: TextOverflow.ellipsis,
-                            ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _languageService['on_time_sound'] ??
+                                    'Vaktinde Alarm Sesi:',
+                                style: const TextStyle(
+                                  color: Colors.orangeAccent,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
                           ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      value:
+                                          _sesSecenekleri.any(
+                                            (s) => s['dosya'] == seciliSes,
+                                          )
+                                          ? seciliSes
+                                          : _sesSecenekleri.first['dosya'],
+                                      isExpanded: true,
+                                      dropdownColor: const Color(0xFF2B3151),
+                                      icon: const Icon(
+                                        Icons.arrow_drop_down,
+                                        color: Colors.orangeAccent,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                      ),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                      items: _sesSecenekleri.map((ses) {
+                                        return DropdownMenuItem(
+                                          value: ses['dosya'],
+                                          child: Text(ses['ad']!),
+                                        );
+                                      }).toList(),
+                                      onChanged: (value) async {
+                                        if (value != null) {
+                                          if (value == 'custom') {
+                                            await _ozelSesSec(key);
+                                          } else {
+                                            setState(() {
+                                              _bildirimSesi[key] = value;
+                                              _degisiklikYapildi = true;
+                                            });
+                                          }
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: _sesCalanKey == key
+                                      ? Colors.red.withOpacity(0.3)
+                                      : Colors.green.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: IconButton(
+                                  onPressed: () => _sesCal(key, seciliSes),
+                                  icon: Icon(
+                                    _sesCalanKey == key
+                                        ? Icons.stop_circle
+                                        : Icons.play_circle,
+                                    color: _sesCalanKey == key
+                                        ? Colors.red
+                                        : Colors.green,
+                                    size: 28,
+                                  ),
+                                  tooltip: _sesCalanKey == key
+                                      ? 'Durdur'
+                                      : 'Dinle',
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 40,
+                                    minHeight: 40,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (seciliSes == 'custom' &&
+                              _ozelSesDosyalari.containsKey(key))
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(
+                                '${_languageService['custom'] ?? 'Özel'}: ${_ozelSesDosyalari[key]!.split('/').last.split('\\').last}',
+                                style: const TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 11,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
                         ],
                       ),
                     ),
+                  ],
+                  // === ERKEN BİLDİRİM SESİ ===
+                  if (erkenDakika > 0) ...[
+                    const SizedBox(height: 10),
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.cyanAccent.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(
+                          color: Colors.cyanAccent.withOpacity(0.3),
+                        ),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Row(
+                            children: [
+                              const Icon(
+                                Icons.timer,
+                                color: Colors.cyanAccent,
+                                size: 18,
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                _languageService['early_sound'] ??
+                                    'Erken Bildirim Sesi:',
+                                style: const TextStyle(
+                                  color: Colors.cyanAccent,
+                                  fontSize: 13,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                              ),
+                            ],
+                          ),
+                          const SizedBox(height: 8),
+                          Row(
+                            children: [
+                              Expanded(
+                                child: Container(
+                                  height: 36,
+                                  decoration: BoxDecoration(
+                                    color: Colors.white.withOpacity(0.1),
+                                    borderRadius: BorderRadius.circular(8),
+                                  ),
+                                  child: DropdownButtonHideUnderline(
+                                    child: DropdownButton<String>(
+                                      value:
+                                          _sesSecenekleri.any(
+                                            (s) => s['dosya'] == erkenSeciliSes,
+                                          )
+                                          ? erkenSeciliSes
+                                          : _sesSecenekleri.first['dosya'],
+                                      isExpanded: true,
+                                      dropdownColor: const Color(0xFF2B3151),
+                                      icon: const Icon(
+                                        Icons.arrow_drop_down,
+                                        color: Colors.cyanAccent,
+                                      ),
+                                      padding: const EdgeInsets.symmetric(
+                                        horizontal: 12,
+                                      ),
+                                      style: const TextStyle(
+                                        color: Colors.white,
+                                      ),
+                                      items: _sesSecenekleri.map((ses) {
+                                        return DropdownMenuItem(
+                                          value: ses['dosya'],
+                                          child: Text(ses['ad']!),
+                                        );
+                                      }).toList(),
+                                      onChanged: (value) async {
+                                        if (value != null) {
+                                          if (value == 'custom') {
+                                            await _ozelSesSec('${key}_erken');
+                                          } else {
+                                            setState(() {
+                                              _erkenBildirimSesi[key] = value;
+                                              _degisiklikYapildi = true;
+                                            });
+                                          }
+                                        }
+                                      },
+                                    ),
+                                  ),
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Container(
+                                decoration: BoxDecoration(
+                                  color: _sesCalanKey == '${key}_erken'
+                                      ? Colors.red.withOpacity(0.3)
+                                      : Colors.green.withOpacity(0.2),
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: IconButton(
+                                  onPressed: () =>
+                                      _sesCal('${key}_erken', erkenSeciliSes),
+                                  icon: Icon(
+                                    _sesCalanKey == '${key}_erken'
+                                        ? Icons.stop_circle
+                                        : Icons.play_circle,
+                                    color: _sesCalanKey == '${key}_erken'
+                                        ? Colors.red
+                                        : Colors.green,
+                                    size: 28,
+                                  ),
+                                  tooltip: _sesCalanKey == '${key}_erken'
+                                      ? 'Durdur'
+                                      : 'Dinle',
+                                  padding: EdgeInsets.zero,
+                                  constraints: const BoxConstraints(
+                                    minWidth: 40,
+                                    minHeight: 40,
+                                  ),
+                                ),
+                              ),
+                            ],
+                          ),
+                          if (erkenSeciliSes == 'custom' &&
+                              _ozelSesDosyalari.containsKey('${key}_erken'))
+                            Padding(
+                              padding: const EdgeInsets.only(top: 6),
+                              child: Text(
+                                '${_languageService['custom'] ?? 'Özel'}: ${_ozelSesDosyalari['${key}_erken']!.split('/').last.split('\\').last}',
+                                style: const TextStyle(
+                                  color: Colors.white38,
+                                  fontSize: 11,
+                                ),
+                                overflow: TextOverflow.ellipsis,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ],
               ),
             ),

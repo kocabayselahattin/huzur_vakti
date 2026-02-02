@@ -27,8 +27,8 @@ Future<void> _initializeDefaultNotificationSettings(
 
   // Varsayılan erken bildirim süreleri (dakika)
   const defaultErkenBildirim = {
-    'imsak': 15,
-    'gunes': 45,
+    'imsak': 45,
+    'gunes': 30,
     'ogle': 15,
     'ikindi': 15,
     'aksam': 15,
@@ -36,8 +36,9 @@ Future<void> _initializeDefaultNotificationSettings(
   };
 
   // Varsayılan bildirim açık durumları
+  // İmsak varsayılan olarak kapalı
   const defaultBildirimAcik = {
-    'imsak': true,
+    'imsak': false,
     'gunes': true,
     'ogle': true,
     'ikindi': true,
@@ -66,6 +67,17 @@ Future<void> _initializeDefaultNotificationSettings(
     'yatsi': true,
   };
 
+  // Varsayılan alarm durumları
+  // İmsak kapalı, diğerleri açık (güneş dahil - erken uyarı için)
+  const defaultAlarm = {
+    'imsak': false,
+    'gunes': true,
+    'ogle': true,
+    'ikindi': true,
+    'aksam': true,
+    'yatsi': true,
+  };
+
   // Her vakit için varsayılan değerleri kaydet
   for (final vakit in defaultErkenBildirim.keys) {
     // Erken bildirim süresi
@@ -86,6 +98,10 @@ Future<void> _initializeDefaultNotificationSettings(
     // Vaktinde hatırlat
     if (!prefs.containsKey('vaktinde_$vakit')) {
       await prefs.setBool('vaktinde_$vakit', defaultVaktindeBildirim[vakit]!);
+    }
+    // Alarm
+    if (!prefs.containsKey('alarm_$vakit')) {
+      await prefs.setBool('alarm_$vakit', defaultAlarm[vakit]!);
     }
   }
 

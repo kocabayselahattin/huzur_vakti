@@ -27,14 +27,29 @@ class PrayerDndReceiver : BroadcastReceiver() {
   }
 
   override fun onReceive(context: Context, intent: Intent) {
-    val mode = intent.getStringExtra(EXTRA_MODE) ?: return
+    val action = intent.action
+    val mode = intent.getStringExtra(EXTRA_MODE)
     val duration = intent.getIntExtra(EXTRA_DURATION, 30)
     val label = intent.getStringExtra(EXTRA_LABEL) ?: "Vakit"
 
-    Log.d(TAG, "📵 DND Receiver: mode=$mode, label=$label, duration=$duration")
+    Log.d(TAG, "📵 DND Receiver: action=$action, mode=$mode, label=$label, duration=$duration")
 
     val notificationManager =
       context.getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+
+    // "Kal" butonu için - action "STAY_SILENT" ama mode null
+    if (action == "STAY_SILENT") {
+      // Sadece bildirimi kapat, sessiz mod devam etsin
+      notificationManager.cancel(NOTIFICATION_ID)
+      Log.d(TAG, "📵 Kullanıcı sessiz modda kalmayı seçti - bildirim kapatıldı")
+      return
+    }
+    
+    // Mode null ise çık
+    if (mode == null) {
+      Log.w(TAG, "⚠️ Mode null, return")
+      return
+    }
 
     when (mode) {
       MODE_ENABLE -> {
@@ -125,17 +140,29 @@ class PrayerDndReceiver : BroadcastReceiver() {
       stayIntent,
       PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
     )
+    
+    // Bildirime tıklanınca normale dön (contentIntent)
+    val contentExitIntent = Intent(context, PrayerDndReceiver::class.java).apply {
+      putExtra(EXTRA_MODE, MODE_EXIT_SILENT)
+    }
+    val contentExitPendingIntent = PendingIntent.getBroadcast(
+      context,
+      NOTIFICATION_ID + 3,
+      contentExitIntent,
+      PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+    )
 
     val notification = NotificationCompat.Builder(context, CHANNEL_ID)
       .setSmallIcon(R.mipmap.ic_launcher)
       .setContentTitle("📵 Sessiz Moda Alındı")
       .setContentText("$label vakti • $duration dakika sessiz kalacak")
       .setStyle(NotificationCompat.BigTextStyle()
-        .bigText("$label vakti için telefon sessiz moda alındı.\n$duration dakika sonra otomatik açılacak.\n\nSessiz moddan çıkmak için 'Çık', kalmak için 'Kal' butonuna basın."))
+        .bigText("$label vakti için telefon sessiz moda alındı.\n$duration dakika sonra otomatik açılacak.\n\nNormale dönmek için tıklayın veya 'Çık' butonuna basın."))
       .setPriority(NotificationCompat.PRIORITY_HIGH)
       .setCategory(NotificationCompat.CATEGORY_STATUS)
+      .setContentIntent(contentExitPendingIntent) // Tıklanınca normale dön
       .setOngoing(true)
-      .setAutoCancel(false)
+      .setAutoCancel(true)
       .addAction(R.mipmap.ic_launcher, "🔊 Çık", exitPendingIntent)
       .addAction(R.mipmap.ic_launcher, "🔇 Kal", stayPendingIntent)
       .build()

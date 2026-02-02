@@ -106,19 +106,22 @@ class DailyContentNotificationService {
         final soundFile = await getDailyContentNotificationSound();
         final soundName = soundFile.replaceAll('.mp3', '');
 
-        // Eski kanalı sil ve yeniden oluştur (ses değişikliği için gerekli)
+        // Eski kanalları sil (ses değişikliği için gerekli)
         try {
           await androidImplementation.deleteNotificationChannel(
             channelId: 'daily_content_channel',
           );
-          debugPrint('🗑️ Eski günlük içerik kanalı silindi');
+          await androidImplementation.deleteNotificationChannel(
+            channelId: 'daily_content_channel_v2',
+          );
+          debugPrint('🗑️ Eski günlük içerik kanalları silindi');
         } catch (e) {
           debugPrint('⚠️ Kanal silinirken hata (normal olabilir): $e');
         }
 
         // Günlük içerik kanalı oluştur
         final channel = AndroidNotificationChannel(
-          'daily_content_channel',
+          'daily_content_channel_v3',
           'Günlük İçerik',
           description: 'Günün ayeti, hadisi ve duası bildirimleri',
           importance: Importance.high,
@@ -321,7 +324,7 @@ class DailyContentNotificationService {
     final soundName = soundFile.replaceAll('.mp3', '');
 
     final androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'daily_content_channel_v2', // Yeni channel ID - eski ayarları geçersiz kılar
+      'daily_content_channel_v3', // Yeni channel ID - eski ayarları geçersiz kılar
       'Günlük İçerik',
       channelDescription: 'Günün ayeti, hadisi ve duası bildirimleri',
       importance: Importance.high,
@@ -359,7 +362,7 @@ class DailyContentNotificationService {
       payload: null,
     );
     debugPrint(
-      '📅 Bildirim zamanlandı: $titleText - \\${scheduledDate.day}/\\${scheduledDate.month} \\${scheduledDate.hour}:\\${scheduledDate.minute.toString().padLeft(2, '0')} (ID: $id)',
+      '📅 Bildirim zamanlandı: $titleText - ${scheduledDate.day}/${scheduledDate.month} ${scheduledDate.hour}:${scheduledDate.minute.toString().padLeft(2, '0')} (ID: $id)',
     );
   }
 
@@ -473,7 +476,7 @@ class DailyContentNotificationService {
     final soundName = soundFile.replaceAll('.mp3', '');
 
     final androidPlatformChannelSpecifics = AndroidNotificationDetails(
-      'daily_content_channel',
+      'daily_content_channel_v3',
       'Günlük İçerik',
       channelDescription: 'Günün ayeti, hadisi ve duası bildirimleri',
       importance: Importance.high,

@@ -39,8 +39,8 @@ class ScheduledNotificationService {
   // Varsayılan erken bildirim süreleri (dakika)
   // bildirim_ayarlari_sayfa.dart ile tutarlı olmalı
   static const Map<String, int> _varsayilanErkenBildirim = {
-    'imsak': 15,
-    'gunes': 45,
+    'imsak': 45,
+    'gunes': 30,
     'ogle': 15,
     'ikindi': 15,
     'aksam': 15,
@@ -115,8 +115,10 @@ class ScheduledNotificationService {
   /// Sadece zamanlamalar bitince yeniden zamanla
   static void _startDailyScheduleCheck() {
     _dailyScheduleTimer?.cancel();
-    // Her dakika kontrol et
-    _dailyScheduleTimer = Timer.periodic(const Duration(minutes: 1), (_) async {
+    // Her 30 dakikada bir kontrol et (pil tasarrufu için)
+    _dailyScheduleTimer = Timer.periodic(const Duration(minutes: 30), (
+      _,
+    ) async {
       final now = DateTime.now();
       final today = DateTime(now.year, now.month, now.day);
 
@@ -245,9 +247,13 @@ class ScheduledNotificationService {
           final erkenDakika =
               prefs.getInt('erken_$vakitKeyLower') ?? varsayilanErken;
 
-          // Ses dosyası
+          // Vaktinde alarm ses dosyası
           final sesDosyasi =
-              prefs.getString('bildirim_sesi_$vakitKeyLower') ??
+              prefs.getString('bildirim_sesi_$vakitKeyLower') ?? 'best.mp3';
+
+          // Erken bildirim ses dosyası
+          final erkenSesDosyasi =
+              prefs.getString('erken_bildirim_sesi_$vakitKeyLower') ??
               'ding_dong.mp3';
 
           // Vakit saatini parse et
@@ -299,11 +305,11 @@ class ScheduledNotificationService {
                 body:
                     '${_vakitTurkce[vakitKey]} vaktine $erkenDakika dakika kaldı',
                 scheduledTime: erkenBildirimZamani,
-                soundAsset: sesDosyasi,
+                soundAsset: erkenSesDosyasi, // Erken bildirim sesi kullan
               );
               scheduledCount++;
               debugPrint(
-                '   ✅ Erken bildirim zamanlandı: $erkenBildirimZamani',
+                '   ✅ Erken bildirim zamanlandı: $erkenBildirimZamani (ses: $erkenSesDosyasi)',
               );
             } else {
               debugPrint(
@@ -319,7 +325,7 @@ class ScheduledNotificationService {
               title: '${_vakitTurkce[vakitKey]} Vakti Girdi',
               body: '${_vakitTurkce[vakitKey]} vakti girdi. Hayırlı ibadetler!',
               scheduledTime: tamVakitZamani,
-              soundAsset: sesDosyasi,
+              soundAsset: sesDosyasi, // Vaktinde bildirim sesi kullan
             );
             scheduledCount++;
             debugPrint('   ✅ Vaktinde bildirim zamanlandı: $tamVakitZamani');
@@ -330,9 +336,11 @@ class ScheduledNotificationService {
           }
 
           // 🔔 ALARM: Alarm ayarları
-          // Varsayılan: öğle, ikindi, akşam, yatsı için true
+          // Varsayılan: güneş hariç hepsi için true (imsak OFF ama alarm olabilir)
+          // Güneş için de varsayılan açık - erken uyarı için gerekli
           final varsayilanAlarm =
-              (vakitKeyLower == 'ogle' ||
+              (vakitKeyLower == 'gunes' ||
+              vakitKeyLower == 'ogle' ||
               vakitKeyLower == 'ikindi' ||
               vakitKeyLower == 'aksam' ||
               vakitKeyLower == 'yatsi');
@@ -400,14 +408,18 @@ class ScheduledNotificationService {
                 final erkenSuccess = await AlarmService.scheduleAlarm(
                   prayerName: '${_vakitTurkce[vakitKey]} ($erkenDakika dk)',
                   triggerAtMillis: erkenAlarmZamani.millisecondsSinceEpoch,
-                  soundPath: sesDosyasi,
+                  soundPath: erkenSesDosyasi, // Erken alarm sesi kullan
                   useVibration: true,
                   alarmId: erkenAlarmId,
+                  isEarly: true,
+                  earlyMinutes: erkenDakika,
                 );
 
                 if (erkenSuccess) {
                   alarmCount++;
-                  debugPrint('   ✅ Erken alarm zamanlandı');
+                  debugPrint(
+                    '   ✅ Erken alarm zamanlandı (ses: $erkenSesDosyasi)',
+                  );
                 } else {
                   debugPrint('   ❌ Erken alarm zamanlanamadı');
                 }
