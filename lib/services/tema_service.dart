@@ -109,7 +109,7 @@ class TemaService extends ChangeNotifier {
   TemaRenkleri? _ozelTema;
   String _fontFamily = 'Poppins';
   bool _sayacTemasiKullan = true; // Sayaç temasını kullan
-  int _aktifSayacIndex = 0;
+  int _aktifSayacIndex = 22; // Varsayılan: Gündönümü sayaç
 
   static const List<String> fontFamilies = [
     'Poppins',

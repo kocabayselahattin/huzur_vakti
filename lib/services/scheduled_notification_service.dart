@@ -151,7 +151,7 @@ class ScheduledNotificationService {
         '🔔 $zamanlamaSuresi günlük vakit bildirimleri zamanlanıyor...',
       );
 
-      // Önce mevcut bildirimleri iptal et
+      // Önce mevcut namaz vakti bildirimlerini/alarmlarını iptal et
       await cancelAllNotifications();
 
       // Konum ID'sini al
@@ -523,11 +523,42 @@ class ScheduledNotificationService {
     }
   }
 
-  /// Tüm zamanlanmış bildirimleri ve alarmları iptal et
+  /// Tüm namaz vakti bildirimlerini ve alarmlarını iptal et
+  /// NOT: Günlük içerik ve özel gün bildirimlerini iptal etmez
   static Future<void> cancelAllNotifications() async {
-    await _notificationsPlugin.cancelAll();
-    await AlarmService.cancelAllAlarms();
-    debugPrint('🗑️ Tüm zamanlanmış bildirimler ve alarmlar iptal edildi');
+    await _cancelPrayerNotifications();
+    await _cancelPrayerAlarms();
+    debugPrint('🗑️ Namaz vakti bildirimleri ve alarmları iptal edildi');
+  }
+
+  /// Namaz vakti bildirimlerini iptal et (sadece bu servisin ID aralığı)
+  static Future<void> _cancelPrayerNotifications() async {
+    for (int gun = 0; gun < 7; gun++) {
+      for (int i = 0; i < _vakitler.length; i++) {
+        final bildirimId = gun * 100 + i + 1;
+        await _notificationsPlugin.cancel(id: bildirimId); // Erken bildirim
+        await _notificationsPlugin.cancel(id: bildirimId + 50); // Vaktinde
+      }
+    }
+  }
+
+  /// Namaz vakti alarmlarını iptal et (sadece bu servisin ürettiği ID'ler)
+  static Future<void> _cancelPrayerAlarms() async {
+    final now = DateTime.now();
+    for (int gun = 0; gun < 7; gun++) {
+      final hedefTarih = now.add(Duration(days: gun));
+      for (final vakitKey in _vakitler) {
+        final vakitKeyLower = vakitKey.toLowerCase();
+        final alarmId = AlarmService.generateAlarmId(vakitKeyLower, hedefTarih);
+        await AlarmService.cancelAlarm(alarmId);
+
+        final erkenAlarmId = AlarmService.generateAlarmId(
+          '${vakitKeyLower}_erken',
+          hedefTarih,
+        );
+        await AlarmService.cancelAlarm(erkenAlarmId);
+      }
+    }
   }
 
   /// Belirli bir vaktin bildirimini iptal et
