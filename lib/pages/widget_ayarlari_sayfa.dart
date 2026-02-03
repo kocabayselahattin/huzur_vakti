@@ -1299,7 +1299,11 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa>
           children: [
             // Üst
             Text(
-              'Şu an Güneş vaktinde',
+              _languageService['widget_preview_now_in']?.replaceAll(
+                    '{vakit}',
+                    'Güneş',
+                  ) ??
+                  'Şu an Güneş vaktinde',
               style: TextStyle(color: yaziRengiSecondary, fontSize: 10),
             ),
             Text(
@@ -1332,7 +1336,8 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa>
             const Spacer(),
             // Alt: Progress
             Text(
-              'Vakit İlerlemesi',
+              _languageService['widget_preview_prayer_progress'] ??
+                  'Vakit İlerlemesi',
               style: TextStyle(color: yaziRengiSecondary, fontSize: 8),
             ),
             const SizedBox(height: 4),

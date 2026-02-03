@@ -101,7 +101,7 @@ class BootReceiver : BroadcastReceiver() {
                     "gunes" -> 45
                     else -> 15
                 }
-                val erkenDakika = prefs.getInt("flutter.erken_$vakitKey", varsayilanErken)
+                val erkenDakika = prefs.getLong("flutter.erken_$vakitKey", varsayilanErken.toLong()).toInt()
                 
                 // Ses dosyası
                 val sesDosyasi = prefs.getString("flutter.bildirim_sesi_$vakitKey", "ding_dong.mp3") ?: "ding_dong.mp3"

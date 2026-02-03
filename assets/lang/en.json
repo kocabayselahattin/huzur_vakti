@@ -959,5 +959,26 @@
     {"text": "Whoever gives up something for Allah, Allah will give him something better.", "source": "Ahmad"},
     {"text": "You will not attain righteousness until you spend from that which you love.", "source": "Ali 'Imran, 92"},
     {"text": "Avoiding the forbidden is the best of obligatory deeds.", "source": "Bayhaqi"}
-  ]
+  ],
+  "compass_heading": "Compass",
+  "location_error_gps": "Location could not be retrieved. Please try again in an open area with GPS enabled.",
+  "getting_location": "Getting location...",
+  "refresh_location": "Refresh location",
+  "ibadet_prayer_item_1": "Prayer is the five-time daily worship, the most important act for Muslims.",
+  "ibadet_prayer_item_2": "It is one of the five pillars of Islam and obligatory for every sane adult Muslim.",
+  "ibadet_prayer_item_3": "Prayer is described as the believer's ascension.",
+  "ibadet_prayer_item_4": "Prayer will be the first deed to be accounted for on the Day of Judgment.",
+  "ibadet_prayer_item_5": "Prayer is the greatest act of worship that brings the servant closer to Allah.",
+  "ibadet_prayer_conditions_outside": "External Conditions (6):",
+  "ibadet_prayer_conditions_1": "1. Ritual purity from impurity (ablution, ritual bath)",
+  "ibadet_prayer_conditions_2": "2. Physical cleanliness (body, clothes and place of prayer must be clean)",
+  "ibadet_prayer_conditions_3": "3. Covering of awrah (covering what must be covered)",
+  "ibadet_prayer_conditions_4": "4. Facing the Qibla",
+  "ibadet_prayer_conditions_5": "5. Time (prayer time must have entered)",
+  "ibadet_prayer_conditions_6": "6. Intention (determining which prayer to perform in the heart)",
+  "ibadet_prayer_conditions_inside": "Internal Conditions (Pillars - 6):",
+  "esmaul_husna_meaning_prefix": "The essential name that encompasses all attributes",
+  "widget_preview_now_in": "Currently in {vakit} time",
+  "widget_preview_prayer_progress": "Prayer Progress",
+  "juz_title": "JUZ"
 }

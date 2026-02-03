@@ -973,5 +973,28 @@
     {"text": "Kim Allah için bir şey bırakırsa, Allah ona daha iyisini verir.", "source": "Ahmed"},
     {"text": "Sevdiğin şeyleri infak etmedikçe iyiliğe eremezsiniz.", "source": "Âl-i İmrân, 92"},
     {"text": "Haramdan sakınmak, farz ibadetlerin en faziletlisidir.", "source": "Beyhakî"}
-  ]
+  ],
+  
+  "compass_heading": "Pusula",
+  "location_error_gps": "Konum alınamadı. Lütfen GPS'i açık alanda tekrar deneyin.",
+  "compass_heading": "Pusula",
+  "location_error_gps": "Konum alınamadı. Lütfen GPS'i açık bir alanda tekrar deneyin.",
+  "getting_location": "Konum alınıyor...",
+  "refresh_location": "Konumu yenile",
+  "ibadet_prayer_item_1": "Namaz, günde beş vakit kılınan, Müslümanların en önemli ibadetidir.",
+  "ibadet_prayer_item_2": "İslam'ın beş şartından biridir ve her akıl baliğ Müslümana farzdır.",
+  "ibadet_prayer_item_3": "Namaz, müminin miracı olarak tanımlanmıştır.",
+  "ibadet_prayer_item_4": "Kıyamet günü hesaba çekilecek ilk amel namazdır.",
+  "ibadet_prayer_item_5": "Namaz, kulu Allah'a yaklaştıran en büyük ibadettir.",
+  "ibadet_prayer_conditions_outside": "Dışındaki Şartlar (6):",
+  "ibadet_prayer_conditions_1": "1. Hadesten taharet (abdest almak, gusül yapmak)",
+  "ibadet_prayer_conditions_2": "2. Necasetten taharet (beden, elbise ve namaz kılınacak yerin temiz olması)",
+  "ibadet_prayer_conditions_3": "3. Setr-i avret (örtünmesi gereken yerlerin örtülmesi)",
+  "ibadet_prayer_conditions_4": "4. İstikbal-i kıble (kıbleye yönelmek)",
+  "ibadet_prayer_conditions_5": "5. Vakit (namaz vaktinin girmiş olması)",
+  "ibadet_prayer_conditions_6": "6. Niyet (hangi namazı kılacağını kalben belirlemek)",
+  "ibadet_prayer_conditions_inside": "İçindeki Şartlar (Rükünler - 6):",
+  "esmaul_husna_meaning_prefix": "Bütün isimlerin vasıflarını içine alan öz adı",
+  "widget_preview_now_in": "Şu an {vakit} vaktinde",
+  "widget_preview_prayer_progress": "Vakit İlerlemesi"
 }

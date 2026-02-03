@@ -24,6 +24,7 @@ import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
 import com.example.huzur_vakti.MainActivity
 import com.example.huzur_vakti.R
+import java.io.IOException
 
 /**
  * Alarm çaldığında ses çalan ve bildirim gösteren Foreground Service
@@ -259,6 +260,24 @@ class AlarmService : Service() {
     
     private fun playAlarmSound(soundFile: String) {
         try {
+            // Telefon sessiz modda mı tekrar kontrol et (güvenlik için)
+            val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val currentRingerMode = audioManager.ringerMode
+            if (currentRingerMode == AudioManager.RINGER_MODE_SILENT || 
+                currentRingerMode == AudioManager.RINGER_MODE_VIBRATE) {
+                Log.d(TAG, "🔇 Telefon sessiz/titreşim modunda - ses çalınmayacak (ringer mode: $currentRingerMode)")
+                return
+            }
+            
+            // Bildirim ses seviyesini kontrol et
+            val notificationVolume = audioManager.getStreamVolume(AudioManager.STREAM_NOTIFICATION)
+            val maxVolume = audioManager.getStreamMaxVolume(AudioManager.STREAM_NOTIFICATION)
+            Log.d(TAG, "🔊 Bildirim ses seviyesi: $notificationVolume / $maxVolume")
+            if (notificationVolume == 0) {
+                Log.d(TAG, "🔇 Bildirim sesi 0 - ses çalınmayacak")
+                return
+            }
+            
             stopAlarmSound() // Önceki sesi durdur
             
             // Ses dosyası boş veya varsayılan ise SharedPreferences'tan vakit bazlı sesi al
@@ -297,9 +316,9 @@ class AlarmService : Service() {
             Log.d(TAG, "🔊 Alarm sesi başlatılıyor - Orijinal: $soundFile, Kullanılan: $actualSoundFile")
             
             mediaPlayer = MediaPlayer().apply {
-                // Ses kaynağını ayarla - ZİL SESİ akışını kullan (telefon zil ses seviyesine göre çalar)
+                // Ses kaynağını ayarla - BİLDİRİM SESİ akışını kullan (sessize moda saygı duyar)
                 val audioAttributes = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build()
                 setAudioAttributes(audioAttributes)
@@ -308,33 +327,91 @@ class AlarmService : Service() {
                 var soundName = actualSoundFile.replace(".mp3", "").lowercase()
                     .replace(" ", "_").replace("-", "_")
                 
-                // Özel eşlemeler (raw klasöründeki isimlerle uyumlu)
-                if (soundName == "best_2015") soundName = "best"
+                Log.d(TAG, "🔍 Ses dönüşümü: '$actualSoundFile' -> '$soundName'")
                 
-                Log.d(TAG, "🔊 Ses dosyası aranıyor: $soundName (paket: $packageName)")
+                // Özel eşlemeler (raw klasöründeki isimlerle uyumlu)
+                if (soundName == "best_2015") {
+                    Log.d(TAG, "🔄 Özel eşleme: best_2015 -> best")
+                    soundName = "best"
+                }
+                
+                // Tüm raw dosyalarını listele (debug için)
+                try {
+                    val fields = R.raw::class.java.fields
+                    val rawFiles = fields.joinToString(", ") { it.name }
+                    Log.d(TAG, "📁 Kullanılabilir raw dosyaları: $rawFiles")
+                } catch (e: Exception) {
+                    Log.e(TAG, "❌ Raw dosyaları listelenemedi: ${e.message}")
+                }
+                
+                Log.d(TAG, "🔊 Ses dosyası aranıyor: '$soundName' (paket: $packageName)")
                 
                 val resId = resources.getIdentifier(soundName, "raw", packageName)
-                Log.d(TAG, "🔊 Resource ID: $resId")
+                Log.d(TAG, "🔊 Resource ID bulundu: $resId (0 = bulunamadı)")
                 
                 if (resId != 0) {
                     Log.d(TAG, "✅ Ses dosyası bulundu: $soundName (ID: $resId)")
+                    // Manuel MediaPlayer oluştur - AudioAttributes'u prepare'den önce ayarlamak için
+                    mediaPlayer = MediaPlayer()
+                    
+                    // AudioAttributes'u ayarla (prepare'den ÖNCE)
+                    val audioAttributes = AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                    mediaPlayer?.setAudioAttributes(audioAttributes)
+                    
+                    // Ses kaynağını ayarla
                     val afd = resources.openRawResourceFd(resId)
-                    setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-                    afd.close()
+                    try {
+                        mediaPlayer?.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                        mediaPlayer?.prepare()
+                    } finally {
+                        afd.close()
+                    }
                 } else {
-                    Log.w(TAG, "⚠️ Ses dosyası bulunamadı: $soundName - varsayılan alarm sesi kullanılacak")
-                    // Varsayılan alarm sesi
-                    val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                    setDataSource(this@AlarmService, defaultUri)
+                    // Ses dosyası bulunamadı - varsayılan ses dosyamızı dene
+                    Log.w(TAG, "⚠️ Ses dosyası bulunamadı: $soundName - ding_dong deneniyor")
+                    val dingDongId = resources.getIdentifier("ding_dong", "raw", packageName)
+                    if (dingDongId != 0) {
+                        Log.d(TAG, "✅ Ding_dong ses dosyası kullanılacak")
+                        mediaPlayer = MediaPlayer()
+                        
+                        val audioAttributes = AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build()
+                        mediaPlayer?.setAudioAttributes(audioAttributes)
+                        
+                        val afd = resources.openRawResourceFd(dingDongId)
+                        try {
+                            mediaPlayer?.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
+                            mediaPlayer?.prepare()
+                        } finally {
+                            afd.close()
+                        }
+                    } else {
+                        // Hiçbir ses dosyası bulunamadı - varsayılan bildirim sesini kullan
+                        Log.w(TAG, "⚠️ Hiçbir ses dosyası bulunamadı - varsayılan bildirim sesi kullanılacak")
+                        val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                        mediaPlayer = MediaPlayer()
+                        val audioAttributes = AudioAttributes.Builder()
+                            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                            .build()
+                        mediaPlayer?.setAudioAttributes(audioAttributes)
+                        mediaPlayer?.setDataSource(this@AlarmService, defaultUri)
+                        mediaPlayer?.prepare()
+                    }
                 }
                 
                 // SES DAVRANIŞI: Tüm bildirimlerde ses sadece 1 kez çalar
                 // Kullanıcı güç/ses tuşuna basarsa veya bildirimden kapatırsa ses durur
-                isLooping = false
+                mediaPlayer?.isLooping = false
                 Log.d(TAG, "🔁 Ses ayarı: isLooping=false (ses 1 kez çalacak)")
                 
                 // Ses bittiğinde
-                setOnCompletionListener {
+                mediaPlayer?.setOnCompletionListener {
                     Log.d(TAG, "🔊 Alarm sesi tamamlandı")
                     this@AlarmService.stopVibration()
                     this@AlarmService.isPlaying = false
@@ -352,8 +429,8 @@ class AlarmService : Service() {
                     this@AlarmService.stopSelf()
                 }
                 
-                prepare()
-                start()
+                // MediaPlayer.create zaten prepare yapmıştır, sadece start yap
+                mediaPlayer?.start()
             }
             
             isPlaying = true
@@ -361,14 +438,30 @@ class AlarmService : Service() {
             
         } catch (e: Exception) {
             Log.e(TAG, "❌ Alarm sesi çalma hatası: ${e.message}")
-            // Fallback - sistem alarm sesi
+            e.printStackTrace()
+            // Fallback - ding_dong sesini dene
             try {
-                val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
-                mediaPlayer = MediaPlayer().apply {
-                    setDataSource(this@AlarmService, defaultUri)
+                val dingDongId = resources.getIdentifier("ding_dong", "raw", packageName)
+                if (dingDongId != 0) {
+                    Log.d(TAG, "🔊 Fallback: ding_dong sesi kullanılıyor")
+                    mediaPlayer = MediaPlayer.create(this@AlarmService, dingDongId)
+                } else {
+                    Log.d(TAG, "🔊 Fallback: Varsayılan bildirim sesi kullanılıyor")
+                    val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                    mediaPlayer = MediaPlayer()
+                    val audioAttributes = AudioAttributes.Builder()
+                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                        .build()
+                    mediaPlayer?.setAudioAttributes(audioAttributes)
+                    mediaPlayer?.setDataSource(this@AlarmService, defaultUri)
+                    mediaPlayer?.prepare()
+                }
+                
+                mediaPlayer?.apply {
                     isLooping = false
                     setOnCompletionListener {
-                        Log.d(TAG, "🔊 Fallback alarm sesi tamamlandı")
+                        Log.d(TAG, "🔊 Fallback sesi tamamlandı")
                         this@AlarmService.stopVibration()
                         this@AlarmService.isPlaying = false
                         this@AlarmService.setAlarmActiveFlag(false)
@@ -382,12 +475,12 @@ class AlarmService : Service() {
                         this@AlarmService.stopForeground(STOP_FOREGROUND_REMOVE)
                         this@AlarmService.stopSelf()
                     }
-                    prepare()
                     start()
                 }
                 isPlaying = true
             } catch (e2: Exception) {
                 Log.e(TAG, "❌ Fallback ses de çalınamadı: ${e2.message}")
+                e2.printStackTrace()
             }
         }
     }

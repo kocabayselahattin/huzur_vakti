@@ -867,5 +867,26 @@
     {"text": "برترین جهاد سخن حق نزد حاکم ستمگر است", "source": "ابوداود"},
     {"text": "اگر حیا نداری هر چه می‌خواهی بکن", "source": "بخاری"},
     {"text": "ورع (دوری از شبهات) رأس دین است", "source": "حدیث شریف"}
-  ]
+  ],
+  "compass_heading": "قطب‌نما",
+  "location_error_gps": "موقعیت قابل بازیابی نیست. لطفاً دوباره در یک منطقه باز با GPS فعال تلاش کنید.",
+  "getting_location": "در حال دریافت موقعیت...",
+  "refresh_location": "به‌روزرسانی موقعیت",
+  "ibadet_prayer_item_1": "نماز عبادت پنج‌وقته روزانه است، مهم‌ترین عمل برای مسلمانان.",
+  "ibadet_prayer_item_2": "یکی از پنج رکن اسلام است و بر هر مسلمان بالغ و عاقل واجب است.",
+  "ibadet_prayer_item_3": "نماز به عنوان معراج مؤمن توصیف شده است.",
+  "ibadet_prayer_item_4": "نماز اولین عملی است که در روز قیامت مورد بازخواست قرار می‌گیرد.",
+  "ibadet_prayer_item_5": "نماز بزرگترین عبادتی است که بنده را به خدا نزدیک می‌کند.",
+  "ibadet_prayer_conditions_outside": "شرایط بیرونی (6):",
+  "ibadet_prayer_conditions_1": "1. طهارت از حدث (وضو، غسل)",
+  "ibadet_prayer_conditions_2": "2. پاکیزگی جسمی (بدن، لباس و محل نماز باید پاک باشد)",
+  "ibadet_prayer_conditions_3": "3. پوشش عورت (پوشاندن آنچه باید پوشانده شود)",
+  "ibadet_prayer_conditions_4": "4. رو به قبله",
+  "ibadet_prayer_conditions_5": "5. وقت (وقت نماز باید فرا رسیده باشد)",
+  "ibadet_prayer_conditions_6": "6. نیت (مشخص کردن در دل که کدام نماز را می‌خواهید بخوانید)",
+  "ibadet_prayer_conditions_inside": "شرایط درونی (ارکان - 6):",
+  "esmaul_husna_meaning_prefix": "نام اساسی که همه صفات را در بر می‌گیرد",
+  "widget_preview_now_in": "در حال حاضر در وقت {vakit}",
+  "widget_preview_prayer_progress": "پیشرفت نماز",
+  "juz_title": "جزء"
 }

@@ -867,5 +867,26 @@
     {"text": "أَفْضَلُ الْجِهَادِ كَلِمَةُ حَقٍّ عِنْدَ سُلْطَانٍ جَائِرٍ", "source": "أبو داود"},
     {"text": "إِذَا لَمْ تَسْتَحْيِ فَاصْنَعْ مَا شِئْتَ", "source": "البخاري"},
     {"text": "الْوَرَعُ رَأْسُ الدِّينِ", "source": "حديث شريف"}
-  ]
+  ],
+  "compass_heading": "البوصلة",
+  "location_error_gps": "تعذر الحصول على الموقع. يرجى المحاولة مرة أخرى في منطقة مفتوحة مع تفعيل GPS.",
+  "getting_location": "جاري الحصول على الموقع...",
+  "refresh_location": "تحديث الموقع",
+  "ibadet_prayer_item_1": "الصلاة هي العبادة اليومية الخمسة أوقات، وهي أهم عمل للمسلمين.",
+  "ibadet_prayer_item_2": "هي أحد أركان الإسلام الخمسة وواجبة على كل مسلم بالغ عاقل.",
+  "ibadet_prayer_item_3": "توصف الصلاة بأنها معراج المؤمن.",
+  "ibadet_prayer_item_4": "الصلاة ستكون أول عمل يحاسب عليه يوم القيامة.",
+  "ibadet_prayer_item_5": "الصلاة هي أعظم عبادة تقرب العبد من الله.",
+  "ibadet_prayer_conditions_outside": "الشروط الخارجية (6):",
+  "ibadet_prayer_conditions_1": "1. الطهارة من الحدث (الوضوء، الغسل)",
+  "ibadet_prayer_conditions_2": "2. النظافة الجسدية (يجب أن يكون الجسم والملابس ومكان الصلاة نظيفة)",
+  "ibadet_prayer_conditions_3": "3. ستر العورة (تغطية ما يجب ستره)",
+  "ibadet_prayer_conditions_4": "4. استقبال القبلة",
+  "ibadet_prayer_conditions_5": "5. الوقت (يجب أن يكون وقت الصلاة قد دخل)",
+  "ibadet_prayer_conditions_6": "6. النية (تحديد أي صلاة ستؤدى في القلب)",
+  "ibadet_prayer_conditions_inside": "الشروط الداخلية (الأركان - 6):",
+  "esmaul_husna_meaning_prefix": "الاسم الجامع الذي يشمل جميع الصفات",
+  "widget_preview_now_in": "حاليا في وقت {vakit}",
+  "widget_preview_prayer_progress": "تقدم الصلاة",
+  "juz_title": "جزء"
 }

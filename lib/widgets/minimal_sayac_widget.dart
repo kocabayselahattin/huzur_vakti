@@ -95,18 +95,38 @@ class _MinimalSayacWidgetState extends State<MinimalSayacWidget> {
     final nowTotalSeconds = now.hour * 3600 + now.minute * 60 + now.second;
 
     final vakitSaatleri = [
-      {'adi': _languageService['imsak'] ?? 'İmsak', 'saat': _vakitSaatleri['Imsak']!},
-      {'adi': _languageService['gunes'] ?? 'Güneş', 'saat': _vakitSaatleri['Gunes']!},
-      {'adi': _languageService['ogle'] ?? 'Öğle', 'saat': _vakitSaatleri['Ogle']!},
-      {'adi': _languageService['ikindi'] ?? 'İkindi', 'saat': _vakitSaatleri['Ikindi']!},
-      {'adi': _languageService['aksam'] ?? 'Akşam', 'saat': _vakitSaatleri['Aksam']!},
-      {'adi': _languageService['yatsi'] ?? 'Yatsı', 'saat': _vakitSaatleri['Yatsi']!},
+      {
+        'adi': _languageService['imsak'] ?? 'İmsak',
+        'saat': _vakitSaatleri['Imsak']!,
+      },
+      {
+        'adi': _languageService['gunes'] ?? 'Güneş',
+        'saat': _vakitSaatleri['Gunes']!,
+      },
+      {
+        'adi': _languageService['ogle'] ?? 'Öğle',
+        'saat': _vakitSaatleri['Ogle']!,
+      },
+      {
+        'adi': _languageService['ikindi'] ?? 'İkindi',
+        'saat': _vakitSaatleri['Ikindi']!,
+      },
+      {
+        'adi': _languageService['aksam'] ?? 'Akşam',
+        'saat': _vakitSaatleri['Aksam']!,
+      },
+      {
+        'adi': _languageService['yatsi'] ?? 'Yatsı',
+        'saat': _vakitSaatleri['Yatsi']!,
+      },
     ];
 
     List<int> vakitSaniyeleri = [];
     for (final vakit in vakitSaatleri) {
       final parts = vakit['saat']!.split(':');
-      vakitSaniyeleri.add(int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60);
+      vakitSaniyeleri.add(
+        int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60,
+      );
     }
 
     DateTime? sonrakiVakitZamani;
@@ -124,8 +144,13 @@ class _MinimalSayacWidgetState extends State<MinimalSayacWidget> {
 
     if (sonrakiIndex == -1) {
       final parts = vakitSaatleri[0]['saat']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day + 1,
-          int.parse(parts[0]), int.parse(parts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day + 1,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
       sonrakiVakitAdi = vakitSaatleri[0]['adi']!;
       mevcutVakitAdi = vakitSaatleri.last['adi']!;
       final yatsiSaniye = vakitSaniyeleri.last;
@@ -135,8 +160,13 @@ class _MinimalSayacWidgetState extends State<MinimalSayacWidget> {
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     } else if (sonrakiIndex == 0) {
       final parts = vakitSaatleri[0]['saat']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day,
-          int.parse(parts[0]), int.parse(parts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
       sonrakiVakitAdi = vakitSaatleri[0]['adi']!;
       mevcutVakitAdi = vakitSaatleri.last['adi']!;
       final yatsiSaniye = vakitSaniyeleri.last;
@@ -146,11 +176,19 @@ class _MinimalSayacWidgetState extends State<MinimalSayacWidget> {
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     } else {
       final parts = vakitSaatleri[sonrakiIndex]['saat']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day,
-          int.parse(parts[0]), int.parse(parts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
       sonrakiVakitAdi = vakitSaatleri[sonrakiIndex]['adi']!;
-      mevcutVakitAdi = sonrakiIndex > 0 ? vakitSaatleri[sonrakiIndex - 1]['adi']! : vakitSaatleri.last['adi']!;
-      final toplamSure = vakitSaniyeleri[sonrakiIndex] - vakitSaniyeleri[sonrakiIndex - 1];
+      mevcutVakitAdi = sonrakiIndex > 0
+          ? vakitSaatleri[sonrakiIndex - 1]['adi']!
+          : vakitSaatleri.last['adi']!;
+      final toplamSure =
+          vakitSaniyeleri[sonrakiIndex] - vakitSaniyeleri[sonrakiIndex - 1];
       final gecenSure = nowTotalSeconds - vakitSaniyeleri[sonrakiIndex - 1];
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     }
@@ -165,21 +203,38 @@ class _MinimalSayacWidgetState extends State<MinimalSayacWidget> {
 
   String _getLocale() {
     switch (_languageService.currentLanguage) {
-      case 'tr': return 'tr_TR';
-      case 'en': return 'en_US';
-      case 'de': return 'de_DE';
-      case 'fr': return 'fr_FR';
-      case 'ar': return 'ar_SA';
-      case 'fa': return 'fa_IR';
-      default: return 'tr_TR';
+      case 'tr':
+        return 'tr_TR';
+      case 'en':
+        return 'en_US';
+      case 'de':
+        return 'de_DE';
+      case 'fr':
+        return 'fr_FR';
+      case 'ar':
+        return 'ar_SA';
+      case 'fa':
+        return 'fa_IR';
+      default:
+        return 'tr_TR';
     }
   }
 
   String _getHicriAyAdi(int ay) {
     final aylar = [
-      '', 'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir',
-      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban', 'Ramazan',
-      'Şevval', 'Zilkade', 'Zilhicce'
+      '',
+      'Muharrem',
+      'Safer',
+      'Rebiülevvel',
+      'Rebiülahir',
+      'Cemaziyelevvel',
+      'Cemaziyelahir',
+      'Recep',
+      'Şaban',
+      'Ramazan',
+      'Şevval',
+      'Zilkade',
+      'Zilhicce',
     ];
     return aylar[ay];
   }
@@ -199,13 +254,21 @@ class _MinimalSayacWidgetState extends State<MinimalSayacWidget> {
     // Tema kontrolü: Varsayılansa orijinal, değilse tema renkleri
     final kullanTemaRenkleri = !_temaService.sayacTemasiKullan;
     final temaRenkleri = _temaService.renkler;
-    
+
     // Orijinal renkler
-    final bgColor = kullanTemaRenkleri ? temaRenkleri.kartArkaPlan : Colors.white;
-    final textColor = kullanTemaRenkleri ? temaRenkleri.yaziPrimary : Colors.black87;
-    final secondaryTextColor = kullanTemaRenkleri ? temaRenkleri.yaziSecondary : Colors.grey[600];
+    final bgColor = kullanTemaRenkleri
+        ? temaRenkleri.kartArkaPlan
+        : Colors.white;
+    final textColor = kullanTemaRenkleri
+        ? temaRenkleri.yaziPrimary
+        : Colors.black87;
+    final secondaryTextColor = kullanTemaRenkleri
+        ? temaRenkleri.yaziSecondary
+        : Colors.grey[600];
     final accentColor = kullanTemaRenkleri ? temaRenkleri.vurgu : Colors.black;
-    final mutedColor = kullanTemaRenkleri ? temaRenkleri.yaziSecondary.withOpacity(0.5) : Colors.grey[400];
+    final mutedColor = kullanTemaRenkleri
+        ? temaRenkleri.yaziSecondary.withOpacity(0.5)
+        : Colors.grey[400];
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -242,16 +305,16 @@ class _MinimalSayacWidgetState extends State<MinimalSayacWidget> {
                   ),
                   const SizedBox(height: 2),
                   Text(
-                    '${_languageService['current_prayer'] ?? 'Şu an'}',
-                    style: TextStyle(
-                      color: secondaryTextColor,
-                      fontSize: 10,
-                    ),
+                    _languageService['widget_now_at'] ?? 'Şu an',
+                    style: TextStyle(color: secondaryTextColor, fontSize: 10),
                   ),
                 ],
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 6,
+                ),
                 decoration: BoxDecoration(
                   color: accentColor,
                   borderRadius: BorderRadius.circular(20),
@@ -259,7 +322,9 @@ class _MinimalSayacWidgetState extends State<MinimalSayacWidget> {
                 child: Text(
                   _sonrakiVakit,
                   style: TextStyle(
-                    color: kullanTemaRenkleri ? temaRenkleri.yaziPrimary : Colors.white,
+                    color: kullanTemaRenkleri
+                        ? temaRenkleri.yaziPrimary
+                        : Colors.white,
                     fontSize: 12,
                     fontWeight: FontWeight.w600,
                   ),
@@ -278,11 +343,40 @@ class _MinimalSayacWidgetState extends State<MinimalSayacWidget> {
               crossAxisAlignment: CrossAxisAlignment.baseline,
               textBaseline: TextBaseline.alphabetic,
               children: [
-                _buildTimeUnit(hours.toString().padLeft(2, '0'), 'h', textColor, mutedColor),
-                Text(' : ', style: TextStyle(fontSize: 40, fontWeight: FontWeight.w200, color: textColor)),
-                _buildTimeUnit(minutes.toString().padLeft(2, '0'), 'm', textColor, mutedColor),
-                Text(' : ', style: TextStyle(fontSize: 40, fontWeight: FontWeight.w200, color: textColor)),
-                _buildTimeUnit(seconds.toString().padLeft(2, '0'), 's', textColor, mutedColor),
+                _buildTimeUnit(
+                  hours.toString().padLeft(2, '0'),
+                  'h',
+                  textColor,
+                  mutedColor,
+                ),
+                Text(
+                  ' : ',
+                  style: TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.w200,
+                    color: textColor,
+                  ),
+                ),
+                _buildTimeUnit(
+                  minutes.toString().padLeft(2, '0'),
+                  'm',
+                  textColor,
+                  mutedColor,
+                ),
+                Text(
+                  ' : ',
+                  style: TextStyle(
+                    fontSize: 40,
+                    fontWeight: FontWeight.w200,
+                    color: textColor,
+                  ),
+                ),
+                _buildTimeUnit(
+                  seconds.toString().padLeft(2, '0'),
+                  's',
+                  textColor,
+                  mutedColor,
+                ),
               ],
             ),
           ),
@@ -295,10 +389,7 @@ class _MinimalSayacWidgetState extends State<MinimalSayacWidget> {
             children: [
               Text(
                 miladiTarih,
-                style: TextStyle(
-                  color: secondaryTextColor,
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: secondaryTextColor, fontSize: 12),
               ),
               Container(
                 width: 4,
@@ -310,16 +401,13 @@ class _MinimalSayacWidgetState extends State<MinimalSayacWidget> {
               ),
               Text(
                 hicriTarih,
-                style: TextStyle(
-                  color: secondaryTextColor,
-                  fontSize: 12,
-                ),
+                style: TextStyle(color: secondaryTextColor, fontSize: 12),
               ),
             ],
           ),
-          
+
           const SizedBox(height: 12),
-          
+
           // İlerleme Barı
           _buildProgressBar(accentColor, textColor),
         ],
@@ -333,10 +421,7 @@ class _MinimalSayacWidgetState extends State<MinimalSayacWidget> {
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4),
         color: textColor.withOpacity(0.15),
-        border: Border.all(
-          color: textColor.withOpacity(0.1),
-          width: 0.5,
-        ),
+        border: Border.all(color: textColor.withOpacity(0.1), width: 0.5),
       ),
       child: Stack(
         children: [
@@ -376,7 +461,12 @@ class _MinimalSayacWidgetState extends State<MinimalSayacWidget> {
     );
   }
 
-  Widget _buildTimeUnit(String value, String unit, Color textColor, Color? unitColor) {
+  Widget _buildTimeUnit(
+    String value,
+    String unit,
+    Color textColor,
+    Color? unitColor,
+  ) {
     return Row(
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,

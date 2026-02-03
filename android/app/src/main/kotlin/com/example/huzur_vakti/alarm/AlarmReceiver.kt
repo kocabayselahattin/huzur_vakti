@@ -320,10 +320,15 @@ class AlarmReceiver : BroadcastReceiver() {
                     val isEarly = intent.getBooleanExtra(EXTRA_IS_EARLY, false)
                     val earlyMinutes = intent.getIntExtra(EXTRA_EARLY_MINUTES, 0)
                     
-                    Log.d(TAG, "🔔 Alarm tetiklendi: $vakitName - Ses: $soundFile")
+                    Log.d(TAG, "� [ALARM RECEIVER] Alarm parametreleri:")
+                    Log.d(TAG, "   - Vakit: $vakitName")
+                    Log.d(TAG, "   - Ses (INTENT'ten): '$soundFile'")
+                    Log.d(TAG, "   - Erken: $isEarly ($earlyMinutes dk)")
                     
                     // Ses dosyası yoksa veya varsayılan ise SharedPreferences'tan al
                     if (soundFile.isEmpty() || soundFile == "ding_dong" || soundFile == "ding_dong.mp3" || soundFile == "best" || soundFile == "best.mp3") {
+                        Log.d(TAG, "📢 [ALARM RECEIVER] Varsayılan ses tespit edildi, SharedPreferences kontrol ediliyor...")
+                        
                         val vakitKey = vakitName.lowercase()
                             .replace("ı", "i").replace("ö", "o").replace("ü", "u")
                             .replace("ş", "s").replace("ğ", "g").replace("ç", "c")
@@ -339,6 +344,8 @@ class AlarmReceiver : BroadcastReceiver() {
                                 }
                             }
                         
+                        Log.d(TAG, "   - VakitKey: '$vakitKey'")
+                        
                         if (vakitKey.isNotEmpty()) {
                             val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
                             // Erken bildirim mi, vaktinde bildirim mi kontrol et
@@ -347,15 +354,24 @@ class AlarmReceiver : BroadcastReceiver() {
                             } else {
                                 "flutter.bildirim_sesi_$vakitKey"
                             }
+                            
+                            Log.d(TAG, "   - SoundKey: '$soundKey'")
+                            
                             val savedSound = prefs.getString(soundKey, null)
+                            Log.d(TAG, "   - SharedPreferences değeri: '$savedSound'")
+                            
                             if (!savedSound.isNullOrEmpty()) {
                                 soundFile = savedSound
-                                Log.d(TAG, "🔊 onReceive - Ses SharedPreferences'tan alındı: $soundKey -> $soundFile")
+                                Log.d(TAG, "✅ [ALARM RECEIVER] Ses SharedPreferences'tan alındı: '$soundFile'")
+                            } else {
+                                Log.w(TAG, "⚠️ [ALARM RECEIVER] SharedPreferences'ta ses bulunamadı")
                             }
                         }
                     }
                     
-                    Log.d(TAG, "🔔 AlarmService başlatılıyor: $vakitName - $vakitTime (Ses: $soundFile)")
+                    Log.d(TAG, "🔔 [ALARM RECEIVER] AlarmService başlatılıyor:")
+                    Log.d(TAG, "   - Vakit: $vakitName - $vakitTime")
+                    Log.d(TAG, "   - Ses (FINAL): '$soundFile'")
                     
                     // AlarmService'i başlat - ACTION_PRAYER_ALARM set etmeli!
                     val serviceIntent = Intent(context, AlarmService::class.java).apply {

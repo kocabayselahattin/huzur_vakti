@@ -85,15 +85,23 @@ class _IbadetSayfaState extends State<IbadetSayfa> {
         _IbadetSection(
           title: lang['prayer_conditions'] ?? 'Namazın Şartları (12)',
           items: [
-            'Dışındaki Şartlar (6):',
-            '1. Hadesten taharet (abdest almak, gusül yapmak)',
-            '2. Necasetten taharet (beden, elbise ve namaz kılınacak yerin temiz olması)',
-            '3. Setr-i avret (örtünmesi gereken yerlerin örtülmesi)',
-            '4. İstikbal-i kıble (kıbleye yönelmek)',
-            '5. Vakit (namaz vaktinin girmiş olması)',
-            '6. Niyet (hangi namazı kılacağını kalben belirlemek)',
+            lang['ibadet_prayer_conditions_outside'] ??
+                'Dışındaki Şartlar (6):',
+            lang['ibadet_prayer_conditions_1'] ??
+                '1. Hadesten taharet (abdest almak, gusül yapmak)',
+            lang['ibadet_prayer_conditions_2'] ??
+                '2. Necasetten taharet (beden, elbise ve namaz kılınacak yerin temiz olması)',
+            lang['ibadet_prayer_conditions_3'] ??
+                '3. Setr-i avret (örtünmesi gereken yerlerin örtülmesi)',
+            lang['ibadet_prayer_conditions_4'] ??
+                '4. İstikbal-i kıble (kıbleye yönelmek)',
+            lang['ibadet_prayer_conditions_5'] ??
+                '5. Vakit (namaz vaktinin girmiş olması)',
+            lang['ibadet_prayer_conditions_6'] ??
+                '6. Niyet (hangi namazı kılacağını kalben belirlemek)',
             '',
-            'İçindeki Şartlar (Rükünler - 6):',
+            lang['ibadet_prayer_conditions_inside'] ??
+                'İçindeki Şartlar (Rükünler - 6):',
             '1. İftitah tekbiri (başlangıç tekbiri)',
             '2. Kıyam (ayakta durmak)',
             '3. Kıraat (Kur\'an okumak)',

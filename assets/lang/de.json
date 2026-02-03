@@ -921,5 +921,26 @@
     {"text": "Der beste Dschihad ist, vor einem tyrannischen Herrscher ein wahres Wort zu sprechen.", "source": "Abu Dawud"},
     {"text": "Wenn du keine Scham empfindest, dann tu, was du willst.", "source": "Bukhari"},
     {"text": "Frömmigkeit (Vermeidung zweifelhafter Angelegenheiten) ist die Grundlage der Religion.", "source": "Hadith"}
-  ]
+  ],
+  "compass_heading": "Kompass",
+  "location_error_gps": "Standort konnte nicht abgerufen werden. Bitte versuchen Sie es erneut in einem offenen Bereich mit aktiviertem GPS.",
+  "getting_location": "Standort wird abgerufen...",
+  "refresh_location": "Standort aktualisieren",
+  "ibadet_prayer_item_1": "Das Gebet ist die fünfmalige tägliche Anbetung, die wichtigste Handlung für Muslime.",
+  "ibadet_prayer_item_2": "Es ist eine der fünf Säulen des Islam und für jeden geistig gesunden erwachsenen Muslim verpflichtend.",
+  "ibadet_prayer_item_3": "Das Gebet wird als die Himmelfahrt des Gläubigen bezeichnet.",
+  "ibadet_prayer_item_4": "Das Gebet wird die erste Tat sein, über die am Tag des Jüngsten Gerichts Rechenschaft abgelegt wird.",
+  "ibadet_prayer_item_5": "Das Gebet ist die größte Anbetungshandlung, die den Diener Allah näher bringt.",
+  "ibadet_prayer_conditions_outside": "Äußere Bedingungen (6):",
+  "ibadet_prayer_conditions_1": "1. Rituelle Reinheit von Unreinheit (Gebetswaschung, rituelle Vollwaschung)",
+  "ibadet_prayer_conditions_2": "2. Körperliche Sauberkeit (Körper, Kleidung und Gebetsort müssen sauber sein)",
+  "ibadet_prayer_conditions_3": "3. Bedeckung der Aurah (Bedeckung dessen, was bedeckt werden muss)",
+  "ibadet_prayer_conditions_4": "4. Ausrichtung zur Qibla",
+  "ibadet_prayer_conditions_5": "5. Zeit (Die Gebetszeit muss eingetreten sein)",
+  "ibadet_prayer_conditions_6": "6. Absicht (Im Herzen bestimmen, welches Gebet verrichtet wird)",
+  "ibadet_prayer_conditions_inside": "Innere Bedingungen (Säulen - 6):",
+  "esmaul_husna_meaning_prefix": "Der wesentliche Name, der alle Attribute umfasst",
+  "widget_preview_now_in": "Derzeit in {vakit} Zeit",
+  "widget_preview_prayer_progress": "Gebetsfortschritt",
+  "juz_title": "TEIL"
 }

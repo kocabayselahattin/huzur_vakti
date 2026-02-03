@@ -921,5 +921,26 @@
     {"text": "Le meilleur djihad est de dire une parole de vérité devant un dirigeant tyrannique.", "source": "Abu Dawud"},
     {"text": "Si tu n'as pas de pudeur, fais ce que tu veux.", "source": "Bukhari"},
     {"text": "La piété (éviter les choses douteuses) est le fondement de la religion.", "source": "Hadith"}
-  ]
+  ],
+  "compass_heading": "Boussole",
+  "location_error_gps": "La localisation n'a pas pu être récupérée. Veuillez réessayer dans un espace ouvert avec le GPS activé.",
+  "getting_location": "Obtention de la localisation...",
+  "refresh_location": "Actualiser la localisation",
+  "ibadet_prayer_item_1": "La prière est l'adoration quotidienne cinq fois par jour, l'acte le plus important pour les musulmans.",
+  "ibadet_prayer_item_2": "C'est l'un des cinq piliers de l'Islam et obligatoire pour tout musulman adulte sain d'esprit.",
+  "ibadet_prayer_item_3": "La prière est décrite comme l'ascension du croyant.",
+  "ibadet_prayer_item_4": "La prière sera le premier acte dont on rendra compte le Jour du Jugement.",
+  "ibadet_prayer_item_5": "La prière est le plus grand acte d'adoration qui rapproche le serviteur d'Allah.",
+  "ibadet_prayer_conditions_outside": "Conditions externes (6):",
+  "ibadet_prayer_conditions_1": "1. Pureté rituelle de l'impureté (ablutions, bain rituel)",
+  "ibadet_prayer_conditions_2": "2. Propreté physique (le corps, les vêtements et le lieu de prière doivent être propres)",
+  "ibadet_prayer_conditions_3": "3. Couverture de l'awrah (couvrir ce qui doit être couvert)",
+  "ibadet_prayer_conditions_4": "4. Se tourner vers la Qibla",
+  "ibadet_prayer_conditions_5": "5. Temps (l'heure de prière doit être entrée)",
+  "ibadet_prayer_conditions_6": "6. Intention (déterminer dans son cœur quelle prière accomplir)",
+  "ibadet_prayer_conditions_inside": "Conditions internes (Piliers - 6):",
+  "esmaul_husna_meaning_prefix": "Le nom essentiel qui englobe tous les attributs",
+  "widget_preview_now_in": "Actuellement en temps de {vakit}",
+  "widget_preview_prayer_progress": "Progression de la prière",
+  "juz_title": "PARTIE"
 }

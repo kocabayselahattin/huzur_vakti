@@ -28,7 +28,7 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
   Map<String, String> _vakitSaatleri = {};
   final TemaService _temaService = TemaService();
   final LanguageService _languageService = LanguageService();
-  
+
   late AnimationController _waveController;
   late AnimationController _shimmerController;
   late Animation<double> _shimmerAnimation;
@@ -36,21 +36,21 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
   @override
   void initState() {
     super.initState();
-    
+
     _waveController = AnimationController(
       duration: const Duration(seconds: 8),
       vsync: this,
     )..repeat();
-    
+
     _shimmerController = AnimationController(
       duration: const Duration(seconds: 3),
       vsync: this,
     )..repeat();
-    
+
     _shimmerAnimation = Tween<double>(begin: -1.0, end: 2.0).animate(
       CurvedAnimation(parent: _shimmerController, curve: Curves.easeInOut),
     );
-    
+
     if (widget.shouldLoadData) {
       _vakitleriYukle();
       _timer = Timer.periodic(const Duration(seconds: 1), (_) {
@@ -118,18 +118,38 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
     final nowTotalSeconds = now.hour * 3600 + now.minute * 60 + now.second;
 
     final vakitSaatleri = [
-      {'adi': _languageService['imsak'] ?? 'İmsak', 'saat': _vakitSaatleri['Imsak']!},
-      {'adi': _languageService['gunes'] ?? 'Güneş', 'saat': _vakitSaatleri['Gunes']!},
-      {'adi': _languageService['ogle'] ?? 'Öğle', 'saat': _vakitSaatleri['Ogle']!},
-      {'adi': _languageService['ikindi'] ?? 'İkindi', 'saat': _vakitSaatleri['Ikindi']!},
-      {'adi': _languageService['aksam'] ?? 'Akşam', 'saat': _vakitSaatleri['Aksam']!},
-      {'adi': _languageService['yatsi'] ?? 'Yatsı', 'saat': _vakitSaatleri['Yatsi']!},
+      {
+        'adi': _languageService['imsak'] ?? 'İmsak',
+        'saat': _vakitSaatleri['Imsak']!,
+      },
+      {
+        'adi': _languageService['gunes'] ?? 'Güneş',
+        'saat': _vakitSaatleri['Gunes']!,
+      },
+      {
+        'adi': _languageService['ogle'] ?? 'Öğle',
+        'saat': _vakitSaatleri['Ogle']!,
+      },
+      {
+        'adi': _languageService['ikindi'] ?? 'İkindi',
+        'saat': _vakitSaatleri['Ikindi']!,
+      },
+      {
+        'adi': _languageService['aksam'] ?? 'Akşam',
+        'saat': _vakitSaatleri['Aksam']!,
+      },
+      {
+        'adi': _languageService['yatsi'] ?? 'Yatsı',
+        'saat': _vakitSaatleri['Yatsi']!,
+      },
     ];
 
     List<int> vakitSaniyeleri = [];
     for (final vakit in vakitSaatleri) {
       final parts = vakit['saat']!.split(':');
-      vakitSaniyeleri.add(int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60);
+      vakitSaniyeleri.add(
+        int.parse(parts[0]) * 3600 + int.parse(parts[1]) * 60,
+      );
     }
 
     DateTime? sonrakiVakitZamani;
@@ -147,8 +167,13 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
 
     if (sonrakiIndex == -1) {
       final parts = vakitSaatleri[0]['saat']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day + 1,
-          int.parse(parts[0]), int.parse(parts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day + 1,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
       sonrakiVakitAdi = vakitSaatleri[0]['adi']!;
       mevcutVakitAdi = vakitSaatleri.last['adi']!;
       final yatsiSaniye = vakitSaniyeleri.last;
@@ -158,8 +183,13 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     } else if (sonrakiIndex == 0) {
       final parts = vakitSaatleri[0]['saat']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day,
-          int.parse(parts[0]), int.parse(parts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
       sonrakiVakitAdi = vakitSaatleri[0]['adi']!;
       mevcutVakitAdi = vakitSaatleri.last['adi']!;
       final yatsiSaniye = vakitSaniyeleri.last;
@@ -169,11 +199,19 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     } else {
       final parts = vakitSaatleri[sonrakiIndex]['saat']!.split(':');
-      sonrakiVakitZamani = DateTime(now.year, now.month, now.day,
-          int.parse(parts[0]), int.parse(parts[1]));
+      sonrakiVakitZamani = DateTime(
+        now.year,
+        now.month,
+        now.day,
+        int.parse(parts[0]),
+        int.parse(parts[1]),
+      );
       sonrakiVakitAdi = vakitSaatleri[sonrakiIndex]['adi']!;
-      mevcutVakitAdi = sonrakiIndex > 0 ? vakitSaatleri[sonrakiIndex - 1]['adi']! : vakitSaatleri.last['adi']!;
-      final toplamSure = vakitSaniyeleri[sonrakiIndex] - vakitSaniyeleri[sonrakiIndex - 1];
+      mevcutVakitAdi = sonrakiIndex > 0
+          ? vakitSaatleri[sonrakiIndex - 1]['adi']!
+          : vakitSaatleri.last['adi']!;
+      final toplamSure =
+          vakitSaniyeleri[sonrakiIndex] - vakitSaniyeleri[sonrakiIndex - 1];
       final gecenSure = nowTotalSeconds - vakitSaniyeleri[sonrakiIndex - 1];
       oran = (gecenSure / toplamSure).clamp(0.0, 1.0);
     }
@@ -188,9 +226,19 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
 
   String _getHicriAyAdi(int ay) {
     final aylar = [
-      '', 'Muharrem', 'Safer', 'Rebiülevvel', 'Rebiülahir',
-      'Cemaziyelevvel', 'Cemaziyelahir', 'Recep', 'Şaban', 'Ramazan',
-      'Şevval', 'Zilkade', 'Zilhicce'
+      '',
+      'Muharrem',
+      'Safer',
+      'Rebiülevvel',
+      'Rebiülahir',
+      'Cemaziyelevvel',
+      'Cemaziyelahir',
+      'Recep',
+      'Şaban',
+      'Ramazan',
+      'Şevval',
+      'Zilkade',
+      'Zilhicce',
     ];
     return aylar[ay];
   }
@@ -203,19 +251,30 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
 
     final now = DateTime.now();
     final hicri = HijriCalendar.now();
-    final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
+    final hicriTarih =
+        '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
     final miladiTarih = DateFormat('dd MMMM yyyy', 'tr_TR').format(now);
 
     // Tema kontrolü: Varsayılansa orijinal, değilse tema renkleri
     final kullanTemaRenkleri = !_temaService.sayacTemasiKullan;
     final temaRenkleri = _temaService.renkler;
-    
+
     // Orijinal renkler veya tema renkleri
-    final primaryColor = kullanTemaRenkleri ? temaRenkleri.vurgu : const Color(0xFF00D4AA);
-    final secondaryColor = kullanTemaRenkleri ? temaRenkleri.vurguSecondary : const Color(0xFF8B5CF6);
-    final bgColor1 = kullanTemaRenkleri ? temaRenkleri.arkaPlan : const Color(0xFF0A0A1A);
-    final bgColor2 = kullanTemaRenkleri ? temaRenkleri.kartArkaPlan : const Color(0xFF0D1B2A);
-    final textColor = kullanTemaRenkleri ? temaRenkleri.yaziPrimary : Colors.white;
+    final primaryColor = kullanTemaRenkleri
+        ? temaRenkleri.vurgu
+        : const Color(0xFF00D4AA);
+    final secondaryColor = kullanTemaRenkleri
+        ? temaRenkleri.vurguSecondary
+        : const Color(0xFF8B5CF6);
+    final bgColor1 = kullanTemaRenkleri
+        ? temaRenkleri.arkaPlan
+        : const Color(0xFF0A0A1A);
+    final bgColor2 = kullanTemaRenkleri
+        ? temaRenkleri.kartArkaPlan
+        : const Color(0xFF0D1B2A);
+    final textColor = kullanTemaRenkleri
+        ? temaRenkleri.yaziPrimary
+        : Colors.white;
 
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 16),
@@ -248,12 +307,14 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
                   colors: [
                     bgColor1,
                     bgColor2,
-                    kullanTemaRenkleri ? temaRenkleri.ayirac : const Color(0xFF1B263B),
+                    kullanTemaRenkleri
+                        ? temaRenkleri.ayirac
+                        : const Color(0xFF1B263B),
                   ],
                 ),
               ),
             ),
-            
+
             // Aurora dalgaları
             AnimatedBuilder(
               animation: _waveController,
@@ -268,7 +329,7 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
                 );
               },
             ),
-            
+
             // Yıldızlar
             ...List.generate(20, (index) {
               final random = math.Random(index);
@@ -279,13 +340,15 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
                   width: random.nextDouble() * 2 + 1,
                   height: random.nextDouble() * 2 + 1,
                   decoration: BoxDecoration(
-                    color: textColor.withOpacity(random.nextDouble() * 0.5 + 0.3),
+                    color: textColor.withOpacity(
+                      random.nextDouble() * 0.5 + 0.3,
+                    ),
                     shape: BoxShape.circle,
                   ),
                 ),
               );
             }),
-            
+
             // İçerik
             Padding(
               padding: const EdgeInsets.all(20),
@@ -307,7 +370,7 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
                             ),
                           ),
                           Text(
-                            'Şu an',
+                            _languageService['widget_now_at'] ?? 'Şu an',
                             style: TextStyle(
                               color: textColor.withOpacity(0.4),
                               fontSize: 10,
@@ -316,7 +379,10 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
                         ],
                       ),
                       Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 8,
+                        ),
                         decoration: BoxDecoration(
                           gradient: LinearGradient(
                             colors: [
@@ -355,9 +421,13 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
                             end: Alignment.bottomRight,
                             colors: [
                               primaryColor,
-                              kullanTemaRenkleri ? temaRenkleri.vurgu : const Color(0xFF00FF88),
+                              kullanTemaRenkleri
+                                  ? temaRenkleri.vurgu
+                                  : const Color(0xFF00FF88),
                               secondaryColor,
-                              kullanTemaRenkleri ? temaRenkleri.vurguSecondary : const Color(0xFFFF6B9D),
+                              kullanTemaRenkleri
+                                  ? temaRenkleri.vurguSecondary
+                                  : const Color(0xFFFF6B9D),
                               primaryColor,
                             ],
                             stops: [
@@ -372,9 +442,14 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
                         child: Row(
                           mainAxisAlignment: MainAxisAlignment.center,
                           children: [
-                            _buildTimeBox(hours.toString().padLeft(2, '0'), textColor),
+                            _buildTimeBox(
+                              hours.toString().padLeft(2, '0'),
+                              textColor,
+                            ),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
                               child: Text(
                                 ':',
                                 style: TextStyle(
@@ -384,9 +459,14 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
                                 ),
                               ),
                             ),
-                            _buildTimeBox(minutes.toString().padLeft(2, '0'), textColor),
+                            _buildTimeBox(
+                              minutes.toString().padLeft(2, '0'),
+                              textColor,
+                            ),
                             Padding(
-                              padding: const EdgeInsets.symmetric(horizontal: 4),
+                              padding: const EdgeInsets.symmetric(
+                                horizontal: 4,
+                              ),
                               child: Text(
                                 ':',
                                 style: TextStyle(
@@ -396,7 +476,10 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
                                 ),
                               ),
                             ),
-                            _buildTimeBox(seconds.toString().padLeft(2, '0'), textColor),
+                            _buildTimeBox(
+                              seconds.toString().padLeft(2, '0'),
+                              textColor,
+                            ),
                           ],
                         ),
                       );
@@ -431,9 +514,9 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
                       ),
                     ],
                   ),
-                  
+
                   const SizedBox(height: 12),
-                  
+
                   // İlerleme Barı
                   _buildProgressBar(primaryColor, secondaryColor, textColor),
                 ],
@@ -445,16 +528,17 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
     );
   }
 
-  Widget _buildProgressBar(Color primaryColor, Color secondaryColor, Color textColor) {
+  Widget _buildProgressBar(
+    Color primaryColor,
+    Color secondaryColor,
+    Color textColor,
+  ) {
     return Container(
       height: 8,
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(4),
         color: textColor.withOpacity(0.15),
-        border: Border.all(
-          color: textColor.withOpacity(0.1),
-          width: 0.5,
-        ),
+        border: Border.all(color: textColor.withOpacity(0.1), width: 0.5),
       ),
       child: Stack(
         children: [
@@ -504,10 +588,7 @@ class _AuroraSayacWidgetState extends State<AuroraSayacWidget>
       decoration: BoxDecoration(
         color: textColor.withOpacity(0.05),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(
-          color: textColor.withOpacity(0.1),
-          width: 1,
-        ),
+        border: Border.all(color: textColor.withOpacity(0.1), width: 1),
       ),
       child: Text(
         value,
@@ -530,7 +611,11 @@ class _AuroraPainter extends CustomPainter {
   final Color primaryColor;
   final Color secondaryColor;
 
-  _AuroraPainter({required this.progress, required this.primaryColor, required this.secondaryColor});
+  _AuroraPainter({
+    required this.progress,
+    required this.primaryColor,
+    required this.secondaryColor,
+  });
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -542,8 +627,10 @@ class _AuroraPainter extends CustomPainter {
     final path1 = Path();
     path1.moveTo(0, size.height * 0.5);
     for (double x = 0; x <= size.width; x += 10) {
-      final y = size.height * 0.4 +
-          math.sin((x / size.width * 4 * math.pi) + progress * 2 * math.pi) * 30 +
+      final y =
+          size.height * 0.4 +
+          math.sin((x / size.width * 4 * math.pi) + progress * 2 * math.pi) *
+              30 +
           math.sin((x / size.width * 2 * math.pi) + progress * math.pi) * 20;
       path1.lineTo(x, y);
     }
@@ -566,8 +653,10 @@ class _AuroraPainter extends CustomPainter {
     final path2 = Path();
     path2.moveTo(0, size.height * 0.6);
     for (double x = 0; x <= size.width; x += 10) {
-      final y = size.height * 0.5 +
-          math.sin((x / size.width * 3 * math.pi) - progress * 2 * math.pi) * 25 +
+      final y =
+          size.height * 0.5 +
+          math.sin((x / size.width * 3 * math.pi) - progress * 2 * math.pi) *
+              25 +
           math.cos((x / size.width * 5 * math.pi) + progress * math.pi) * 15;
       path2.lineTo(x, y);
     }
@@ -589,9 +678,9 @@ class _AuroraPainter extends CustomPainter {
 
   @override
   bool shouldRepaint(covariant _AuroraPainter oldDelegate) {
-    return oldDelegate.progress != progress || 
-           oldDelegate.primaryColor != primaryColor || 
-           oldDelegate.secondaryColor != secondaryColor;
+    return oldDelegate.progress != progress ||
+        oldDelegate.primaryColor != primaryColor ||
+        oldDelegate.secondaryColor != secondaryColor;
   }
 }
 
@@ -607,11 +696,7 @@ class _ProgressBarLinesPainter extends CustomPainter {
       ..strokeWidth = 1;
 
     for (double x = 0; x < size.width; x += 8) {
-      canvas.drawLine(
-        Offset(x, 0),
-        Offset(x, size.height),
-        paint,
-      );
+      canvas.drawLine(Offset(x, 0), Offset(x, size.height), paint);
     }
   }
 
