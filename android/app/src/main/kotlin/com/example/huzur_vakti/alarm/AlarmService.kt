@@ -297,9 +297,9 @@ class AlarmService : Service() {
             Log.d(TAG, "🔊 Alarm sesi başlatılıyor - Orijinal: $soundFile, Kullanılan: $actualSoundFile")
             
             mediaPlayer = MediaPlayer().apply {
-                // Ses kaynağını ayarla - ALARM akışını kullan (telefon sessizde de çalar)
+                // Ses kaynağını ayarla - ZİL SESİ akışını kullan (telefon zil ses seviyesine göre çalar)
                 val audioAttributes = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setUsage(AudioAttributes.USAGE_NOTIFICATION_RINGTONE)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build()
                 setAudioAttributes(audioAttributes)
