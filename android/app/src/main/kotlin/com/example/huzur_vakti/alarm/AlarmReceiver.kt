@@ -62,16 +62,22 @@ class AlarmReceiver : BroadcastReceiver() {
                 
                 if (vakitKey.isNotEmpty()) {
                     val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-                    val savedSound = prefs.getString("flutter.bildirim_sesi_$vakitKey", null)
+                    // Erken bildirim mi, vaktinde bildirim mi kontrol et
+                    val soundKey = if (isEarly) {
+                        "flutter.erken_bildirim_sesi_$vakitKey"
+                    } else {
+                        "flutter.bildirim_sesi_$vakitKey"
+                    }
+                    val savedSound = prefs.getString(soundKey, null)
                     if (!savedSound.isNullOrEmpty()) {
                         actualSoundPath = savedSound
-                        Log.d(TAG, "🔊 Ses dosyası SharedPreferences'tan alındı: $vakitKey -> $actualSoundPath")
+                        Log.d(TAG, "🔊 Ses dosyası SharedPreferences'tan alındı: $soundKey -> $actualSoundPath")
                     }
                 }
                 
-                // Hala null ise varsayılan ses
+                // Hala null ise varsayılan ses (erken bildirim için ding_dong, vaktinde için best)
                 if (actualSoundPath.isNullOrEmpty()) {
-                    actualSoundPath = "ding_dong.mp3"
+                    actualSoundPath = if (isEarly) "ding_dong.mp3" else "best.mp3"
                 }
             }
             
@@ -316,8 +322,8 @@ class AlarmReceiver : BroadcastReceiver() {
                     
                     Log.d(TAG, "🔔 Alarm tetiklendi: $vakitName - Ses: $soundFile")
                     
-                    // Ses dosyası yoksa veya varsayılan ding_dong ise SharedPreferences'tan al
-                    if (soundFile.isEmpty() || soundFile == "ding_dong" || soundFile == "ding_dong.mp3") {
+                    // Ses dosyası yoksa veya varsayılan ise SharedPreferences'tan al
+                    if (soundFile.isEmpty() || soundFile == "ding_dong" || soundFile == "ding_dong.mp3" || soundFile == "best" || soundFile == "best.mp3") {
                         val vakitKey = vakitName.lowercase()
                             .replace("ı", "i").replace("ö", "o").replace("ü", "u")
                             .replace("ş", "s").replace("ğ", "g").replace("ç", "c")
@@ -335,10 +341,16 @@ class AlarmReceiver : BroadcastReceiver() {
                         
                         if (vakitKey.isNotEmpty()) {
                             val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-                            val savedSound = prefs.getString("flutter.bildirim_sesi_$vakitKey", null)
+                            // Erken bildirim mi, vaktinde bildirim mi kontrol et
+                            val soundKey = if (isEarly) {
+                                "flutter.erken_bildirim_sesi_$vakitKey"
+                            } else {
+                                "flutter.bildirim_sesi_$vakitKey"
+                            }
+                            val savedSound = prefs.getString(soundKey, null)
                             if (!savedSound.isNullOrEmpty()) {
                                 soundFile = savedSound
-                                Log.d(TAG, "🔊 onReceive - Ses SharedPreferences'tan alındı: $vakitKey -> $soundFile")
+                                Log.d(TAG, "🔊 onReceive - Ses SharedPreferences'tan alındı: $soundKey -> $soundFile")
                             }
                         }
                     }

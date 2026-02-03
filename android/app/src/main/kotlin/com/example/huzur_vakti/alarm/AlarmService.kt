@@ -261,9 +261,9 @@ class AlarmService : Service() {
         try {
             stopAlarmSound() // Önceki sesi durdur
             
-            // Ses dosyası boş veya varsayılan ding_dong ise SharedPreferences'tan vakit bazlı sesi al
+            // Ses dosyası boş veya varsayılan ise SharedPreferences'tan vakit bazlı sesi al
             var actualSoundFile = soundFile
-            if (actualSoundFile.isEmpty() || actualSoundFile == "ding_dong" || actualSoundFile == "ding_dong.mp3") {
+            if (actualSoundFile.isEmpty() || actualSoundFile == "ding_dong" || actualSoundFile == "ding_dong.mp3" || actualSoundFile == "best" || actualSoundFile == "best.mp3") {
                 val vakitName = currentVakitName.lowercase()
                     .replace("ı", "i").replace("ö", "o").replace("ü", "u")
                     .replace("ş", "s").replace("ğ", "g").replace("ç", "c")
@@ -280,10 +280,16 @@ class AlarmService : Service() {
                 
                 if (vakitKey.isNotEmpty()) {
                     val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-                    val savedSound = prefs.getString("flutter.bildirim_sesi_$vakitKey", null)
+                    // Erken bildirim mi, vaktinde bildirim mi kontrol et
+                    val soundKey = if (isCurrentAlarmEarly) {
+                        "flutter.erken_bildirim_sesi_$vakitKey"
+                    } else {
+                        "flutter.bildirim_sesi_$vakitKey"
+                    }
+                    val savedSound = prefs.getString(soundKey, null)
                     if (!savedSound.isNullOrEmpty()) {
                         actualSoundFile = savedSound
-                        Log.d(TAG, "🔊 SharedPreferences'tan ses alındı: $vakitKey -> $actualSoundFile")
+                        Log.d(TAG, "🔊 SharedPreferences'tan ses alındı: $soundKey -> $actualSoundFile (Erken: $isCurrentAlarmEarly)")
                     }
                 }
             }

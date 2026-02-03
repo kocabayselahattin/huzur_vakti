@@ -36,10 +36,19 @@ class AlarmService {
         return false;
       }
 
+      // Ses dosyasını normalize et (uzantısız ve küçük harf)
+      String? normalizedSoundPath = soundPath;
+      if (soundPath != null && soundPath.isNotEmpty) {
+        normalizedSoundPath = soundPath.toLowerCase();
+        if (normalizedSoundPath.endsWith('.mp3')) {
+          normalizedSoundPath = normalizedSoundPath.substring(0, normalizedSoundPath.length - 4);
+        }
+        normalizedSoundPath = normalizedSoundPath.replaceAll(RegExp(r'[^a-z0-9_]'), '_');
+      }
       final result = await _channel.invokeMethod<bool>('scheduleAlarm', {
         'prayerName': prayerName,
         'triggerAtMillis': triggerAtMillis,
-        'soundPath': soundPath,
+        'soundPath': normalizedSoundPath,
         'useVibration': useVibration,
         'alarmId': alarmId ?? prayerName.hashCode,
         'isEarly': isEarly,

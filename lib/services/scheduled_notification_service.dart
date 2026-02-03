@@ -248,13 +248,15 @@ class ScheduledNotificationService {
               prefs.getInt('erken_$vakitKeyLower') ?? varsayilanErken;
 
           // Vaktinde alarm ses dosyası
-          final sesDosyasi =
+          final sesDosyasiRaw =
               prefs.getString('bildirim_sesi_$vakitKeyLower') ?? 'best.mp3';
+          final sesDosyasi = _getSoundResourceName(sesDosyasiRaw);
 
           // Erken bildirim ses dosyası
-          final erkenSesDosyasi =
+          final erkenSesDosyasiRaw =
               prefs.getString('erken_bildirim_sesi_$vakitKeyLower') ??
               'ding_dong.mp3';
+          final erkenSesDosyasi = _getSoundResourceName(erkenSesDosyasiRaw);
 
           // Vakit saatini parse et
           final parts = vakitSaati.split(':');
@@ -377,6 +379,8 @@ class ScheduledNotificationService {
                 soundPath: sesDosyasi,
                 useVibration: true,
                 alarmId: alarmId,
+                isEarly: false,
+                earlyMinutes: 0,
               );
 
               if (success) {
