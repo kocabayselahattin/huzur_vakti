@@ -133,6 +133,25 @@ class AlarmService : Service() {
         val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
         isSessizeAlEnabled = prefs.getBoolean("flutter.sessize_al", false)
         
+        // VAKTİNDE BİLDİRİM KONTROLÜ: Eğer bu erken bildirim değilse, vaktinde bildirim ayarını kontrol et
+        if (!isCurrentAlarmEarly) {
+            val vakitKey = normalizeVakitName(currentVakitName)
+            if (vakitKey.isNotEmpty()) {
+                // Varsayılan değerler: öğle, ikindi, akşam, yatsı için true
+                val defaultVaktinde = (vakitKey == "ogle" || vakitKey == "ikindi" || 
+                                       vakitKey == "aksam" || vakitKey == "yatsi")
+                val vaktindeBildirimAcik = prefs.getBoolean("flutter.vaktinde_$vakitKey", defaultVaktinde)
+                
+                Log.d(TAG, "🔔 Vaktinde bildirim kontrolü: vakitKey=$vakitKey, açık=$vaktindeBildirimAcik")
+                
+                if (!vaktindeBildirimAcik) {
+                    Log.d(TAG, "⏭️ Vaktinde bildirim kapalı - alarm atlanıyor: $currentVakitName")
+                    stopSelf()
+                    return
+                }
+            }
+        }
+        
         Log.d(TAG, "📵 Vakitlerde sessize al: $isSessizeAlEnabled, Erken bildirim: $isCurrentAlarmEarly")
         Log.d(TAG, "🔊 Alarm ses dosyası: $soundFile")
         
