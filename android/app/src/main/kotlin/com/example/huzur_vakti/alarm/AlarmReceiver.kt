@@ -70,14 +70,23 @@ class AlarmReceiver : BroadcastReceiver() {
                     }
                     val savedSound = prefs.getString(soundKey, null)
                     if (!savedSound.isNullOrEmpty()) {
-                        actualSoundPath = savedSound
-                        Log.d(TAG, "🔊 Ses dosyası SharedPreferences'tan alındı: $soundKey -> $actualSoundPath")
+                        // Ses dosyasını normalize et (uzantısız ve küçük harf)
+                        var normalizedSound = savedSound.lowercase()
+                            .replace(".mp3", "")
+                            .replace(" ", "_")
+                            .replace("-", "_")
+                        
+                        // Özel eşlemeler
+                        if (normalizedSound == "best_2015") normalizedSound = "best"
+                        
+                        actualSoundPath = normalizedSound
+                        Log.d(TAG, "🔊 Ses dosyası SharedPreferences'tan alındı ve normalize edildi: $soundKey -> '$savedSound' -> '$actualSoundPath'")
                     }
                 }
                 
                 // Hala null ise varsayılan ses (erken bildirim için ding_dong, vaktinde için best)
                 if (actualSoundPath.isNullOrEmpty()) {
-                    actualSoundPath = if (isEarly) "ding_dong.mp3" else "best.mp3"
+                    actualSoundPath = if (isEarly) "ding_dong" else "best"
                 }
             }
             
@@ -361,8 +370,17 @@ class AlarmReceiver : BroadcastReceiver() {
                             Log.d(TAG, "   - SharedPreferences değeri: '$savedSound'")
                             
                             if (!savedSound.isNullOrEmpty()) {
-                                soundFile = savedSound
-                                Log.d(TAG, "✅ [ALARM RECEIVER] Ses SharedPreferences'tan alındı: '$soundFile'")
+                                // Ses dosyasını normalize et (uzantısız ve küçük harf)
+                                var normalizedSound = savedSound.lowercase()
+                                    .replace(".mp3", "")
+                                    .replace(" ", "_")
+                                    .replace("-", "_")
+                                
+                                // Özel eşlemeler
+                                if (normalizedSound == "best_2015") normalizedSound = "best"
+                                
+                                soundFile = normalizedSound
+                                Log.d(TAG, "✅ [ALARM RECEIVER] Ses SharedPreferences'tan alındı ve normalize edildi: '$savedSound' -> '$soundFile'")
                             } else {
                                 Log.w(TAG, "⚠️ [ALARM RECEIVER] SharedPreferences'ta ses bulunamadı")
                             }

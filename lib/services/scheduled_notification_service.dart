@@ -338,6 +338,8 @@ class ScheduledNotificationService {
           }
 
           // 🔔 ALARM: Alarm ayarları
+          // ÖNEMLİ: Ana bildirim switch'i kapalıysa alarmları da atla!
+          // Bu sayede kullanıcı bildirimi kapattığında alarm çalmaz
           // Varsayılan: güneş hariç hepsi için true (imsak OFF ama alarm olabilir)
           // Güneş için de varsayılan açık - erken uyarı için gerekli
           final varsayilanAlarm =
@@ -349,11 +351,13 @@ class ScheduledNotificationService {
           final alarmAcik =
               prefs.getBool('alarm_$vakitKeyLower') ?? varsayilanAlarm;
           debugPrint(
-            '🔔 [$vakitKey] SharedPreferences: alarm_$vakitKeyLower=$alarmAcik',
+            '🔔 [$vakitKey] SharedPreferences: alarm_$vakitKeyLower=$alarmAcik, bildirimAcik=$bildirimAcik, vaktindeBildirim=$vaktindeBildirim',
           );
 
-          if (alarmAcik) {
-            // TAM VAKİT ALARMI
+          // ÖNEMLİ: Hem alarm açık olmalı HEM DE ana bildirim switch'i açık olmalı!
+          if (alarmAcik && bildirimAcik) {
+            // TAM VAKİT ALARMI - Sadece vaktinde bildirim açıksa çal!
+            // Kullanıcı vaktinde bildirimi kapattıysa tam vakit alarmı da kapanmalı
             var alarmZamani = DateTime(
               hedefTarih.year,
               hedefTarih.month,
@@ -364,7 +368,8 @@ class ScheduledNotificationService {
 
             debugPrint('   Tam vakit alarm zamanı: $alarmZamani, Şu an: $now');
 
-            if (alarmZamani.isAfter(now)) {
+            // ÖNEMLİ: vaktindeBildirim de açık olmalı!
+            if (vaktindeBildirim && alarmZamani.isAfter(now)) {
               // TAM VAKİT ALARMI için ID (son 2 hane: vakit indexi)
               final alarmId = AlarmService.generateAlarmId(
                 vakitKeyLower, // Örn: "ogle"
@@ -389,11 +394,16 @@ class ScheduledNotificationService {
               } else {
                 debugPrint('   ❌ Tam vakit alarmı zamanlanamadı');
               }
+            } else if (!vaktindeBildirim) {
+              debugPrint(
+                '   ⏭️ Vaktinde bildirim kapalı, tam vakit alarmı atlanıyor',
+              );
             } else {
               debugPrint('   ⏭️ Tam vakit alarm zamanı geçmiş, atlanıyor');
             }
 
-            // ERKEN ALARM (Vaktinden önce)
+            // ERKEN ALARM (Vaktinden önce) - Sadece erkenDakika > 0 ise çal
+            // erkenDakika = 0 ise kullanıcı erken bildirimi kapatmış demektir
             if (erkenDakika > 0) {
               var erkenAlarmZamani = alarmZamani.subtract(
                 Duration(minutes: erkenDakika),
@@ -430,7 +440,15 @@ class ScheduledNotificationService {
               } else {
                 debugPrint('   ⏭️ Erken alarm zamanı geçmiş, atlanıyor');
               }
+            } else {
+              debugPrint(
+                '   ⏭️ Erken bildirim kapalı (0 dk), erken alarm atlanıyor',
+              );
             }
+          } else if (!bildirimAcik) {
+            debugPrint('   ⏭️ Ana bildirim kapalı, tüm alarmlar atlanıyor');
+          } else {
+            debugPrint('   ⏭️ Alarm switch kapalı');
           }
         }
       }

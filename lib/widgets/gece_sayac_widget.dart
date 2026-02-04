@@ -224,11 +224,11 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
   }
 
   double _moonPhaseFraction(DateTime date) {
-    // 2000-01-06 18:14 UTC yeni ay referansı
-    final reference = DateTime.utc(2000, 1, 6, 18, 14);
-    final days = date.toUtc().difference(reference).inSeconds / 86400.0;
+    // Bilinen yeni ay tarihi: 29 Aralık 2024 (güncel referans - gun_donumu ile aynı)
+    final reference = DateTime.utc(2024, 12, 30, 22, 27);
+    final daysDiff = date.difference(reference).inHours / 24.0;
     const synodicMonth = 29.53058867;
-    final phase = (days % synodicMonth) / synodicMonth;
+    final phase = (daysDiff % synodicMonth) / synodicMonth;
     final normalizedPhase = phase < 0 ? phase + 1 : phase;
     // Faz değeri (0=yeni ay, 0.5=dolunay, 1=yeni ay)
     return normalizedPhase;

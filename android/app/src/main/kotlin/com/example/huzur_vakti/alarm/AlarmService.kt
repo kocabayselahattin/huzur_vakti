@@ -476,27 +476,40 @@ class AlarmService : Service() {
     private fun resolveSoundFile(soundFile: String): String {
         var actualSoundFile = soundFile
         
-        // Varsayılan ses ise SharedPreferences'tan vakit bazlı sesi al
-        if (actualSoundFile.isEmpty() || actualSoundFile == "ding_dong" || 
-            actualSoundFile == "ding_dong.mp3" || actualSoundFile == "best" || 
-            actualSoundFile == "best.mp3") {
-            
-            val vakitKey = normalizeVakitName(currentVakitName)
-            
-            if (vakitKey.isNotEmpty()) {
-                val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-                // Erken bildirim mi, vaktinde bildirim mi kontrol et
-                val soundKey = if (isCurrentAlarmEarly) {
-                    "flutter.erken_bildirim_sesi_$vakitKey"
-                } else {
-                    "flutter.bildirim_sesi_$vakitKey"
-                }
-                val savedSound = prefs.getString(soundKey, null)
-                if (!savedSound.isNullOrEmpty()) {
-                    actualSoundFile = savedSound
-                    Log.d(TAG, "🔊 SharedPreferences'tan ses alındı: $soundKey -> $actualSoundFile")
-                }
+        // ÖNEMLİ: Her zaman SharedPreferences'tan güncel ses ayarını kontrol et
+        // Çünkü kullanıcı ayarları değiştirmiş olabilir
+        val vakitKey = normalizeVakitName(currentVakitName)
+        
+        if (vakitKey.isNotEmpty()) {
+            val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+            // Erken bildirim mi, vaktinde bildirim mi kontrol et
+            val soundKey = if (isCurrentAlarmEarly) {
+                "flutter.erken_bildirim_sesi_$vakitKey"
+            } else {
+                "flutter.bildirim_sesi_$vakitKey"
             }
+            val savedSound = prefs.getString(soundKey, null)
+            Log.d(TAG, "🔊 SharedPreferences kontrol: $soundKey -> '$savedSound' (mevcut: '$actualSoundFile')")
+            
+            if (!savedSound.isNullOrEmpty()) {
+                // SharedPreferences'tan alınan değeri normalize et
+                var normalizedSound = savedSound.lowercase()
+                    .replace(".mp3", "")
+                    .replace(" ", "_")
+                    .replace("-", "_")
+                
+                // Özel eşlemeler
+                if (normalizedSound == "best_2015") normalizedSound = "best"
+                
+                actualSoundFile = normalizedSound
+                Log.d(TAG, "✅ SharedPreferences'tan ses alındı ve normalize edildi: '$savedSound' -> '$actualSoundFile'")
+            }
+        }
+        
+        // Hala boş ise varsayılan kullan
+        if (actualSoundFile.isEmpty()) {
+            actualSoundFile = if (isCurrentAlarmEarly) "ding_dong" else "best"
+            Log.d(TAG, "⚠️ Ses boş, varsayılan kullanılıyor: '$actualSoundFile'")
         }
         
         return actualSoundFile
