@@ -908,7 +908,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                     ),
                     child: Text(
                       _languageService['mute_during_prayer_desc'] ??
-                          'Alarm çaldıktan 1 dk sonra sessize alınır. Cuma namazı 60 dk, diğer vakitler 30 dk. Çık/Kal butonlu bildirim gösterilir.',
+                          'Cuma namazı 60 dk, diğer vakitler 30 dk. Çık/Kal butonlu bildirim gösterilir.',
                       style: const TextStyle(
                         color: Colors.white54,
                         fontSize: 12,

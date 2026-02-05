@@ -377,10 +377,6 @@ class AlarmService : Service() {
             var soundName = actualSoundFile.replace(".mp3", "").lowercase()
                 .replace(" ", "_").replace("-", "_")
             
-            if (soundName == "best_2015") {
-                soundName = "best"
-            }
-            
             Log.d(TAG, "🔍 Ses dosyası aranıyor: '$soundName'")
             
             val resId = resources.getIdentifier(soundName, "raw", packageName)
@@ -476,7 +472,8 @@ class AlarmService : Service() {
     private fun resolveSoundFile(soundFile: String): String {
         // SharedPreferences'tan güncel ses ayarını kontrol et
         val vakitKey = normalizeVakitName(currentVakitName)
-        
+        val intentSound = normalizeSoundName(soundFile)
+
         if (vakitKey.isNotEmpty()) {
             val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
             // Erken bildirim mi, vaktinde bildirim mi kontrol et
@@ -487,31 +484,47 @@ class AlarmService : Service() {
             }
             val savedSound = prefs.getString(soundKey, null)
             Log.d(TAG, "🔊 SharedPreferences kontrol: $soundKey -> '$savedSound' (intent'ten gelen: '$soundFile')")
-            
-            if (!savedSound.isNullOrEmpty()) {
-                // SharedPreferences'tan alınan değeri normalize et
-                var normalizedSound = savedSound.lowercase()
-                    .replace(".mp3", "")
-                    .replace(" ", "_")
-                    .replace("-", "_")
-                
-                // Özel eşlemeler
-                if (normalizedSound == "best_2015") normalizedSound = "best"
-                
-                Log.d(TAG, "✅ SharedPreferences'tan ses alındı: '$savedSound' -> '$normalizedSound'")
-                return normalizedSound
-            } else {
-                // SharedPreferences'ta değer yok - VARSAYILAN kullan (intent değerini KULLANMA)
-                val defaultSound = if (isCurrentAlarmEarly) "ding_dong" else "best"
-                Log.d(TAG, "⚠️ SharedPreferences'ta ses yok, varsayılan: '$defaultSound'")
-                return defaultSound
+
+            if (!savedSound.isNullOrEmpty() && savedSound != "custom") {
+                val normalizedSound = normalizeSoundName(savedSound)
+                if (normalizedSound.isNotEmpty()) {
+                    Log.d(TAG, "✅ SharedPreferences'tan ses alındı: '$savedSound' -> '$normalizedSound'")
+                    return normalizedSound
+                }
             }
+
+            // Prefs bos ya da custom ise intent sesini kullan
+            if (intentSound.isNotEmpty() && intentSound != "custom") {
+                Log.d(TAG, "✅ Intent ses kullaniliyor: '$soundFile' -> '$intentSound'")
+                return intentSound
+            }
+
+            val defaultSound = if (isCurrentAlarmEarly) "ding_dong" else "best"
+            Log.d(TAG, "⚠️ Ses bulunamadı, varsayılan: '$defaultSound'")
+            return defaultSound
         }
-        
-        // vakitKey boş ise varsayılan kullan
+
+        // vakitKey boş ise intent veya varsayılan kullan
+        if (intentSound.isNotEmpty() && intentSound != "custom") {
+            Log.d(TAG, "✅ Vakit key bos, intent ses kullaniliyor: '$intentSound'")
+            return intentSound
+        }
+
         val defaultSound = if (isCurrentAlarmEarly) "ding_dong" else "best"
-        Log.d(TAG, "⚠️ vakitKey boş, varsayılan: '$defaultSound'")
+        Log.d(TAG, "⚠️ vakitKey bos, varsayılan: '$defaultSound'")
         return defaultSound
+    }
+
+    private fun normalizeSoundName(soundName: String): String {
+        var name = soundName.trim().lowercase()
+        if (name.contains('/')) {
+            name = name.substringAfterLast('/')
+        }
+        if (name.endsWith(".mp3")) {
+            name = name.dropLast(4)
+        }
+        name = name.replace(" ", "_").replace("-", "_")
+        return name
     }
     
     /**

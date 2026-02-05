@@ -77,9 +77,6 @@ class AlarmReceiver : BroadcastReceiver() {
                             .replace(" ", "_")
                             .replace("-", "_")
                         
-                        // Özel eşlemeler
-                        if (normalizedSound == "best_2015") normalizedSound = "best"
-                        
                         actualSoundPath = normalizedSound
                         Log.d(TAG, "🔊 Ses dosyası SharedPreferences'tan alındı ve normalize edildi: $soundKey -> '$savedSound' -> '$actualSoundPath'")
                     }
@@ -377,9 +374,6 @@ class AlarmReceiver : BroadcastReceiver() {
                                     .replace(".mp3", "")
                                     .replace(" ", "_")
                                     .replace("-", "_")
-                                
-                                // Özel eşlemeler
-                                if (normalizedSound == "best_2015") normalizedSound = "best"
                                 
                                 soundFile = normalizedSound
                                 Log.d(TAG, "✅ [ALARM RECEIVER] Ses SharedPreferences'tan alındı ve normalize edildi: '$savedSound' -> '$soundFile'")

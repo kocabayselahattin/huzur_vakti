@@ -733,9 +733,6 @@ class ScheduledNotificationService {
     // Android resource adı için geçersiz karakterleri temizle
     name = name.replaceAll(RegExp(r'[^a-z0-9_]'), '_');
 
-    // Özel eşlemeler
-    if (name == 'best_2015') name = 'best';
-
     return name;
   }
 
