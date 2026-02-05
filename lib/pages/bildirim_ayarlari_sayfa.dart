@@ -470,9 +470,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       _gunlukIcerikBildirimleri,
     );
 
-    if (_sessizeAl) {
-      await DndService.schedulePrayerDnd();
-    } else {
+    // NOT: DndService artık kullanılmıyor - AlarmService "sessize_al" ayarını kontrol edip
+    // telefonu sessize alıyor. Çakışma önlendi.
+    // Eski DND zamanlayıcılarını temizle
+    if (!_sessizeAl) {
       await DndService.cancelPrayerDnd();
     }
 
@@ -500,38 +501,12 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
   }
 
   Future<void> _toggleSessizeAl(bool value) async {
-    if (value) {
-      final hasAccess = await DndService.hasPolicyAccess();
-      if (!hasAccess) {
-        final openSettings = await _showDndPermissionDialog();
-        if (openSettings == true) {
-          await DndService.openPolicySettings();
-        }
-        if (mounted) {
-          setState(() {
-            _sessizeAl = false;
-          });
-        }
-        return;
-      }
+    // NOT: DndService artık kullanılmıyor - AlarmService "sessize_al" ayarını
+    // kontrol edip telefonu sessize alıyor. Çakışma önlendi.
+    // Kullanıcı "Kal/Çık" butonlarıyla sessiz modu yönetebilir.
 
-      final scheduled = await DndService.schedulePrayerDnd();
-      if (!scheduled && mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _languageService['dnd_scheduling_failed'] ??
-                  'Sessize alma planlanamadı. Konum seçimi gerekli.',
-            ),
-            backgroundColor: Colors.orange,
-          ),
-        );
-        setState(() {
-          _sessizeAl = false;
-        });
-        return;
-      }
-    } else {
+    if (!value) {
+      // Sessize al kapatıldığında eski DND zamanlayıcılarını temizle
       await DndService.cancelPrayerDnd();
     }
 

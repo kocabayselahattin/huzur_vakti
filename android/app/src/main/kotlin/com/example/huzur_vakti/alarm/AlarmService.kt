@@ -474,10 +474,7 @@ class AlarmService : Service() {
      * Ses dosyası adını çözümle (SharedPreferences'tan veya varsayılan)
      */
     private fun resolveSoundFile(soundFile: String): String {
-        var actualSoundFile = soundFile
-        
-        // ÖNEMLİ: Her zaman SharedPreferences'tan güncel ses ayarını kontrol et
-        // Çünkü kullanıcı ayarları değiştirmiş olabilir
+        // SharedPreferences'tan güncel ses ayarını kontrol et
         val vakitKey = normalizeVakitName(currentVakitName)
         
         if (vakitKey.isNotEmpty()) {
@@ -489,7 +486,7 @@ class AlarmService : Service() {
                 "flutter.bildirim_sesi_$vakitKey"
             }
             val savedSound = prefs.getString(soundKey, null)
-            Log.d(TAG, "🔊 SharedPreferences kontrol: $soundKey -> '$savedSound' (mevcut: '$actualSoundFile')")
+            Log.d(TAG, "🔊 SharedPreferences kontrol: $soundKey -> '$savedSound' (intent'ten gelen: '$soundFile')")
             
             if (!savedSound.isNullOrEmpty()) {
                 // SharedPreferences'tan alınan değeri normalize et
@@ -501,18 +498,20 @@ class AlarmService : Service() {
                 // Özel eşlemeler
                 if (normalizedSound == "best_2015") normalizedSound = "best"
                 
-                actualSoundFile = normalizedSound
-                Log.d(TAG, "✅ SharedPreferences'tan ses alındı ve normalize edildi: '$savedSound' -> '$actualSoundFile'")
+                Log.d(TAG, "✅ SharedPreferences'tan ses alındı: '$savedSound' -> '$normalizedSound'")
+                return normalizedSound
+            } else {
+                // SharedPreferences'ta değer yok - VARSAYILAN kullan (intent değerini KULLANMA)
+                val defaultSound = if (isCurrentAlarmEarly) "ding_dong" else "best"
+                Log.d(TAG, "⚠️ SharedPreferences'ta ses yok, varsayılan: '$defaultSound'")
+                return defaultSound
             }
         }
         
-        // Hala boş ise varsayılan kullan
-        if (actualSoundFile.isEmpty()) {
-            actualSoundFile = if (isCurrentAlarmEarly) "ding_dong" else "best"
-            Log.d(TAG, "⚠️ Ses boş, varsayılan kullanılıyor: '$actualSoundFile'")
-        }
-        
-        return actualSoundFile
+        // vakitKey boş ise varsayılan kullan
+        val defaultSound = if (isCurrentAlarmEarly) "ding_dong" else "best"
+        Log.d(TAG, "⚠️ vakitKey boş, varsayılan: '$defaultSound'")
+        return defaultSound
     }
     
     /**

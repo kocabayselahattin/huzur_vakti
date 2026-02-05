@@ -56,6 +56,16 @@ Future<void> _initializeDefaultNotificationSettings(
     'yatsi': 'best.mp3',
   };
 
+  // Varsayılan erken bildirim sesleri (ding_dong)
+  const defaultErkenBildirimSesi = {
+    'imsak': 'ding_dong.mp3',
+    'gunes': 'ding_dong.mp3',
+    'ogle': 'ding_dong.mp3',
+    'ikindi': 'ding_dong.mp3',
+    'aksam': 'ding_dong.mp3',
+    'yatsi': 'ding_dong.mp3',
+  };
+
   // Varsayılan vaktinde hatırlat durumları
   // İmsak ve güneş kapalı, öğle, ikindi, akşam, yatsı açık
   const defaultVaktindeBildirim = {
@@ -93,6 +103,13 @@ Future<void> _initializeDefaultNotificationSettings(
       await prefs.setString(
         'bildirim_sesi_$vakit',
         defaultBildirimSesi[vakit]!,
+      );
+    }
+    // Erken bildirim sesi
+    if (!prefs.containsKey('erken_bildirim_sesi_$vakit')) {
+      await prefs.setString(
+        'erken_bildirim_sesi_$vakit',
+        defaultErkenBildirimSesi[vakit]!,
       );
     }
     // Vaktinde hatırlat
@@ -160,12 +177,9 @@ void main() async {
     }
   }
 
-  // Sessize alma ayarı açıksa DND zamanlamasını kur
+  // NOT: DndService artık kullanılmıyor - AlarmService "sessize_al" ayarını kontrol edip
+  // telefonu sessize alıyor. İki sistem çakışıyordu, şimdi sadece AlarmService aktif.
   final prefs = await SharedPreferences.getInstance();
-  final sessizeAl = prefs.getBool('sessize_al') ?? false;
-  if (sessizeAl) {
-    await DndService.schedulePrayerDnd();
-  }
 
   // 🔔 İlk kurulumda varsayılan erken bildirim değerlerini kaydet
   await _initializeDefaultNotificationSettings(prefs);
