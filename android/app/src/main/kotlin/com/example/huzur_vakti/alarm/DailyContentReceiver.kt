@@ -161,7 +161,47 @@ class DailyContentReceiver : BroadcastReceiver() {
                     val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, 0)
                     val title = intent.getStringExtra(EXTRA_TITLE) ?: "Huzur Vakti"
                     val body = intent.getStringExtra(EXTRA_BODY) ?: ""
-                    val soundFile = intent.getStringExtra(EXTRA_SOUND_FILE) ?: "ding_dong"
+                    var soundFile = intent.getStringExtra(EXTRA_SOUND_FILE) ?: "ding_dong"
+                    
+                    // ÖNEMLİ: Ses ayarını SharedPreferences'tan yeniden oku (kullanıcı değiştirmiş olabilir)
+                    val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
+                    val savedSound = prefs.getString("flutter.daily_content_notification_sound", null)
+                    
+                    Log.d(TAG, "🔊 Günlük içerik ses kontrolü:")
+                    Log.d(TAG, "   - Intent sound: '$soundFile'")
+                    Log.d(TAG, "   - SharedPreferences sound: '$savedSound'")
+                    
+                    // SharedPreferences'taki güncel ayarı kullan (varsa ve boş değilse)
+                    if (!savedSound.isNullOrEmpty() && savedSound != "custom") {
+                        var normalizedSaved = savedSound.lowercase()
+                            .replace(".mp3", "")
+                            .replace(" ", "_")
+                            .replace("-", "_")
+                            .replace(Regex("[^a-z0-9_]"), "_")
+                            .replace(Regex("_+"), "_")
+                            .trim('_')
+                        
+                        if (normalizedSaved.isNotEmpty()) {
+                            soundFile = normalizedSaved
+                            Log.d(TAG, "✅ SharedPreferences'tan güncel ses alındı: '$savedSound' -> '$soundFile'")
+                        }
+                    } else {
+                        // SharedPreferences'ta yoksa intent sesini normalize et
+                        var normalizedIntent = soundFile.lowercase()
+                            .replace(".mp3", "")
+                            .replace(" ", "_")
+                            .replace("-", "_")
+                            .replace(Regex("[^a-z0-9_]"), "_")
+                            .replace(Regex("_+"), "_")
+                            .trim('_')
+                        
+                        if (normalizedIntent.isNotEmpty()) {
+                            soundFile = normalizedIntent
+                        } else {
+                            soundFile = "ding_dong"
+                        }
+                        Log.d(TAG, "✅ Intent ses normalize edildi: -> '$soundFile'")
+                    }
                     
                     Log.d(TAG, "🔔 Günlük içerik bildirimi gösteriliyor: $title (ses: $soundFile)")
                     
@@ -270,25 +310,34 @@ class DailyContentReceiver : BroadcastReceiver() {
      */
     private fun playSoundViaMediaPlayer(context: Context, soundFile: String) {
         try {
+            // Ses dosyasını normalize et (zaten normalize edilmiş olmalı ama yine de kontrol)
             var soundResourceName = soundFile.replace(".mp3", "").lowercase()
                 .replace(" ", "_").replace("-", "_")
                 .replace(Regex("[^a-z0-9_]"), "_")
+                .replace(Regex("_+"), "_")
+                .trim('_')
             if (soundResourceName.isEmpty()) soundResourceName = "ding_dong"
             
             Log.d(TAG, "🔊 MediaPlayer ile ses çalınıyor: '$soundResourceName'")
             
             var resId = context.resources.getIdentifier(soundResourceName, "raw", context.packageName)
             
-            // Bulunamazsa ding_dong dene
+            // Bulunamazsa best dene, sonra ding_dong
             if (resId == 0) {
-                Log.w(TAG, "⚠️ Ses bulunamadı: $soundResourceName, ding_dong deneniyor")
+                Log.w(TAG, "⚠️ Ses bulunamadı: $soundResourceName, best deneniyor")
+                resId = context.resources.getIdentifier("best", "raw", context.packageName)
+            }
+            
+            if (resId == 0) {
+                Log.w(TAG, "⚠️ best de bulunamadı, ding_dong deneniyor")
                 resId = context.resources.getIdentifier("ding_dong", "raw", context.packageName)
             }
             
             if (resId != 0) {
                 val mediaPlayer = MediaPlayer()
+                // ALARM stream kullan - telefon ses seviyesinden bağımsız daha yüksek ses
                 val audioAttributes = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .setUsage(AudioAttributes.USAGE_ALARM)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build()
                 mediaPlayer.setAudioAttributes(audioAttributes)

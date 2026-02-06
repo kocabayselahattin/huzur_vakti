@@ -376,21 +376,38 @@ class AlarmService : Service() {
             
             Log.d(TAG, "🔊 Alarm sesi başlatılıyor: $actualSoundFile")
             
-            // Raw klasöründen ses dosyasını bul
+            // Raw klasöründen ses dosyasını bul - geliştirilmiş normalizasyon
             var soundName = actualSoundFile.replace(".mp3", "").lowercase()
                 .replace(" ", "_").replace("-", "_")
+                .replace(Regex("[^a-z0-9_]"), "_")
+                .replace(Regex("_+"), "_")
+                .trim('_')
+            
+            if (soundName.isEmpty()) soundName = "best"
             
             Log.d(TAG, "🔍 Ses dosyası aranıyor: '$soundName'")
             
-            val resId = resources.getIdentifier(soundName, "raw", packageName)
+            var resId = resources.getIdentifier(soundName, "raw", packageName)
+            
+            // Bulunamazsa best dene, sonra ding_dong
+            if (resId == 0) {
+                Log.w(TAG, "⚠️ Ses bulunamadı: $soundName - best deneniyor")
+                resId = resources.getIdentifier("best", "raw", packageName)
+            }
+            
+            if (resId == 0) {
+                Log.w(TAG, "⚠️ best de bulunamadı - ding_dong deneniyor")
+                resId = resources.getIdentifier("ding_dong", "raw", packageName)
+            }
             
             if (resId != 0) {
                 Log.d(TAG, "✅ Ses dosyası bulundu: $soundName (ID: $resId)")
                 
                 mediaPlayer = MediaPlayer()
                 
+                // ALARM stream kullan - daha yüksek ses seviyesi için
                 val audioAttributes = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .setUsage(AudioAttributes.USAGE_ALARM)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build()
                 mediaPlayer?.setAudioAttributes(audioAttributes)
@@ -403,38 +420,17 @@ class AlarmService : Service() {
                     afd.close()
                 }
             } else {
-                // Ses dosyası bulunamadı - ding_dong dene
-                Log.w(TAG, "⚠️ Ses dosyası bulunamadı: $soundName - ding_dong deneniyor")
-                val dingDongId = resources.getIdentifier("ding_dong", "raw", packageName)
-                if (dingDongId != 0) {
-                    mediaPlayer = MediaPlayer()
-                    
-                    val audioAttributes = AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .build()
-                    mediaPlayer?.setAudioAttributes(audioAttributes)
-                    
-                    val afd = resources.openRawResourceFd(dingDongId)
-                    try {
-                        mediaPlayer?.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-                        mediaPlayer?.prepare()
-                    } finally {
-                        afd.close()
-                    }
-                } else {
-                    // Varsayılan sistem bildirim sesi
-                    Log.w(TAG, "⚠️ Hiçbir ses dosyası bulunamadı - varsayılan bildirim sesi kullanılacak")
-                    val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                    mediaPlayer = MediaPlayer()
-                    val audioAttributes = AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .build()
-                    mediaPlayer?.setAudioAttributes(audioAttributes)
-                    mediaPlayer?.setDataSource(this@AlarmService, defaultUri)
-                    mediaPlayer?.prepare()
-                }
+                // Varsayılan sistem bildirim sesi
+                Log.w(TAG, "⚠️ Hiçbir ses dosyası bulunamadı - varsayılan bildirim sesi kullanılacak")
+                val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+                mediaPlayer = MediaPlayer()
+                val audioAttributes = AudioAttributes.Builder()
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .build()
+                mediaPlayer?.setAudioAttributes(audioAttributes)
+                mediaPlayer?.setDataSource(this@AlarmService, defaultUri)
+                mediaPlayer?.prepare()
             }
             
             // Ses tek seferde çalacak (loop yok)
@@ -471,59 +467,20 @@ class AlarmService : Service() {
     
     /**
      * Ses dosyası adını çözümle
-     * Öncelik sırası:
-     * 1. SharedPreferences'taki kullanıcı tercihi (erken/vaktinde ayrımı yapılır)
-     * 2. Intent'ten gelen ses (zamanlama sırasında doğru çözümlenmiş)
-     * 3. SharedPreferences'taki vaktinde ses (erken alarm için fallback)
-     * 4. Varsayılan ses ("best")
+     * ÖNEMLİ: Ses zaten AlarmReceiver'da doğru çözümlenmiş ve normalize edilmiş olarak geliyor
+     * Bu metot sadece son bir güvenlik kontrolü yapıyor
      */
     private fun resolveSoundFile(soundFile: String): String {
-        val vakitKey = normalizeVakitName(currentVakitName)
-        // Intent'ten gelen sesi normalize et - bu zaten zamanlama sırasında doğru çözümlenmiş
-        val intentSound = normalizeSoundName(soundFile)
-        val defaultSound = "best"
-
-        if (vakitKey.isNotEmpty()) {
-            val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
-            val earlyKey = "flutter.erken_bildirim_sesi_$vakitKey"
-            val onTimeKey = "flutter.bildirim_sesi_$vakitKey"
-            val primaryKey = if (isCurrentAlarmEarly) earlyKey else onTimeKey
-            val fallbackKey = if (isCurrentAlarmEarly) onTimeKey else earlyKey
-
-            val primarySound = prefs.getString(primaryKey, null)
-            val fallbackSound = prefs.getString(fallbackKey, null)
-            Log.d(TAG, "🔊 SharedPreferences kontrol: $primaryKey -> '$primarySound', fallback: $fallbackKey -> '$fallbackSound'")
-            Log.d(TAG, "🔊 Intent ses: '$intentSound'")
-
-            val resolvedSound = when {
-                // Kullanıcının seçtiği ses
-                !primarySound.isNullOrEmpty() && primarySound != "custom" -> primarySound
-                // Intent'ten gelen ses (zamanlama sırasında doğru çözümlenmiş)
-                intentSound.isNotEmpty() -> intentSound
-                // Vaktinde ses (erken alarm için fallback)
-                !fallbackSound.isNullOrEmpty() && fallbackSound != "custom" -> fallbackSound
-                else -> null
-            }
-
-            if (!resolvedSound.isNullOrEmpty()) {
-                val normalizedSound = normalizeSoundName(resolvedSound)
-                if (normalizedSound.isNotEmpty()) {
-                    Log.d(TAG, "✅ Ses çözümlendi: '$resolvedSound' -> '$normalizedSound'")
-                    return normalizedSound
-                }
-            }
-
-            Log.d(TAG, "⚠️ Ses bulunamadı, varsayılan: '$defaultSound'")
-            return defaultSound
+        // Intent'ten gelen ses zaten doğru - sadece normalize et
+        val normalizedSound = normalizeSoundName(soundFile)
+        
+        if (normalizedSound.isNotEmpty()) {
+            Log.d(TAG, "✅ Ses: '$soundFile' -> '$normalizedSound'")
+            return normalizedSound
         }
-
-        // vakitKey bos ise intent sesini veya varsayılanı kullan
-        if (intentSound.isNotEmpty()) {
-            Log.d(TAG, "✅ vakitKey boş, intent sesi kullanılıyor: '$intentSound'")
-            return intentSound
-        }
-        Log.d(TAG, "⚠️ vakitKey bos, varsayılan: '$defaultSound'")
-        return defaultSound
+        
+        Log.d(TAG, "⚠️ Ses boş, varsayılan: 'best'")
+        return "best"
     }
 
     private fun normalizeSoundName(soundName: String): String {
@@ -535,7 +492,10 @@ class AlarmService : Service() {
             name = name.dropLast(4)
         }
         name = name.replace(" ", "_").replace("-", "_")
-        return name
+            .replace(Regex("[^a-z0-9_]"), "_")
+            .replace(Regex("_+"), "_")
+            .trim('_')
+        return if (name.isEmpty()) "best" else name
     }
     
     /**
@@ -571,16 +531,16 @@ class AlarmService : Service() {
                 mediaPlayer = MediaPlayer.create(this@AlarmService, dingDongId)
                 mediaPlayer?.let {
                     val audioAttributes = AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                        .setUsage(AudioAttributes.USAGE_ALARM)
                         .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                         .build()
                     it.setAudioAttributes(audioAttributes)
                 }
             } else {
-                val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
                 mediaPlayer = MediaPlayer()
                 val audioAttributes = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+                    .setUsage(AudioAttributes.USAGE_ALARM)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
                     .build()
                 mediaPlayer?.setAudioAttributes(audioAttributes)
