@@ -223,15 +223,20 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
     return aylar[ay];
   }
 
-  double _moonPhaseFraction(DateTime date) {
-    // Bilinen yeni ay tarihi: 29 Aralık 2024 (güncel referans - gun_donumu ile aynı)
+  /// Ay fazını hesapla (0-7 arası 8 faz)
+  /// 0=Yeni Ay, 1=Hilal (büyüyen), 2=İlk Dördün, 3=Şişkin Ay (büyüyen)
+  /// 4=Dolunay, 5=Şişkin Ay (küçülen), 6=Son Dördün, 7=Hilal (küçülen)
+  int _getMoonPhaseIndex(DateTime date) {
+    // Bilinen yeni ay tarihi: 29 Aralık 2024 (gun_donumu_sayac_widget.dart ile aynı)
     final reference = DateTime.utc(2024, 12, 30, 22, 27);
-    final daysDiff = date.difference(reference).inHours / 24.0;
     const synodicMonth = 29.53058867;
+
+    final daysDiff = date.difference(reference).inHours / 24.0;
     final phase = (daysDiff % synodicMonth) / synodicMonth;
     final normalizedPhase = phase < 0 ? phase + 1 : phase;
-    // Faz değeri (0=yeni ay, 0.5=dolunay, 1=yeni ay)
-    return normalizedPhase;
+
+    // 0-1 arasındaki değeri 0-7 faz indeksine çevir
+    return ((normalizedPhase * 8) % 8).floor();
   }
 
   @override
@@ -312,7 +317,7 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
               child: CustomPaint(
                 size: const Size(50, 50),
                 painter: _MoonPhasePainter(
-                  phase: _moonPhaseFraction(DateTime.now()),
+                  phaseIndex: _getMoonPhaseIndex(DateTime.now()),
                   glowColor: primaryColor,
                   shadowColor: bgColor1,
                 ),
@@ -583,12 +588,12 @@ class _ProgressBarLinesPainter extends CustomPainter {
 }
 
 class _MoonPhasePainter extends CustomPainter {
-  final double phase;
+  final int phaseIndex; // 0-7 arası
   final Color glowColor;
   final Color shadowColor;
 
   _MoonPhasePainter({
-    required this.phase,
+    required this.phaseIndex,
     required this.glowColor,
     required this.shadowColor,
   });
@@ -598,36 +603,74 @@ class _MoonPhasePainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 
+    final moonPaint = Paint()
+      ..color = glowColor
+      ..style = PaintingStyle.fill;
+
+    final shadowPaint = Paint()
+      ..color = shadowColor
+      ..style = PaintingStyle.fill;
+
     final glowPaint = Paint()
-      ..color = glowColor.withOpacity(0.35)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 12)
-      ..isAntiAlias = true;
+      ..color = glowColor.withOpacity(0.3)
+      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
 
-    final lightPaint = Paint()
-      ..color = Colors.white.withOpacity(0.9)
-      ..style = PaintingStyle.fill
-      ..isAntiAlias = true;
-
-    final darkPaint = Paint()
-      ..color = shadowColor.withOpacity(0.9)
-      ..style = PaintingStyle.fill
-      ..isAntiAlias = true;
-
+    // Ay parlaması
     canvas.drawCircle(center, radius, glowPaint);
 
-    canvas.saveLayer(Offset.zero & size, Paint());
-    canvas.drawCircle(center, radius, lightPaint);
+    // Ayın her zaman görünen parlak yüzeyi
+    canvas.drawCircle(center, radius, moonPaint);
 
-    // Gölge yönü tersine çevrildi (sağdan sola)
-    final t = phase <= 0.5 ? (phase / 0.5) : ((1 - phase) / 0.5);
-    final dx = (phase <= 0.5 ? 1 : -1) * (t * 2 * radius); // Yön tersine
-    canvas.drawCircle(center.translate(dx, 0), radius, darkPaint);
-    canvas.restore();
+    // Gölgeyi çizmek için path
+    final shadowPath = Path();
+
+    // Faz 0 (Yeni Ay) -> Tamamen gölge
+    if (phaseIndex == 0) {
+      canvas.drawCircle(center, radius, shadowPaint);
+      return;
+    }
+    // Faz 4 (Dolunay) -> Gölge yok
+    if (phaseIndex == 4) {
+      return;
+    }
+
+    // Diğer fazlar için gölgeyi hesapla
+    // -1 ile 1 arasında bir değer. -1: tam gölge, 0: yarım, 1: tam aydınlık
+    double lightFraction;
+    bool isWaxing = phaseIndex < 4; // Büyüyen evre mi?
+
+    if (isWaxing) {
+      // 1, 2, 3 -> Büyüyen evreler
+      lightFraction = (phaseIndex / 4.0) * 2.0 - 1.0;
+    } else {
+      // 5, 6, 7 -> Küçülen evreler
+      lightFraction = ((8 - phaseIndex) / 4.0) * 2.0 - 1.0;
+    }
+
+    // Elipsin x eksenindeki yarıçapı
+    final xRadius = radius * lightFraction.abs();
+
+    // Gölge elipsinin oluşturulacağı dikdörtgen
+    final rect = Rect.fromCenter(center: center, width: xRadius * 2, height: size.height);
+
+    shadowPath.addOval(rect);
+
+    // Büyüyen evrede (1, 2, 3) sol taraf gölgeli
+    // Küçülen evrede (5, 6, 7) sağ taraf gölgeli
+    if (isWaxing) {
+      // Sol tarafı kliple
+      canvas.clipRect(Rect.fromLTWH(0, 0, center.dx, size.height));
+    } else {
+      // Sağ tarafı kliple
+      canvas.clipRect(Rect.fromLTWH(center.dx, 0, center.dx, size.height));
+    }
+
+    canvas.drawPath(shadowPath, shadowPaint);
   }
 
   @override
   bool shouldRepaint(covariant _MoonPhasePainter oldDelegate) {
-    return oldDelegate.phase != phase ||
+    return oldDelegate.phaseIndex != phaseIndex ||
         oldDelegate.glowColor != glowColor ||
         oldDelegate.shadowColor != shadowColor;
   }

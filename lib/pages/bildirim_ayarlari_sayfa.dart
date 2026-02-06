@@ -778,45 +778,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       }
     }
   }
-
-  Future<bool?> _showDndPermissionDialog() {
-    return showDialog<bool>(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: const Color(0xFF2B3151),
-          title: Text(
-            _languageService['dnd_permission_title'] ?? 'Sessize Alma İzni',
-            style: const TextStyle(color: Colors.white),
-          ),
-          content: Text(
-            _languageService['dnd_permission_message'] ??
-                'Vakitlerde sessize almak için sistem izni gerekiyor. İzin vermek ister misiniz?',
-            style: const TextStyle(color: Colors.white70),
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context, false),
-              child: Text(
-                _languageService['give_up'] ?? 'Vazgeç',
-                style: const TextStyle(color: Colors.white70),
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () => Navigator.pop(context, true),
-              style: ElevatedButton.styleFrom(
-                backgroundColor: Colors.orangeAccent,
-              ),
-              child: Text(
-                _languageService['allow'] ?? 'İzin Ver',
-                style: const TextStyle(color: Colors.black),
-              ),
-            ),
-          ],
-        );
-      },
-    );
-  }
+  // ... existing code ...
 
   @override
   Widget build(BuildContext context) {

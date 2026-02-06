@@ -71,7 +71,6 @@ class AlarmService : Service() {
         }
     }
     
-    private var mediaPlayer: MediaPlayer? = null
     private var vibrator: Vibrator? = null
     private var isPlaying = false
     private var currentVakitName = ""
@@ -79,15 +78,12 @@ class AlarmService : Service() {
     private var isSessizeAlEnabled = false      // Vakitlerde sessize al ayarı
     private var isCurrentAlarmEarly = false     // Mevcut alarm erken bildirim mi?
     private var wasPhoneSilentBefore = false    // Alarm başlamadan telefon sessiz miydi?
-    private var mediaSession: MediaSession? = null
     private var screenOffReceiver: BroadcastReceiver? = null
     private val handler = Handler(Looper.getMainLooper())
     
     override fun onCreate() {
         super.onCreate()
         instance = this
-        createNotificationChannels()
-        setupMediaSession()
         setupScreenOffReceiver()
         Log.d(TAG, "🔔 AlarmService oluşturuldu")
     }
@@ -128,22 +124,19 @@ class AlarmService : Service() {
         val soundFile = intent?.getStringExtra(AlarmReceiver.EXTRA_SOUND_FILE) ?: "best"
         isCurrentAlarmEarly = intent?.getBooleanExtra(AlarmReceiver.EXTRA_IS_EARLY, false) ?: false
         val earlyMinutes = intent?.getIntExtra(AlarmReceiver.EXTRA_EARLY_MINUTES, 0) ?: 0
-        
-        // Vakitlerde sessize al ayarı kontrol et
+
         val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
         isSessizeAlEnabled = prefs.getBoolean("flutter.sessize_al", false)
-        
-        // VAKTİNDE BİLDİRİM KONTROLÜ: Eğer bu erken bildirim değilse, vaktinde bildirim ayarını kontrol et
+
         if (!isCurrentAlarmEarly) {
             val vakitKey = normalizeVakitName(currentVakitName)
             if (vakitKey.isNotEmpty()) {
-                // Varsayılan değerler: öğle, ikindi, akşam, yatsı için true
-                val defaultVaktinde = (vakitKey == "ogle" || vakitKey == "ikindi" || 
-                                       vakitKey == "aksam" || vakitKey == "yatsi")
+                val defaultVaktinde = (vakitKey == "ogle" || vakitKey == "ikindi" ||
+                        vakitKey == "aksam" || vakitKey == "yatsi")
                 val vaktindeBildirimAcik = prefs.getBoolean("flutter.vaktinde_$vakitKey", defaultVaktinde)
-                
+
                 Log.d(TAG, "🔔 Vaktinde bildirim kontrolü: vakitKey=$vakitKey, açık=$vaktindeBildirimAcik")
-                
+
                 if (!vaktindeBildirimAcik) {
                     Log.d(TAG, "⏭️ Vaktinde bildirim kapalı - alarm atlanıyor: $currentVakitName")
                     stopSelf()
@@ -151,52 +144,50 @@ class AlarmService : Service() {
                 }
             }
         }
-        
+
         Log.d(TAG, "📵 Vakitlerde sessize al: $isSessizeAlEnabled, Erken bildirim: $isCurrentAlarmEarly")
         Log.d(TAG, "🔊 Alarm ses dosyası: $soundFile")
-        
-        // Alarm aktif flag'ini ayarla
+
         setAlarmActiveFlag(true)
-        
-        // Foreground service bildirimi oluştur
-        val notification = createAlarmNotification(currentVakitName, currentVakitTime, isCurrentAlarmEarly, earlyMinutes)
-        startForeground(NOTIFICATION_ID, notification)
-        
-        // ÖNEMLİ: Telefon sessiz modda mı kontrol et
+
         val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
         val ringerMode = audioManager.ringerMode
-        wasPhoneSilentBefore = (ringerMode == AudioManager.RINGER_MODE_SILENT || 
-                               ringerMode == AudioManager.RINGER_MODE_VIBRATE)
-        
+        wasPhoneSilentBefore = (ringerMode == AudioManager.RINGER_MODE_SILENT ||
+                ringerMode == AudioManager.RINGER_MODE_VIBRATE)
+
         Log.d(TAG, "📱 Telefon modu: $ringerMode (NORMAL=2, VIBRATE=1, SILENT=0)")
         Log.d(TAG, "📱 Telefon sessiz mi: $wasPhoneSilentBefore")
-        
+
+        var soundUri: android.net.Uri? = null
+        if (!wasPhoneSilentBefore) {
+            val soundName = resolveSoundFile(soundFile)
+            val resId = resources.getIdentifier(soundName, "raw", packageName)
+            if (resId != 0) {
+                soundUri = android.net.Uri.parse("android.resource://$packageName/$resId")
+            }
+        }
+
+        createNotificationChannels(soundUri)
+
+        val notification = createAlarmNotification(currentVakitName, currentVakitTime, isCurrentAlarmEarly, earlyMinutes, soundUri)
+        startForeground(NOTIFICATION_ID, notification)
+
         if (wasPhoneSilentBefore) {
-            // TELEFON SESSİZ MODDA - Sadece titreşim yap, ses çalma
-            Log.d(TAG, "🔇 Telefon sessiz modda - SADECE TİTREŞİM yapılacak")
             startVibration()
-            
-            // 5 saniye titreşimden sonra kapat
             handler.postDelayed({
                 stopVibration()
                 setAlarmActiveFlag(false)
-                
-                // Erken bildirim değilse ve sessize al açıksa, bildirim göster
                 if (!isCurrentAlarmEarly && isSessizeAlEnabled) {
                     showSilentModeNotification()
                 }
-                
                 stopForeground(STOP_FOREGROUND_REMOVE)
                 stopSelf()
             }, 5000)
         } else {
-            // TELEFON NORMAL MODDA - Ses + titreşim çal
-            Log.d(TAG, "🔊 Telefon normal modda - SES VE TİTREŞİM çalınacak")
-            playAlarmSound(soundFile)
-            startVibration()
+            // Ses ve titreşim bildirim tarafından yönetilecek
+            isPlaying = true // Set playing true to handle stop actions
         }
-        
-        // Kilit ekranı activity'sini başlat
+
         startLockScreenActivity(currentVakitName, currentVakitTime, isCurrentAlarmEarly, earlyMinutes)
     }
     
@@ -206,7 +197,6 @@ class AlarmService : Service() {
     private fun handleStopAlarm() {
         Log.d(TAG, "🔇 Alarm durduruluyor...")
         
-        stopAlarmSound()
         stopVibration()
         setAlarmActiveFlag(false)
         handler.removeCallbacksAndMessages(null)
@@ -228,7 +218,6 @@ class AlarmService : Service() {
     private fun handleStaySilent() {
         Log.d(TAG, "🔇 'Kal' tıklandı - sessiz modda kalınıyor")
         
-        stopAlarmSound()
         stopVibration()
         setAlarmActiveFlag(false)
         handler.removeCallbacksAndMessages(null)
@@ -249,7 +238,6 @@ class AlarmService : Service() {
     private fun handleExitSilent() {
         Log.d(TAG, "🔊 'Çık' tıklandı - normal moda dönülüyor")
         
-        stopAlarmSound()
         stopVibration()
         setAlarmActiveFlag(false)
         handler.removeCallbacksAndMessages(null)
@@ -264,10 +252,10 @@ class AlarmService : Service() {
         stopSelf()
     }
     
-    private fun createNotificationChannels() {
+    private fun createNotificationChannels(soundUri: android.net.Uri?) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val notificationManager = getSystemService(NotificationManager::class.java)
-            
+
             // Alarm kanalı
             val alarmChannel = NotificationChannel(
                 CHANNEL_ID,
@@ -278,10 +266,14 @@ class AlarmService : Service() {
                 setBypassDnd(true)
                 lockscreenVisibility = Notification.VISIBILITY_PUBLIC
                 setShowBadge(true)
-                setSound(null, null)
+                val audioAttributes = AudioAttributes.Builder()
+                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setUsage(AudioAttributes.USAGE_ALARM)
+                    .build()
+                setSound(soundUri, audioAttributes)
             }
             notificationManager.createNotificationChannel(alarmChannel)
-            
+
             // Sessiz mod kanalı
             val silentChannel = NotificationChannel(
                 SILENT_MODE_CHANNEL_ID,
@@ -296,7 +288,7 @@ class AlarmService : Service() {
         }
     }
     
-    private fun createAlarmNotification(vakitName: String, vakitTime: String, isEarly: Boolean, earlyMinutes: Int): Notification {
+    private fun createAlarmNotification(vakitName: String, vakitTime: String, isEarly: Boolean, earlyMinutes: Int, soundUri: android.net.Uri?): Notification {
         val mainIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
@@ -304,8 +296,7 @@ class AlarmService : Service() {
             this, 0, mainIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        
-        // Alarmı durdur butonu
+
         val stopIntent = Intent(this, AlarmService::class.java).apply {
             action = ACTION_STOP_ALARM
         }
@@ -313,24 +304,23 @@ class AlarmService : Service() {
             this, 1, stopIntent,
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
-        
+
         val title = if (isEarly) {
             "$vakitName Vakti Yaklaşıyor"
         } else {
             "$vakitName Vakti Girdi"
         }
-        
+
         val body = if (isEarly) {
             "$vakitName vaktine $earlyMinutes dakika kaldı"
         } else {
             "$vakitName vakti girdi. Hayırlı ibadetler!"
         }
-        
+
         val builder = NotificationCompat.Builder(this, CHANNEL_ID)
             .setSmallIcon(R.mipmap.ic_launcher)
             .setContentTitle(title)
             .setContentText(body)
-            .setSound(null)
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
@@ -339,8 +329,11 @@ class AlarmService : Service() {
             .setAutoCancel(false)
             .setOngoing(false)
             .addAction(android.R.drawable.ic_menu_close_clear_cancel, "Kapat", stopPendingIntent)
-        
-        // VAKTİNDE BİLDİRİM VE SESSİZE AL AÇIKSA: Kal ve Çık butonları ekle
+
+        if (soundUri != null) {
+            builder.setSound(soundUri)
+        }
+
         if (!isEarly && isSessizeAlEnabled) {
             val stayIntent = Intent(this, AlarmService::class.java).apply {
                 action = ACTION_STAY_SILENT
@@ -350,7 +343,7 @@ class AlarmService : Service() {
                 PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
             )
             builder.addAction(android.R.drawable.ic_lock_silent_mode, "Kal (Sessiz)", stayPendingIntent)
-            
+
             val exitIntent = Intent(this, AlarmService::class.java).apply {
                 action = ACTION_EXIT_SILENT
             }
@@ -360,115 +353,10 @@ class AlarmService : Service() {
             )
             builder.addAction(android.R.drawable.ic_lock_silent_mode_off, "Çık (Normal)", exitPendingIntent)
         }
-        
+
         return builder.build()
     }
-    
-    /**
-     * Alarm sesini çal
-     */
-    private fun playAlarmSound(soundFile: String) {
-        try {
-            stopAlarmSound() // Önceki sesi durdur
-            
-            // Ses dosyası adını belirle
-            val actualSoundFile = resolveSoundFile(soundFile)
-            
-            Log.d(TAG, "🔊 Alarm sesi başlatılıyor: $actualSoundFile")
-            
-            // Raw klasöründen ses dosyasını bul
-            var soundName = actualSoundFile.replace(".mp3", "").lowercase()
-                .replace(" ", "_").replace("-", "_")
-            
-            Log.d(TAG, "🔍 Ses dosyası aranıyor: '$soundName'")
-            
-            val resId = resources.getIdentifier(soundName, "raw", packageName)
-            
-            if (resId != 0) {
-                Log.d(TAG, "✅ Ses dosyası bulundu: $soundName (ID: $resId)")
-                
-                mediaPlayer = MediaPlayer()
-                
-                val audioAttributes = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-                mediaPlayer?.setAudioAttributes(audioAttributes)
-                
-                val afd = resources.openRawResourceFd(resId)
-                try {
-                    mediaPlayer?.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-                    mediaPlayer?.prepare()
-                } finally {
-                    afd.close()
-                }
-            } else {
-                // Ses dosyası bulunamadı - ding_dong dene
-                Log.w(TAG, "⚠️ Ses dosyası bulunamadı: $soundName - ding_dong deneniyor")
-                val dingDongId = resources.getIdentifier("ding_dong", "raw", packageName)
-                if (dingDongId != 0) {
-                    mediaPlayer = MediaPlayer()
-                    
-                    val audioAttributes = AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .build()
-                    mediaPlayer?.setAudioAttributes(audioAttributes)
-                    
-                    val afd = resources.openRawResourceFd(dingDongId)
-                    try {
-                        mediaPlayer?.setDataSource(afd.fileDescriptor, afd.startOffset, afd.length)
-                        mediaPlayer?.prepare()
-                    } finally {
-                        afd.close()
-                    }
-                } else {
-                    // Varsayılan sistem bildirim sesi
-                    Log.w(TAG, "⚠️ Hiçbir ses dosyası bulunamadı - varsayılan bildirim sesi kullanılacak")
-                    val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                    mediaPlayer = MediaPlayer()
-                    val audioAttributes = AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .build()
-                    mediaPlayer?.setAudioAttributes(audioAttributes)
-                    mediaPlayer?.setDataSource(this@AlarmService, defaultUri)
-                    mediaPlayer?.prepare()
-                }
-            }
-            
-            // Ses tek seferde çalacak (loop yok)
-            mediaPlayer?.isLooping = false
-            
-            // Ses bittiğinde
-            mediaPlayer?.setOnCompletionListener {
-                Log.d(TAG, "🔊 Alarm sesi tamamlandı")
-                stopVibration()
-                isPlaying = false
-                setAlarmActiveFlag(false)
-                
-                // Vaktinde bildirim VE sessize al açıksa VE telefon başta sessiz değilse telefonu sessize al
-                if (!isCurrentAlarmEarly && isSessizeAlEnabled && !wasPhoneSilentBefore) {
-                    Log.d(TAG, "🔇 Vaktinde bildirim sesi bitti - telefon sessize alınıyor")
-                    setSilentMode(true)
-                    showSilentModeNotification()
-                }
-                
-                stopForeground(STOP_FOREGROUND_REMOVE)
-                stopSelf()
-            }
-            
-            mediaPlayer?.start()
-            isPlaying = true
-            Log.d(TAG, "🔊 Alarm sesi çalıyor: $actualSoundFile")
-            
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Alarm sesi çalma hatası: ${e.message}")
-            e.printStackTrace()
-            handleSoundError()
-        }
-    }
-    
+
     /**
      * Ses dosyası adını çözümle
      * Öncelik sırası:
@@ -566,94 +454,14 @@ class AlarmService : Service() {
      */
     private fun handleSoundError() {
         try {
-            val dingDongId = resources.getIdentifier("ding_dong", "raw", packageName)
-            if (dingDongId != 0) {
-                mediaPlayer = MediaPlayer.create(this@AlarmService, dingDongId)
-                mediaPlayer?.let {
-                    val audioAttributes = AudioAttributes.Builder()
-                        .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                        .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                        .build()
-                    it.setAudioAttributes(audioAttributes)
-                }
-            } else {
-                val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
-                mediaPlayer = MediaPlayer()
-                val audioAttributes = AudioAttributes.Builder()
-                    .setUsage(AudioAttributes.USAGE_NOTIFICATION)
-                    .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
-                    .build()
-                mediaPlayer?.setAudioAttributes(audioAttributes)
-                mediaPlayer?.setDataSource(this@AlarmService, defaultUri)
-                mediaPlayer?.prepare()
-            }
-            
-            mediaPlayer?.apply {
-                isLooping = false
-                setOnCompletionListener {
-                    stopVibration()
-                    this@AlarmService.isPlaying = false
-                    setAlarmActiveFlag(false)
-                    
-                    if (!isCurrentAlarmEarly && isSessizeAlEnabled && !wasPhoneSilentBefore) {
-                        setSilentMode(true)
-                        showSilentModeNotification()
-                    }
-                    
-                    stopForeground(STOP_FOREGROUND_REMOVE)
-                    stopSelf()
-                }
-                start()
-            }
-            this@AlarmService.isPlaying = true
+            val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_ALARM)
+            val notification = NotificationCompat.Builder(this, CHANNEL_ID)
+                .setSound(defaultUri)
+                .build()
+            val notificationManager = getSystemService(Context.NOTIFICATION_SERVICE) as NotificationManager
+            notificationManager.notify(NOTIFICATION_ID, notification)
         } catch (e2: Exception) {
             Log.e(TAG, "❌ Fallback ses de çalınamadı: ${e2.message}")
-        }
-    }
-    
-    private fun stopAlarmSound() {
-        try {
-            mediaPlayer?.apply {
-                if (isPlaying) {
-                    stop()
-                }
-                release()
-            }
-            mediaPlayer = null
-            this.isPlaying = false
-            Log.d(TAG, "🔇 Alarm sesi durduruldu")
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Ses durdurma hatası: ${e.message}")
-        }
-    }
-    
-    /**
-     * Titreşimi başlat - tekrarlı pattern
-     */
-    private fun startVibration() {
-        try {
-            vibrator = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-                val vibratorManager = getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager
-                vibratorManager.defaultVibrator
-            } else {
-                @Suppress("DEPRECATION")
-                getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
-            }
-            
-            // Titreşim paterni - bekle, titret, bekle, titret...
-            val pattern = longArrayOf(0, 500, 200, 500, 200, 500, 200, 500)
-            
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                // 0 = sonsuz döngü
-                vibrator?.vibrate(VibrationEffect.createWaveform(pattern, 0))
-            } else {
-                @Suppress("DEPRECATION")
-                vibrator?.vibrate(pattern, 0)
-            }
-            
-            Log.d(TAG, "📳 Titreşim başlatıldı")
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ Titreşim hatası: ${e.message}")
         }
     }
     
@@ -685,45 +493,7 @@ class AlarmService : Service() {
             Log.e(TAG, "❌ Kilit ekranı activity hatası: ${e.message}")
         }
     }
-    
-    /**
-     * MediaSession ile ses tuşlarını dinle
-     */
-    private fun setupMediaSession() {
-        try {
-            mediaSession = MediaSession(this, "HuzurVaktiAlarm").apply {
-                setCallback(object : MediaSession.Callback() {
-                    override fun onMediaButtonEvent(mediaButtonIntent: Intent): Boolean {
-                        val keyEvent = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT, KeyEvent::class.java)
-                        } else {
-                            @Suppress("DEPRECATION")
-                            mediaButtonIntent.getParcelableExtra(Intent.EXTRA_KEY_EVENT)
-                        }
-                        
-                        if (keyEvent?.action == KeyEvent.ACTION_DOWN) {
-                            when (keyEvent.keyCode) {
-                                KeyEvent.KEYCODE_VOLUME_UP,
-                                KeyEvent.KEYCODE_VOLUME_DOWN,
-                                KeyEvent.KEYCODE_HEADSETHOOK,
-                                KeyEvent.KEYCODE_MEDIA_PLAY_PAUSE -> {
-                                    Log.d(TAG, "🎮 Ses tuşu ile alarm durduruldu")
-                                    handleStopAlarm()
-                                    return true
-                                }
-                            }
-                        }
-                        return super.onMediaButtonEvent(mediaButtonIntent)
-                    }
-                })
-                isActive = true
-            }
-            Log.d(TAG, "🎧 MediaSession kuruldu")
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ MediaSession hatası: ${e.message}")
-        }
-    }
-    
+
     /**
      * Ekran kapandığında (güç tuşu) alarmı durdur
      */
@@ -751,17 +521,8 @@ class AlarmService : Service() {
     }
     
     override fun onDestroy() {
-        stopAlarmSound()
         stopVibration()
         handler.removeCallbacksAndMessages(null)
-        
-        try {
-            mediaSession?.isActive = false
-            mediaSession?.release()
-            mediaSession = null
-        } catch (e: Exception) {
-            Log.e(TAG, "❌ MediaSession temizleme hatası: ${e.message}")
-        }
         
         try {
             screenOffReceiver?.let {

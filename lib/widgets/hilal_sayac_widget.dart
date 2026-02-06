@@ -216,7 +216,7 @@ class _HilalSayacWidgetState extends State<HilalSayacWidget>
             top: 16,
             child: CustomPaint(
               size: const Size(40, 40),
-              painter: _HilalPainter(phase: _moonPhaseFraction(DateTime.now())),
+              painter: _HilalPainter(phase: _getMoonPhaseIndex(DateTime.now())),
             ),
           ),
           // İçerik
@@ -362,20 +362,21 @@ class _HilalSayacWidgetState extends State<HilalSayacWidget>
     return months[month - 1];
   }
 
-  double _moonPhaseFraction(DateTime date) {
-    // Bilinen yeni ay tarihi: 29 Aralık 2024 (güncel referans - gun_donumu ile aynı)
+  int _getMoonPhaseIndex(DateTime date) {
+    // Bilinen yeni ay tarihi: 29 Aralık 2024 (daha güncel referans)
     final reference = DateTime.utc(2024, 12, 30, 22, 27);
-    final daysDiff = date.difference(reference).inHours / 24.0;
     const synodicMonth = 29.53058867;
+
+    final daysDiff = date.difference(reference).inHours / 24.0;
     final phase = (daysDiff % synodicMonth) / synodicMonth;
-    final normalizedPhase = phase < 0 ? phase + 1 : phase;
-    // Faz değeri (0=yeni ay, 0.5=dolunay, 1=yeni ay)
-    return normalizedPhase;
+
+    // 0-1 arasındaki değeri 0-7 faz indeksine çevir
+    return ((phase * 8) % 8).floor();
   }
 }
 
 class _HilalPainter extends CustomPainter {
-  final double phase;
+  final int phase; // Değişiklik: double yerine int
 
   _HilalPainter({required this.phase});
 
@@ -384,35 +385,42 @@ class _HilalPainter extends CustomPainter {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2;
 
-    final glowPaint = Paint()
-      ..color = Colors.amber.withOpacity(0.25)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 10)
-      ..isAntiAlias = true;
-
     final lightPaint = Paint()
       ..color = Colors.amber.shade200
-      ..style = PaintingStyle.fill
-      ..isAntiAlias = true;
+      ..style = PaintingStyle.fill;
 
     final darkPaint = Paint()
-      ..color = Colors.black.withOpacity(0.75)
-      ..style = PaintingStyle.fill
-      ..isAntiAlias = true;
+      ..color = const Color(0xFF1B263B) // Arka plan rengi
+      ..style = PaintingStyle.fill;
 
-    canvas.drawCircle(center, radius, glowPaint);
-
-    canvas.saveLayer(Offset.zero & size, Paint());
+    // Ay'ı çiz
     canvas.drawCircle(center, radius, lightPaint);
 
-    // Gölge yönü tersine çevrildi (sağdan sola)
-    final t = phase <= 0.5 ? (phase / 0.5) : ((1 - phase) / 0.5);
-    final dx = (phase <= 0.5 ? 1 : -1) * (t * 2 * radius); // Yön tersine
-    canvas.drawCircle(center.translate(dx, 0), radius, darkPaint);
+    // Gölgeyi çiz
+    final rect = Rect.fromCircle(center: center, radius: radius);
+    canvas.saveLayer(rect, Paint());
+    canvas.drawCircle(center, radius, lightPaint);
+
+    // Faz'a göre gölgeyi ayarla
+    double xOffset;
+    if (phase < 4) { // Büyüyen faz
+      xOffset = radius * 2 * (1 - (phase / 4.0));
+    } else { // Küçülen faz
+      xOffset = -radius * 2 * ((phase - 4) / 4.0);
+    }
+
+    canvas.drawCircle(
+      center.translate(xOffset, 0),
+      radius,
+      darkPaint,
+    );
+
     canvas.restore();
   }
 
   @override
-  bool shouldRepaint(covariant CustomPainter oldDelegate) => true;
+  bool shouldRepaint(covariant _HilalPainter oldDelegate) =>
+      oldDelegate.phase != phase;
 }
 
 class _StarPainter extends CustomPainter {
