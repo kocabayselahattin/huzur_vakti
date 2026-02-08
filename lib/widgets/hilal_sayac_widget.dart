@@ -486,7 +486,7 @@ class _MoonPhasePainter extends CustomPainter {
     }
 
     final shadowRatio = 1 - math.pow(illumination, 0.35).toDouble();
-    final isWaxing = phase < 0.5;
+    final isWaxing = phase >= 0.5;
 
     final path = Path();
 

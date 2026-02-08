@@ -14,15 +14,18 @@ class ImsakiyeSayfa extends StatefulWidget {
 
 class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
   final LanguageService _languageService = LanguageService();
-  final ScrollController _scrollController = ScrollController();
+  final PageController _pageController = PageController(initialPage: 12);
+  final Set<String> _autoScrolledMonths = {};
+  int _currentPage = 12;
+  int _refreshNonce = 0;
+  bool _konumYukleniyor = true;
   
   String? secilenIl;
   String? secilenIlce;
   String? secilenIlceId;
 
-  List<dynamic> vakitler = [];
-  bool yukleniyor = false;
-  int _bugunIndex = -1;
+  static const int _aySayisi = 25;
+  static const int _ayBaslangicOfseti = -12;
 
   @override
   void initState() {
@@ -32,7 +35,7 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
 
   @override
   void dispose() {
-    _scrollController.dispose();
+    _pageController.dispose();
     super.dispose();
   }
 
@@ -47,6 +50,10 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
         return 'de_DE';
       case 'fr':
         return 'fr_FR';
+      case 'ar':
+        return 'ar_SA';
+      case 'fa':
+        return 'fa_IR';
       default:
         return 'tr_TR';
     }
@@ -57,77 +64,13 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
     final ilce = await KonumService.getIlce();
     final ilceId = await KonumService.getIlceId();
     
+    if (!mounted) return;
     setState(() {
       secilenIl = il;
       secilenIlce = ilce;
       secilenIlceId = ilceId;
+      _konumYukleniyor = false;
     });
-    
-    // Fetch times after location loads.
-    if (ilceId != null) {
-      _vakitleriYukle();
-    }
-  }
-
-  Future<void> _vakitleriYukle({bool forceRefresh = false}) async {
-    if (secilenIlceId == null) return;
-    
-    setState(() {
-      yukleniyor = true;
-    });
-
-    try {
-      // Clear cache when forced refresh is requested.
-      if (forceRefresh) {
-        DiyanetApiService.clearCache();
-      }
-      
-      final data = await DiyanetApiService.getVakitler(secilenIlceId!);
-      if (data != null && data.containsKey('vakitler')) {
-        final now = DateTime.now();
-        final today = DateTime(now.year, now.month, now.day);
-        final yeniVakitler = (data['vakitler'] as List)
-            .where((v) {
-              final tarihStr = v['MiladiTarihKisa'] as String?;
-              final dt = _parseMiladi(tarihStr);
-              if (dt == null) return true;
-              return !dt.isBefore(today);
-            })
-            .toList();
-
-        int bugunIdx = -1;
-        for (int i = 0; i < yeniVakitler.length; i++) {
-          final tarih = yeniVakitler[i]['MiladiTarihKisa'] ?? '';
-          final dt = _parseMiladi(tarih);
-          if (dt != null && !dt.isBefore(today) && dt.difference(today).inDays == 0) {
-            bugunIdx = i;
-            break;
-          }
-        }
-
-        setState(() {
-          vakitler = yeniVakitler;
-          _bugunIndex = bugunIdx;
-          yukleniyor = false;
-        });
-        
-        // Scroll to today (after the frame).
-        if (bugunIdx >= 0) {
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            _scrollToBugun();
-          });
-        }
-      } else {
-        setState(() {
-          yukleniyor = false;
-        });
-      }
-    } catch (e) {
-      debugPrint('Failed to load prayer times: $e');
-      setState(() {
-        yukleniyor = false;
-      });
-    }
   }
 
   DateTime? _parseMiladi(String? value) {
@@ -143,19 +86,19 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
     }
   }
   
-  void _scrollToBugun() {
-    if (_bugunIndex < 0 || !_scrollController.hasClients) return;
+  void _scrollToBugun(ScrollController controller, int bugunIndex) {
+    if (bugunIndex < 0 || !controller.hasClients) return;
     
     // Each row is about 80px tall (including margin).
     const itemHeight = 88.0;
-    final targetOffset = _bugunIndex * itemHeight;
+    final targetOffset = bugunIndex * itemHeight;
     
     // Center the target row on screen.
     final screenHeight = MediaQuery.of(context).size.height;
     final centeredOffset = targetOffset - (screenHeight / 2) + (itemHeight / 2);
     
-    _scrollController.animateTo(
-      centeredOffset.clamp(0.0, _scrollController.position.maxScrollExtent),
+    controller.animateTo(
+      centeredOffset.clamp(0.0, controller.position.maxScrollExtent),
       duration: const Duration(milliseconds: 500),
       curve: Curves.easeInOut,
     );
@@ -173,7 +116,13 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
     );
     
     // Fetch fresh data after cache clear.
-    await _vakitleriYukle(forceRefresh: true);
+    DiyanetApiService.clearCache();
+    if (mounted) {
+      setState(() {
+        _refreshNonce++;
+        _autoScrolledMonths.clear();
+      });
+    }
     
     if (mounted) {
       ScaffoldMessenger.of(context).showSnackBar(
@@ -203,43 +152,249 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
           IconButton(
             icon: const Icon(Icons.refresh),
             tooltip: _languageService['refresh'] ?? 'Refresh',
-            onPressed: yukleniyor ? null : _yenile,
+            onPressed: _yenile,
           ),
         ],
       ),
-      body: secilenIl == null || secilenIlce == null
-          ? _konumSeciliDegil()
-          : yukleniyor
-              ? const Center(child: CircularProgressIndicator())
-              : vakitler.isEmpty
-                  ? Center(
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
-                        children: [
-                          const Icon(
-                            Icons.calendar_today,
-                            size: 60,
-                            color: Colors.white38,
-                          ),
-                          const SizedBox(height: 16),
-                          Text(
-                            _languageService['no_data_found'] ??
-                                'No data found',
-                            textAlign: TextAlign.center,
-                            style: TextStyle(color: Colors.white70, fontSize: 16),
-                          ),
-                        ],
+      body: _konumYukleniyor
+          ? const Center(child: CircularProgressIndicator())
+          : secilenIl == null || secilenIlce == null
+              ? _konumSeciliDegil()
+              : Column(
+                  children: [
+                    _ayBasligi(),
+                    Expanded(
+                      child: PageView.builder(
+                        controller: _pageController,
+                        itemCount: _aySayisi,
+                        onPageChanged: (index) {
+                          setState(() {
+                            _currentPage = index;
+                          });
+                        },
+                        itemBuilder: (context, index) {
+                          final ayTarih = _getAyTarihi(index);
+                          return FutureBuilder<List<Map<String, dynamic>>>(
+                            key: ValueKey(
+                              'ay_${ayTarih.year}_${ayTarih.month}_$_refreshNonce',
+                            ),
+                            future: DiyanetApiService.getAylikVakitler(
+                              secilenIlceId!,
+                              ayTarih.year,
+                              ayTarih.month,
+                            ),
+                            builder: (context, snapshot) {
+                              if (snapshot.connectionState !=
+                                  ConnectionState.done) {
+                                return const Center(
+                                  child: CircularProgressIndicator(),
+                                );
+                              }
+
+                              final ayVakitler = snapshot.data ?? [];
+                              if (ayVakitler.isEmpty) {
+                                return Center(
+                                  child: Column(
+                                    mainAxisAlignment: MainAxisAlignment.center,
+                                    children: [
+                                      const Icon(
+                                        Icons.calendar_today,
+                                        size: 60,
+                                        color: Colors.white38,
+                                      ),
+                                      const SizedBox(height: 16),
+                                      Text(
+                                        _languageService['no_data_found'] ??
+                                            'No data found',
+                                        textAlign: TextAlign.center,
+                                        style: TextStyle(
+                                          color: Colors.white70,
+                                          fontSize: 16,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                );
+                              }
+
+                              return _aylikListe(ayTarih, ayVakitler);
+                            },
+                          );
+                        },
                       ),
-                    )
-                  : ListView.builder(
-                      controller: _scrollController,
-                      padding: const EdgeInsets.all(16),
-                      itemCount: vakitler.length,
-                      itemBuilder: (context, index) {
-                        final vakit = vakitler[index];
-                        return _imsakiyeSatiri(vakit);
-                      },
                     ),
+                  ],
+                ),
+    );
+  }
+
+  Widget _ayBasligi() {
+    final ayTarih = _getAyTarihi(_currentPage);
+    final ayYazi = DateFormat('MMMM yyyy', _getLocale()).format(ayTarih);
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(16, 8, 16, 4),
+      child: Column(
+        children: [
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              IconButton(
+                tooltip: _languageService['previous'] ?? 'Previous',
+                icon: Icon(
+                  Icons.chevron_left,
+                  color: _currentPage > 0
+                      ? Colors.cyanAccent
+                      : Colors.white24,
+                ),
+                onPressed: _currentPage > 0
+                    ? () => _goToPage(_currentPage - 1)
+                    : null,
+              ),
+              InkWell(
+                borderRadius: BorderRadius.circular(16),
+                onTap: _aySeciciAc,
+                child: Padding(
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: 8,
+                    vertical: 6,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(
+                        Icons.calendar_month,
+                        color: Colors.cyanAccent.withOpacity(0.8),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        ayYazi,
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              IconButton(
+                tooltip: _languageService['next'] ?? 'Next',
+                icon: Icon(
+                  Icons.chevron_right,
+                  color: _currentPage < _aySayisi - 1
+                      ? Colors.cyanAccent
+                      : Colors.white24,
+                ),
+                onPressed: _currentPage < _aySayisi - 1
+                    ? () => _goToPage(_currentPage + 1)
+                    : null,
+              ),
+            ],
+          ),
+          Text(
+            _languageService['swipe_for_more'] ?? 'Swipe to change month',
+            style: const TextStyle(
+              color: Colors.white54,
+              fontSize: 11,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Future<void> _aySeciciAc() async {
+    final now = DateTime.now();
+    final ilkTarih = DateTime(now.year, now.month + _ayBaslangicOfseti, 1);
+    final sonTarih = DateTime(now.year, now.month + _ayBaslangicOfseti + _aySayisi - 1, 1);
+    final seciliTarih = _getAyTarihi(_currentPage);
+
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: seciliTarih,
+      firstDate: ilkTarih,
+      lastDate: DateTime(sonTarih.year, sonTarih.month + 1, 0),
+      helpText: _languageService['select_month'] ?? 'Ay sec',
+      cancelText: _languageService['cancel'] ?? 'Cancel',
+      confirmText: _languageService['ok'] ?? 'OK',
+    );
+
+    if (picked == null) return;
+
+    final hedef = DateTime(picked.year, picked.month, 1);
+    final diffAy = (hedef.year - now.year) * 12 + (hedef.month - now.month);
+    final hedefIndex = diffAy - _ayBaslangicOfseti;
+    if (hedefIndex >= 0 && hedefIndex < _aySayisi) {
+      _goToPage(hedefIndex);
+    }
+  }
+
+  void _goToPage(int index) {
+    if (!_pageController.hasClients) return;
+    _pageController.animateToPage(
+      index,
+      duration: const Duration(milliseconds: 250),
+      curve: Curves.easeInOut,
+    );
+    setState(() {
+      _currentPage = index;
+    });
+  }
+
+  DateTime _getAyTarihi(int index) {
+    final now = DateTime.now();
+    return DateTime(now.year, now.month + _ayBaslangicOfseti + index, 1);
+  }
+
+  Widget _aylikListe(DateTime ayTarih, List<Map<String, dynamic>> ayVakitler) {
+    final controller = ScrollController();
+    final todayTileKey = GlobalKey();
+    final now = DateTime.now();
+    final ayAnahtar = '${ayTarih.year}-${ayTarih.month}';
+
+    int bugunIndex = -1;
+    if (ayTarih.year == now.year && ayTarih.month == now.month) {
+      for (int i = 0; i < ayVakitler.length; i++) {
+        final tarih = ayVakitler[i]['MiladiTarihKisa'] ?? '';
+        final dt = _parseMiladi(tarih);
+        if (dt != null &&
+            dt.year == now.year &&
+            dt.month == now.month &&
+            dt.day == now.day) {
+          bugunIndex = i;
+          break;
+        }
+      }
+    }
+
+    if (bugunIndex >= 0 && !_autoScrolledMonths.contains(ayAnahtar)) {
+      _autoScrolledMonths.add(ayAnahtar);
+      WidgetsBinding.instance.addPostFrameCallback((_) {
+        final ctx = todayTileKey.currentContext;
+        if (ctx != null) {
+          Scrollable.ensureVisible(
+            ctx,
+            alignment: 0.5,
+            duration: const Duration(milliseconds: 500),
+            curve: Curves.easeInOut,
+          );
+        }
+      });
+    }
+
+    return ListView.builder(
+      controller: controller,
+      padding: const EdgeInsets.all(16),
+      itemCount: ayVakitler.length,
+      itemBuilder: (context, index) {
+        final vakit = ayVakitler[index];
+        final tarih = vakit['MiladiTarihKisa'] ?? '';
+        final isBugun = index == bugunIndex;
+        return _imsakiyeSatiri(
+          vakit,
+          key: isBugun ? todayTileKey : ValueKey(tarih),
+        );
+      },
     );
   }
 
@@ -293,7 +448,7 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
     );
   }
 
-  Widget _imsakiyeSatiri(dynamic vakit) {
+  Widget _imsakiyeSatiri(dynamic vakit, {Key? key}) {
     final tarih = vakit['MiladiTarihKisa'] ?? '';
     final hicriTarih = vakit['HicriTarihUzun'] ?? '';
     
@@ -339,6 +494,7 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
         : '';
 
     return Container(
+      key: key,
       margin: const EdgeInsets.only(bottom: 8),
       decoration: BoxDecoration(
         color: bugun
@@ -401,6 +557,16 @@ class _ExpansibleTileState extends State<ExpansibleTile> {
   void initState() {
     super.initState();
     expanded = widget.bugun;
+  }
+
+  @override
+  void didUpdateWidget(covariant ExpansibleTile oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (!oldWidget.bugun && widget.bugun && !expanded) {
+      setState(() {
+        expanded = true;
+      });
+    }
   }
 
   @override

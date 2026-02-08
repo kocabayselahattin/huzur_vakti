@@ -147,8 +147,18 @@ void main() async {
   // Lock app orientation to portrait.
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  // Initialize date formatting for Turkish.
-  await initializeDateFormatting('tr_TR', null);
+  // Initialize date formatting for supported locales.
+  const supportedDateLocales = [
+    'tr_TR',
+    'en_US',
+    'de_DE',
+    'fr_FR',
+    'ar_SA',
+    'fa_IR',
+  ];
+  for (final locale in supportedDateLocales) {
+    await initializeDateFormatting(locale, null);
+  }
 
   // Initialize theme service.
   final temaService = TemaService();
@@ -239,6 +249,8 @@ class _HuzurVaktiAppState extends State<HuzurVaktiApp> {
         Locale('en', 'US'),
         Locale('de', 'DE'),
         Locale('fr', 'FR'),
+        Locale('ar', 'SA'),
+        Locale('fa', 'IR'),
       ],
       localizationsDelegates: const [
         GlobalMaterialLocalizations.delegate,

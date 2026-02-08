@@ -79,10 +79,15 @@ class AladhanApiService {
             final date = gunData['date']['gregorian'];
             final hijri = gunData['date']['hijri'];
             
+            final day = date['day'].toString().padLeft(2, '0');
+            final monthNumber = date['month']['number'].toString().padLeft(2, '0');
+            final hijriDay = hijri['day'].toString().padLeft(2, '0');
+            final hijriMonth = hijri['month']['number'].toString().padLeft(2, '0');
+
             vakitler.add({
-              'MiladiTarihKisa': '${date['day']}.${date['month']['number']}.${date['year']}',
+              'MiladiTarihKisa': '$day.$monthNumber.${date['year']}',
               'MiladiTarihUzun': '${date['day']} ${date['month']['en']} ${date['year']} ${date['weekday']['en']}',
-              'HicriTarihKisa': '${hijri['day']}.${hijri['month']['number']}.${hijri['year']}',
+              'HicriTarihKisa': '$hijriDay.$hijriMonth.${hijri['year']}',
               'HicriTarihUzun': '${hijri['day']} ${hijri['month']['en']} ${hijri['year']}',
               'Imsak': _cleanTime(timings['Fajr']),
               'Gunes': _cleanTime(timings['Sunrise']),

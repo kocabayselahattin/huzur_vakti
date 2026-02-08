@@ -64,15 +64,11 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
                     ],
                   ),
                 ),
-                child: Center(
-                  child: Opacity(
-                    opacity: 0.3,
-                    child: Image.asset(
-                      'assets/icon/app_icon.png',
-                      width: 80,
-                      height: 80,
-                      fit: BoxFit.contain,
-                    ),
+                child: Opacity(
+                  opacity: 0.35,
+                  child: Image.asset(
+                    'assets/icon/app_icon.png',
+                    fit: BoxFit.cover,
                   ),
                 ),
               ),

@@ -238,19 +238,41 @@ class DiyanetApiService {
       return [];
     }
     final cacheKey = '$ilceId-$yil-$ay';
+    final ayGunuSayisi = _daysInMonth(yil, ay);
 
     // 1. Return from RAM cache if available
     if (_aylikVakitCache.containsKey(cacheKey)) {
-      print('📦 Using monthly RAM cache: $cacheKey');
-      return _aylikVakitCache[cacheKey]!;
+      final cached = _aylikVakitCache[cacheKey]!;
+      if (cached.length >= ayGunuSayisi) {
+        print('📦 Using monthly RAM cache: $cacheKey');
+        return cached;
+      }
+      final filled = await _fillMissingDaysWithAladhan(
+        yil: yil,
+        ay: ay,
+        base: cached,
+      );
+      _aylikVakitCache[cacheKey] = filled;
+      await _saveAylikVakitToPrefs(cacheKey, filled);
+      return filled;
     }
 
     // 2. Load from SharedPreferences
     final savedData = await _loadAylikVakitFromPrefs(cacheKey);
     if (savedData != null && savedData.isNotEmpty) {
-      _aylikVakitCache[cacheKey] = savedData;
-      print('💾 Using saved monthly data: $cacheKey');
-      return savedData;
+      if (savedData.length >= ayGunuSayisi) {
+        _aylikVakitCache[cacheKey] = savedData;
+        print('💾 Using saved monthly data: $cacheKey');
+        return savedData;
+      }
+      final filled = await _fillMissingDaysWithAladhan(
+        yil: yil,
+        ay: ay,
+        base: savedData,
+      );
+      _aylikVakitCache[cacheKey] = filled;
+      await _saveAylikVakitToPrefs(cacheKey, filled);
+      return filled;
     }
 
     try {
@@ -303,12 +325,19 @@ class DiyanetApiService {
             await _saveAylikVakitToPrefs(entry.key, entry.value);
           }
 
-          // Return requested month
+          // Return requested month (fill missing days if needed)
           if (ayGruplari.containsKey(cacheKey)) {
-            print(
-              '✅ Monthly times fetched and saved: $cacheKey (${ayGruplari[cacheKey]!.length} days)',
+            final filled = await _fillMissingDaysWithAladhan(
+              yil: yil,
+              ay: ay,
+              base: ayGruplari[cacheKey]!,
             );
-            return ayGruplari[cacheKey]!;
+            _aylikVakitCache[cacheKey] = filled;
+            await _saveAylikVakitToPrefs(cacheKey, filled);
+            print(
+              '✅ Monthly times fetched and saved: $cacheKey (${filled.length} days)',
+            );
+            return filled;
           }
         }
       } else if (response.statusCode == 500 || response.statusCode == 400) {
@@ -323,11 +352,12 @@ class DiyanetApiService {
     // If Diyanet fails, try Aladhan API (works for every month)
     print('! Diyanet API insufficient, trying Aladhan API...');
     try {
+      final aladhanCity = await _getAladhanCity();
       final aladhanVakitler = await AladhanApiService.getAylikVakitler(
         yil: yil,
         ay: ay,
-        city: 'Istanbul', // TODO: Determine city from district ID
-        country: 'Turkey',
+        city: aladhanCity['city']!,
+        country: aladhanCity['country']!,
       );
       if (aladhanVakitler.isNotEmpty) {
         _aylikVakitCache[cacheKey] = aladhanVakitler;
@@ -340,6 +370,114 @@ class DiyanetApiService {
     // Return empty list if no data
     print('❌ Monthly times not available: $cacheKey');
     return [];
+  }
+
+  static int _daysInMonth(int year, int month) {
+    final start = DateTime(year, month, 1);
+    final next = DateTime(year, month + 1, 1);
+    return next.difference(start).inDays;
+  }
+
+  static String _normalizeDateKey(String raw) {
+    final parts = raw.split('.');
+    if (parts.length != 3) return raw;
+    final day = parts[0].padLeft(2, '0');
+    final month = parts[1].padLeft(2, '0');
+    final year = parts[2];
+    return '$day.$month.$year';
+  }
+
+  static DateTime? _parseDateKey(String raw) {
+    final parts = raw.split('.');
+    if (parts.length != 3) return null;
+    final day = int.tryParse(parts[0]);
+    final month = int.tryParse(parts[1]);
+    final year = int.tryParse(parts[2]);
+    if (day == null || month == null || year == null) return null;
+    return DateTime(year, month, day);
+  }
+
+  static Future<Map<String, String>> _getAladhanCity() async {
+    final il = await KonumService.getIl();
+    final city = _normalizeCityForAladhan(il ?? 'Istanbul');
+    return {'city': city, 'country': 'Turkey'};
+  }
+
+  static String _normalizeCityForAladhan(String city) {
+    final trimmed = city.trim();
+    if (trimmed.isEmpty) return 'Istanbul';
+    return trimmed
+        .replaceAll('İ', 'I')
+        .replaceAll('ı', 'i')
+        .replaceAll('Ğ', 'G')
+        .replaceAll('ğ', 'g')
+        .replaceAll('Ş', 'S')
+        .replaceAll('ş', 's')
+        .replaceAll('Ç', 'C')
+        .replaceAll('ç', 'c')
+        .replaceAll('Ö', 'O')
+        .replaceAll('ö', 'o')
+        .replaceAll('Ü', 'U')
+        .replaceAll('ü', 'u');
+  }
+
+  static Future<List<Map<String, dynamic>>> _fillMissingDaysWithAladhan({
+    required int yil,
+    required int ay,
+    required List<Map<String, dynamic>> base,
+  }) async {
+    final ayGunuSayisi = _daysInMonth(yil, ay);
+    if (base.length >= ayGunuSayisi) return base;
+
+    final aladhanCity = await _getAladhanCity();
+    var aladhanVakitler = await AladhanApiService.getAylikVakitler(
+      yil: yil,
+      ay: ay,
+      city: aladhanCity['city']!,
+      country: aladhanCity['country']!,
+    );
+
+    if (aladhanVakitler.isEmpty && aladhanCity['city'] != 'Istanbul') {
+      aladhanVakitler = await AladhanApiService.getAylikVakitler(
+        yil: yil,
+        ay: ay,
+        city: 'Istanbul',
+        country: 'Turkey',
+      );
+    }
+
+    if (aladhanVakitler.isEmpty) return base;
+
+    final byDate = <String, Map<String, dynamic>>{};
+    for (final entry in base) {
+      final rawDate = entry['MiladiTarihKisa']?.toString() ?? '';
+      final key = _normalizeDateKey(rawDate);
+      if (key.isNotEmpty) {
+        final normalized = Map<String, dynamic>.from(entry);
+        normalized['MiladiTarihKisa'] = key;
+        byDate[key] = normalized;
+      }
+    }
+
+    for (final entry in aladhanVakitler) {
+      final rawDate = entry['MiladiTarihKisa']?.toString() ?? '';
+      final key = _normalizeDateKey(rawDate);
+      if (key.isNotEmpty && !byDate.containsKey(key)) {
+        final normalized = Map<String, dynamic>.from(entry);
+        normalized['MiladiTarihKisa'] = key;
+        byDate[key] = normalized;
+      }
+    }
+
+    final merged = byDate.values.toList();
+    merged.sort((a, b) {
+      final aDate = _parseDateKey(a['MiladiTarihKisa']?.toString() ?? '');
+      final bDate = _parseDateKey(b['MiladiTarihKisa']?.toString() ?? '');
+      if (aDate == null || bDate == null) return 0;
+      return aDate.compareTo(bDate);
+    });
+
+    return merged;
   }
 
   // Fetch cities from API
