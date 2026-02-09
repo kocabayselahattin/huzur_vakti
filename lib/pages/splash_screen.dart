@@ -243,9 +243,9 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
             const SizedBox(height: 40),
             // Uygulama İsmi
-            const Text(
-              "HUZUR VAKTİ",
-              style: TextStyle(
+            Text(
+              LanguageService()['splash_title'] ?? "HUZURA DAVET",
+              style: const TextStyle(
                 color: Color(0xFFFFFFFF), // Beyaz
                 fontSize: 34,
                 fontWeight: FontWeight.w300,

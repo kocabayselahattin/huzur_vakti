@@ -1,3 +1,3 @@
-# Huzur Vakti Uygulama İkonu
+# Huzura Davet Uygulama İkonu
 
 Bu klasörde uygulamanın farklı çözünürlüklerdeki ikonları yer alacaktır. Otomatik olarak oluşturulacak ve ilgili mipmap klasörlerine yerleştirilecektir.
