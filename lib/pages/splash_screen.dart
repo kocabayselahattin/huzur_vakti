@@ -244,7 +244,7 @@ class _SplashScreenState extends State<SplashScreen> {
             const SizedBox(height: 40),
             // Uygulama İsmi
             const Text(
-              "HUZUR VAKTİ",
+              "HUZURA DAVET",
               style: TextStyle(
                 color: Color(0xFFFFFFFF), // Beyaz
                 fontSize: 34,

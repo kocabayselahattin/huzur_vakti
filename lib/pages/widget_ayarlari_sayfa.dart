@@ -1283,76 +1283,91 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa>
       140,
       Padding(
         padding: const EdgeInsets.all(12),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            // Üst
-            Text(
-              _languageService['widget_preview_now_in']?.replaceAll(
-                    '{vakit}',
-                    _previewText('gunes'),
-                  ) ??
-                  '',
-              style: TextStyle(color: yaziRengiSecondary, fontSize: 10),
-            ),
-            Text(
-              _previewText('widget_preview_hijri_date'),
-              style: TextStyle(color: yaziRengi, fontSize: 11),
-            ),
-            Text(
-              _previewText('widget_preview_gregorian_date'),
-              style: TextStyle(color: yaziRengiSecondary, fontSize: 10),
-            ),
-            const Spacer(),
-            // Orta
-            Text(
-              _previewWithVakit('widget_preview_time_to_prayer', 'ogle'),
-              style: TextStyle(
-                color: yaziRengi,
-                fontSize: 14,
-                fontWeight: FontWeight.bold,
+        child: SingleChildScrollView(
+          physics: const NeverScrollableScrollPhysics(),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              // Üst
+              Text(
+                _languageService['widget_preview_now_in']?.replaceAll(
+                      '{vakit}',
+                      _previewText('gunes'),
+                    ) ??
+                    '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: yaziRengiSecondary, fontSize: 10),
               ),
-            ),
-            Text(
-              '02:30:45',
-              style: TextStyle(
-                color: yaziRengi,
-                fontSize: 28,
-                fontWeight: FontWeight.w200,
-                letterSpacing: 2,
+              Text(
+                _previewText('widget_preview_hijri_date'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: yaziRengi, fontSize: 11),
               ),
-            ),
-            const Spacer(),
-            // Alt: Progress
-            Text(
-              _languageService['widget_preview_prayer_progress'] ?? '',
-              style: TextStyle(color: yaziRengiSecondary, fontSize: 8),
-            ),
-            const SizedBox(height: 4),
-            Container(
-              height: 3,
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(2),
-                color: yaziRengiSecondary.withValues(alpha: 0.3),
+              Text(
+                _previewText('widget_preview_gregorian_date'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: yaziRengiSecondary, fontSize: 10),
               ),
-              child: FractionallySizedBox(
-                alignment: Alignment.centerLeft,
-                widthFactor: 0.5,
-                child: Container(
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(2),
-                    color: yaziRengi,
+              const Spacer(),
+              // Orta
+              Text(
+                _previewWithVakit('widget_preview_time_to_prayer', 'ogle'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  color: yaziRengi,
+                  fontSize: 14,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              Text(
+                '02:30:45',
+                style: TextStyle(
+                  color: yaziRengi,
+                  fontSize: 28,
+                  fontWeight: FontWeight.w200,
+                  letterSpacing: 2,
+                ),
+              ),
+              const Spacer(),
+              // Alt: Progress
+              Text(
+                _languageService['widget_preview_prayer_progress'] ?? '',
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: yaziRengiSecondary, fontSize: 8),
+              ),
+              const SizedBox(height: 4),
+              Container(
+                height: 3,
+                decoration: BoxDecoration(
+                  borderRadius: BorderRadius.circular(2),
+                  color: yaziRengiSecondary.withValues(alpha: 0.3),
+                ),
+                child: FractionallySizedBox(
+                  alignment: Alignment.centerLeft,
+                  widthFactor: 0.5,
+                  child: Container(
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(2),
+                      color: yaziRengi,
+                    ),
                   ),
                 ),
               ),
-            ),
-            const SizedBox(height: 8),
-            // Konum
-            Text(
-              _previewText('widget_preview_city'),
-              style: TextStyle(color: yaziRengiSecondary, fontSize: 10),
-            ),
-          ],
+              const SizedBox(height: 8),
+              // Konum
+              Text(
+                _previewText('widget_preview_city'),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(color: yaziRengiSecondary, fontSize: 10),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -1380,107 +1395,145 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa>
         children: [
           Padding(
             padding: const EdgeInsets.all(12),
-            child: Column(
-              children: [
-                // Üst sol: Badge
-                Align(
-                  alignment: Alignment.topLeft,
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 8,
-                      vertical: 3,
-                    ),
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(4),
-                      border: Border.all(
-                        color: neonColor.withValues(alpha: 0.5),
-                      ),
-                    ),
-                    child: Text(
-                      _previewText('gunes'),
-                      style: TextStyle(
-                        color: neonColor,
-                        fontSize: 9,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ),
-                ),
-                const Spacer(),
-                // Orta
-                Text(
-                  _previewText('ogle').toUpperCase(),
-                  style: TextStyle(
-                    color: pinkNeon,
-                    fontSize: 18,
-                    fontWeight: FontWeight.bold,
-                    letterSpacing: 2,
-                    shadows: [Shadow(color: pinkNeon, blurRadius: 10)],
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '02:30:45',
-                  style: TextStyle(
-                    color: neonColor,
-                    fontSize: 30,
-                    fontWeight: FontWeight.bold,
-                    fontFamily: 'monospace',
-                    shadows: [Shadow(color: neonColor, blurRadius: 15)],
-                  ),
-                ),
-                const Spacer(),
-                // Alt
-                Row(
-                  children: [
-                    Text(
-                      '⚡ ${_previewText('widget_preview_prayer_progress')}',
-                      style: TextStyle(
-                        color: pinkNeon,
-                        fontSize: 8,
-                        fontWeight: FontWeight.bold,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Container(
-                  height: 5,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(3),
-                    color: neonColor.withValues(alpha: 0.2),
-                  ),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: 0.5,
+            child: SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  // Üst sol: Badge
+                  Align(
+                    alignment: Alignment.topLeft,
                     child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 8,
+                        vertical: 3,
+                      ),
                       decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(3),
-                        gradient: LinearGradient(colors: [neonColor, pinkNeon]),
-                        boxShadow: [BoxShadow(color: neonColor, blurRadius: 8)],
+                        borderRadius: BorderRadius.circular(4),
+                        border: Border.all(
+                          color: neonColor.withValues(alpha: 0.5),
+                        ),
+                      ),
+                      child: Text(
+                        _previewText('gunes'),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: neonColor,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 8),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(
-                      _previewText('widget_preview_city'),
-                      style: TextStyle(color: yaziRengiSecondary, fontSize: 9),
+                  const Spacer(),
+                  // Orta
+                  Text(
+                    _previewText('ogle').toUpperCase(),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: pinkNeon,
+                      fontSize: 18,
+                      fontWeight: FontWeight.bold,
+                      letterSpacing: 2,
+                      shadows: [Shadow(color: pinkNeon, blurRadius: 10)],
                     ),
-                    Text(
-                      _previewText('widget_preview_hijri_date'),
-                      style: TextStyle(color: yaziRengiSecondary, fontSize: 9),
+                  ),
+                  const SizedBox(height: 4),
+                  Text(
+                    '02:30:45',
+                    style: TextStyle(
+                      color: neonColor,
+                      fontSize: 30,
+                      fontWeight: FontWeight.bold,
+                      fontFamily: 'monospace',
+                      shadows: [Shadow(color: neonColor, blurRadius: 15)],
                     ),
-                    Text(
-                      _previewText('widget_preview_gregorian_date'),
-                      style: TextStyle(color: yaziRengiSecondary, fontSize: 9),
+                  ),
+                  const Spacer(),
+                  // Alt
+                  Row(
+                    children: [
+                      Text(
+                        '⚡ ${_previewText('widget_preview_prayer_progress')}',
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: pinkNeon,
+                          fontSize: 8,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 4),
+                  Container(
+                    height: 5,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(3),
+                      color: neonColor.withValues(alpha: 0.2),
                     ),
-                  ],
-                ),
-              ],
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: 0.5,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(3),
+                          gradient: LinearGradient(
+                            colors: [neonColor, pinkNeon],
+                          ),
+                          boxShadow: [
+                            BoxShadow(color: neonColor, blurRadius: 8),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      Expanded(
+                        child: Text(
+                          _previewText('widget_preview_city'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: yaziRengiSecondary,
+                            fontSize: 9,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _previewText('widget_preview_hijri_date'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(
+                            color: yaziRengiSecondary,
+                            fontSize: 9,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          _previewText('widget_preview_gregorian_date'),
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          textAlign: TextAlign.end,
+                          style: TextStyle(
+                            color: yaziRengiSecondary,
+                            fontSize: 9,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
             ),
           ),
         ],
@@ -1916,126 +1969,139 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa>
           ),
           Padding(
             padding: const EdgeInsets.all(14),
-            child: Column(
-              children: [
-                // Üst
-                Row(
-                  children: [
-                    Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          _previewText('widget_preview_city'),
-                          style: TextStyle(
-                            color: yaziRengi,
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic,
-                            fontFamily: 'serif',
+            child: SingleChildScrollView(
+              physics: const NeverScrollableScrollPhysics(),
+              child: Column(
+                children: [
+                  // Üst
+                  Row(
+                    children: [
+                      Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _previewText('widget_preview_city'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: yaziRengi,
+                              fontSize: 12,
+                              fontStyle: FontStyle.italic,
+                              fontFamily: 'serif',
+                            ),
                           ),
-                        ),
-                        Text(
-                          _previewText('widget_preview_hijri_date'),
-                          style: TextStyle(
-                            color: yaziRengiSecondary,
-                            fontSize: 11,
-                            fontFamily: 'serif',
+                          Text(
+                            _previewText('widget_preview_hijri_date'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: yaziRengiSecondary,
+                              fontSize: 11,
+                              fontFamily: 'serif',
+                            ),
                           ),
-                        ),
-                        Text(
-                          _previewText('widget_preview_gregorian_date'),
-                          style: TextStyle(
-                            color: yaziRengiSecondary.withValues(alpha: 0.8),
-                            fontSize: 10,
-                            fontFamily: 'serif',
+                          Text(
+                            _previewText('widget_preview_gregorian_date'),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: TextStyle(
+                              color: yaziRengiSecondary.withValues(alpha: 0.8),
+                              fontSize: 10,
+                              fontFamily: 'serif',
+                            ),
                           ),
+                        ],
+                      ),
+                      const Spacer(),
+                      Text(
+                        '◯',
+                        style: TextStyle(
+                          color: yaziRengi.withValues(alpha: 0.3),
+                          fontSize: 18,
                         ),
-                      ],
-                    ),
-                    const Spacer(),
-                    Text(
-                      '◯',
-                      style: TextStyle(
-                        color: yaziRengi.withValues(alpha: 0.3),
-                        fontSize: 18,
                       ),
-                    ),
-                  ],
-                ),
-                const Spacer(),
-                // Orta
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    Text(
-                      '───',
-                      style: TextStyle(
-                        color: yaziRengiSecondary.withValues(alpha: 0.5),
-                        fontSize: 8,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _previewWithVakit(
-                        'widget_preview_prayer_time_name',
-                        'gunes',
-                      ),
-                      style: TextStyle(
-                        color: yaziRengiSecondary,
-                        fontSize: 10,
-                        fontStyle: FontStyle.italic,
-                        fontFamily: 'serif',
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      '───',
-                      style: TextStyle(
-                        color: yaziRengiSecondary.withValues(alpha: 0.5),
-                        fontSize: 8,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  '02:30:45',
-                  style: TextStyle(
-                    color: yaziRengi,
-                    fontSize: 30,
-                    fontFamily: 'serif',
+                    ],
                   ),
-                ),
-                Text(
-                  _previewWithVakit(
-                    'widget_preview_time_remaining_to_prayer',
-                    'ogle',
+                  const Spacer(),
+                  // Orta
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      Text(
+                        '───',
+                        style: TextStyle(
+                          color: yaziRengiSecondary.withValues(alpha: 0.5),
+                          fontSize: 8,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        _previewWithVakit(
+                          'widget_preview_prayer_time_name',
+                          'gunes',
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: yaziRengiSecondary,
+                          fontSize: 10,
+                          fontStyle: FontStyle.italic,
+                          fontFamily: 'serif',
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Text(
+                        '───',
+                        style: TextStyle(
+                          color: yaziRengiSecondary.withValues(alpha: 0.5),
+                          fontSize: 8,
+                        ),
+                      ),
+                    ],
                   ),
-                  style: TextStyle(
-                    color: yaziRengiSecondary,
-                    fontSize: 10,
-                    fontFamily: 'serif',
+                  const SizedBox(height: 4),
+                  Text(
+                    '02:30:45',
+                    style: TextStyle(
+                      color: yaziRengi,
+                      fontSize: 30,
+                      fontFamily: 'serif',
+                    ),
                   ),
-                ),
-                const Spacer(),
-                // Alt: Progress
-                Container(
-                  height: 2,
-                  decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(1),
-                    color: yaziRengiSecondary.withValues(alpha: 0.2),
+                  Text(
+                    _previewWithVakit(
+                      'widget_preview_time_remaining_to_prayer',
+                      'ogle',
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: TextStyle(
+                      color: yaziRengiSecondary,
+                      fontSize: 10,
+                      fontFamily: 'serif',
+                    ),
                   ),
-                  child: FractionallySizedBox(
-                    alignment: Alignment.centerLeft,
-                    widthFactor: 0.5,
-                    child: Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(1),
-                        color: yaziRengi.withValues(alpha: 0.6),
+                  const Spacer(),
+                  // Alt: Progress
+                  Container(
+                    height: 2,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(1),
+                      color: yaziRengiSecondary.withValues(alpha: 0.2),
+                    ),
+                    child: FractionallySizedBox(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: 0.5,
+                      child: Container(
+                        decoration: BoxDecoration(
+                          borderRadius: BorderRadius.circular(1),
+                          color: yaziRengi.withValues(alpha: 0.6),
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ],

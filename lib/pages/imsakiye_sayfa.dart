@@ -450,7 +450,10 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
 
   Widget _imsakiyeSatiri(dynamic vakit, {Key? key}) {
     final tarih = vakit['MiladiTarihKisa'] ?? '';
-    final hicriTarih = vakit['HicriTarihUzun'] ?? '';
+    final hicriTarih = _formatHicriTarih(
+      vakit['HicriTarihKisa']?.toString(),
+      vakit['HicriTarihUzun']?.toString(),
+    );
     
     // Debug: log the first day for verification.
     if (tarih.isNotEmpty) {
@@ -516,6 +519,30 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
         yatsi: vakit['Yatsi'] ?? '-',
       ),
     );
+  }
+
+  String _formatHicriTarih(String? hicriKisa, String? hicriUzun) {
+    if (hicriKisa != null && hicriKisa.isNotEmpty) {
+      final parts = hicriKisa.split('.');
+      if (parts.length == 3) {
+        final day = parts[0].trim();
+        final monthNum = int.tryParse(parts[1].trim());
+        final year = parts[2].trim();
+        if (monthNum != null && monthNum >= 1 && monthNum <= 12) {
+          final monthName =
+              _languageService['hijri_month_$monthNum']?.toString() ?? '';
+          if (monthName.isNotEmpty) {
+            return '$day $monthName $year';
+          }
+        }
+      }
+    }
+
+    if (hicriUzun != null && hicriUzun.isNotEmpty) {
+      return hicriUzun;
+    }
+
+    return hicriKisa ?? '';
   }
 }
 

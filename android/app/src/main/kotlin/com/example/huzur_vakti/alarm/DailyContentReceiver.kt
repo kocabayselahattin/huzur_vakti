@@ -159,7 +159,7 @@ class DailyContentReceiver : BroadcastReceiver() {
                 
                 try {
                     val notificationId = intent.getIntExtra(EXTRA_NOTIFICATION_ID, 0)
-                    val title = intent.getStringExtra(EXTRA_TITLE) ?: "Huzur Vakti"
+                    val title = intent.getStringExtra(EXTRA_TITLE) ?: "Huzura Davet"
                     val body = intent.getStringExtra(EXTRA_BODY) ?: ""
                     val soundId = intent.getStringExtra(EXTRA_SOUND_FILE) ?: "ding_dong"
                     
