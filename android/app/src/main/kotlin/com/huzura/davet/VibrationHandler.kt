@@ -1,4 +1,4 @@
-package com.example.huzur_vakti
+package com.huzura.davet
 
 import android.content.Context
 import android.os.Build

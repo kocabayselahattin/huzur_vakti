@@ -1,4 +1,4 @@
-package com.example.huzur_vakti
+package com.huzura.davet
 
 import android.Manifest
 import android.app.AlarmManager
@@ -14,10 +14,10 @@ import android.os.PowerManager
 import android.provider.Settings
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
-import com.example.huzur_vakti.alarm.AlarmReceiver
-import com.example.huzur_vakti.dnd.PrayerDndScheduler
-import com.example.huzur_vakti.lockscreen.LockScreenNotificationService
-import com.example.huzur_vakti.widgets.*
+import com.huzura.davet.alarm.AlarmReceiver
+import com.huzura.davet.dnd.PrayerDndScheduler
+import com.huzura.davet.lockscreen.LockScreenNotificationService
+import com.huzura.davet.widgets.*
 import io.flutter.embedding.android.FlutterActivity
 import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
@@ -120,7 +120,7 @@ class MainActivity : FlutterActivity() {
 						val soundFile = call.argument<String>("soundFile") ?: "ding_dong"
 
 						if (notificationId > 0 && triggerAtMillis > System.currentTimeMillis()) {
-							val success = com.example.huzur_vakti.alarm.DailyContentReceiver.scheduleDailyContent(
+							val success = com.huzura.davet.alarm.DailyContentReceiver.scheduleDailyContent(
 								context = this,
 								notificationId = notificationId,
 								title = title,
@@ -135,11 +135,11 @@ class MainActivity : FlutterActivity() {
 					}
 					"cancelDailyContentAlarm" -> {
 						val notificationId = call.argument<Int>("notificationId") ?: 0
-						com.example.huzur_vakti.alarm.DailyContentReceiver.cancelDailyContent(this, notificationId)
+						com.huzura.davet.alarm.DailyContentReceiver.cancelDailyContent(this, notificationId)
 						result.success(true)
 					}
 					"cancelAllDailyContentAlarms" -> {
-						com.example.huzur_vakti.alarm.DailyContentReceiver.cancelAllDailyContent(this)
+						com.huzura.davet.alarm.DailyContentReceiver.cancelAllDailyContent(this)
 						result.success(true)
 					}
 					"cancelAlarm" -> {
@@ -153,15 +153,15 @@ class MainActivity : FlutterActivity() {
 					}
 					"isAlarmPlaying" -> {
 						val isPlaying = try {
-							com.example.huzur_vakti.alarm.AlarmService.Companion.isAlarmPlaying()
+							com.huzura.davet.alarm.AlarmService.Companion.isAlarmPlaying()
 						} catch (e: Exception) {
 							false
 						}
 						result.success(isPlaying)
 					}
 					"stopAlarm" -> {
-						val stopIntent = Intent(this, com.example.huzur_vakti.alarm.AlarmService::class.java)
-						stopIntent.action = com.example.huzur_vakti.alarm.AlarmService.ACTION_STOP_ALARM
+						val stopIntent = Intent(this, com.huzura.davet.alarm.AlarmService::class.java)
+						stopIntent.action = com.huzura.davet.alarm.AlarmService.ACTION_STOP_ALARM
 						startService(stopIntent)
 						result.success(true)
 					}

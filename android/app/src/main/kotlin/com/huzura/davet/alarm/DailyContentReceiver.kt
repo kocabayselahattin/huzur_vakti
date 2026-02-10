@@ -1,4 +1,4 @@
-package com.example.huzur_vakti.alarm
+package com.huzura.davet.alarm
 
 import android.app.AlarmManager
 import android.app.NotificationChannel
@@ -20,7 +20,7 @@ import android.os.VibratorManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
-import com.example.huzur_vakti.R
+import com.huzura.davet.R
 
 /**
  * Günlük içerik bildirimlerini alan BroadcastReceiver
@@ -31,7 +31,7 @@ class DailyContentReceiver : BroadcastReceiver() {
     companion object {
         private const val TAG = "DailyContentReceiver"
         private const val CHANNEL_ID = "daily_content_channel_v4"
-        const val ACTION_DAILY_CONTENT = "com.example.huzur_vakti.DAILY_CONTENT"
+        const val ACTION_DAILY_CONTENT = "com.huzura.davet.DAILY_CONTENT"
         const val EXTRA_NOTIFICATION_ID = "notification_id"
         const val EXTRA_TITLE = "title"
         const val EXTRA_BODY = "body"
@@ -253,7 +253,7 @@ class DailyContentReceiver : BroadcastReceiver() {
             notificationManager.createNotificationChannel(channel)
         }
 
-        val mainIntent = Intent(context, com.example.huzur_vakti.MainActivity::class.java).apply {
+        val mainIntent = Intent(context, com.huzura.davet.MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
         }
         val mainPendingIntent = PendingIntent.getActivity(

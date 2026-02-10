@@ -1,4 +1,4 @@
-package com.example.huzur_vakti.widgets
+package com.huzura.davet.widgets
 
 import android.app.PendingIntent
 import android.content.Context
@@ -7,7 +7,7 @@ import android.graphics.Color
 import android.os.Build
 import android.os.SystemClock
 import android.widget.RemoteViews
-import com.example.huzur_vakti.MainActivity
+import com.huzura.davet.MainActivity
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale

@@ -1,4 +1,4 @@
-package com.example.huzur_vakti.alarm
+package com.huzura.davet.alarm
 
 import android.app.Activity
 import android.app.KeyguardManager
@@ -12,7 +12,7 @@ import android.view.View
 import android.view.WindowManager
 import android.widget.Button
 import android.widget.TextView
-import com.example.huzur_vakti.R
+import com.huzura.davet.R
 import es.antonborri.home_widget.HomeWidgetPlugin
 import java.text.SimpleDateFormat
 import java.util.*

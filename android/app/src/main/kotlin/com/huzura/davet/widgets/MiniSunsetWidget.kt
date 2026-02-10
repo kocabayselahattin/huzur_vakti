@@ -1,4 +1,4 @@
-package com.example.huzur_vakti.widgets
+package com.huzura.davet.widgets
 
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -8,7 +8,7 @@ import android.graphics.Color
 import android.os.Bundle
 import android.util.TypedValue
 import android.widget.RemoteViews
-import com.example.huzur_vakti.R
+import com.huzura.davet.R
 import es.antonborri.home_widget.HomeWidgetPlugin
 
 class MiniSunsetWidget : AppWidgetProvider() {
@@ -26,7 +26,7 @@ class MiniSunsetWidget : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         if (intent.action == AppWidgetManager.ACTION_APPWIDGET_UPDATE ||
-            intent.action == "com.example.huzur_vakti.UPDATE_WIDGETS") {
+            intent.action == "com.huzura.davet.UPDATE_WIDGETS") {
             val appWidgetManager = AppWidgetManager.getInstance(context)
             val thisWidget = android.content.ComponentName(context, MiniSunsetWidget::class.java)
             val appWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)

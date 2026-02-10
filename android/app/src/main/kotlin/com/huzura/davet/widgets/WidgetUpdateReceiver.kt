@@ -1,4 +1,4 @@
-package com.example.huzur_vakti.widgets
+package com.huzura.davet.widgets
 
 import android.app.AlarmManager
 import android.app.PendingIntent
@@ -11,7 +11,7 @@ import android.content.Intent
 import android.os.Build
 import android.os.PowerManager
 import android.util.Log
-import com.example.huzur_vakti.MainActivity
+import com.huzura.davet.MainActivity
 
 /**
  * Widget güncelleme receiver'ı - Telefon kilitli iken bile widget'ları günceller
@@ -21,7 +21,7 @@ class WidgetUpdateReceiver : BroadcastReceiver() {
     
     companion object {
         private const val TAG = "WidgetUpdateReceiver"
-        private const val ACTION_UPDATE_WIDGETS = "com.example.huzur_vakti.UPDATE_WIDGETS"
+        private const val ACTION_UPDATE_WIDGETS = "com.huzura.davet.UPDATE_WIDGETS"
         private const val UPDATE_INTERVAL = 30_000L // 30 saniye - pil optimizasyonu için
         
         /**

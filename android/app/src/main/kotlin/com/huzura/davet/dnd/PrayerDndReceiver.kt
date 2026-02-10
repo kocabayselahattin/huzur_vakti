@@ -1,4 +1,4 @@
-package com.example.huzur_vakti.dnd
+package com.huzura.davet.dnd
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -9,7 +9,7 @@ import android.content.Intent
 import android.os.Build
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.example.huzur_vakti.R
+import com.huzura.davet.R
 
 class PrayerDndReceiver : BroadcastReceiver() {
   companion object {

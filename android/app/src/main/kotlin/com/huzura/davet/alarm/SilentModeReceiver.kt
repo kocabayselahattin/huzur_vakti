@@ -1,4 +1,4 @@
-package com.example.huzur_vakti.alarm
+package com.huzura.davet.alarm
 
 import android.app.AlarmManager
 import android.app.NotificationManager

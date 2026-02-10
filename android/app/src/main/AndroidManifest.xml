@@ -76,7 +76,7 @@
             android:label="@string/widget_klasik_turuncu_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
+                <action android:name="com.huzura.davet.UPDATE_WIDGETS" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -90,7 +90,7 @@
             android:label="@string/widget_mini_sunset_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
+                <action android:name="com.huzura.davet.UPDATE_WIDGETS" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -104,7 +104,7 @@
             android:label="@string/widget_glassmorphism_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
+                <action android:name="com.huzura.davet.UPDATE_WIDGETS" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -118,7 +118,7 @@
             android:label="@string/widget_neon_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
+                <action android:name="com.huzura.davet.UPDATE_WIDGETS" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -132,7 +132,7 @@
             android:label="@string/widget_cosmic_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
+                <action android:name="com.huzura.davet.UPDATE_WIDGETS" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -146,7 +146,7 @@
             android:label="@string/widget_timeline_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
+                <action android:name="com.huzura.davet.UPDATE_WIDGETS" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -160,7 +160,7 @@
             android:label="@string/widget_zen_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
+                <action android:name="com.huzura.davet.UPDATE_WIDGETS" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -174,7 +174,7 @@
             android:label="@string/widget_origami_name">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE" />
-                <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
+                <action android:name="com.huzura.davet.UPDATE_WIDGETS" />
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
@@ -186,7 +186,7 @@
             android:name=".widgets.WidgetUpdateReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.example.huzur_vakti.UPDATE_WIDGETS" />
+                <action android:name="com.huzura.davet.UPDATE_WIDGETS" />
                 <action android:name="android.intent.action.BOOT_COMPLETED" />
                 <action android:name="android.intent.action.MY_PACKAGE_REPLACED" />
                 <action android:name="android.intent.action.USER_PRESENT" />
@@ -198,7 +198,7 @@
             android:name=".alarm.AlarmReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.example.huzur_vakti.PRAYER_ALARM" />
+                <action android:name="com.huzura.davet.PRAYER_ALARM" />
             </intent-filter>
         </receiver>
         
@@ -207,7 +207,7 @@
             android:name=".alarm.OzelGunReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.example.huzur_vakti.OZEL_GUN_ALARM" />
+                <action android:name="com.huzura.davet.OZEL_GUN_ALARM" />
             </intent-filter>
         </receiver>
         
@@ -216,7 +216,7 @@
             android:name=".alarm.DailyContentReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.example.huzur_vakti.DAILY_CONTENT" />
+                <action android:name="com.huzura.davet.DAILY_CONTENT" />
             </intent-filter>
         </receiver>
         
@@ -237,7 +237,7 @@
             android:name=".dnd.PrayerDndReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.example.huzur_vakti.DND_ACTION" />
+                <action android:name="com.huzura.davet.DND_ACTION" />
             </intent-filter>
         </receiver>
 
@@ -246,9 +246,9 @@
             android:name=".alarm.SilentModeReceiver"
             android:exported="false">
             <intent-filter>
-                <action android:name="com.example.huzur_vakti.STAY_SILENT" />
-                <action android:name="com.example.huzur_vakti.EXIT_SILENT" />
-                <action android:name="com.example.huzur_vakti.AUTO_EXIT_SILENT" />
+                <action android:name="com.huzura.davet.STAY_SILENT" />
+                <action android:name="com.huzura.davet.EXIT_SILENT" />
+                <action android:name="com.huzura.davet.AUTO_EXIT_SILENT" />
             </intent-filter>
         </receiver>
 
@@ -258,7 +258,7 @@
             android:exported="false"
             android:foregroundServiceType="mediaPlayback">
             <intent-filter>
-                <action android:name="com.example.huzur_vakti.EXIT_SILENT" />
+                <action android:name="com.huzura.davet.EXIT_SILENT" />
             </intent-filter>
         </service>
 

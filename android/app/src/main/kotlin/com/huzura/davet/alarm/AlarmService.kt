@@ -1,4 +1,4 @@
-package com.example.huzur_vakti.alarm
+package com.huzura.davet.alarm
 
 import android.app.AlarmManager
 import android.app.Notification
@@ -27,8 +27,8 @@ import android.os.VibratorManager
 import android.util.Log
 import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
-import com.example.huzur_vakti.MainActivity
-import com.example.huzur_vakti.R
+import com.huzura.davet.MainActivity
+import com.huzura.davet.R
 import java.util.Calendar
 
 class AlarmService : Service() {
@@ -41,10 +41,10 @@ class AlarmService : Service() {
         const val CHANNEL_ID_ALARM = "huzur_vakti_alarm_channel" // Sesli alarmlar için
         const val CHANNEL_ID_SILENT = "huzur_vakti_silent_channel" // Titreşimli alarmlar için
         const val CHANNEL_ID_PERSISTENT = "huzur_vakti_persistent_channel" // Kalıcı bildirimler için
-        const val ACTION_STOP_ALARM = "com.example.huzur_vakti.STOP_ALARM"
-        const val ACTION_STAY_SILENT = "com.example.huzur_vakti.STAY_SILENT"  // Kal butonu
-        const val ACTION_EXIT_SILENT = "com.example.huzur_vakti.EXIT_SILENT"  // Çık butonu
-        const val ACTION_AUTO_EXIT_SILENT = "com.example.huzur_vakti.AUTO_EXIT_SILENT" // Otomatik sessiz moddan çıkış
+        const val ACTION_STOP_ALARM = "com.huzura.davet.STOP_ALARM"
+        const val ACTION_STAY_SILENT = "com.huzura.davet.STAY_SILENT"  // Kal butonu
+        const val ACTION_EXIT_SILENT = "com.huzura.davet.EXIT_SILENT"  // Çık butonu
+        const val ACTION_AUTO_EXIT_SILENT = "com.huzura.davet.AUTO_EXIT_SILENT" // Otomatik sessiz moddan çıkış
         private const val AUTO_EXIT_ALARM_ID = 999888 // Otomatik çıkış alarm ID'si
         
         @Volatile

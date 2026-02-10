@@ -1,4 +1,4 @@
-package com.example.huzur_vakti.dnd
+package com.huzura.davet.dnd
 
 import android.app.AlarmManager
 import android.app.PendingIntent

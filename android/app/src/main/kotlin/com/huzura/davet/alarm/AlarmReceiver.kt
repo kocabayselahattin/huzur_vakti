@@ -1,4 +1,4 @@
-package com.example.huzur_vakti.alarm
+package com.huzura.davet.alarm
 
 import android.app.AlarmManager
 import android.app.PendingIntent
@@ -17,7 +17,7 @@ class AlarmReceiver : BroadcastReceiver() {
 
     companion object {
         private const val TAG = "AlarmReceiver"
-        const val ACTION_PRAYER_ALARM = "com.example.huzur_vakti.PRAYER_ALARM"
+        const val ACTION_PRAYER_ALARM = "com.huzura.davet.PRAYER_ALARM"
         const val EXTRA_VAKIT_NAME = "vakit_name"
         const val EXTRA_VAKIT_TIME = "vakit_time"
         const val EXTRA_SOUND_FILE = "sound_file"
@@ -165,7 +165,7 @@ class AlarmReceiver : BroadcastReceiver() {
             val alarmManager = context.getSystemService(Context.ALARM_SERVICE) as AlarmManager
 
             val intent = Intent(context, OzelGunReceiver::class.java).apply {
-                action = "com.example.huzur_vakti.OZEL_GUN_ALARM"
+                action = "com.huzura.davet.OZEL_GUN_ALARM"
                 putExtra("alarm_id", alarmId)
                 putExtra("title", title)
                 putExtra("body", body)

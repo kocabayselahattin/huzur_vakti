@@ -1,4 +1,4 @@
-package com.example.huzur_vakti.alarm
+package com.huzura.davet.alarm
 
 import android.app.NotificationChannel
 import android.app.NotificationManager
@@ -16,8 +16,8 @@ import android.os.Vibrator
 import android.os.VibratorManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.example.huzur_vakti.MainActivity
-import com.example.huzur_vakti.R
+import com.huzura.davet.MainActivity
+import com.huzura.davet.R
 
 /**
  * Özel gün/gece bildirimleri için BroadcastReceiver
@@ -27,7 +27,7 @@ class OzelGunReceiver : BroadcastReceiver() {
     
     companion object {
         private const val TAG = "OzelGunReceiver"
-        const val ACTION_OZEL_GUN_ALARM = "com.example.huzur_vakti.OZEL_GUN_ALARM"
+        const val ACTION_OZEL_GUN_ALARM = "com.huzura.davet.OZEL_GUN_ALARM"
         const val CHANNEL_ID = "ozel_gunler_channel"
         const val NOTIFICATION_ID_BASE = 5000
     }

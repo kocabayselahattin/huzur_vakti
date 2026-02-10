@@ -1,8 +1,8 @@
-package com.example.huzur_vakti
+package com.huzura.davet
 
 import android.app.Application
 import android.util.Log
-import com.example.huzur_vakti.widgets.WidgetUpdateReceiver
+import com.huzura.davet.widgets.WidgetUpdateReceiver
 
 /**
  * Uygulama sınıfı - Widget güncellemelerini otomatik başlatır

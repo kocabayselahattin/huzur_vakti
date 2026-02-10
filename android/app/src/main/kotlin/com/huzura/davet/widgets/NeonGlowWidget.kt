@@ -1,4 +1,4 @@
-package com.example.huzur_vakti.widgets
+package com.huzura.davet.widgets
 
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
@@ -6,14 +6,14 @@ import android.content.Context
 import android.content.Intent
 import android.graphics.Color
 import android.widget.RemoteViews
-import com.example.huzur_vakti.R
+import com.huzura.davet.R
 import es.antonborri.home_widget.HomeWidgetPlugin
 
 /**
- * 🌌 Cosmic Galaxy Widget - Uzayın derinliklerinden ilham alan tasarım
- * Nebula, yıldız tozu ve galaktik renklerle büyüleyici bir deneyim
+ * Neon Glow Widget - Parlayan neon efektli modern tasarım
+ * Ecir barı ile vaktin ilerlemesini gösterir
  */
-class CosmicWidget : AppWidgetProvider() {
+class NeonGlowWidget : AppWidgetProvider() {
     
     override fun onUpdate(
         context: Context,
@@ -28,9 +28,9 @@ class CosmicWidget : AppWidgetProvider() {
     override fun onReceive(context: Context, intent: Intent) {
         super.onReceive(context, intent)
         if (intent.action == AppWidgetManager.ACTION_APPWIDGET_UPDATE ||
-            intent.action == "com.example.huzur_vakti.UPDATE_WIDGETS") {
+            intent.action == "com.huzura.davet.UPDATE_WIDGETS") {
             val appWidgetManager = AppWidgetManager.getInstance(context)
-            val thisWidget = android.content.ComponentName(context, CosmicWidget::class.java)
+            val thisWidget = android.content.ComponentName(context, NeonGlowWidget::class.java)
             val appWidgetIds = appWidgetManager.getAppWidgetIds(thisWidget)
             onUpdate(context, appWidgetManager, appWidgetIds)
         }
@@ -66,16 +66,16 @@ class CosmicWidget : AppWidgetProvider() {
             val miladiTarih = widgetData.getString("miladi_tarih", "21 Ocak 2026") ?: "21 Ocak 2026"
             
             // Önce widget'a özel ayarları kontrol et, yoksa varsayılanı kullan
-            val arkaPlanKey = widgetData.getString("cosmic_arkaplan_key", null) 
-                ?: widgetData.getString("arkaplan_key", "purple") 
-                ?: "purple"
-            val yaziRengiHex = widgetData.getString("cosmic_yazi_rengi_hex", null) 
-                ?: widgetData.getString("yazi_rengi_hex", "FFFFFF") 
-                ?: "FFFFFF"
-            val yaziRengi = WidgetUtils.parseColorSafe(yaziRengiHex, Color.WHITE)
+            val arkaPlanKey = widgetData.getString("neon_arkaplan_key", null) 
+                ?: widgetData.getString("arkaplan_key", "dark") 
+                ?: "dark"
+            val yaziRengiHex = widgetData.getString("neon_yazi_rengi_hex", null) 
+                ?: widgetData.getString("yazi_rengi_hex", "00FF88") 
+                ?: "00FF88"
+            val yaziRengi = WidgetUtils.parseColorSafe(yaziRengiHex, Color.parseColor("#00FF88"))
             val yaziRengiSecondary = Color.argb(180, Color.red(yaziRengi), Color.green(yaziRengi), Color.blue(yaziRengi))
             
-            val views = RemoteViews(context.packageName, R.layout.widget_cosmic)
+            val views = RemoteViews(context.packageName, R.layout.widget_neon_glow)
             
             // Arka plan ayarla
             val bgDrawable = when(arkaPlanKey) {
@@ -92,43 +92,32 @@ class CosmicWidget : AppWidgetProvider() {
                 "transparent" -> R.drawable.widget_bg_transparent
                 "semi_black" -> R.drawable.widget_bg_semi_black
                 "semi_white" -> R.drawable.widget_bg_semi_white
-                else -> R.drawable.widget_bg_purple
+                else -> R.drawable.widget_bg_card_dark
             }
             views.setInt(R.id.widget_root, "setBackgroundResource", bgDrawable)
             
-            // Galaktik renkler (accent olarak kullanılır)
-            val cosmicPink = Color.parseColor("#E040FB")
-            val cosmicCyan = Color.parseColor("#00BCD4")
-            val cosmicPurple = Color.parseColor("#7C4DFF")
-            
             // Verileri set et
-            views.setTextViewText(R.id.tv_konum, konum)
-            views.setTextColor(R.id.tv_konum, cosmicPink)
-            
-            views.setTextViewText(R.id.tv_hicri, hicriTarih)
-            
-            // Miladi tarih
-            views.setTextViewText(R.id.tv_miladi, miladiTarih)
-            
-            views.setTextViewText(R.id.tv_mevcut_vakit, "✦ $mevcutVakit ✦")
-            views.setTextColor(R.id.tv_mevcut_vakit, cosmicPurple)
+            views.setTextViewText(R.id.tv_sonraki_vakit, sonrakiVakit)
+            views.setTextColor(R.id.tv_sonraki_vakit, yaziRengi)
             
             WidgetUtils.applyCountdown(views, R.id.tv_geri_sayim, geriSayim)
             views.setTextColor(R.id.tv_geri_sayim, yaziRengi)
             
-            views.setTextViewText(R.id.tv_sonraki_vakit, "$sonrakiVakit galaksisine")
-            views.setTextColor(R.id.tv_sonraki_vakit, cosmicCyan)
+            views.setTextViewText(R.id.tv_mevcut_vakit, mevcutVakit)
+            views.setTextColor(R.id.tv_mevcut_vakit, yaziRengiSecondary)
             
-            // Progress bar
+            views.setTextViewText(R.id.tv_konum, konum)
+            views.setTextColor(R.id.tv_konum, yaziRengiSecondary)
+            
+            views.setTextViewText(R.id.tv_hicri, hicriTarih)
+            views.setTextColor(R.id.tv_hicri, yaziRengiSecondary)
+            
+            // Miladi tarih
+            views.setTextViewText(R.id.tv_miladi, miladiTarih)
+            views.setTextColor(R.id.tv_miladi, yaziRengiSecondary)
+            
+            // Ecir barını güncelle
             views.setProgressBar(R.id.progress_ecir, 100, ilerleme, false)
-            
-            // Vakit saatlerini güncelle
-            views.setTextViewText(R.id.tv_imsak, imsak)
-            views.setTextViewText(R.id.tv_gunes, gunes)
-            views.setTextViewText(R.id.tv_ogle, ogle)
-            views.setTextViewText(R.id.tv_ikindi, ikindi)
-            views.setTextViewText(R.id.tv_aksam, aksam)
-            views.setTextViewText(R.id.tv_yatsi, yatsi)
             
             // Tıklama olayı
             views.setOnClickPendingIntent(R.id.widget_root, WidgetUtils.createLaunchPendingIntent(context))

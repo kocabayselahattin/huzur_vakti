@@ -1,4 +1,4 @@
-package com.example.huzur_vakti.lockscreen
+package com.huzura.davet.lockscreen
 
 import android.app.*
 import android.content.Context
@@ -7,8 +7,8 @@ import android.os.Build
 import android.os.IBinder
 import android.util.Log
 import androidx.core.app.NotificationCompat
-import com.example.huzur_vakti.MainActivity
-import com.example.huzur_vakti.R
+import com.huzura.davet.MainActivity
+import com.huzura.davet.R
 import es.antonborri.home_widget.HomeWidgetPlugin
 import java.util.*
 import android.os.Handler
