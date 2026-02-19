@@ -1,11 +1,11 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:hijri/hijri_calendar.dart';
 
 import '../services/diyanet_api_service.dart';
 import '../services/konum_service.dart';
 import '../services/language_service.dart';
+import '../services/ozel_gunler_service.dart';
 import '../services/tema_service.dart';
 
 class RamazanBannerWidget extends StatefulWidget {
@@ -28,7 +28,7 @@ class _RamazanBannerWidgetState extends State<RamazanBannerWidget> {
   DateTime? _iftarTime;
   DateTime? _tomorrowImsakTime;
 
-  bool get _isRamadan => HijriCalendar.now().hMonth == 9;
+  bool get _isRamadan => OzelGunlerService.hijriNowTR().hMonth == 9;
 
   @override
   void initState() {

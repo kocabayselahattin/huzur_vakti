@@ -3,6 +3,8 @@ import 'package:hijri/hijri_calendar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:timezone/timezone.dart' as tz;
+import 'diyanet_api_service.dart';
+import 'konum_service.dart';
 import 'language_service.dart';
 import 'alarm_service.dart';
 
@@ -63,9 +65,131 @@ class OzelGun {
 class OzelGunlerService {
   static const String _sonGosterilenGunKey = 'son_gosterilen_ozel_gun';
 
+  static const String _hijriDayShiftKey = 'hijri_day_shift';
+  static const String _hijriDayShiftDateKey = 'hijri_day_shift_date';
+
+  static int _hijriDayShift = 0;
+
   /// Session-level popup shown flag
   /// Stays true during the session to show the popup only once
   static bool _sessionPopupShown = false;
+
+  /// Sync Hijri calculations with Turkey/Diyanet calendar to prevent 1-day drift.
+  ///
+  /// The `hijri` package (Umm al-Qura) can differ from Turkey's official
+  /// calendar on some dates (e.g., Ramadan start, Berat) by ±1 day.
+  ///
+  /// We compute a small day shift (typically -1/0/+1) by finding which
+  /// `HijriCalendar.fromDate(today + shift)` matches Diyanet's Hijri date.
+  static Future<void> syncHijriDayShiftWithDiyanet() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+
+      final now = DateTime.now();
+      final todayKey = '${now.year}-${now.month}-${now.day}';
+
+      // Apply cached shift immediately if available.
+      final cachedShift = prefs.getInt(_hijriDayShiftKey);
+      if (cachedShift != null) {
+        _hijriDayShift = cachedShift;
+      }
+
+      // If we already synced today, stop here.
+      final cachedDateKey = prefs.getString(_hijriDayShiftDateKey);
+      if (cachedDateKey == todayKey) {
+        debugPrint(
+          '🗓️ [HijriShift] Using cached shift for today: $_hijriDayShift',
+        );
+        return;
+      }
+
+      final ilceId = await KonumService.getIlceId();
+      if (ilceId == null ||
+          ilceId.isEmpty ||
+          KonumService.isManualIlceId(ilceId)) {
+        debugPrint('🗓️ [HijriShift] Skip: no Turkey district selected');
+        return;
+      }
+
+      final vakitler = await DiyanetApiService.getBugunVakitler(ilceId);
+      final hicriKisa = vakitler?['HicriTarihKisa']?.toString() ?? '';
+      if (hicriKisa.isEmpty || !hicriKisa.contains('.')) {
+        debugPrint('🗓️ [HijriShift] Skip: Diyanet Hijri date missing');
+        return;
+      }
+
+      final parts = hicriKisa.split('.');
+      if (parts.length < 3) return;
+
+      final hDay = int.tryParse(parts[0]) ?? 0;
+      final hMonth = int.tryParse(parts[1]) ?? 0;
+      final hYear = int.tryParse(parts[2]) ?? 0;
+      if (hDay <= 0 || hMonth <= 0 || hYear <= 0) return;
+
+      final todayDate = DateTime(now.year, now.month, now.day);
+
+      int? foundShift;
+      for (final shift in const [-2, -1, 0, 1, 2]) {
+        final testDate = todayDate.add(Duration(days: shift));
+        final testHijri = HijriCalendar.fromDate(testDate);
+        if (testHijri.hYear == hYear &&
+            testHijri.hMonth == hMonth &&
+            testHijri.hDay == hDay) {
+          foundShift = shift;
+          break;
+        }
+      }
+
+      if (foundShift == null) {
+        debugPrint(
+          '🗓️ [HijriShift] No matching shift found (Diyanet=$hicriKisa)',
+        );
+        return;
+      }
+
+      _hijriDayShift = foundShift;
+      await prefs.setInt(_hijriDayShiftKey, foundShift);
+      await prefs.setString(_hijriDayShiftDateKey, todayKey);
+
+      debugPrint(
+        '🗓️ [HijriShift] Applied shift=$_hijriDayShift (Diyanet=$hicriKisa)',
+      );
+    } catch (e) {
+      debugPrint('🗓️ [HijriShift] Failed to sync: $e');
+    }
+  }
+
+  static HijriCalendar hijriNowTR() {
+    final now = DateTime.now();
+    final base = DateTime(now.year, now.month, now.day);
+    return HijriCalendar.fromDate(base.add(Duration(days: _hijriDayShift)));
+  }
+
+  static DateTime? _parseDottedDate(String value) {
+    // Expected: dd.MM.yyyy
+    final parts = value.split('.');
+    if (parts.length < 3) return null;
+    final day = int.tryParse(parts[0]);
+    final month = int.tryParse(parts[1]);
+    final year = int.tryParse(parts[2]);
+    if (day == null || month == null || year == null) return null;
+    return DateTime(year, month, day);
+  }
+
+  static ({int day, int month, int year})? _parseDottedHijriDate(String value) {
+    // Expected: dd.MM.yyyy (Hijri)
+    final parts = value.split('.');
+    if (parts.length < 3) return null;
+    final day = int.tryParse(parts[0]);
+    final month = int.tryParse(parts[1]);
+    final year = int.tryParse(parts[2]);
+    if (day == null || month == null || year == null) return null;
+    return (day: day, month: month, year: year);
+  }
+
+  static bool _isDateInRange(DateTime date, DateTime start, DateTime end) {
+    return !date.isBefore(start) && !date.isAfter(end);
+  }
 
   /// TEST MODE - used during development
   /// Should be false in production.
@@ -224,16 +348,14 @@ class OzelGunlerService {
     }
 
     final now = DateTime.now();
-    final hicri = HijriCalendar.now();
+    final hicri = hijriNowTR();
     final hicriAy = hicri.hMonth;
     final hicriGun = hicri.hDay;
 
     debugPrint(
       '📅 [OzelGun] Today: $now.day/$now.month/$now.year $now.hour:$now.minute',
     );
-    debugPrint(
-      '📅 [OzelGun] Hicri: $hicriGun/$hicriAy/$hicri.hYear',
-    );
+    debugPrint('📅 [OzelGun] Hicri: $hicriGun/$hicriAy/$hicri.hYear');
 
     for (final ozelGun in ozelGunler) {
       // 1. Normal special days (geceOncesiMi == false): only after 09:00
@@ -321,7 +443,7 @@ class OzelGunlerService {
   /// Get upcoming special days (within 30 days)
   static List<Map<String, dynamic>> yaklasanOzelGunler() {
     final List<Map<String, dynamic>> sonuc = [];
-    final bugun = HijriCalendar.now();
+    final bugun = hijriNowTR();
 
     for (final ozelGun in ozelGunler) {
       // This year's date
@@ -348,7 +470,7 @@ class OzelGunlerService {
           miladiTarih.year,
           miladiTarih.month,
           miladiTarih.day,
-        );
+        ).subtract(Duration(days: _hijriDayShift));
         final simdi = DateTime.now();
         final fark = tarih.difference(simdi).inDays;
 
@@ -376,6 +498,101 @@ class OzelGunlerService {
     return sonuc;
   }
 
+  /// Get upcoming special days using Turkey/Diyanet calendar mapping.
+  ///
+  /// This avoids 1-day drift and also handles Hijri month length differences
+  /// (e.g., Ramadan can be 29 days in Turkey).
+  static Future<List<Map<String, dynamic>>> yaklasanOzelGunlerAsync({
+    int daysAhead = 365,
+  }) async {
+    final ilceId = await KonumService.getIlceId();
+    if (ilceId == null ||
+        ilceId.isEmpty ||
+        KonumService.isManualIlceId(ilceId)) {
+      return yaklasanOzelGunler();
+    }
+
+    final now = DateTime.now();
+    final startDate = DateTime(now.year, now.month, now.day);
+    final endDate = startDate.add(Duration(days: daysAhead));
+
+    final dayRows = <({DateTime gDate, int hDay, int hMonth, int hYear})>[];
+
+    // Iterate months between startDate and endDate (inclusive).
+    var year = startDate.year;
+    var month = startDate.month;
+    while (true) {
+      final monthStart = DateTime(year, month, 1);
+      if (monthStart.isAfter(endDate)) break;
+
+      final list = await DiyanetApiService.getAylikVakitler(
+        ilceId,
+        year,
+        month,
+      );
+      for (final item in list) {
+        final gStr = item['MiladiTarihKisa']?.toString() ?? '';
+        final hStr = item['HicriTarihKisa']?.toString() ?? '';
+        if (gStr.isEmpty || hStr.isEmpty) continue;
+
+        final gDate = _parseDottedDate(gStr);
+        final h = _parseDottedHijriDate(hStr);
+        if (gDate == null || h == null) continue;
+
+        if (_isDateInRange(gDate, startDate, endDate)) {
+          dayRows.add((
+            gDate: gDate,
+            hDay: h.day,
+            hMonth: h.month,
+            hYear: h.year,
+          ));
+        }
+      }
+
+      // next month
+      if (month == 12) {
+        month = 1;
+        year++;
+      } else {
+        month++;
+      }
+    }
+
+    // Ensure chronological order.
+    dayRows.sort((a, b) => a.gDate.compareTo(b.gDate));
+
+    final result = <Map<String, dynamic>>[];
+
+    for (final ozelGun in ozelGunler) {
+      final match =
+          dayRows.cast<dynamic>().firstWhere(
+                (row) =>
+                    row.hMonth == ozelGun.hicriAy &&
+                    row.hDay == ozelGun.hicriGun,
+                orElse: () => null,
+              )
+              as ({DateTime gDate, int hDay, int hMonth, int hYear})?;
+
+      if (match == null) continue;
+
+      final kalanGun = match.gDate.difference(startDate).inDays;
+      if (kalanGun < 0 || kalanGun > daysAhead) continue;
+
+      result.add({
+        'ozelGun': ozelGun,
+        'tarih': match.gDate,
+        'kalanGun': kalanGun,
+        'hicriTarih':
+            '${ozelGun.hicriGun} ${_getHicriAyAdi(ozelGun.hicriAy)} ${match.hYear}',
+      });
+    }
+
+    result.sort(
+      (a, b) => (a['kalanGun'] as int).compareTo(b['kalanGun'] as int),
+    );
+    return result;
+  }
+
   /// Return Hijri month name
   static String _getHicriAyAdi(int ay) {
     final languageService = LanguageService();
@@ -395,6 +612,9 @@ class OzelGunlerService {
   /// Schedule notifications for special days within 7 days
   /// For geceOncesiMi: schedule both previous day 09:00 and main day 00:05
   static Future<void> scheduleOzelGunBildirimleri() async {
+    // Ensure Hijri calendar is aligned (important for conversions used below).
+    await syncHijriDayShiftWithDiyanet();
+
     final prefs = await SharedPreferences.getInstance();
     final enabled = prefs.getBool('ozel_gun_bildirimleri_aktif') ?? true;
 
@@ -409,8 +629,8 @@ class OzelGunlerService {
     // Cancel existing notifications first
     await cancelOzelGunBildirimleri();
 
-    // Get upcoming special days (within 7 days)
-    final yaklasanlar = yaklasanOzelGunler();
+    // Get upcoming special days (prefer Diyanet mapping)
+    final yaklasanlar = await yaklasanOzelGunlerAsync(daysAhead: 14);
     int zamanlanandi = 0;
 
     debugPrint('📅 ========== SPECIAL DAY SCHEDULING ==========');

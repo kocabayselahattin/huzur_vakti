@@ -822,6 +822,7 @@ class TemaService extends ChangeNotifier {
     notifyListeners();
   }
 
+
   Future<void> ozelTemayiKaydet({
     required Color arkaPlan,
     required Color kartArkaPlan,

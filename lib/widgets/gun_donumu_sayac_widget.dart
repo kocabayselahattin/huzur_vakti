@@ -50,6 +50,7 @@ class _GunDonumuSayacWidgetState extends State<GunDonumuSayacWidget>
   late Timer _timer;
   late DateTime _now;
   String? _weatherMain;
+  double? _temperatureC;
   Map<String, String> _vakitler = {};
 
   // Animation controllers.
@@ -62,6 +63,7 @@ class _GunDonumuSayacWidgetState extends State<GunDonumuSayacWidget>
   // Weather cache static values.
   // Fetch from API only once per app session.
   static String? _cachedWeather;
+  static double? _cachedTemperatureC;
   static DateTime? _lastWeatherFetch;
 
   @override
@@ -241,7 +243,9 @@ class _GunDonumuSayacWidgetState extends State<GunDonumuSayacWidget>
   /// Fetch only once per app session.
   Future<void> _loadWeather() async {
     // If cache exists and was fetched today, use it.
-    if (_cachedWeather != null && _lastWeatherFetch != null) {
+    if (_cachedWeather != null &&
+        _cachedTemperatureC != null &&
+        _lastWeatherFetch != null) {
       final now = DateTime.now();
       final isSameDay =
           _lastWeatherFetch!.year == now.year &&
@@ -250,7 +254,12 @@ class _GunDonumuSayacWidgetState extends State<GunDonumuSayacWidget>
 
       if (isSameDay) {
         debugPrint('🌤️ Weather loaded from cache: $_cachedWeather');
-        if (mounted) setState(() => _weatherMain = _cachedWeather);
+        if (mounted) {
+          setState(() {
+            _weatherMain = _cachedWeather;
+            _temperatureC = _cachedTemperatureC;
+          });
+        }
         return;
       }
     }
@@ -319,13 +328,18 @@ class _GunDonumuSayacWidgetState extends State<GunDonumuSayacWidget>
       );
 
       final url = Uri.parse(
-        'https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=weather_code',
+        'https://api.open-meteo.com/v1/forecast?latitude=$lat&longitude=$lon&current=temperature_2m,weather_code',
       );
 
       final response = await http.get(url);
       if (response.statusCode == 200) {
         final data = json.decode(response.body);
-        final code = data['current']['weather_code'] ?? 0;
+        final current = (data is Map<String, dynamic>)
+            ? (data['current'] as Map<String, dynamic>?)
+            : null;
+
+        final code = current?['weather_code'] ?? 0;
+        final temperature = (current?['temperature_2m'] as num?)?.toDouble();
 
         String type = 'clear';
         if (code >= 45 && code <= 48) {
@@ -342,14 +356,25 @@ class _GunDonumuSayacWidgetState extends State<GunDonumuSayacWidget>
 
         // Save to cache.
         _cachedWeather = type;
+        _cachedTemperatureC = temperature;
         _lastWeatherFetch = DateTime.now();
         debugPrint('🌤️ Weather fetched and cached: $type');
 
-        if (mounted) setState(() => _weatherMain = type);
+        if (mounted) {
+          setState(() {
+            _weatherMain = type;
+            _temperatureC = temperature;
+          });
+        }
       }
     } catch (e) {
       debugPrint('Weather error: $e');
     }
+  }
+
+  String _formatTemperature(double? temperatureC) {
+    if (temperatureC == null) return '--°C';
+    return '${temperatureC.round()}°C';
   }
 
   @override
@@ -404,10 +429,7 @@ class _GunDonumuSayacWidgetState extends State<GunDonumuSayacWidget>
       if (t != null) {
         final m = _timeToMinutes(t) * 60; // Convert to seconds.
         if (m > nowSec) {
-          return {
-            'vakit': v,
-            'kalan': Duration(seconds: m - nowSec),
-          };
+          return {'vakit': v, 'kalan': Duration(seconds: m - nowSec)};
         }
       }
     }
@@ -482,6 +504,10 @@ class _GunDonumuSayacWidgetState extends State<GunDonumuSayacWidget>
 
     final aktifVakit = _getAktifVakit();
     final sonraki = _getSonrakiVakit();
+    final nextVakit = (sonraki['vakit'] as String?) ?? '';
+    final countdownColor = nextVakit.isEmpty
+        ? Colors.white
+        : _getVakitColor(nextVakit);
     final moonPhase = _getMoonPhaseFraction(_now);
 
     final Map<String, String> vakitIsimleri = {
@@ -557,6 +583,37 @@ class _GunDonumuSayacWidgetState extends State<GunDonumuSayacWidget>
             if (_weatherMain == 'snow' || _weatherMain == 'rain')
               ..._particles.map((p) => _buildParticle(p, width, height)),
 
+            // === TEMPERATURE (TOP-RIGHT) ===
+            Positioned(
+              top: 14,
+              right: 14,
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 6,
+                ),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.35),
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: Text(
+                  _formatTemperature(_temperatureC),
+                  style: TextStyle(
+                    color: countdownColor,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
+                    shadows: [
+                      Shadow(
+                        color: countdownColor.withOpacity(0.5),
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+
             // === HORIZON LINE (subtle) ===
             Positioned(
               bottom: height * 0.25,
@@ -615,7 +672,7 @@ class _GunDonumuSayacWidgetState extends State<GunDonumuSayacWidget>
                                 'assets/icon/sun.png',
                                 fit: BoxFit.cover,
                                 errorBuilder: (context, error, stackTrace) =>
-                                  _fallbackSun(),
+                                    _fallbackSun(),
                               )
                             : _buildMoonWithPhase(moonPhase),
                       ),
@@ -958,8 +1015,7 @@ class _GunDonumuSayacWidgetState extends State<GunDonumuSayacWidget>
           children: [
             // Prayer name.
             Text(
-              (_languageService['time_until_prayer'] ??
-                      '{prayer} time in ')
+              (_languageService['time_until_prayer'] ?? '{prayer} time in ')
                   .replaceAll('{prayer}', vakitAdi),
               style: TextStyle(
                 color: Colors.white.withOpacity(0.9),

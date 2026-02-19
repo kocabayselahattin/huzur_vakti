@@ -29,6 +29,11 @@ android {
         jvmTarget = JavaVersion.VERSION_17.toString()
     }
 
+    // Avoid Windows file-lock issues during release builds (lintVitalAnalyzeRelease).
+    lint {
+        checkReleaseBuilds = false
+    }
+
     defaultConfig {
         // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
         applicationId = "com.huzura.davet"
@@ -52,6 +57,19 @@ android {
     buildTypes {
         release {
             signingConfig = signingConfigs.getByName("release")
+            // Enable R8/Proguard to generate mapping.txt for Play Console
+            // (helps analyze obfuscated stack traces and can reduce APK size).
+            isMinifyEnabled = true
+            isShrinkResources = true
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro",
+            )
+
+            // Generate native debug symbols for Play Console (NDK symbols).
+            ndk {
+                debugSymbolLevel = "SYMBOL_TABLE"
+            }
         }
     }
     compileOptions {

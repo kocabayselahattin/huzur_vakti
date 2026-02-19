@@ -404,6 +404,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
         _konumPageController = PageController(initialPage: _aktifKonumIndex);
       });
     }
+
   }
 
   // Change location
@@ -429,6 +430,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
       }
     }
   }
+
 
   // App info popup
   void _showAppInfoDialog() {
@@ -703,6 +705,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
   @override
   Widget build(BuildContext context) {
     final renkler = _temaService.renkler;
+    final content = _buildHomeContentColumn(renkler);
 
     return Scaffold(
       backgroundColor: renkler.arkaPlan,
@@ -808,106 +811,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
             ? BoxDecoration(gradient: renkler.arkaPlanGradient)
             : null,
         child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // --- LOCATION WARNING (when location not selected) ---
-              if (_konumlar.isEmpty)
-                Container(
-                  margin: const EdgeInsets.all(16),
-                  padding: const EdgeInsets.all(12),
-                  decoration: BoxDecoration(
-                    color: Colors.orange.withValues(alpha: 0.2),
-                    border: Border.all(color: Colors.orange, width: 2),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
-                  child: Row(
-                    children: [
-                      const Icon(
-                        Icons.warning_amber_rounded,
-                        color: Colors.orange,
-                        size: 30,
-                      ),
-                      const SizedBox(width: 12),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                                _languageService['location_not_selected'] ??
-                                  '',
-                              style: TextStyle(
-                                color: renkler.yaziPrimary,
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                                _languageService['select_location_prompt'] ??
-                                  '',
-                              style: TextStyle(
-                                color: renkler.yaziSecondary,
-                                fontSize: 12,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ),
-                      IconButton(
-                        icon: const Icon(
-                          Icons.arrow_forward,
-                          color: Colors.orange,
-                        ),
-                        onPressed: () {
-                          Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (context) => const AyarlarSayfa(),
-                            ),
-                          ).then((_) => _konumYukle());
-                        },
-                      ),
-                    ],
-                  ),
-                ),
-
-              // --- COUNTER SECTION ---
-              SizedBox(
-                height: 240,
-                width: double.infinity,
-                child: _sayacYuklendi
-                    ? _buildSelectedCounter()
-                    : const Center(child: CircularProgressIndicator()),
-              ),
-
-              const SizedBox(height: 10),
-
-              // --- RAMAZAN BANNER ---
-              const RamazanBannerWidget(),
-
-              const SizedBox(height: 10),
-
-              // --- ESMAUL HUSNA ---
-              const EsmaulHusnaWidget(),
-
-              const SizedBox(height: 10),
-
-              // --- SPECIAL DAY BANNER ---
-              const OzelGunBannerWidget(),
-
-              const SizedBox(height: 10),
-
-              // --- PRAYER TIMES LIST ---
-              VakitListesiWidget(key: _vakitListesiKey),
-
-              const SizedBox(height: 20),
-
-              // --- TODAY'S CONTENT ---
-              const GununIcerigiWidget(),
-
-              const SizedBox(height: 50),
-            ],
-          ),
+          child: _buildHomeContentColumn(renkler),
         ),
       ),
       floatingActionButton: FloatingActionButton(
@@ -918,6 +822,107 @@ class _AnaSayfaState extends State<AnaSayfa> {
         child: Icon(Icons.menu, color: renkler.yaziPrimary),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
+    );
+  }
+
+
+  Widget _buildHomeContentColumn(TemaRenkleri renkler) {
+    return Column(
+      children: [
+        // --- LOCATION WARNING (when location not selected) ---
+        if (_konumlar.isEmpty)
+          Container(
+            margin: const EdgeInsets.all(16),
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.withValues(alpha: 0.2),
+              border: Border.all(color: Colors.orange, width: 2),
+              borderRadius: BorderRadius.circular(12),
+            ),
+            child: Row(
+              children: [
+                const Icon(
+                  Icons.warning_amber_rounded,
+                  color: Colors.orange,
+                  size: 30,
+                ),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _languageService['location_not_selected'] ?? '',
+                        style: TextStyle(
+                          color: renkler.yaziPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _languageService['select_location_prompt'] ?? '',
+                        style: TextStyle(
+                          color: renkler.yaziSecondary,
+                          fontSize: 12,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                IconButton(
+                  icon: const Icon(
+                    Icons.arrow_forward,
+                    color: Colors.orange,
+                  ),
+                  onPressed: () {
+                    Navigator.push(
+                      context,
+                      MaterialPageRoute(
+                        builder: (context) => const AyarlarSayfa(),
+                      ),
+                    ).then((_) => _konumYukle());
+                  },
+                ),
+              ],
+            ),
+          ),
+        // --- COUNTER SECTION ---
+        SizedBox(
+          height: 240,
+          width: double.infinity,
+          child: _sayacYuklendi
+              ? _buildSelectedCounter()
+              : const Center(child: CircularProgressIndicator()),
+        ),
+
+        const SizedBox(height: 10),
+
+        // --- RAMAZAN BANNER ---
+        const RamazanBannerWidget(),
+
+        const SizedBox(height: 10),
+
+        // --- ESMAUL HUSNA ---
+        const EsmaulHusnaWidget(),
+
+        const SizedBox(height: 10),
+
+        // --- SPECIAL DAY BANNER ---
+        const OzelGunBannerWidget(),
+
+        const SizedBox(height: 10),
+
+        // --- PRAYER TIMES LIST ---
+        VakitListesiWidget(key: _vakitListesiKey),
+
+        const SizedBox(height: 20),
+
+        // --- TODAY'S CONTENT ---
+        const GununIcerigiWidget(),
+
+        const SizedBox(height: 50),
+      ],
     );
   }
 

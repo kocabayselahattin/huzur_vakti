@@ -199,6 +199,9 @@ void main() async {
   await DailyContentNotificationService.initialize();
   await DailyContentNotificationService.scheduleDailyContentNotifications();
 
+  // 🗓️ Sync Hijri calendar with Turkey/Diyanet to avoid 1-day drift (Ramadan, Berat, etc.).
+  await OzelGunlerService.syncHijriDayShiftWithDiyanet();
+
   // 🔔 Special day notifications (holy nights, holidays, etc.).
   await OzelGunlerService.scheduleOzelGunBildirimleri();
 

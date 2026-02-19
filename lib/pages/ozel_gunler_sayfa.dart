@@ -41,13 +41,14 @@ class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
     if (mounted) setState(() {});
   }
 
-  void _gunleriYukle() {
+  Future<void> _gunleriYukle() async {
     setState(() {
       _yukleniyor = true;
     });
-    
-    final gunler = OzelGunlerService.yaklasanOzelGunler();
-    
+
+    final gunler = await OzelGunlerService.yaklasanOzelGunlerAsync();
+
+    if (!mounted) return;
     setState(() {
       _yaklasanGunler = gunler;
       _yukleniyor = false;
@@ -57,7 +58,7 @@ class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
   @override
   Widget build(BuildContext context) {
     final renkler = _temaService.renkler;
-    
+
     return Scaffold(
       backgroundColor: renkler.arkaPlan,
       appBar: AppBar(
@@ -72,8 +73,8 @@ class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
       body: _yukleniyor
           ? const Center(child: CircularProgressIndicator())
           : _yaklasanGunler.isEmpty
-              ? _bosListe(renkler)
-              : _gunlerListesi(renkler),
+          ? _bosListe(renkler)
+          : _gunlerListesi(renkler),
     );
   }
 
@@ -89,11 +90,9 @@ class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
           ),
           const SizedBox(height: 16),
           Text(
-            _languageService['no_upcoming_special_days'] ?? 'Yaklaşan özel gün bulunamadı',
-            style: TextStyle(
-              color: renkler.yaziSecondary,
-              fontSize: 16,
-            ),
+            _languageService['no_upcoming_special_days'] ??
+                'Yaklaşan özel gün bulunamadı',
+            style: TextStyle(color: renkler.yaziSecondary, fontSize: 16),
           ),
         ],
       ),
@@ -110,7 +109,7 @@ class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
         final tarih = gun['tarih'] as DateTime;
         final kalanGun = gun['kalanGun'] as int;
         final hicriTarih = gun['hicriTarih'] as String;
-        
+
         return _gunKarti(ozelGun, tarih, kalanGun, hicriTarih, renkler);
       },
     );
@@ -127,7 +126,7 @@ class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
     final ikon = _getIkon(ozelGun.tur);
     final renk = _getRenk(ozelGun.tur, renkler);
     final bugunMu = kalanGun == 0;
-    
+
     return InkWell(
       onTap: () {
         Navigator.push(
@@ -144,13 +143,9 @@ class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
       child: Container(
         margin: const EdgeInsets.only(bottom: 12),
         decoration: BoxDecoration(
-          color: bugunMu 
-              ? renk.withValues(alpha: 0.2)
-              : renkler.kartArkaPlan,
+          color: bugunMu ? renk.withValues(alpha: 0.2) : renkler.kartArkaPlan,
           borderRadius: BorderRadius.circular(16),
-          border: bugunMu 
-              ? Border.all(color: renk, width: 2)
-              : null,
+          border: bugunMu ? Border.all(color: renk, width: 2) : null,
           boxShadow: [
             BoxShadow(
               color: Colors.black.withValues(alpha: 0.1),
@@ -161,120 +156,111 @@ class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
         ),
         child: Padding(
           padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            // İkon
-            Container(
-              width: 56,
-              height: 56,
-              decoration: BoxDecoration(
-                color: renk.withValues(alpha: 0.2),
-                shape: BoxShape.circle,
+          child: Row(
+            children: [
+              // İkon
+              Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: renk.withValues(alpha: 0.2),
+                  shape: BoxShape.circle,
+                ),
+                child: Icon(ikon, color: renk, size: 28),
               ),
-              child: Icon(
-                ikon,
-                color: renk,
-                size: 28,
-              ),
-            ),
-            const SizedBox(width: 16),
-            
-            // Bilgiler
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    ozelGun.ad,
-                    style: TextStyle(
-                      color: renkler.yaziPrimary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    ozelGun.aciklama,
-                    style: TextStyle(
-                      color: renkler.yaziSecondary,
-                      fontSize: 13,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.calendar_today,
-                        size: 14,
-                        color: renkler.yaziSecondary,
+              const SizedBox(width: 16),
+
+              // Bilgiler
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      ozelGun.ad,
+                      style: TextStyle(
+                        color: renkler.yaziPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
                       ),
-                      const SizedBox(width: 4),
-                      Expanded(
-                        child: Text(
-                          miladiTarih,
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      ozelGun.aciklama,
+                      style: TextStyle(
+                        color: renkler.yaziSecondary,
+                        fontSize: 13,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.calendar_today,
+                          size: 14,
+                          color: renkler.yaziSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Expanded(
+                          child: Text(
+                            miladiTarih,
+                            style: TextStyle(
+                              color: renkler.yaziSecondary,
+                              fontSize: 12,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                    const SizedBox(height: 4),
+                    Row(
+                      children: [
+                        Icon(
+                          Icons.brightness_3,
+                          size: 14,
+                          color: renkler.yaziSecondary,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          hicriTarih,
                           style: TextStyle(
                             color: renkler.yaziSecondary,
                             fontSize: 12,
                           ),
                         ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.brightness_3,
-                        size: 14,
-                        color: renkler.yaziSecondary,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        hicriTarih,
-                        style: TextStyle(
-                          color: renkler.yaziSecondary,
-                          fontSize: 12,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            
-            // Kalan gün
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: bugunMu 
-                    ? renk 
-                    : renk.withValues(alpha: 0.15),
-                borderRadius: BorderRadius.circular(20),
-              ),
-              child: Column(
-                children: [
-                  Text(
-                    bugunMu ? 'BUGÜN' : '$kalanGun',
-                    style: TextStyle(
-                      color: bugunMu ? Colors.white : renk,
-                      fontSize: bugunMu ? 12 : 20,
-                      fontWeight: FontWeight.bold,
+                      ],
                     ),
-                  ),
-                  if (!bugunMu)
+                  ],
+                ),
+              ),
+
+              // Kalan gün
+              Container(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
+                decoration: BoxDecoration(
+                  color: bugunMu ? renk : renk.withValues(alpha: 0.15),
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: Column(
+                  children: [
                     Text(
-                      'gün',
+                      bugunMu ? 'BUGÜN' : '$kalanGun',
                       style: TextStyle(
-                        color: renk,
-                        fontSize: 10,
+                        color: bugunMu ? Colors.white : renk,
+                        fontSize: bugunMu ? 12 : 20,
+                        fontWeight: FontWeight.bold,
                       ),
                     ),
-                ],
+                    if (!bugunMu)
+                      Text('gün', style: TextStyle(color: renk, fontSize: 10)),
+                  ],
+                ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
-      ),
       ),
     );
   }
