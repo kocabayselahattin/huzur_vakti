@@ -106,6 +106,10 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
                   _iletisimBolumu(renkler),
                   const SizedBox(height: 24),
 
+                  // Changelog
+                  _surumNotlari(renkler),
+                  const SizedBox(height: 24),
+
                   // Version and copyright
                   _altBilgi(renkler),
                 ],
@@ -167,7 +171,7 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
           ),
           const SizedBox(height: 4),
           Text(
-            '${_languageService['version'] ?? ''} 1.0.0+1',
+            '${_languageService['version'] ?? 'Sürüm'} 1.0.1+3',
             style: TextStyle(
               color: renkler.yaziSecondary.withValues(alpha: 0.7),
               fontSize: 12,
@@ -533,6 +537,126 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
           ),
         ],
       ),
+    );
+  }
+
+  // ---------------------------------------------------------------
+  // SÜRÜM NOTLARI — her sürüm yükseltmesinde buraya yeni giriş ekle
+  // ---------------------------------------------------------------
+  Widget _surumNotlari(TemaRenkleri renkler) {
+    final surumler = [
+      {
+        'surum': 'v1.0.1',
+        'tarih': 'Şubat 2026',
+        'notlar': [
+          'Hicri takvim Diyanet ile senkronize edildi (Ramazan ve mübarek geceler doğru gösteriliyor)',
+          'Ramazan ay uzunluğu (29/30 gün) Diyanet verisiyle hesaplanıyor',
+          'Gün dönümü sayacına anlık sıcaklık bilgisi eklendi (sağ üst köşe)',
+          'Play Store kod gizleme (R8) ve hata ayıklama sembol dosyaları eklendi',
+        ],
+      },
+      {
+        'surum': 'v1.0.0',
+        'tarih': 'Ocak 2026',
+        'notlar': [
+          'İlk yayın',
+          'Namaz vakitleri, ezan bildirimleri, imsakiye',
+          'Kıble pusulası, yakın camiler',
+          'Hicri takvim, özel günler ve mübarek geceler',
+          'Kuran, 40 hadis, Esmaül Hüsna',
+          'Zikir matik, tesbih sayacı',
+          'Gün dönümü sayaç widget\'i',
+          'Çoklu dil ve tema desteği',
+        ],
+      },
+    ];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(
+          'Sürüm Notları',
+          style: TextStyle(
+            color: renkler.yaziPrimary,
+            fontSize: 20,
+            fontWeight: FontWeight.bold,
+          ),
+        ),
+        const SizedBox(height: 16),
+        ...surumler.map((s) {
+          final notlar = s['notlar'] as List<String>;
+          return Container(
+            margin: const EdgeInsets.only(bottom: 12),
+            padding: const EdgeInsets.all(16),
+            decoration: BoxDecoration(
+              color: renkler.kartArkaPlan,
+              borderRadius: BorderRadius.circular(12),
+              border:
+                  Border.all(color: renkler.ayirac.withValues(alpha: 0.5)),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 10, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: renkler.vurgu.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: Text(
+                        s['surum'] as String,
+                        style: TextStyle(
+                          color: renkler.vurgu,
+                          fontSize: 13,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      s['tarih'] as String,
+                      style: TextStyle(
+                        color: renkler.yaziSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 10),
+                ...notlar.map(
+                  (not) => Padding(
+                    padding: const EdgeInsets.only(bottom: 5),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          '• ',
+                          style: TextStyle(
+                              color: renkler.vurgu,
+                              fontWeight: FontWeight.bold),
+                        ),
+                        Expanded(
+                          child: Text(
+                            not,
+                            style: TextStyle(
+                              color: renkler.yaziSecondary,
+                              fontSize: 13,
+                              height: 1.4,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }),
+      ],
     );
   }
 
