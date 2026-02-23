@@ -97,8 +97,9 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
     final screenHeight = MediaQuery.of(context).size.height;
     final centeredOffset = targetOffset - (screenHeight / 2) + (itemHeight / 2);
     
+    // animateTo internally clamps to valid scroll range; just ensure non-negative.
     controller.animateTo(
-      centeredOffset.clamp(0.0, controller.position.maxScrollExtent),
+      centeredOffset < 0 ? 0.0 : centeredOffset,
       duration: const Duration(milliseconds: 500),
       curve: Curves.easeInOut,
     );
@@ -369,16 +370,14 @@ class _ImsakiyeSayfaState extends State<ImsakiyeSayfa> {
 
     if (bugunIndex >= 0 && !_autoScrolledMonths.contains(ayAnahtar)) {
       _autoScrolledMonths.add(ayAnahtar);
+      // Use a post-frame callback with a short delay so the ListView has time
+      // to compute its scroll extent before we jump to the today item.
+      // Scrollable.ensureVisible doesn't work with lazy ListView.builder when
+      // the target item is off-screen (no BuildContext yet).
       WidgetsBinding.instance.addPostFrameCallback((_) {
-        final ctx = todayTileKey.currentContext;
-        if (ctx != null) {
-          Scrollable.ensureVisible(
-            ctx,
-            alignment: 0.5,
-            duration: const Duration(milliseconds: 500),
-            curve: Curves.easeInOut,
-          );
-        }
+        Future.delayed(const Duration(milliseconds: 150), () {
+          if (mounted) _scrollToBugun(controller, bugunIndex);
+        });
       });
     }
 

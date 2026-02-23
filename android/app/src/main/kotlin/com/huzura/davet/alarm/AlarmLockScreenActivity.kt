@@ -42,6 +42,8 @@ class AlarmLockScreenActivity : Activity() {
     private var earlyMinutes = 0
     private var isSessizeAlEnabled = false
     private var wasPhoneSilentBefore = false
+    private var hasResumed = false  // Tek tuşla susturma için resume takibi
+    private var isDismissed = false // Çift kapanmayı önle
     
     // Motivasyon sözleri
     private val motivasyonSozleri = listOf(
@@ -90,8 +92,9 @@ class AlarmLockScreenActivity : Activity() {
             window.addFlags(
                 WindowManager.LayoutParams.FLAG_SHOW_WHEN_LOCKED or
                 WindowManager.LayoutParams.FLAG_DISMISS_KEYGUARD or
-                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON or
-                WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON
+                WindowManager.LayoutParams.FLAG_TURN_SCREEN_ON
+                // FLAG_KEEP_SCREEN_ON kasıtlı kaldırıldı: ekranı açık tutunca
+                // güç/kilit tuşu etkisizleşiyordu.
             )
         }
         
@@ -169,8 +172,8 @@ class AlarmLockScreenActivity : Activity() {
                 dismissAlarm()
             }
             
-            tvHint?.text = "Ses veya kilit tuşuna basarak kapatabilirsiniz"
-            
+            tvHint?.text = "Kilit/ses tuşuna tek basışla kapatabilirsiniz"
+
         } else if (isSessizeAlEnabled && !wasPhoneSilentBefore) {
             // VAKTİNDE BİLDİRİM + SESSİZE AL AÇIK + telefon başta sessiz değildi
             // Kal ve Çık butonlarını göster
@@ -188,7 +191,7 @@ class AlarmLockScreenActivity : Activity() {
                 dismissAlarmWithSilentAction(AlarmService.ACTION_EXIT_SILENT)
             }
             
-            tvHint?.text = "Kal: Telefonu sessize alır • Çık: Normal moda döner"
+            tvHint?.text = "Kilit tuşuna tek basışla sessize alınır"
             
         } else {
             // VAKTİNDE BİLDİRİM + SESSİZE AL KAPALI veya telefon zaten sessizdi
@@ -201,24 +204,57 @@ class AlarmLockScreenActivity : Activity() {
                 dismissAlarm()
             }
             
-            tvHint?.text = "Ses veya kilit tuşuna basarak kapatabilirsiniz"
+            tvHint?.text = "Kilit/ses tuşuna tek basışla kapatabilirsiniz"
         }
     }
     
+    override fun onResume() {
+        super.onResume()
+        hasResumed = true
+    }
+
+    /**
+     * Güç/kilit tuşuna TEK basışta alarm susturma — Android 12+ dahil tüm sürümler.
+     * onUserLeaveHint(), kullanıcı güç/home/son-uygulamalar tuşuyla aktiviteden
+     * ayrılırken Android tarafından anında çağrılır; KEYCODE_POWER'a gerek yok.
+     */
+    override fun onUserLeaveHint() {
+        super.onUserLeaveHint()
+        if (hasResumed) {
+            handleDismiss()
+        }
+    }
+
+    /**
+     * Ekran kapandığında (güç tuşu vb.) güvence olarak da durdur.
+     */
+    override fun onPause() {
+        super.onPause()
+        if (hasResumed) {
+            handleDismiss()
+        }
+    }
+
+    /**
+     * Sessize alma ayarına göre tek noktada kapatma mantığı.
+     */
+    private fun handleDismiss() {
+        if (isDismissed) return
+        isDismissed = true
+        if (isEarly || !isSessizeAlEnabled || wasPhoneSilentBefore) {
+            dismissAlarm()
+        } else {
+            dismissAlarmWithSilentAction(AlarmService.ACTION_STAY_SILENT)
+        }
+    }
+
     override fun onKeyDown(keyCode: Int, event: KeyEvent?): Boolean {
         when (keyCode) {
             KeyEvent.KEYCODE_VOLUME_UP,
             KeyEvent.KEYCODE_VOLUME_DOWN,
             KeyEvent.KEYCODE_POWER,
             KeyEvent.KEYCODE_HEADSETHOOK -> {
-                // Erken bildirimde veya sessize al kapalıysa veya telefon zaten sessizse sadece kapat
-                if (isEarly || !isSessizeAlEnabled || wasPhoneSilentBefore) {
-                    dismissAlarm()
-                } else {
-                    // Vaktinde bildirim + sessize al açık + telefon sessiz değildi
-                    // Tuşla kapatınca sessize al
-                    dismissAlarmWithSilentAction(AlarmService.ACTION_STAY_SILENT)
-                }
+                handleDismiss()
                 return true
             }
         }
@@ -227,17 +263,14 @@ class AlarmLockScreenActivity : Activity() {
     
     @Deprecated("Deprecated in Java")
     override fun onBackPressed() {
-        if (isEarly || !isSessizeAlEnabled || wasPhoneSilentBefore) {
-            dismissAlarm()
-        } else {
-            dismissAlarmWithSilentAction(AlarmService.ACTION_STAY_SILENT)
-        }
+        handleDismiss()
     }
     
     /**
      * Alarmı tamamen kapat (sessize almadan)
      */
     private fun dismissAlarm() {
+        if (!isDismissed) isDismissed = true
         AlarmService.stopAlarm(this)
         finish()
     }
@@ -246,6 +279,7 @@ class AlarmLockScreenActivity : Activity() {
      * Alarmı kapat ve sessize al action'ını tetikle
      */
     private fun dismissAlarmWithSilentAction(action: String) {
+        if (!isDismissed) isDismissed = true
         val intent = Intent(this, AlarmService::class.java).apply {
             this.action = action
         }

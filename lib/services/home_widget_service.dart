@@ -15,8 +15,10 @@ class HomeWidgetService {
   static Timer? _updateTimer;
   static Map<String, String> _vakitSaatleri = {};
   static String? _lastGeriSayim; // Last sent countdown value
+  static String? _lastMevcutVakit; // Last sent current prayer name
   static int _lastMinute = -1; // Last updated minute
   static String? _lastLanguage; // Son dil
+  static DateTime? _lastLoadDate; // Last prayer-times load date
 
   /// Start the service.
   static Future<void> initialize() async {
@@ -41,6 +43,7 @@ class HomeWidgetService {
     if (_lastLanguage != currentLang) {
       _lastLanguage = currentLang;
       _lastGeriSayim = null; // Clear cache to force widget updates.
+      _lastMevcutVakit = null;
       updateAllWidgets();
     }
   }
@@ -119,6 +122,16 @@ class HomeWidgetService {
   static Future<void> updateAllWidgets() async {
     final now = DateTime.now();
     final lang = LanguageService();
+    final today = DateTime(now.year, now.month, now.day);
+
+    // Reload prayer times when the date changes (handles midnight transition).
+    if (_lastLoadDate == null || _lastLoadDate != today) {
+      _lastLoadDate = today;
+      _vakitSaatleri = {}; // Force reload.
+      _lastGeriSayim = null;
+      _lastMevcutVakit = null;
+      _lastMinute = -1;
+    }
 
     // Skip updates when the minute has not changed.
     if (_lastMinute == now.minute && _vakitSaatleri.isNotEmpty) {
@@ -132,20 +145,33 @@ class HomeWidgetService {
 
     final vakitBilgisi = _hesaplaVakitBilgisi(now);
 
-    // Skip updates when the countdown has not changed.
+    // Skip updates when neither the countdown nor the current prayer has changed.
     final yeniGeriSayim = vakitBilgisi['geriSayim'] ?? '';
-    if (_lastGeriSayim == yeniGeriSayim) {
+    final yeniMevcutVakit = vakitBilgisi['mevcutVakit'] ?? '';
+    if (_lastGeriSayim == yeniGeriSayim && _lastMevcutVakit == yeniMevcutVakit) {
       return; // No changes.
     }
     _lastGeriSayim = yeniGeriSayim;
+    _lastMevcutVakit = yeniMevcutVakit;
 
     // Dates
     final locale = _getLocale();
     final miladiTarih = DateFormat('dd MMMM yyyy', locale).format(now);
     final miladiKisa = DateFormat('dd MMM yyyy', locale).format(now);
     final hicri = HijriCalendar.now();
-    final hicriTarih =
-        '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
+    // HijriCalendar.now() can be 1 day ahead; adjust by subtracting 1.
+    int hDay = hicri.hDay - 1;
+    int hMonth = hicri.hMonth;
+    int hYear = hicri.hYear;
+    if (hDay <= 0) {
+      hMonth--;
+      if (hMonth <= 0) {
+        hMonth = 12;
+        hYear--;
+      }
+      hDay = 29; // Hijri months are 29–30 days; 29 is a safe fallback.
+    }
+    final hicriTarih = '$hDay ${_getHicriAyAdi(hMonth)} $hYear';
 
     // Location
     final il = await KonumService.getIl();
