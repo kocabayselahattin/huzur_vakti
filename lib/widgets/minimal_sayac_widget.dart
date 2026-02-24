@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:hijri/hijri_calendar.dart';
+import '../services/ozel_gunler_service.dart';
 import 'package:intl/intl.dart';
 import '../services/konum_service.dart';
 import '../services/diyanet_api_service.dart';
@@ -234,7 +234,7 @@ class _MinimalSayacWidgetState extends State<MinimalSayacWidget> {
     final now = DateTime.now();
     final locale = _getLocale();
     final miladiTarih = DateFormat('dd MMM yyyy', locale).format(now);
-    final hicri = HijriCalendar.now();
+    final hicri = OzelGunlerService.hijriNowTR();
     final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)}';
 
     // Tema kontrolü: Varsayılansa orijinal, değilse tema renkleri

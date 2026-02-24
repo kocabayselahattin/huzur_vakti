@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:math' as math;
 import 'dart:async';
-import 'package:hijri/hijri_calendar.dart';
+import '../services/ozel_gunler_service.dart';
 import 'package:intl/intl.dart';
 import '../services/diyanet_api_service.dart';
 import '../services/konum_service.dart';
@@ -254,7 +254,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
     // Takvim bilgileri
     final now = DateTime.now();
     final miladiTarih = DateFormat('dd.MM.yyyy').format(now);
-    final hicri = HijriCalendar.now();
+    final hicri = OzelGunlerService.hijriNowTR();
     final hicriTarih =
         '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
 

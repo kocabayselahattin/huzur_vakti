@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
 import 'dart:math' as math;
-import 'package:hijri/hijri_calendar.dart';
+import '../services/ozel_gunler_service.dart';
 import 'package:intl/intl.dart';
 import '../services/konum_service.dart';
 import '../services/diyanet_api_service.dart';
@@ -216,7 +216,7 @@ class _KristalSayacWidgetState extends State<KristalSayacWidget>
     final seconds = _kalanSure.inSeconds % 60;
 
     final now = DateTime.now();
-    final hicri = HijriCalendar.now();
+    final hicri = OzelGunlerService.hijriNowTR();
     final hicriTarih =
         '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
     final miladiTarih = DateFormat('dd MMMM yyyy', _getLocale()).format(now);

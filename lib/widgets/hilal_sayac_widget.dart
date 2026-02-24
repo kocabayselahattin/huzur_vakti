@@ -6,7 +6,7 @@ import '../services/diyanet_api_service.dart';
 import '../services/tema_service.dart';
 import '../services/language_service.dart';
 import 'package:intl/intl.dart';
-import 'package:hijri/hijri_calendar.dart';
+import '../services/ozel_gunler_service.dart';
 
 class HilalSayacWidget extends StatefulWidget {
   const HilalSayacWidget({super.key});
@@ -195,7 +195,7 @@ class _HilalSayacWidgetState extends State<HilalSayacWidget>
     final minutes = _kalanSure.inMinutes.remainder(60);
     final seconds = _kalanSure.inSeconds.remainder(60);
 
-    final hijriNow = HijriCalendar.now();
+    final hijriNow = OzelGunlerService.hijriNowTR();
     final miladi = DateFormat('d MMM yyyy', _getLocale()).format(DateTime.now());
     final hicri =
       '${hijriNow.hDay} ${_getHijriMonth(hijriNow.hMonth)} ${hijriNow.hYear}';

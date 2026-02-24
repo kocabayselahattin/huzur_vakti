@@ -1,7 +1,6 @@
 import 'dart:async';
 import 'package:home_widget/home_widget.dart';
 import 'package:intl/intl.dart';
-import 'package:hijri/hijri_calendar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'diyanet_api_service.dart';
 import 'konum_service.dart';
@@ -158,20 +157,9 @@ class HomeWidgetService {
     final locale = _getLocale();
     final miladiTarih = DateFormat('dd MMMM yyyy', locale).format(now);
     final miladiKisa = DateFormat('dd MMM yyyy', locale).format(now);
-    final hicri = HijriCalendar.now();
-    // HijriCalendar.now() can be 1 day ahead; adjust by subtracting 1.
-    int hDay = hicri.hDay - 1;
-    int hMonth = hicri.hMonth;
-    int hYear = hicri.hYear;
-    if (hDay <= 0) {
-      hMonth--;
-      if (hMonth <= 0) {
-        hMonth = 12;
-        hYear--;
-      }
-      hDay = 29; // Hijri months are 29–30 days; 29 is a safe fallback.
-    }
-    final hicriTarih = '$hDay ${_getHicriAyAdi(hMonth)} $hYear';
+    // Diyanet-sync'd Hijri date (single source of truth)
+    final hicri = OzelGunlerService.hijriNowTR();
+    final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
 
     // Location
     final il = await KonumService.getIl();
