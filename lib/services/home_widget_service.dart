@@ -24,6 +24,10 @@ class HomeWidgetService {
     await HomeWidget.setAppGroupId(_appGroupId);
     await _loadVakitler();
     await _loadWidgetColors();
+    // Güvenlik: _hijriDayShift henüz yüklenmemişse SharedPreferences'tan oku.
+    // syncHijriDayShiftWithDiyanet() daha önce çağrılmışsa bu zaten doğru değerdedir;
+    // çağrılmamışsa ön bellekteki değeri kullanarak 1 gün kaymasını önlüyoruz.
+    await OzelGunlerService.loadCachedHijriShift();
     await updateAllWidgets();
 
     // Update widgets when the language changes.

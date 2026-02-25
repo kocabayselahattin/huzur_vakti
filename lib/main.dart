@@ -168,20 +168,6 @@ void main() async {
   final languageService = LanguageService();
   await languageService.load();
 
-  // Initialize Home Widget service and schedule background updates.
-  await HomeWidgetService.initialize();
-
-  // Start background widget updates on Android.
-  if (Platform.isAndroid) {
-    try {
-      await const MethodChannel(
-        'huzur_vakti/widgets',
-      ).invokeMethod('scheduleWidgetUpdates');
-    } catch (e) {
-      debugPrint('⚠️ Failed to start widget background updates: $e');
-    }
-  }
-
   // NOTE: DndService is no longer used - AlarmService checks "sessize_al"
   // and silences the phone. The systems conflicted, now only AlarmService is active.
   final prefs = await SharedPreferences.getInstance();
@@ -200,7 +186,22 @@ void main() async {
   await DailyContentNotificationService.scheduleDailyContentNotifications();
 
   // 🗓️ Sync Hijri calendar with Turkey/Diyanet to avoid 1-day drift (Ramadan, Berat, etc.).
+  // MUST run before HomeWidgetService.initialize() so hijriNowTR() uses the correct shift.
   await OzelGunlerService.syncHijriDayShiftWithDiyanet();
+
+  // Initialize Home Widget service and schedule background updates.
+  await HomeWidgetService.initialize();
+
+  // Start background widget updates on Android.
+  if (Platform.isAndroid) {
+    try {
+      await const MethodChannel(
+        'huzur_vakti/widgets',
+      ).invokeMethod('scheduleWidgetUpdates');
+    } catch (e) {
+      debugPrint('⚠️ Failed to start widget background updates: $e');
+    }
+  }
 
   // 🔔 Special day notifications (holy nights, holidays, etc.).
   await OzelGunlerService.scheduleOzelGunBildirimleri();

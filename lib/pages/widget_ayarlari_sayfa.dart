@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:intl/intl.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/home_widget_service.dart';
 import '../services/language_service.dart';
+import '../services/ozel_gunler_service.dart';
 import '../services/widget_pin_service.dart';
 
 /// Widget türleri ve varsayılan ayarları
@@ -995,6 +997,33 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa>
 
   String _previewText(String key) => _languageService[key] ?? '';
 
+  /// Sayaç widgetleriyle aynı kaynaktan (Diyanet senkronlu) güncel hicri tarihi döner.
+  String _liveHicriTarih() {
+    final h = OzelGunlerService.hijriNowTR();
+    final ayAdi = _languageService['hijri_month_${h.hMonth}'] ?? '${h.hMonth}';
+    return '${h.hDay} $ayAdi ${h.hYear}';
+  }
+
+  /// Hicri • Miladi kısa formatı (ör. "28 Recep • 24 Şub").
+  String _liveHicriGregorianKisa() {
+    final h = OzelGunlerService.hijriNowTR();
+    final ayAdi = _languageService['hijri_month_${h.hMonth}'] ?? '${h.hMonth}';
+    final lang = _languageService.currentLanguage;
+    final locale = lang == 'tr'
+        ? 'tr_TR'
+        : lang == 'ar'
+            ? 'ar'
+            : lang == 'de'
+                ? 'de'
+                : lang == 'fr'
+                    ? 'fr_FR'
+                    : lang == 'fa'
+                        ? 'fa'
+                        : 'en';
+    final miladiKisa = DateFormat('dd MMM', locale).format(DateTime.now());
+    return '${h.hDay} $ayAdi • $miladiKisa';
+  }
+
   String _previewWithVakit(String templateKey, String vakitKey) {
     final template = _previewText(templateKey);
     final vakit = _previewText(vakitKey);
@@ -1064,7 +1093,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa>
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      _previewText('widget_preview_hijri_date'),
+                      _liveHicriTarih(),
                       style: TextStyle(color: yaziRengi, fontSize: 11),
                     ),
                     Text(
@@ -1196,7 +1225,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa>
                 ),
                 const Spacer(),
                 Text(
-                  _previewText('widget_preview_hijri_gregorian_short'),
+                  _liveHicriGregorianKisa(),
                   style: TextStyle(color: yaziRengiSecondary, fontSize: 9),
                 ),
               ],
@@ -1300,7 +1329,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa>
               style: TextStyle(color: yaziRengiSecondary, fontSize: 10),
             ),
             Text(
-              _previewText('widget_preview_hijri_date'),
+              _liveHicriTarih(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: TextStyle(color: yaziRengi, fontSize: 11),
@@ -1502,7 +1531,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa>
                     const SizedBox(width: 6),
                     Expanded(
                       child: Text(
-                        _previewText('widget_preview_hijri_date'),
+                        _liveHicriTarih(),
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         textAlign: TextAlign.center,
@@ -1573,7 +1602,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa>
                       ),
                     ),
                     Text(
-                      _previewText('widget_preview_hijri_date'),
+                      _liveHicriTarih(),
                       style: TextStyle(color: yaziRengiSecondary, fontSize: 10),
                     ),
                     Text(
@@ -1683,7 +1712,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa>
                       ),
                     ),
                     Text(
-                      _previewText('widget_preview_hijri_date'),
+                      _liveHicriTarih(),
                       style: TextStyle(color: yaziRengiSecondary, fontSize: 10),
                     ),
                     Text(
@@ -1984,7 +2013,7 @@ class _WidgetAyarlariSayfaState extends State<WidgetAyarlariSayfa>
                           ),
                         ),
                         Text(
-                          _previewText('widget_preview_hijri_date'),
+                          _liveHicriTarih(),
                           maxLines: 1,
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(

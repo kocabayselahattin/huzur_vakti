@@ -159,6 +159,22 @@ class OzelGunlerService {
     }
   }
 
+  /// Sadece SharedPreferences'taki önbellek değerini hafızaya yükler.
+  /// syncHijriDayShiftWithDiyanet() öncesinde çağrılan servisler
+  /// (örn. HomeWidgetService.initialize) için güvenlik katmanı sağlar.
+  static Future<void> loadCachedHijriShift() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final cached = prefs.getInt(_hijriDayShiftKey);
+      if (cached != null) {
+        _hijriDayShift = cached;
+        debugPrint('🗓️ [HijriShift] Cached shift pre-loaded: $_hijriDayShift');
+      }
+    } catch (e) {
+      debugPrint('🗓️ [HijriShift] loadCachedHijriShift failed: $e');
+    }
+  }
+
   static HijriCalendar hijriNowTR() {
     final now = DateTime.now();
     final base = DateTime(now.year, now.month, now.day);
@@ -471,14 +487,18 @@ class OzelGunlerService {
           miladiTarih.month,
           miladiTarih.day,
         ).subtract(Duration(days: _hijriDayShift));
+        // Kandil/mübarek geceler önceki akşam başlar → gösterim tarihi 1 gün önce
+        final gosterimTarih = ozelGun.geceOncesiMi
+            ? tarih.subtract(const Duration(days: 1))
+            : tarih;
         final simdi = DateTime.now();
-        final fark = tarih.difference(simdi).inDays;
+        final fark = gosterimTarih.difference(simdi).inDays;
 
         // Add those within 365 days
         if (fark >= 0 && fark <= 365) {
           sonuc.add({
             'ozelGun': ozelGun,
-            'tarih': tarih,
+            'tarih': gosterimTarih,
             'kalanGun': fark,
             'hicriTarih':
                 '${ozelGun.hicriGun} ${_getHicriAyAdi(ozelGun.hicriAy)} $hedefYil',
@@ -578,10 +598,16 @@ class OzelGunlerService {
       final kalanGun = match.gDate.difference(startDate).inDays;
       if (kalanGun < 0 || kalanGun > daysAhead) continue;
 
+      // Kandil/mübarek geceler önceki akşam başlar → gösterim tarihi 1 gün önce
+      final gosterimTarih = ozelGun.geceOncesiMi
+          ? match.gDate.subtract(const Duration(days: 1))
+          : match.gDate;
+      final gosterimKalanGun = gosterimTarih.difference(startDate).inDays;
+
       result.add({
         'ozelGun': ozelGun,
-        'tarih': match.gDate,
-        'kalanGun': kalanGun,
+        'tarih': gosterimTarih,
+        'kalanGun': gosterimKalanGun,
         'hicriTarih':
             '${ozelGun.hicriGun} ${_getHicriAyAdi(ozelGun.hicriAy)} ${match.hYear}',
       });
@@ -655,11 +681,12 @@ class OzelGunlerService {
       }
 
       if (ozelGun.geceOncesiMi) {
-        // 1) Previous day at 09:00
+        // tarih = gecenin başladığı gün (ör. Kadir Gecesi → 16 Mart)
+        // 1) O günün saat 09:00'ında bildirim ("Bu akşam Kadir Gecesi")
         DateTime oncekiGunBildirimi = DateTime(
           tarih.year,
           tarih.month,
-          tarih.day - 1,
+          tarih.day,
           9,
           0,
         );
@@ -682,11 +709,13 @@ class OzelGunlerService {
             );
           }
         }
-        // 2) Main day at 00:05
+        // 2) Gecenin başlangıcı: bir sonraki takvim günü saat 00:05
+        //    (ör. Kadir Gecesi → 17 Mart 00:05 = 16 Mart akşamından geçen gece)
+        final gecenextDay = tarih.add(const Duration(days: 1));
         DateTime geceBildirimi = DateTime(
-          tarih.year,
-          tarih.month,
-          tarih.day,
+          gecenextDay.year,
+          gecenextDay.month,
+          gecenextDay.day,
           0,
           5,
         );
