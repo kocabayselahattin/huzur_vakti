@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_weather_bg_null_safety/flutter_weather_bg.dart';
+import 'package:intl/intl.dart';
 import 'dart:async';
 import 'dart:math' as math;
 import 'package:http/http.dart' as http;
@@ -7,6 +8,7 @@ import 'dart:convert';
 import '../services/konum_service.dart';
 import '../services/diyanet_api_service.dart';
 import '../services/language_service.dart';
+import '../services/ozel_gunler_service.dart';
 
 /// Day Cycle Countdown - modern and realistic design.
 /// Real sun/moon images, moon phases, and dynamic background.
@@ -598,14 +600,14 @@ class _GunDonumuSayacWidgetState extends State<GunDonumuSayacWidget>
                 ),
                 child: Text(
                   _formatTemperature(_temperatureC),
-                  style: TextStyle(
-                    color: countdownColor,
+                  style: const TextStyle(
+                    color: Colors.white,
                     fontSize: 14,
                     fontWeight: FontWeight.bold,
                     fontFamily: 'monospace',
                     shadows: [
                       Shadow(
-                        color: countdownColor.withOpacity(0.5),
+                        color: Colors.white54,
                         blurRadius: 8,
                       ),
                     ],
@@ -697,7 +699,7 @@ class _GunDonumuSayacWidgetState extends State<GunDonumuSayacWidget>
 
             // === BOTTOM COUNTDOWN ===
             Positioned(
-              bottom: 20,
+              bottom: 8,
               left: 0,
               right: 0,
               child: _buildSimpleCountdown(sonraki, vakitIsimleri),
@@ -1001,42 +1003,102 @@ class _GunDonumuSayacWidgetState extends State<GunDonumuSayacWidget>
     final s = kalan.inSeconds.remainder(60).toString().padLeft(2, '0');
 
     final vakitAdi = vakitIsimleri[vakit] ?? vakit;
-    final color = _getVakitColor(vakit);
 
-    return Center(
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-        decoration: BoxDecoration(
-          color: Colors.black.withOpacity(0.35),
-          borderRadius: BorderRadius.circular(16),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            // Prayer name.
-            Text(
-              (_languageService['time_until_prayer'] ?? '{prayer} time in ')
-                  .replaceAll('{prayer}', vakitAdi),
-              style: TextStyle(
-                color: Colors.white.withOpacity(0.9),
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-              ),
+    // Tarih bilgileri
+    final now = DateTime.now();
+    final locale = _getLocale();
+    final miladiTarih = DateFormat('dd MMM yyyy', locale).format(now);
+    final hicri = OzelGunlerService.hijriNowTR();
+    final hicriTarih =
+        '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
+
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Geri sayım
+        Center(
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
+            decoration: BoxDecoration(
+              color: Colors.black.withOpacity(0.35),
+              borderRadius: BorderRadius.circular(16),
             ),
-            // Countdown.
-            Text(
-              '$h:$m:$s',
-              style: TextStyle(
-                color: color,
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                fontFamily: 'monospace',
-                shadows: [Shadow(color: color.withOpacity(0.5), blurRadius: 8)],
-              ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                // Prayer name.
+                Text(
+                  (_languageService['time_until_prayer'] ?? '{prayer} time in ')
+                      .replaceAll('{prayer}', vakitAdi),
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                // Countdown.
+                Text(
+                  '$h:$m:$s',
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    fontFamily: 'monospace',
+                    shadows: [
+                      Shadow(
+                        color: Colors.white54,
+                        blurRadius: 8,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ],
+          ),
         ),
-      ),
+        const SizedBox(height: 4),
+        // Miladi (sol) ve Hicri (sağ) tarih - şeffaf siyah arka planlı
+        Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 16),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              // Miladi tarih (sol alt)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.35),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  miladiTarih,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+              // Hicri tarih (sağ alt)
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: Colors.black.withOpacity(0.35),
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                child: Text(
+                  hicriTarih,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 10,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ],
     );
   }
 
@@ -1057,6 +1119,28 @@ class _GunDonumuSayacWidgetState extends State<GunDonumuSayacWidget>
       default:
         return const Color(0xFF607D8B);
     }
+  }
+
+  String _getLocale() {
+    switch (_languageService.currentLanguage) {
+      case 'en':
+        return 'en_US';
+      case 'de':
+        return 'de_DE';
+      case 'fr':
+        return 'fr_FR';
+      case 'ar':
+        return 'ar_SA';
+      case 'fa':
+        return 'fa_IR';
+      default:
+        return 'tr_TR';
+    }
+  }
+
+  String _getHicriAyAdi(int ay) {
+    if (ay < 1 || ay > 12) return '';
+    return _languageService['hijri_month_$ay'] ?? '';
   }
 }
 
