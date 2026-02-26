@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import '../services/tema_service.dart';
 import '../services/language_service.dart';
+import '../app_version.dart';
 
 class HakkindaSayfa extends StatefulWidget {
   const HakkindaSayfa({super.key});
@@ -171,7 +172,7 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
           ),
           const SizedBox(height: 4),
           Text(
-            '${_languageService['version'] ?? 'Sürüm'} 1.0.1+3',
+            '${_languageService['version'] ?? 'Sürüm'} $appVersion',
             style: TextStyle(
               color: renkler.yaziSecondary.withValues(alpha: 0.7),
               fontSize: 12,

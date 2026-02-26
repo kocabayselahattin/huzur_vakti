@@ -60,6 +60,7 @@ class AlarmLockScreenActivity : Activity() {
     
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        hasResumed = true // İlk tuşta çalışması için hemen true yap
         
         // Kilit ekranı üzerinde göster
         setupLockScreenFlags()
@@ -236,6 +237,16 @@ class AlarmLockScreenActivity : Activity() {
     }
 
     /**
+     * Activity tamamen görünmez olursa kesin durdur (backup).
+     */
+    override fun onStop() {
+        super.onStop()
+        if (!isDismissed) {
+            handleDismiss()
+        }
+    }
+
+    /**
      * Sessize alma ayarına göre tek noktada kapatma mantığı.
      */
     private fun handleDismiss() {
@@ -271,6 +282,10 @@ class AlarmLockScreenActivity : Activity() {
      */
     private fun dismissAlarm() {
         if (!isDismissed) isDismissed = true
+        // Ekranı tekrar açma flag'ini kapat ki finish sonrası ekran geri gelmesin
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setTurnScreenOn(false)
+        }
         AlarmService.stopAlarm(this)
         finish()
     }
@@ -280,6 +295,10 @@ class AlarmLockScreenActivity : Activity() {
      */
     private fun dismissAlarmWithSilentAction(action: String) {
         if (!isDismissed) isDismissed = true
+        // Ekranı tekrar açma flag'ini kapat ki finish sonrası ekran geri gelmesin
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O_MR1) {
+            setTurnScreenOn(false)
+        }
         val intent = Intent(this, AlarmService::class.java).apply {
             this.action = action
         }

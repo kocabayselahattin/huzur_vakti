@@ -10,6 +10,7 @@ import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
+import android.database.ContentObserver
 import android.media.AudioAttributes
 import android.media.AudioManager
 import android.media.MediaPlayer
@@ -24,6 +25,7 @@ import android.os.PowerManager
 import android.os.VibrationEffect
 import android.os.Vibrator
 import android.os.VibratorManager
+import android.provider.Settings
 import android.util.Log
 import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
@@ -79,6 +81,9 @@ class AlarmService : Service() {
 
     // MediaSession - donanım tuşlarını yakalama (kulaklık, güç tuşu vb.)
     private var mediaSession: MediaSession? = null
+
+    // Ses tuşu değişikliğini yakalama (ContentObserver)
+    private var volumeObserver: ContentObserver? = null
 
     override fun onCreate() {
         super.onCreate()
@@ -148,14 +153,27 @@ class AlarmService : Service() {
 
         screenOffReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context?, intent: Intent?) {
-                if (intent?.action == Intent.ACTION_SCREEN_OFF) {
-                    Log.d(TAG, "📴 Ekran kapandı (güç/kilit tuşu), alarm durduruluyor...")
-                    stopAlarm()
+                when (intent?.action) {
+                    Intent.ACTION_SCREEN_OFF -> {
+                        Log.d(TAG, "📴 Ekran kapandı (güç/kilit tuşu), alarm durduruluyor...")
+                        stopAlarm()
+                    }
+                    Intent.ACTION_SCREEN_ON -> {
+                        // Ekran tekrar açıldı ama alarm hala çalıyorsa durdur
+                        // (İlk tuşta durmadıysa ikinci tuşta kesin durdur)
+                        if (isPlaying) {
+                            Log.d(TAG, "📱 Ekran açıldı ama alarm hala çalıyor, durduruluyor...")
+                            stopAlarm()
+                        }
+                    }
                 }
             }
         }
 
-        val filter = IntentFilter(Intent.ACTION_SCREEN_OFF)
+        val filter = IntentFilter().apply {
+            addAction(Intent.ACTION_SCREEN_OFF)
+            addAction(Intent.ACTION_SCREEN_ON)
+        }
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             registerReceiver(screenOffReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
         } else {
@@ -177,6 +195,54 @@ class AlarmService : Service() {
             }
         }
         screenOffReceiver = null
+    }
+
+    // ===================================================================
+    // SES TUŞU ALGILAMA (ContentObserver)
+    // ===================================================================
+
+    /**
+     * Ses seviyesi değişikliklerini dinleyen ContentObserver'ı kaydet.
+     * Kullanıcı ses açma/kısma tuşlarına bastığında alarm durdurulur.
+     */
+    private fun registerVolumeObserver() {
+        if (volumeObserver != null) return // Zaten kayıtlı
+
+        volumeObserver = object : ContentObserver(handler) {
+            override fun onChange(selfChange: Boolean) {
+                super.onChange(selfChange)
+                if (isPlaying) {
+                    Log.d(TAG, "🔊 Ses seviyesi değişti (ses tuşu), alarm durduruluyor...")
+                    stopAlarm()
+                }
+            }
+        }
+
+        try {
+            contentResolver.registerContentObserver(
+                Settings.System.CONTENT_URI,
+                true,
+                volumeObserver!!
+            )
+            Log.d(TAG, "✅ Ses tuşu dinleyicisi (ContentObserver) kaydedildi")
+        } catch (e: Exception) {
+            Log.e(TAG, "❌ Ses tuşu dinleyicisi kayıt hatası: ${e.message}")
+        }
+    }
+
+    /**
+     * Ses tuşu dinleyicisini kaldır
+     */
+    private fun unregisterVolumeObserver() {
+        volumeObserver?.let {
+            try {
+                contentResolver.unregisterContentObserver(it)
+                Log.d(TAG, "✅ Ses tuşu dinleyicisi kaldırıldı")
+            } catch (e: Exception) {
+                Log.w(TAG, "⚠️ Ses tuşu dinleyicisi zaten kaldırılmış: ${e.message}")
+            }
+        }
+        volumeObserver = null
     }
 
     /**
@@ -279,9 +345,10 @@ class AlarmService : Service() {
         }
         startForeground(NOTIFICATION_ID, notification)
 
-        // Güç/kilit tuşu algılama için dinleyicileri kur
+        // Güç/kilit tuşu ve ses tuşu algılama için dinleyicileri kur
         registerScreenOffReceiver()
         setupMediaSession()
+        registerVolumeObserver()
 
         if (isSilentOrVibrate) {
             Log.d(TAG, "📳 Telefon sessizde, sadece titreşim.")
@@ -371,9 +438,10 @@ class AlarmService : Service() {
     private fun stopAlarm() {
         Log.d(TAG, "🔇 Alarm durduruluyor...")
 
-        // Güç/kilit tuşu dinleyicilerini temizle
+        // Güç/kilit tuşu ve ses tuşu dinleyicilerini temizle
         unregisterScreenOffReceiver()
         releaseMediaSession()
+        unregisterVolumeObserver()
 
         // Sessiz mod kontrolü: Vaktinde bildirim + sessiz mod açık + telefon başta sessiz değildi
         val prefs = getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
@@ -412,9 +480,10 @@ class AlarmService : Service() {
         Log.d(TAG, "🔇 Ses ve titreşim durduruluyor...")
         handler.removeCallbacksAndMessages(null)
 
-        // Güç/kilit tuşu dinleyicilerini temizle
+        // Güç/kilit tuşu ve ses tuşu dinleyicilerini temizle
         unregisterScreenOffReceiver()
         releaseMediaSession()
+        unregisterVolumeObserver()
 
         if (mediaPlayer?.isPlaying == true) {
             mediaPlayer?.stop()
@@ -702,9 +771,9 @@ class AlarmService : Service() {
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
-            .setContentIntent(mainPendingIntent)
+            .setContentIntent(stopPendingIntent) // Bildirime tıklayınca sesi durdur
             .setFullScreenIntent(mainPendingIntent, true)
-            .setAutoCancel(false) // Tıklayınca kapanmasın, kullanıcı manuel kapat butonuna bassın
+            .setAutoCancel(true) // Tıklayınca bildirim kapansın ve ses dursun
             .addAction(0, "Kapat", stopPendingIntent)
             .build()
     }
@@ -731,8 +800,8 @@ class AlarmService : Service() {
             .setStyle(NotificationCompat.BigTextStyle().bigText(body))
             .setPriority(NotificationCompat.PRIORITY_MAX)
             .setCategory(NotificationCompat.CATEGORY_ALARM)
-            .setContentIntent(mainPendingIntent)
-            .setAutoCancel(false)
+            .setContentIntent(stopPendingIntent) // Bildirime tıklayınca sesi durdur
+            .setAutoCancel(true) // Tıklayınca bildirim kapansın ve ses dursun
             .setOngoing(false)
             .addAction(R.drawable.ic_launcher_foreground, "Kapat", stopPendingIntent)
             .build()
@@ -766,9 +835,10 @@ class AlarmService : Service() {
         isPlaying = false
         vibrator?.cancel()
 
-        // Güç/kilit tuşu dinleyicilerini temizle
+        // Güç/kilit tuşu ve ses tuşu dinleyicilerini temizle
         unregisterScreenOffReceiver()
         releaseMediaSession()
+        unregisterVolumeObserver()
 
         wakeLock?.release()
         instance = null

@@ -340,7 +340,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                               fontFamily: 'monospace',
                               inherit: false,
                               shadows: [
-                                Shadow(color: matrixGreen, blurRadius: 10),
+                                Shadow(color: matrixGreen, blurRadius: 9),
                               ],
                             ),
                           ),
@@ -349,7 +349,7 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
                             textScaler: TextScaler.noScaling,
                             style: TextStyle(
                               color: darkGreen,
-                              fontSize: 10,
+                              fontSize: 9,
                               fontFamily: 'monospace',
                               inherit: false,
                             ),
@@ -386,15 +386,15 @@ class _MatrixSayacWidgetState extends State<MatrixSayacWidget>
 
                   // Zaman göstergesi - Terminal stili
                   Transform.translate(
-                    offset: const Offset(-16, 0), // 1mm daha sola kaydırıldı
+                    offset: const Offset(-5, 0), // 1mm daha sola kaydırıldı
                     child: Center(
                       child: AnimatedBuilder(
                         animation: _glowController,
                         builder: (context, child) {
                           return Container(
                             padding: const EdgeInsets.symmetric(
-                              horizontal: 16,
-                              vertical: 4,
+                              horizontal: 10,
+                              vertical: 3,
                             ),
                             decoration: BoxDecoration(
                               color: cardBg.withOpacity(0.8),

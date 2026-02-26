@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:http/http.dart' as http;
 import 'dart:convert';
+import '../app_version.dart';
 import '../widgets/premium_sayac_widget.dart';
 import '../widgets/vakit_listesi_widget.dart';
 import '../widgets/gunun_icerigi_widget.dart';
@@ -56,12 +57,18 @@ class AnaSayfa extends StatefulWidget {
   State<AnaSayfa> createState() => _AnaSayfaState();
 }
 
-class _AnaSayfaState extends State<AnaSayfa> {
+class _AnaSayfaState extends State<AnaSayfa>
+    with SingleTickerProviderStateMixin {
   String konumBasligi = "";
   final TemaService _temaService = TemaService();
   final LanguageService _languageService = LanguageService();
   int _currentSayacIndex = 22;
   bool _sayacYuklendi = false;
+
+  // FAB pulse animasyonu
+  late AnimationController _fabAnimController;
+  late Animation<double> _fabScaleAnimation;
+  late Animation<double> _fabGlowAnimation;
 
   // Multi-location system
   List<KonumModel> _konumlar = [];
@@ -74,6 +81,19 @@ class _AnaSayfaState extends State<AnaSayfa> {
   @override
   void initState() {
     super.initState();
+
+    // FAB pulse animasyonu
+    _fabAnimController = AnimationController(
+      vsync: this,
+      duration: const Duration(milliseconds: 1500),
+    )..repeat(reverse: true);
+    _fabScaleAnimation = Tween<double>(begin: 1.0, end: 1.12).animate(
+      CurvedAnimation(parent: _fabAnimController, curve: Curves.easeInOut),
+    );
+    _fabGlowAnimation = Tween<double>(begin: 0.0, end: 0.6).animate(
+      CurvedAnimation(parent: _fabAnimController, curve: Curves.easeInOut),
+    );
+
     _loadSayacIndex(); // Load the selected counter index
     _konumYukle();
     _temaService.addListener(_onTemaChanged);
@@ -369,6 +389,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
 
   @override
   void dispose() {
+    _fabAnimController.dispose();
     _konumPageController?.dispose();
     _temaService.removeListener(_onTemaChanged);
     _languageService.removeListener(_onTemaChanged);
@@ -478,7 +499,7 @@ class _AnaSayfaState extends State<AnaSayfa> {
             ),
             const SizedBox(height: 8),
             Text(
-              '${_languageService['version'] ?? ''}: 1.0.0+1',
+              '${_languageService['version'] ?? ''}: $appVersion',
               style: TextStyle(color: renkler.yaziSecondary, fontSize: 14),
             ),
             const SizedBox(height: 4),
@@ -814,12 +835,32 @@ class _AnaSayfaState extends State<AnaSayfa> {
           child: _buildHomeContentColumn(renkler),
         ),
       ),
-      floatingActionButton: FloatingActionButton(
-        onPressed: () {
-          _showMenuBottomSheet(context, renkler);
+      floatingActionButton: AnimatedBuilder(
+        animation: _fabAnimController,
+        builder: (context, child) {
+          return Transform.scale(
+            scale: _fabScaleAnimation.value,
+            child: Container(
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                boxShadow: [
+                  BoxShadow(
+                    color: renkler.vurgu.withOpacity(_fabGlowAnimation.value),
+                    blurRadius: 18,
+                    spreadRadius: 4,
+                  ),
+                ],
+              ),
+              child: FloatingActionButton(
+                onPressed: () {
+                  _showMenuBottomSheet(context, renkler);
+                },
+                backgroundColor: renkler.kartArkaPlan,
+                child: Icon(Icons.menu, color: renkler.vurgu),
+              ),
+            ),
+          );
         },
-        backgroundColor: renkler.kartArkaPlan,
-        child: Icon(Icons.menu, color: renkler.yaziPrimary),
       ),
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
