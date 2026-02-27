@@ -576,6 +576,7 @@
   "font_increase": "بزرگ کردن فونت",
   "special_days_nights": "روزها و شب‌های ویژه",
   "no_upcoming_special_days": "روز ویژه‌ای در پیش نیست",
+  "special_days_updated": "روزهای خاص به‌روزرسانی شد!",
   "notification_permission_denied": "مجوز اعلان رد شد. اعلان‌ها کار نخواهند کرد.",  "location_permission_desc": "مجوز مکان برای نمایش اوقات دقیق نماز بر اساس موقعیت شما لازم است.",
   "notification_permission_desc": "مجوز اعلان برای اطلاع‌رسانی در اوقات نماز لازم است.",
   "exact_alarm_permission_desc": "مجوز هشدار دقیق برای عملکرد صحیح اعلان‌ها در اوقات نماز لازم است.",

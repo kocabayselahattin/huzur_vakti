@@ -657,6 +657,7 @@
   "font_increase": "Schrift vergrößern",
   "special_days_nights": "Besondere Tage und Nächte",
   "no_upcoming_special_days": "Keine bevorstehenden besonderen Tage gefunden",
+  "special_days_updated": "Besondere Tage aktualisiert!",
   "notification_permission_denied": "Benachrichtigungsberechtigung verweigert. Benachrichtigungen funktionieren nicht.",  "location_permission_desc": "Standortberechtigung ist erforderlich, um genaue Gebetszeiten basierend auf Ihrem Standort anzuzeigen.",
   "notification_permission_desc": "Benachrichtigungsberechtigung ist erforderlich, um Sie zu Gebetszeiten zu benachrichtigen.",
   "exact_alarm_permission_desc": "Genaue Alarmberechtigung ist erforderlich, damit Benachrichtigungen genau zu Gebetszeiten funktionieren.",

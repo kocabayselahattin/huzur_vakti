@@ -1,3 +1,5 @@
+import 'dart:convert';
+
 import 'package:flutter/foundation.dart';
 import 'package:hijri/hijri_calendar.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -67,6 +69,10 @@ class OzelGunlerService {
 
   static const String _hijriDayShiftKey = 'hijri_day_shift';
   static const String _hijriDayShiftDateKey = 'hijri_day_shift_date';
+
+  // Cache keys for special days list
+  static const String _ozelGunlerCacheKey = 'ozel_gunler_cache';
+  static const String _ozelGunlerCacheTimeKey = 'ozel_gunler_cache_time';
 
   static int _hijriDayShift = 0;
 
@@ -518,10 +524,93 @@ class OzelGunlerService {
     return sonuc;
   }
 
+  /// Load cached special days list from SharedPreferences.
+  /// Returns instantly without any network call.
+  static Future<List<Map<String, dynamic>>?> _loadCachedOzelGunler() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final jsonStr = prefs.getString(_ozelGunlerCacheKey);
+      final cacheTime = prefs.getInt(_ozelGunlerCacheTimeKey);
+      if (jsonStr == null || cacheTime == null) return null;
+
+      final cacheDate = DateTime.fromMillisecondsSinceEpoch(cacheTime);
+      final now = DateTime.now();
+      // Cache valid for 30 days
+      if (now.difference(cacheDate).inDays > 30) {
+        debugPrint('⏰ Special days cache too old, will refresh');
+        return null;
+      }
+
+      final decoded = jsonDecode(jsonStr) as List;
+      final result = decoded.map((item) {
+        final map = item as Map<String, dynamic>;
+        // Reconstruct OzelGun from cached key
+        final adKey = map['adKey'] as String;
+        final ozelGun = ozelGunler.firstWhere(
+          (g) => g.adKey == adKey && g.hicriGun == (map['hicriGun'] as int),
+          orElse: () => ozelGunler.first,
+        );
+        return {
+          'ozelGun': ozelGun,
+          'tarih': DateTime.parse(map['tarih'] as String),
+          'kalanGun': DateTime.parse(map['tarih'] as String)
+              .difference(DateTime(now.year, now.month, now.day))
+              .inDays,
+          'hicriTarih': map['hicriTarih'] as String,
+        };
+      }).where((m) => (m['kalanGun'] as int) >= 0).toList();
+
+      // Re-sort by remaining days (might have changed since cache)
+      result.sort(
+        (a, b) => (a['kalanGun'] as int).compareTo(b['kalanGun'] as int),
+      );
+
+      debugPrint('📂 Loaded ${result.length} cached special days');
+      return result;
+    } catch (e) {
+      debugPrint('⚠️ Failed to load cached special days: $e');
+      return null;
+    }
+  }
+
+  /// Save special days list to SharedPreferences for offline access.
+  static Future<void> _saveCachedOzelGunler(
+    List<Map<String, dynamic>> gunler,
+  ) async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      final serialized = gunler.map((item) {
+        final ozelGun = item['ozelGun'] as OzelGun;
+        final tarih = item['tarih'] as DateTime;
+        return {
+          'adKey': ozelGun.adKey,
+          'hicriGun': ozelGun.hicriGun,
+          'tarih': tarih.toIso8601String(),
+          'hicriTarih': item['hicriTarih'] as String,
+        };
+      }).toList();
+      await prefs.setString(_ozelGunlerCacheKey, jsonEncode(serialized));
+      await prefs.setInt(
+        _ozelGunlerCacheTimeKey,
+        DateTime.now().millisecondsSinceEpoch,
+      );
+      debugPrint('💾 Saved ${gunler.length} special days to cache');
+    } catch (e) {
+      debugPrint('⚠️ Failed to save special days cache: $e');
+    }
+  }
+
+  /// Load special days from local cache (instant, no network).
+  /// Returns null if no cache available.
+  static Future<List<Map<String, dynamic>>?> cachedOzelGunler() async {
+    return _loadCachedOzelGunler();
+  }
+
   /// Get upcoming special days using Turkey/Diyanet calendar mapping.
   ///
   /// This avoids 1-day drift and also handles Hijri month length differences
   /// (e.g., Ramadan can be 29 days in Turkey).
+  /// Results are cached locally for offline/instant access.
   static Future<List<Map<String, dynamic>>> yaklasanOzelGunlerAsync({
     int daysAhead = 365,
   }) async {
@@ -616,6 +705,10 @@ class OzelGunlerService {
     result.sort(
       (a, b) => (a['kalanGun'] as int).compareTo(b['kalanGun'] as int),
     );
+
+    // Save results to local cache
+    await _saveCachedOzelGunler(result);
+
     return result;
   }
 

@@ -17,13 +17,14 @@ class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
   final LanguageService _languageService = LanguageService();
   List<Map<String, dynamic>> _yaklasanGunler = [];
   bool _yukleniyor = true;
+  bool _guncelleniyor = false;
 
   @override
   void initState() {
     super.initState();
     _temaService.addListener(_onTemaChanged);
     _languageService.addListener(_onLanguageChanged);
-    _gunleriYukle();
+    _cacheDenYukleVeArkaPlandaGuncelle();
   }
 
   @override
@@ -41,18 +42,54 @@ class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
     if (mounted) setState(() {});
   }
 
+  Future<void> _cacheDenYukleVeArkaPlandaGuncelle() async {
+    // 1. Try loading from cache first (instant, no network)
+    final cached = await OzelGunlerService.cachedOzelGunler();
+    if (cached != null && cached.isNotEmpty) {
+      if (!mounted) return;
+      setState(() {
+        _yaklasanGunler = cached;
+        _yukleniyor = false;
+      });
+      return; // Show cached data immediately
+    }
+
+    // 2. No cache available, must fetch from network
+    await _gunleriYukle();
+  }
+
   Future<void> _gunleriYukle() async {
     setState(() {
-      _yukleniyor = true;
+      _guncelleniyor = true;
+      if (_yaklasanGunler.isEmpty) _yukleniyor = true;
     });
 
-    final gunler = await OzelGunlerService.yaklasanOzelGunlerAsync();
+    try {
+      final gunler = await OzelGunlerService.yaklasanOzelGunlerAsync();
 
-    if (!mounted) return;
-    setState(() {
-      _yaklasanGunler = gunler;
-      _yukleniyor = false;
-    });
+      if (!mounted) return;
+      setState(() {
+        _yaklasanGunler = gunler;
+        _yukleniyor = false;
+        _guncelleniyor = false;
+      });
+
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(
+            _languageService['special_days_updated'] ?? 'Özel günler güncellendi!',
+          ),
+          duration: const Duration(seconds: 2),
+          behavior: SnackBarBehavior.floating,
+        ),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _guncelleniyor = false;
+        _yukleniyor = false;
+      });
+    }
   }
 
   @override
@@ -69,6 +106,22 @@ class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
         backgroundColor: Colors.transparent,
         elevation: 0,
         iconTheme: IconThemeData(color: renkler.yaziPrimary),
+        actions: [
+          _guncelleniyor
+              ? const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  ),
+                )
+              : IconButton(
+                  icon: const Icon(Icons.refresh),
+                  tooltip: _languageService['refresh'] ?? 'Güncelle',
+                  onPressed: _gunleriYukle,
+                ),
+        ],
       ),
       body: _yukleniyor
           ? const Center(child: CircularProgressIndicator())
