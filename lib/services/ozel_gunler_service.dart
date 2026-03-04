@@ -76,6 +76,9 @@ class OzelGunlerService {
 
   static int _hijriDayShift = 0;
 
+  /// Public getter for hijri day shift (used by HomeWidgetService for native sync)
+  static int get hijriDayShift => _hijriDayShift;
+
   /// Session-level popup shown flag
   /// Stays true during the session to show the popup only once
   static bool _sessionPopupShown = false;
@@ -524,23 +527,16 @@ class OzelGunlerService {
     return sonuc;
   }
 
-  /// Load cached special days list from SharedPreferences.
-  /// Returns instantly without any network call.
+  /// Load saved special days list from SharedPreferences.
+  /// Returns instantly without any network call. Data persists permanently
+  /// until user explicitly taps the refresh button.
   static Future<List<Map<String, dynamic>>?> _loadCachedOzelGunler() async {
     try {
       final prefs = await SharedPreferences.getInstance();
       final jsonStr = prefs.getString(_ozelGunlerCacheKey);
-      final cacheTime = prefs.getInt(_ozelGunlerCacheTimeKey);
-      if (jsonStr == null || cacheTime == null) return null;
+      if (jsonStr == null) return null;
 
-      final cacheDate = DateTime.fromMillisecondsSinceEpoch(cacheTime);
       final now = DateTime.now();
-      // Cache valid for 30 days
-      if (now.difference(cacheDate).inDays > 30) {
-        debugPrint('⏰ Special days cache too old, will refresh');
-        return null;
-      }
-
       final decoded = jsonDecode(jsonStr) as List;
       final result = decoded.map((item) {
         final map = item as Map<String, dynamic>;

@@ -57,8 +57,8 @@ class ZenWidget : AppWidgetProvider() {
             val geriSayim = vakitBilgisi["geriSayim"] ?: "02:30:00"
             val ilerleme = vakitBilgisi["ilerleme"]?.toIntOrNull() ?: 50
             
-            // Flutter'dan gelen çevirilmiş vakit isimlerini kullan
-            val sonrakiVakit = widgetData.getString("sonraki_vakit", null) ?: vakitBilgisi["sonrakiVakit"] ?: "Öğle"
+            // Vakit isimlerini native hesaplamadan al, çeviriyi SharedPreferences'tan oku
+            val sonrakiVakit = WidgetUtils.getTranslatedVakitAdi(widgetData, vakitBilgisi["sonrakiVakit"] ?: "Ogle")
             
             val konum = widgetData.getString("konum", "İstanbul") ?: "İstanbul"
             val sehir = konum.split("/").firstOrNull()?.trim()?.uppercase() ?: konum.uppercase()

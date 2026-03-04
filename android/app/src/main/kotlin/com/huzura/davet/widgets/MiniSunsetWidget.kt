@@ -66,13 +66,14 @@ class MiniSunsetWidget : AppWidgetProvider() {
             val sonrakiSaat = vakitBilgisi["sonrakiSaat"] ?: "06:30"
             val ilerleme = vakitBilgisi["ilerleme"]?.toIntOrNull() ?: 0
             
-            // Flutter'dan gelen çevirilmiş vakit isimlerini kullan
-            val sonrakiVakit = widgetData.getString("sonraki_vakit", null) ?: vakitBilgisi["sonrakiVakit"] ?: "Öğle"
-            val mevcutVakit = widgetData.getString("mevcut_vakit", null) ?: vakitBilgisi["mevcutVakit"] ?: "İmsak"
+            // Vakit isimlerini native hesaplamadan al, çeviriyi SharedPreferences'tan oku
+            val sonrakiVakit = WidgetUtils.getTranslatedVakitAdi(widgetData, vakitBilgisi["sonrakiVakit"] ?: "Ogle")
+            val mevcutVakit = WidgetUtils.getTranslatedVakitAdi(widgetData, vakitBilgisi["mevcutVakit"] ?: "Imsak")
             
             // Diğer bilgiler
             val miladiTarih = widgetData.getString("miladi_tarih", "17 Ocak 2026") ?: "17 Ocak 2026"
-            val hicriTarih = widgetData.getString("hicri_tarih", "28 Recep 1447") ?: "28 Recep 1447"
+            // Hicri tarihi native hesapla (Flutter kapalıyken de güncel kalır)
+            val hicriTarih = WidgetUtils.getHicriTarih(context)
             val konum = widgetData.getString("konum", "İstanbul") ?: "İstanbul"
 
             

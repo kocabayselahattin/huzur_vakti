@@ -65,11 +65,12 @@ class KlasikTuruncuWidget : AppWidgetProvider() {
             val vakitBilgisi = WidgetUtils.hesaplaVakitBilgisi(imsak, gunes, ogle, ikindi, aksam, yatsi)
             val geriSayim = vakitBilgisi["geriSayim"] ?: "02:30:00"
             
-            // Flutter'dan gelen çevirilmiş vakit isimlerini kullan
-            val sonrakiVakit = widgetData.getString("sonraki_vakit", null) ?: vakitBilgisi["sonrakiVakit"] ?: "Öğle"
-            val mevcutVakit = widgetData.getString("mevcut_vakit", null) ?: vakitBilgisi["mevcutVakit"] ?: "İmsak"
+            // Vakit isimlerini native hesaplamadan al, çeviriyi SharedPreferences'tan oku
+            val sonrakiVakit = WidgetUtils.getTranslatedVakitAdi(widgetData, vakitBilgisi["sonrakiVakit"] ?: "Ogle")
+            val mevcutVakit = WidgetUtils.getTranslatedVakitAdi(widgetData, vakitBilgisi["mevcutVakit"] ?: "Imsak")
             
-            val hicriTarih = widgetData.getString("hicri_tarih", "1 Muharrem 1447") ?: "1 Muharrem 1447"
+            // Hicri tarihi native hesapla (Flutter kapalıyken de güncel kalır)
+            val hicriTarih = WidgetUtils.getHicriTarih(context)
             val konum = widgetData.getString("konum", "İSTANBUL") ?: "İSTANBUL"
 
             

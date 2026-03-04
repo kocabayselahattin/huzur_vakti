@@ -165,6 +165,15 @@ class HomeWidgetService {
     final hicri = OzelGunlerService.hijriNowTR();
     final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
 
+    // Save hijri_day_shift and month names for native widget Hicri calculation
+    await HomeWidget.saveWidgetData<int>('hijri_day_shift', OzelGunlerService.hijriDayShift);
+    for (int i = 1; i <= 12; i++) {
+      final monthName = _getHicriAyAdi(i);
+      if (monthName.isNotEmpty) {
+        await HomeWidget.saveWidgetData<String>('hijri_month_$i', monthName);
+      }
+    }
+
     // Location
     final il = await KonumService.getIl();
     final ilce = await KonumService.getIlce();

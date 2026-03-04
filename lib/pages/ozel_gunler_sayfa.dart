@@ -54,11 +54,11 @@ class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
       return; // Show cached data immediately
     }
 
-    // 2. No cache available, must fetch from network
-    await _gunleriYukle();
+    // 2. No cache available, must fetch from network (first time)
+    await _gunleriYukle(showSnackbar: false);
   }
 
-  Future<void> _gunleriYukle() async {
+  Future<void> _gunleriYukle({bool showSnackbar = true}) async {
     setState(() {
       _guncelleniyor = true;
       if (_yaklasanGunler.isEmpty) _yukleniyor = true;
@@ -74,15 +74,17 @@ class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
         _guncelleniyor = false;
       });
 
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(
-            _languageService['special_days_updated'] ?? 'Özel günler güncellendi!',
+      if (showSnackbar) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _languageService['special_days_updated'] ?? 'Özel günler güncellendi!',
+            ),
+            duration: const Duration(seconds: 2),
+            behavior: SnackBarBehavior.floating,
           ),
-          duration: const Duration(seconds: 2),
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
+        );
+      }
     } catch (e) {
       if (!mounted) return;
       setState(() {

@@ -3,11 +3,14 @@ package com.huzura.davet.widgets
 import android.app.PendingIntent
 import android.content.Context
 import android.content.Intent
+import android.content.SharedPreferences
 import android.graphics.Color
+import android.icu.util.IslamicCalendar
 import android.os.Build
 import android.os.SystemClock
 import android.widget.RemoteViews
 import com.huzura.davet.MainActivity
+import es.antonborri.home_widget.HomeWidgetPlugin
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -16,6 +19,82 @@ object WidgetUtils {
     
     // Vakit isimleri sırası
     private val vakitSirasi = listOf("Imsak", "Gunes", "Ogle", "Ikindi", "Aksam", "Yatsi")
+    
+    // Varsayılan Hicri ay isimleri (çeviri yoksa kullanılır)
+    private val defaultHicriAylar = listOf(
+        "Muharrem", "Safer", "Rebiülevvel", "Rebiülahir",
+        "Cemaziyelevvel", "Cemaziyelahir", "Recep", "Şaban",
+        "Ramazan", "Şevval", "Zilkade", "Zilhicce"
+    )
+
+    /**
+     * Hicri tarihi Android'in yerel IslamicCalendar'ı ile hesaplar.
+     * Flutter'ın hijri_day_shift değerini SharedPreferences'tan okuyarak
+     * Diyanet takvimiyle senkronize kalır.
+     *
+     * @return "gün AyAdı yıl" formatında Hicri tarih (ör. "5 Şaban 1447")
+     */
+    fun getHicriTarih(context: Context): String {
+        try {
+            val widgetData = HomeWidgetPlugin.getData(context)
+            val dayShift = widgetData.getInt("hijri_day_shift", 0)
+            
+            // Bugünün tarihini shift uygulayarak al
+            val cal = Calendar.getInstance()
+            cal.add(Calendar.DAY_OF_YEAR, dayShift)
+            
+            // IslamicCalendar (Umm al-Qura) ile Hicri tarihe çevir
+            val islamicCal = IslamicCalendar(cal.time)
+            islamicCal.calculationType = IslamicCalendar.CalculationType.ISLAMIC_UMALQURA
+            // Re-set the time after changing calculation type
+            islamicCal.time = cal.time
+            
+            val hDay = islamicCal.get(Calendar.DAY_OF_MONTH)
+            val hMonth = islamicCal.get(Calendar.MONTH) // 0-based
+            val hYear = islamicCal.get(Calendar.YEAR)
+            
+            // Ay ismini çevirilerden al (1-indexed key: hijri_month_1 .. hijri_month_12)
+            val monthIndex = hMonth + 1
+            val ayAdi = widgetData.getString("hijri_month_$monthIndex", null)
+                ?: defaultHicriAylar.getOrElse(hMonth) { "" }
+            
+            return "$hDay $ayAdi $hYear"
+        } catch (e: Exception) {
+            // Hata durumunda Flutter'ın kaydettiği değeri kullan
+            val widgetData = HomeWidgetPlugin.getData(context)
+            return widgetData.getString("hicri_tarih", "") ?: ""
+        }
+    }
+    
+    /**
+     * Natively hesaplanan vakit anahtarını (ör. "Imsak") çevirilmiş isme çevirir.
+     * Flutter label_imsak, label_gunes vb. olarak kaydettiği çevirileri kullanır.
+     */
+    fun getTranslatedVakitAdi(widgetData: SharedPreferences, nativeKey: String): String {
+        val labelKey = when (nativeKey) {
+            "Imsak", "İmsak" -> "label_imsak"
+            "Gunes", "Güneş" -> "label_gunes"
+            "Ogle", "Öğle" -> "label_ogle"
+            "Ikindi", "İkindi" -> "label_ikindi"
+            "Aksam", "Akşam" -> "label_aksam"
+            "Yatsi", "Yatsı" -> "label_yatsi"
+            else -> null
+        }
+        if (labelKey != null) {
+            val translated = widgetData.getString(labelKey, null)
+            if (!translated.isNullOrBlank()) return translated
+        }
+        // Türkçe fallback
+        return when (nativeKey) {
+            "Imsak" -> "İmsak"
+            "Gunes" -> "Güneş"
+            "Ogle" -> "Öğle"
+            "Ikindi" -> "İkindi"
+            "Aksam" -> "Akşam"
+            "Yatsi" -> "Yatsı"
+            else -> nativeKey
+        }
+    }
     
     /**
      * Vakit saatlerinden geri sayım hesapla

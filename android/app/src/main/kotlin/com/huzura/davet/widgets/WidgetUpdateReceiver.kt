@@ -126,8 +126,10 @@ class WidgetUpdateReceiver : BroadcastReceiver() {
             }
             Intent.ACTION_USER_PRESENT -> {
                 // Ekran kilidi açıldığında widget'ları hemen güncelle
+                // ve periyodik güncelleme zincirini yeniden başlat
                 Log.d(TAG, "Screen unlocked, updating widgets immediately")
                 updateAllWidgets(context)
+                scheduleWidgetUpdates(context)
             }
         }
     }

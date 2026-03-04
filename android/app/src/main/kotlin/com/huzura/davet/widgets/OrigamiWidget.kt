@@ -95,12 +95,13 @@ class OrigamiWidget : AppWidgetProvider() {
             val geriSayim = vakitBilgisi["geriSayim"] ?: "02:30:00"
             val ilerleme = vakitBilgisi["ilerleme"]?.toIntOrNull() ?: 50
             
-            // Flutter'dan gelen çevirilmiş vakit isimlerini kullan
-            val sonrakiVakit = widgetData.getString("sonraki_vakit", null) ?: vakitBilgisi["sonrakiVakit"] ?: "Öğle"
-            val mevcutVakit = widgetData.getString("mevcut_vakit", null) ?: vakitBilgisi["mevcutVakit"] ?: "Güneş"
+            // Vakit isimlerini native hesaplamadan al, çeviriyi SharedPreferences'tan oku
+            val sonrakiVakit = WidgetUtils.getTranslatedVakitAdi(widgetData, vakitBilgisi["sonrakiVakit"] ?: "Ogle")
+            val mevcutVakit = WidgetUtils.getTranslatedVakitAdi(widgetData, vakitBilgisi["mevcutVakit"] ?: "Gunes")
             
             val konum = widgetData.getString("konum", "İstanbul") ?: "İstanbul"
-            val hicriTarih = widgetData.getString("hicri_tarih", "28 Recep 1447") ?: "28 Recep 1447"
+            // Hicri tarihi native hesapla (Flutter kapalıyken de güncel kalır)
+            val hicriTarih = WidgetUtils.getHicriTarih(context)
             val miladiTarih = widgetData.getString("miladi_tarih", "21 Ocak 2026") ?: "21 Ocak 2026"
             
             // Önce widget'a özel ayarları kontrol et, yoksa varsayılanı kullan
