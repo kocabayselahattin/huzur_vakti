@@ -3,6 +3,7 @@ import 'bildirim_ayarlari_sayfa.dart';
 import 'il_ilce_sec_sayfa.dart';
 import 'tema_ayarlari_sayfa.dart';
 import 'hakkinda_sayfa.dart';
+import 'gizlilik_politikasi_sayfa.dart';
 import 'sayac_ayarlari_sayfa.dart';
 import '../services/tema_service.dart';
 import '../services/language_service.dart';
@@ -181,6 +182,24 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
                 context,
                 MaterialPageRoute(
                   builder: (context) => const WidgetAyarlariSayfa(),
+                ),
+              );
+            },
+            renkler: renkler,
+          ),
+          Divider(color: renkler.ayirac),
+
+          // Privacy Policy
+          _ayarSatiri(
+            icon: Icons.privacy_tip,
+            iconColor: renkler.vurgu,
+            baslik: _languageService['privacy_policy'] ?? '',
+            altBaslik: _languageService['pd_subtitle_short'] ?? '',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => const GizlilikPolitikasiSayfa(),
                 ),
               );
             },

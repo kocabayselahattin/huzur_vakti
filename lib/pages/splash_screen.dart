@@ -4,6 +4,7 @@ import 'ana_sayfa.dart';
 import 'il_ilce_sec_sayfa.dart';
 import 'dil_secim_sayfa.dart';
 import 'onboarding_permissions_page.dart';
+import 'belirgin_aciklama_sayfa.dart';
 import '../services/permission_service.dart';
 import '../services/language_service.dart';
 
@@ -83,16 +84,33 @@ class _SplashScreenState extends State<SplashScreen> {
         '🚀 Splash: locationGranted=$locationGranted, notificationGranted=$notificationGranted',
       );
 
-      // Eğer kritik izinler eksikse onboarding göster
+      // Eğer kritik izinler eksikse önce belirgin açıklama, sonra onboarding göster
       if (!locationGranted || !notificationGranted) {
-        debugPrint('🚀 Splash: İzin sayfasına yönlendiriliyor...');
+        debugPrint('🚀 Splash: Belirgin açıklama sayfasına yönlendiriliyor...');
         if (!mounted) return;
-        await Navigator.push(
+
+        // Google Play gereksinimi: İzinlerden ÖNCE belirgin açıklama göster
+        final kabul = await Navigator.push<bool>(
           context,
           MaterialPageRoute(
-            builder: (context) => const OnboardingPermissionsPage(),
+            builder: (context) => const BelirginAciklamaSayfa(),
           ),
         );
+
+        if (!mounted) return;
+
+        // Kullanıcı kabul ettiyse izin sayfasına yönlendir
+        if (kabul == true) {
+          debugPrint('🚀 Splash: Açıklama kabul edildi, izin sayfasına yönlendiriliyor...');
+          await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const OnboardingPermissionsPage(),
+            ),
+          );
+        } else {
+          debugPrint('🚀 Splash: Açıklama reddedildi, izinler atlanıyor');
+        }
         debugPrint('🚀 Splash: İzin sayfasından döndü');
 
         if (!mounted) return;

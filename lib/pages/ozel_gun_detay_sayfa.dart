@@ -341,33 +341,39 @@ class _OzelGunDetaySayfaState extends State<OzelGunDetaySayfa> {
   }
 
   String _getDetaylar(OzelGun ozelGun) {
-    switch (ozelGun.ad) {
-      case 'Mevlid Kandili':
+    switch (ozelGun.adKey) {
+      case 'mawlid':
         return 'Peygamber Efendimiz Hz. Muhammed (S.A.V), Hicri 571 yılında Rebîülevvel ayının 12. gecesi Mekke\'de doğmuştur. Mevlid Kandili, bu mübarek doğum gününü anmak ve kutlamak için yapılan ibadettir.';
       
-      case 'Regaip Kandili':
+      case 'ragaib':
         return 'Recep ayının ilk Cuma gecesi olan Regaip Kandili, üç ayların başlangıcıdır. "Regaip" Arapça\'da "çok değerli ve saygın şeyler" anlamına gelir. Bu gece, Ramazan ayına hazırlık ve manevi arınma gecesidir.';
       
-      case 'Miraç Kandili':
+      case 'miraj':
         return 'Peygamber Efendimiz (S.A.V)\'in Mescid-i Haram\'dan Mescid-i Aksa\'ya, oradan da semavi yolculukla Allah\'ın huzuruna çıktığı mübarek gecedir. Bu gecede namaz ibadetinin farz kılındığı rivayet edilir.';
       
-      case 'Berat Kandili':
+      case 'barat':
         return 'Şaban ayının 14\'üncü gününden 15\'inci gününe geçilen gece Berat Kandili olarak bilinir. "Berat" kelimesi, "kurtulmak, temize çıkmak" anlamlarına gelir. Bu gece yapılan ibadetlerin ve tövbelerin kabul edildiğine inanılır.';
       
-      case 'Kadir Gecesi':
+      case 'laylat_al_qadr':
         return 'Kur\'an-ı Kerim\'in indirilmeye başlandığı, bin aydan daha hayırlı olan mübarek gecedir. Ramazan ayının son on gününde aranır ve genellikle 27. gece olarak kabul edilir. Bu gecede melekler yeryüzüne iner ve sabaha kadar dua edenler için rahmet ve bağışlanma dilerler.';
       
-      case 'Ramazan Bayramı':
+      case 'eid_al_fitr':
         return 'Ramazan ayının ardından gelen, üç gün süren dini bayramdır. Oruç ibadetinin tamamlanmasının sevinci yaşanır. Bayram namazı kılınır, zekât-ül fıtır verilir, akrabalar ve yakınlar ziyaret edilir.';
       
-      case 'Kurban Bayramı':
+      case 'eid_al_adha':
         return 'Hz. İbrahim\'in Allah\'ın emrine itaat ederek oğlu Hz. İsmail\'i kurban etmek istemesini, Allah\'ın bu sadakati bir koçla fidye edip kabul etmesini anma günüdür. Dört gün sürer ve kurban kesilir, akrabalar ziyaret edilir.';
       
-      case 'Arefe Günü':
+      case 'arafa':
         return 'Kurban Bayramı\'ndan bir gün önceki gün olan Arefe günü, Hac\'da Arafat\'ta vakfe yapılan gündür. Bu gün oruç tutulması tavsiye edilir ve çok faziletlidir.';
       
-      case 'Aşure Günü':
+      case 'ashura':
         return 'Muharrem ayının 10. günü olan Aşure günü, tarihte birçok önemli olayın yaşandığı mübarek bir gündür. Bu gün oruç tutulması ve aşure yemeği yapılması sünnet olarak bilinir.';
+      
+      case 'hijri_new_year':
+        return 'Hicri takvimin ilk günüdür. Hz. Muhammed (S.A.V)\'in Mekke\'den Medine\'ye hicretini esas alır. Muharrem ayı, haram aylardan biridir ve bu ayda yapılan ibadetlerin sevabı kat kat artırılır. Yeni Hicri yıl, Müslümanlar için hem manevi bir başlangıç hem de tarihi bir hatırlamadır.';
+      
+      case 'ramadan_start':
+        return 'On bir ayın sultanı Ramazan-ı Şerif, oruç ibadetinin farz olduğu mübarek aydır. Kur\'an-ı Kerim bu ayda indirilmeye başlanmıştır. Ramazan ayı boyunca oruç tutulur, teravih namazı kılınır, Kur\'an-ı Kerim hatmi yapılır ve iftar sofraları kurularak paylaşım artırılır.';
       
       default:
         return ozelGun.aciklama;
@@ -375,8 +381,8 @@ class _OzelGunDetaySayfaState extends State<OzelGunDetaySayfa> {
   }
 
   List<String> _getFaziletler(OzelGun ozelGun) {
-    switch (ozelGun.ad) {
-      case 'Mevlid Kandili':
+    switch (ozelGun.adKey) {
+      case 'mawlid':
         return [
           'Bu gece yapılan ibadetlerin ve duaların kabul edileceğine inanılır',
           'Peygamber Efendimiz\'e salat ve selam getirmek çok faziletlidir',
@@ -384,7 +390,7 @@ class _OzelGunDetaySayfaState extends State<OzelGunDetaySayfa> {
           'Mevlid okutmak ve dinlemek sevaptır',
         ];
       
-      case 'Regaip Kandili':
+      case 'ragaib':
         return [
           'Üç ayların başlangıcıdır ve Ramazan\'a hazırlık gecesidir',
           'Bu gecede çokça tövbe etmek ve istiğfar çekmek tavsiye edilir',
@@ -392,7 +398,7 @@ class _OzelGunDetaySayfaState extends State<OzelGunDetaySayfa> {
           'Allah\'ın rahmetinin bol olduğu bir gecedir',
         ];
       
-      case 'Miraç Kandili':
+      case 'miraj':
         return [
           'Peygamber Efendimiz\'in mucizevi yolculuğunu anma gecesidir',
           'Namaz ibadetinin bu gecede farz kılındığına inanılır',
@@ -400,7 +406,7 @@ class _OzelGunDetaySayfaState extends State<OzelGunDetaySayfa> {
           'İbadet etmek ve Kur\'an okumak çok sevaptır',
         ];
       
-      case 'Berat Kandili':
+      case 'barat':
         return [
           'Günahların affedildiği ve tövbelerin kabul edildiği gecedir',
           'Bir sonraki yıla kadar hayatta kalanların isimlerinin yazıldığı gecedir',
@@ -408,7 +414,7 @@ class _OzelGunDetaySayfaState extends State<OzelGunDetaySayfa> {
           'Bu gecede yapılan dua ve ibadetlerin kabul edileceğine inanılır',
         ];
       
-      case 'Kadir Gecesi':
+      case 'laylat_al_qadr':
         return [
           'Bin aydan daha hayırlı olan mübarek gecedir',
           'Kur\'an-ı Kerim\'in indirilmeye başlandığı gecedir',
@@ -417,7 +423,7 @@ class _OzelGunDetaySayfaState extends State<OzelGunDetaySayfa> {
           'Cenab-ı Allah bu geceyi "Kadir Suresi"nde müjdelemiştir',
         ];
       
-      case 'Ramazan Bayramı':
+      case 'eid_al_fitr':
         return [
           'Bir aylık oruç ibadetinin tamamlanmasının sevinci yaşanır',
           'Bayram namazı kılınması Müslümanlar için önemli bir ibadettir',
@@ -425,12 +431,45 @@ class _OzelGunDetaySayfaState extends State<OzelGunDetaySayfa> {
           'Toplumsal dayanışma ve yardımlaşma artırılır',
         ];
       
-      case 'Kurban Bayramı':
+      case 'eid_al_adha':
         return [
           'Hz. İbrahim\'in sadakatini ve Allah\'a teslimiyetini anma günüdür',
           'Kurban kesmek Allah rızası için yapılan önemli bir ibadettir',
           'Kesilen kurbanın etleri fakirlerle paylaşılır',
           'Hac ibadeti bu günlerde yapılır',
+        ];
+      
+      case 'arafa':
+        return [
+          'Arefe günü tutulan orucun önceki ve sonraki yılın günahlarına kefaret olacağı rivayet edilir',
+          'Bu günde yapılan duaların kabul edileceğine inanılır',
+          'Hac\'da Arafat vakfesi bu günde yapılır',
+          'Cenab-ı Allah\'ın en çok kullarını bağışladığı gündür',
+        ];
+      
+      case 'ashura':
+        return [
+          'Hz. Nuh\'un gemisinin tufandan kurtulduğu gün olarak bilinir',
+          'Hz. Musa\'nın Firavun\'dan kurtulduğu gün olarak kabul edilir',
+          'Bu günde oruç tutmak sünnettir ve büyük sevabı vardır',
+          'Tarihteki birçok önemli olayın bu güne denk geldiği rivayet edilir',
+        ];
+      
+      case 'hijri_new_year':
+        return [
+          'Hicret, İslam tarihinin en önemli dönüm noktalarından biridir',
+          'Muharrem ayı haram aylardan biridir ve ibadetlerin sevabı artar',
+          'Bu ayda oruç tutmak Ramazan\'dan sonra en faziletli oruçtur',
+          'Yeni yıl vesilesiyle tövbe ve istiğfar etmek tavsiye edilir',
+        ];
+      
+      case 'ramadan_start':
+        return [
+          'Ramazan ayı, Kur\'an-ı Kerim\'in indirilmeye başlandığı aydır',
+          'Bu ayda oruç tutmak farz kılınmıştır',
+          'Ramazan\'da yapılan ibadetlerin sevabı kat kat artırılır',
+          'Cennetin kapıları açılır, cehennemin kapıları kapanır',
+          'Şeytanlar bu ayda zincire vurulur',
         ];
       
       default:
@@ -451,9 +490,9 @@ class _OzelGunDetaySayfaState extends State<OzelGunDetaySayfa> {
       'Dua ve zikirlerde bulunmak',
     ];
 
-    switch (ozelGun.ad) {
-      case 'Ramazan Bayramı':
-      case 'Kurban Bayramı':
+    switch (ozelGun.adKey) {
+      case 'eid_al_fitr':
+      case 'eid_al_adha':
         return [
           'Sabah erkenden gusül abdesti almak',
           'En güzel elbiselerinizi giymek',
@@ -464,7 +503,7 @@ class _OzelGunDetaySayfaState extends State<OzelGunDetaySayfa> {
           'Fakirlere sadaka vermek',
         ];
       
-      case 'Arefe Günü':
+      case 'arafa':
         return [
           'Arefe günü orucu tutmak',
           'Sabah namazından sonra tekbir getirmek',
@@ -473,13 +512,32 @@ class _OzelGunDetaySayfaState extends State<OzelGunDetaySayfa> {
           'Kur\'an-ı Kerim okumak',
         ];
       
-      case 'Aşure Günü':
+      case 'ashura':
         return [
           'Aşure günü orucu tutmak',
           'Aşure yemeği hazırlamak ve dağıtmak',
           'Komşu ve akrabalara ikramda bulunmak',
           'Şükür namazı kılmak',
           'Dua ve zikirde bulunmak',
+        ];
+      
+      case 'hijri_new_year':
+        return [
+          'Muharrem ayında oruç tutmak',
+          'Tövbe ve istiğfar etmek',
+          'Geçmiş yılı muhasebe etmek',
+          'Yeni yıl için güzel niyet ve hedefler koymak',
+          'Kur\'an-ı Kerim okumak',
+        ];
+      
+      case 'ramadan_start':
+        return [
+          'Sahura kalkmak ve oruç niyeti yapmak',
+          'Teravih namazı kılmak',
+          'Kur\'an-ı Kerim hatmine başlamak',
+          'İftar sofrası kurmak ve paylaşmak',
+          'Sadaka ve zekât vermek',
+          'Dua ve zikirle meşgul olmak',
         ];
       
       default:

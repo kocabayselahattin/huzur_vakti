@@ -51,7 +51,9 @@ class _OzelGunlerSayfaState extends State<OzelGunlerSayfa> {
         _yaklasanGunler = cached;
         _yukleniyor = false;
       });
-      return; // Show cached data immediately
+      // Always refresh in background to keep data fresh
+      _gunleriYukle(showSnackbar: false);
+      return;
     }
 
     // 2. No cache available, must fetch from network (first time)

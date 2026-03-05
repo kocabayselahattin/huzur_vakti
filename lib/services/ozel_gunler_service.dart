@@ -630,28 +630,32 @@ class OzelGunlerService {
       final monthStart = DateTime(year, month, 1);
       if (monthStart.isAfter(endDate)) break;
 
-      final list = await DiyanetApiService.getAylikVakitler(
-        ilceId,
-        year,
-        month,
-      );
-      for (final item in list) {
-        final gStr = item['MiladiTarihKisa']?.toString() ?? '';
-        final hStr = item['HicriTarihKisa']?.toString() ?? '';
-        if (gStr.isEmpty || hStr.isEmpty) continue;
+      try {
+        final list = await DiyanetApiService.getAylikVakitler(
+          ilceId,
+          year,
+          month,
+        );
+        for (final item in list) {
+          final gStr = item['MiladiTarihKisa']?.toString() ?? '';
+          final hStr = item['HicriTarihKisa']?.toString() ?? '';
+          if (gStr.isEmpty || hStr.isEmpty) continue;
 
-        final gDate = _parseDottedDate(gStr);
-        final h = _parseDottedHijriDate(hStr);
-        if (gDate == null || h == null) continue;
+          final gDate = _parseDottedDate(gStr);
+          final h = _parseDottedHijriDate(hStr);
+          if (gDate == null || h == null) continue;
 
-        if (_isDateInRange(gDate, startDate, endDate)) {
-          dayRows.add((
-            gDate: gDate,
-            hDay: h.day,
-            hMonth: h.month,
-            hYear: h.year,
-          ));
+          if (_isDateInRange(gDate, startDate, endDate)) {
+            dayRows.add((
+              gDate: gDate,
+              hDay: h.day,
+              hMonth: h.month,
+              hYear: h.year,
+            ));
+          }
         }
+      } catch (e) {
+        debugPrint('⚠️ [OzelGunler] Failed to fetch month $month/$year: $e');
       }
 
       // next month
@@ -666,17 +670,25 @@ class OzelGunlerService {
     // Ensure chronological order.
     dayRows.sort((a, b) => a.gDate.compareTo(b.gDate));
 
+    // If API data is insufficient, fall back to local Hijri calculation
+    if (dayRows.length < 30) {
+      debugPrint(
+        '⚠️ [OzelGunler] API data insufficient (${dayRows.length} rows), '
+        'falling back to local Hijri calculation',
+      );
+      return yaklasanOzelGunler();
+    }
+
     final result = <Map<String, dynamic>>[];
 
     for (final ozelGun in ozelGunler) {
-      final match =
-          dayRows.cast<dynamic>().firstWhere(
-                (row) =>
-                    row.hMonth == ozelGun.hicriAy &&
-                    row.hDay == ozelGun.hicriGun,
-                orElse: () => null,
-              )
-              as ({DateTime gDate, int hDay, int hMonth, int hYear})?;
+      ({DateTime gDate, int hDay, int hMonth, int hYear})? match;
+      for (final row in dayRows) {
+        if (row.hMonth == ozelGun.hicriAy && row.hDay == ozelGun.hicriGun) {
+          match = row;
+          break;
+        }
+      }
 
       if (match == null) continue;
 
@@ -696,6 +708,15 @@ class OzelGunlerService {
         'hicriTarih':
             '${ozelGun.hicriGun} ${_getHicriAyAdi(ozelGun.hicriAy)} ${match.hYear}',
       });
+    }
+
+    // If no results found from API data, fall back to local calculation
+    if (result.isEmpty) {
+      debugPrint(
+        '⚠️ [OzelGunler] No special days matched from API data, '
+        'falling back to local Hijri calculation',
+      );
+      return yaklasanOzelGunler();
     }
 
     result.sort(
