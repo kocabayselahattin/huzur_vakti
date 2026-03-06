@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'bildirim_ayarlari_sayfa.dart';
 import 'il_ilce_sec_sayfa.dart';
 import 'tema_ayarlari_sayfa.dart';
@@ -8,6 +9,7 @@ import 'sayac_ayarlari_sayfa.dart';
 import '../services/tema_service.dart';
 import '../services/language_service.dart';
 import 'widget_ayarlari_sayfa.dart';
+import 'splash_screen.dart';
 
 class AyarlarSayfa extends StatefulWidget {
   const AyarlarSayfa({super.key});
@@ -221,6 +223,17 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
             },
             renkler: renkler,
           ),
+          Divider(color: renkler.ayirac),
+
+          // Verilerimi Sil (GDPR hakkı)
+          _ayarSatiri(
+            icon: Icons.delete_forever,
+            iconColor: Colors.red,
+            baslik: _languageService['delete_my_data'] ?? 'Verilerimi Sil',
+            altBaslik: _languageService['delete_my_data_desc'] ?? 'Tüm yerel verilerinizi silin',
+            onTap: () => _verileriSilDialog(),
+            renkler: renkler,
+          ),
         ],
       ),
     );
@@ -297,6 +310,72 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
           ],
         );
       },
+    );
+  }
+
+  void _verileriSilDialog() {
+    final renkler = _temaService.renkler;
+    showDialog(
+      context: context,
+      builder: (context) {
+        return AlertDialog(
+          backgroundColor: renkler.kartArkaPlan,
+          icon: const Icon(Icons.warning_amber_rounded, color: Colors.red, size: 48),
+          title: Text(
+            _languageService['delete_data_title'] ?? 'Verilerimi Sil',
+            style: TextStyle(color: renkler.yaziPrimary),
+          ),
+          content: Text(
+            _languageService['delete_data_message'] ??
+                'Bu işlem cihazdaki tüm uygulama verilerinizi (konum, tercihler, bildirim ayarları vb.) kalıcı olarak silecektir. Uygulama ilk kurulum haline dönecektir.\n\nDevam etmek istiyor musunuz?',
+            style: TextStyle(color: renkler.yaziSecondary, height: 1.5),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: Text(
+                _languageService['cancel'] ?? 'İptal',
+                style: TextStyle(color: renkler.yaziSecondary),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () async {
+                Navigator.pop(context);
+                await _tumVerileriSil();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: Colors.red,
+              ),
+              child: Text(
+                _languageService['delete_data_confirm'] ?? 'Evet, Tüm Verilerimi Sil',
+                style: const TextStyle(color: Colors.white),
+              ),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  Future<void> _tumVerileriSil() async {
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.clear();
+
+    if (!mounted) return;
+
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _languageService['delete_data_success'] ?? 'Tüm verileriniz başarıyla silindi',
+        ),
+        backgroundColor: Colors.green,
+      ),
+    );
+
+    // Uygulamayı splash screen'e yönlendir (ilk kurulum akışı)
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const SplashScreen()),
+      (route) => false,
     );
   }
 

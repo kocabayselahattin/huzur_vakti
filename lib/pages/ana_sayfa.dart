@@ -726,7 +726,6 @@ class _AnaSayfaState extends State<AnaSayfa>
   @override
   Widget build(BuildContext context) {
     final renkler = _temaService.renkler;
-    final content = _buildHomeContentColumn(renkler);
 
     return Scaffold(
       backgroundColor: renkler.arkaPlan,

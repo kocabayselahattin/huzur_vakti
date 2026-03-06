@@ -134,6 +134,32 @@ class _GizlilikPolitikasiSayfaState extends State<GizlilikPolitikasiSayfa> {
                     _lang['pp_contact_title'] ?? 'İletişim',
                     _lang['pp_contact_body'] ?? '',
                   ),
+                  const Divider(height: 40),
+                  _bolum(
+                    renkler,
+                    _lang['pp_gdpr_title'] ?? 'GDPR - AB Veri Koruma',
+                    _lang['pp_gdpr_body'] ?? '',
+                  ),
+                  _bolum(
+                    renkler,
+                    _lang['pp_gdpr_legal_basis_title'] ?? 'Hukuki Dayanak',
+                    _lang['pp_gdpr_legal_basis_body'] ?? '',
+                  ),
+                  _bolum(
+                    renkler,
+                    _lang['pp_gdpr_rights_title'] ?? 'Kullanıcı Hakları (GDPR)',
+                    _lang['pp_gdpr_rights_body'] ?? '',
+                  ),
+                  _bolum(
+                    renkler,
+                    _lang['pp_gdpr_data_retention_title'] ?? 'Veri Saklama Süresi',
+                    _lang['pp_gdpr_data_retention_body'] ?? '',
+                  ),
+                  _bolum(
+                    renkler,
+                    _lang['pp_gdpr_data_deletion_title'] ?? 'Verilerin Silinmesi',
+                    _lang['pp_gdpr_data_deletion_body'] ?? '',
+                  ),
                   const SizedBox(height: 24),
                 ],
               ),

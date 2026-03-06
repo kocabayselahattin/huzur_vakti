@@ -506,10 +506,6 @@ class _GunDonumuSayacWidgetState extends State<GunDonumuSayacWidget>
 
     final aktifVakit = _getAktifVakit();
     final sonraki = _getSonrakiVakit();
-    final nextVakit = (sonraki['vakit'] as String?) ?? '';
-    final countdownColor = nextVakit.isEmpty
-        ? Colors.white
-        : _getVakitColor(nextVakit);
     final moonPhase = _getMoonPhaseFraction(_now);
 
     final Map<String, String> vakitIsimleri = {

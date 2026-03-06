@@ -1,12 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../services/language_service.dart';
 import 'gizlilik_politikasi_sayfa.dart';
 
-/// Google Play "Belirgin Açıklama" (Prominent Disclosure) gereksinimi.
-/// İzinler istenmeden ÖNCE gösterilir.
-/// Hangi verilerin, neden toplandığını açıklar ve kullanıcıdan onay alır.
-class BelirginAciklamaSayfa extends StatelessWidget {
-  const BelirginAciklamaSayfa({super.key});
+/// AB GDPR uyumluluğu için veri koruma onay ekranı.
+/// İlk açılışta (AB kullanıcıları dahil tüm kullanıcılar için) gösterilir.
+class GdprOnaySayfa extends StatelessWidget {
+  const GdprOnaySayfa({super.key});
 
   @override
   Widget build(BuildContext context) {
@@ -21,18 +21,18 @@ class BelirginAciklamaSayfa extends StatelessWidget {
             children: [
               const Spacer(flex: 1),
 
-              // Kalkan ikonu
+              // AB Kalkan ikonu
               Container(
                 width: 100,
                 height: 100,
                 decoration: BoxDecoration(
-                  color: Colors.blue.withOpacity(0.2),
+                  color: Colors.amber.withOpacity(0.2),
                   shape: BoxShape.circle,
                 ),
                 child: const Icon(
-                  Icons.privacy_tip,
+                  Icons.shield,
                   size: 50,
-                  color: Colors.blue,
+                  color: Colors.amber,
                 ),
               ),
 
@@ -40,21 +40,21 @@ class BelirginAciklamaSayfa extends StatelessWidget {
 
               // Başlık
               Text(
-                lang['pd_title'] ?? 'Veri Kullanımı Hakkında',
+                lang['gdpr_title'] ?? 'Veri Koruma Onayı (GDPR)',
                 style: const TextStyle(
                   color: Colors.white,
-                  fontSize: 24,
+                  fontSize: 22,
                   fontWeight: FontWeight.bold,
                 ),
                 textAlign: TextAlign.center,
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
-              // Açıklama metni
+              // Alt başlık
               Text(
-                lang['pd_subtitle'] ??
-                    'Uygulamayı kullanmaya başlamadan önce, hangi verilerin toplandığını ve nasıl kullanıldığını bilmeniz gerekmektedir.',
+                lang['gdpr_subtitle'] ??
+                    'Avrupa Birliği Genel Veri Koruma Yönetmeliği (GDPR) kapsamında verilerinizin nasıl işlendiğini bilmeniz gerekmektedir.',
                 style: const TextStyle(
                   color: Colors.white70,
                   fontSize: 14,
@@ -63,55 +63,41 @@ class BelirginAciklamaSayfa extends StatelessWidget {
                 textAlign: TextAlign.center,
               ),
 
-              const SizedBox(height: 24),
+              const SizedBox(height: 20),
 
-              // Veri kullanım listesi
+              // İçerik kartları
               Expanded(
-                flex: 4,
+                flex: 5,
                 child: SingleChildScrollView(
                   child: Column(
                     children: [
-                      _veriKarti(
-                        Icons.location_on,
-                        Colors.blue,
-                        lang['pd_location_title'] ?? 'Konum Verisi',
-                        lang['pd_location_desc'] ??
-                            'Bu uygulama, cihazınızın GPS sensörü aracılığıyla hassas konum verinizi (enlem ve boylam) toplar. Toplanan konum verisi şu amaçlarla kullanılır:\n\n• Bulunduğunuz konuma göre doğru namaz vakitlerini hesaplamak\n• Kıble yönünü belirlemek\n• Yakındaki camileri harita üzerinde göstermek\n• Şehir değişikliğini tespit ederek namaz vakitlerini otomatik güncellemek\n\nKonum verisi yalnızca cihazınızda işlenir ve sunucularımıza gönderilmez. Yakındaki camiler özelliğinde konum bilginiz OpenStreetMap hizmetine iletilir. Konum iznini istediğiniz zaman cihaz ayarlarından kapatabilirsiniz.',
-                      ),
-                      _veriKarti(
-                        Icons.location_searching,
-                        Colors.cyan,
-                        lang['pd_background_title'] ?? 'Arka Planda Konum Erişimi',
-                        lang['pd_background_desc'] ??
-                            'Uygulama arka planda da konum bilginize erişebilir. Bu erişim; namaz vakti bildirimlerinin doğru konuma göre gönderilmesi, şehir değişikliğinin algılanması ve ana ekran widget\'larının güncel vakit bilgilerini göstermesi için gereklidir. Arka plan konum verisi üçüncü taraflarla paylaşılmaz ve yalnızca cihazınızda kullanılır.',
-                      ),
-                      _veriKarti(
-                        Icons.notifications_active,
-                        Colors.orange,
-                        lang['pd_notification_title'] ?? 'Bildirimler',
-                        lang['pd_notification_desc'] ??
-                            'Namaz vakitlerinde sizi bilgilendirmek, ezan sesi çalmak ve özel gün hatırlatmaları göndermek için bildirim izni kullanılır.',
-                      ),
-                      _veriKarti(
+                      _bilgiKarti(
                         Icons.storage,
-                        Colors.green,
-                        lang['pd_storage_title'] ?? 'Cihaz Depolama',
-                        lang['pd_storage_desc'] ??
-                            'Tercihleriniz (dil, tema, konum seçimi) yalnızca cihazınızda saklanır. Kişisel verileriniz hiçbir sunucuya aktarılmaz.',
+                        Colors.blue,
+                        lang['gdpr_data_processing_title'] ?? 'Veri İşleme',
+                        lang['gdpr_data_processing_desc'] ??
+                            'Bu uygulama aşağıdaki verileri toplar ve işler:\n\n• Konum verisi (GPS): Namaz vakitleri, kıble yönü ve yakındaki camiler için\n• Cihaz tercihleri: Dil, tema ve bildirim ayarlarınız\n• İnternet erişimi: Diyanet API\'sinden namaz vakitlerini almak için\n\nTüm veriler cihazınızda saklanır. Kişisel hesap oluşturulmaz, ad-soyad veya e-posta toplanmaz.',
                       ),
-                      _veriKarti(
-                        Icons.wifi,
-                        Colors.purple,
-                        lang['pd_network_title'] ?? 'İnternet Erişimi',
-                        lang['pd_network_desc'] ??
-                            'Namaz vakitlerini Diyanet İşleri Başkanlığı API\'sinden almak için internet bağlantısı kullanılır. Bu süreçte kişisel veri gönderilmez.',
+                      _bilgiKarti(
+                        Icons.gavel,
+                        Colors.orange,
+                        lang['gdpr_legal_basis_title'] ?? 'Hukuki Dayanak',
+                        lang['gdpr_legal_basis_desc'] ??
+                            'Verileriniz GDPR Madde 6(1)(a) kapsamında açık rızanıza dayanarak işlenir. Onayınızı istediğiniz zaman geri çekebilirsiniz.',
+                      ),
+                      _bilgiKarti(
+                        Icons.verified_user,
+                        Colors.green,
+                        lang['gdpr_rights_title'] ?? 'Haklarınız',
+                        lang['gdpr_rights_desc'] ??
+                            'GDPR kapsamında şu haklara sahipsiniz:\n\n• Verilerinize erişim hakkı\n• Verilerinizin düzeltilmesini isteme hakkı\n• Verilerinizin silinmesini isteme hakkı (unutulma hakkı)\n• Veri işlemeyi kısıtlama hakkı\n• Onayınızı geri çekme hakkı\n\nVerilerinizi silmek için Ayarlar > Verilerimi Sil seçeneğini kullanabilirsiniz.',
                       ),
                     ],
                   ),
                 ),
               ),
 
-              const SizedBox(height: 16),
+              const SizedBox(height: 12),
 
               // Gizlilik politikası linki
               TextButton(
@@ -124,8 +110,7 @@ class BelirginAciklamaSayfa extends StatelessWidget {
                   );
                 },
                 child: Text(
-                  lang['pd_read_privacy_policy'] ??
-                      'Gizlilik Politikasını Oku',
+                  lang['gdpr_read_privacy'] ?? 'Gizlilik Politikasını Oku',
                   style: const TextStyle(
                     color: Colors.blue,
                     fontSize: 14,
@@ -141,16 +126,21 @@ class BelirginAciklamaSayfa extends StatelessWidget {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.pop(context, true),
+                  onPressed: () async {
+                    final prefs = await SharedPreferences.getInstance();
+                    await prefs.setBool('gdpr_accepted', true);
+                    if (!context.mounted) return;
+                    Navigator.pop(context, true);
+                  },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
+                    backgroundColor: Colors.amber.shade700,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(12),
                     ),
                   ),
                   child: Text(
-                    lang['pd_accept'] ?? 'Kabul Ediyorum',
+                    lang['gdpr_accept'] ?? 'Kabul Ediyorum',
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 16,
@@ -168,7 +158,7 @@ class BelirginAciklamaSayfa extends StatelessWidget {
                 child: TextButton(
                   onPressed: () => Navigator.pop(context, false),
                   child: Text(
-                    lang['pd_decline'] ?? 'Kabul Etmiyorum',
+                    lang['gdpr_decline'] ?? 'Kabul Etmiyorum',
                     style: const TextStyle(
                       color: Colors.white54,
                       fontSize: 14,
@@ -185,7 +175,7 @@ class BelirginAciklamaSayfa extends StatelessWidget {
     );
   }
 
-  static Widget _veriKarti(
+  static Widget _bilgiKarti(
     IconData ikon,
     Color renk,
     String baslik,

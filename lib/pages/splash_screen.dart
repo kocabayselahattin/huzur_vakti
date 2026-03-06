@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'ana_sayfa.dart';
 import 'il_ilce_sec_sayfa.dart';
 import 'dil_secim_sayfa.dart';
 import 'onboarding_permissions_page.dart';
 import 'belirgin_aciklama_sayfa.dart';
+import 'gdpr_onay_sayfa.dart';
 import '../services/permission_service.dart';
 import '../services/language_service.dart';
 
@@ -109,7 +111,9 @@ class _SplashScreenState extends State<SplashScreen> {
             ),
           );
         } else {
-          debugPrint('🚀 Splash: Açıklama reddedildi, izinler atlanıyor');
+          debugPrint('🚀 Splash: Açıklama reddedildi, uygulama kapatılıyor');
+          _uygulamayiKapat();
+          return;
         }
         debugPrint('🚀 Splash: İzin sayfasından döndü');
 
@@ -119,6 +123,28 @@ class _SplashScreenState extends State<SplashScreen> {
       // Onboarding tamamlandı olarak işaretle (kullanıcı atlamış olsa bile)
       debugPrint('🚀 Splash: Onboarding tamamlandı işaretleniyor');
       await prefs.setBool('onboarding_completed', true);
+    }
+
+    // GDPR onayı kontrolü (AB uyumluluğu)
+    final gdprAccepted = prefs.getBool('gdpr_accepted') ?? false;
+    if (!gdprAccepted) {
+      debugPrint('🚀 Splash: GDPR onay sayfasına yönlendiriliyor...');
+      if (!mounted) return;
+
+      final gdprKabul = await Navigator.push<bool>(
+        context,
+        MaterialPageRoute(
+          builder: (context) => const GdprOnaySayfa(),
+        ),
+      );
+
+      if (!mounted) return;
+
+      if (gdprKabul != true) {
+        debugPrint('🚀 Splash: GDPR onayı reddedildi, uygulama kapatılıyor');
+        _uygulamayiKapat();
+        return;
+      }
     }
 
     // Önce kaydedilmiş konum var mı kontrol et
@@ -175,6 +201,11 @@ class _SplashScreenState extends State<SplashScreen> {
         transitionDuration: const Duration(milliseconds: 800),
       ),
     );
+  }
+
+  /// Kullanıcı onay vermediğinde uygulamayı kapatır
+  void _uygulamayiKapat() {
+    SystemNavigator.pop();
   }
 
   // Hızlı ilçe ID validasyonu (async olmadan)
