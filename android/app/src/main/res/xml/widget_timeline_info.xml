@@ -5,6 +5,7 @@
     android:minWidth="180dp"
     android:minHeight="110dp"
     android:previewImage="@drawable/preview_widget_timeline"
+    android:previewLayout="@layout/widget_timeline"
     android:resizeMode="horizontal|vertical"
     android:targetCellWidth="3"
     android:targetCellHeight="2"

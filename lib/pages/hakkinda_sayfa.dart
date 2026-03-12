@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../services/tema_service.dart';
 import '../services/language_service.dart';
 import '../app_version.dart';
@@ -547,16 +548,13 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
         Container(
           margin: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
           child: ElevatedButton.icon(
-            onPressed: () {
-              // Play Store link (currently disabled)
-              ScaffoldMessenger.of(context).showSnackBar(
-                SnackBar(
-                  content: Text(
-                    _languageService['coming_soon_playstore'] ?? '',
-                  ),
-                  duration: const Duration(seconds: 2),
-                ),
+            onPressed: () async {
+              final uri = Uri.parse(
+                'https://play.google.com/store/apps/details?id=com.huzura.davet&hl=tr',
               );
+              if (await canLaunchUrl(uri)) {
+                await launchUrl(uri, mode: LaunchMode.externalApplication);
+              }
             },
             icon: const Icon(Icons.shop, size: 20),
             label: Text(

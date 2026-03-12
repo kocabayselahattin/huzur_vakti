@@ -292,15 +292,13 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
 
           // Content.
           Expanded(
-            child: SingleChildScrollView(
-              child: Text(
-                '"$icerik"',
-                style: TextStyle(
-                  color: renkler.yaziPrimary,
-                  fontSize: 15,
-                  height: 1.5,
-                  fontStyle: FontStyle.italic,
-                ),
+            child: _AutoScrollingText(
+              text: '"$icerik"',
+              style: TextStyle(
+                color: renkler.yaziPrimary,
+                fontSize: 15,
+                height: 1.5,
+                fontStyle: FontStyle.italic,
               ),
             ),
           ),
@@ -333,6 +331,107 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
           ),
         ],
       ),
+    );
+  }
+}
+
+/// Uzun metinleri otomatik olarak alttan yukarı kayan şekilde gösteren widget.
+class _AutoScrollingText extends StatefulWidget {
+  final String text;
+  final TextStyle style;
+
+  const _AutoScrollingText({required this.text, required this.style});
+
+  @override
+  State<_AutoScrollingText> createState() => _AutoScrollingTextState();
+}
+
+class _AutoScrollingTextState extends State<_AutoScrollingText> {
+  final ScrollController _scrollController = ScrollController();
+  bool _isScrolling = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _startAutoScroll());
+  }
+
+  @override
+  void didUpdateWidget(covariant _AutoScrollingText oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.text != widget.text) {
+      _isScrolling = false;
+      if (_scrollController.hasClients) {
+        _scrollController.jumpTo(0);
+      }
+      WidgetsBinding.instance.addPostFrameCallback((_) => _startAutoScroll());
+    }
+  }
+
+  Future<void> _startAutoScroll() async {
+    if (_isScrolling) return;
+    _isScrolling = true;
+
+    // İlk bekleme
+    await Future.delayed(const Duration(seconds: 2));
+    if (!mounted || !_scrollController.hasClients) {
+      _isScrolling = false;
+      return;
+    }
+
+    final maxScroll = _scrollController.position.maxScrollExtent;
+    if (maxScroll <= 0) {
+      _isScrolling = false;
+      return; // Kaydırmaya gerek yok, metin sığıyor
+    }
+
+    while (mounted && _scrollController.hasClients) {
+      try {
+        final max = _scrollController.position.maxScrollExtent;
+        if (max <= 0) break;
+
+        // Aşağı kaydır
+        final duration = Duration(
+          milliseconds: (max * 40).toInt().clamp(2000, 15000),
+        );
+        await _scrollController.animateTo(
+          max,
+          duration: duration,
+          curve: Curves.linear,
+        );
+
+        if (!mounted || !_scrollController.hasClients) break;
+        await Future.delayed(const Duration(seconds: 3));
+        if (!mounted || !_scrollController.hasClients) break;
+
+        // Yukarı kaydır
+        await _scrollController.animateTo(
+          0,
+          duration: duration,
+          curve: Curves.linear,
+        );
+
+        if (!mounted || !_scrollController.hasClients) break;
+        await Future.delayed(const Duration(seconds: 3));
+      } catch (_) {
+        break;
+      }
+    }
+    _isScrolling = false;
+  }
+
+  @override
+  void dispose() {
+    _scrollController.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      controller: _scrollController,
+      physics: const NeverScrollableScrollPhysics(),
+      child: Text(widget.text, style: widget.style),
     );
   }
 }

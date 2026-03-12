@@ -87,7 +87,7 @@ class _GizlilikPolitikasiSayfaState extends State<GizlilikPolitikasiSayfa> {
                     renkler,
                     _lang['pp_intro_title'] ?? 'Giriş',
                     _lang['pp_intro_body'] ??
-                        'Bu gizlilik politikası, Huzur Vakti uygulamasının kullanıcı verilerini nasıl topladığını, kullandığını ve koruduğunu açıklamaktadır.',
+                        'Bu gizlilik politikası, Huzura Davet uygulamasının kullanıcı verilerini nasıl topladığını, kullandığını ve koruduğunu açıklamaktadır.',
                   ),
                   _bolum(
                     renkler,

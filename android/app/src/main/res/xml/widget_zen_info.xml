@@ -5,6 +5,7 @@
     android:minWidth="110dp"
     android:minHeight="110dp"
     android:previewImage="@drawable/preview_widget_zen"
+    android:previewLayout="@layout/widget_zen"
     android:resizeMode="horizontal|vertical"
     android:targetCellWidth="2"
     android:targetCellHeight="2"

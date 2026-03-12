@@ -7,6 +7,7 @@
     android:updatePeriodMillis="60000"
     android:initialLayout="@layout/widget_klasik_turuncu"
     android:previewImage="@drawable/preview_widget_klasik"
+    android:previewLayout="@layout/widget_klasik_turuncu"
     android:resizeMode="horizontal|vertical"
     android:widgetCategory="home_screen"
     android:description="@string/widget_klasik_desc" />
