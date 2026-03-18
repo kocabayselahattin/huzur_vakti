@@ -279,7 +279,7 @@ class _AnaSayfaState extends State<AnaSayfa>
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-                _languageService['location_change_detected'] ?? '',
+              _languageService['location_change_detected'] ?? '',
               style: TextStyle(color: renkler.yaziSecondary),
             ),
             const SizedBox(height: 16),
@@ -331,7 +331,7 @@ class _AnaSayfaState extends State<AnaSayfa>
             ),
             const SizedBox(height: 12),
             Text(
-                _languageService['update_location_question'] ?? '',
+              _languageService['update_location_question'] ?? '',
               style: TextStyle(color: renkler.yaziSecondary, fontSize: 13),
             ),
           ],
@@ -415,8 +415,8 @@ class _AnaSayfaState extends State<AnaSayfa>
         _aktifKonumIndex = aktifIndex < konumlar.length ? aktifIndex : 0;
 
         if (konumlar.isEmpty) {
-            konumBasligi =
-              (_languageService['location_not_selected'] ?? '').toUpperCase();
+          konumBasligi = (_languageService['location_not_selected'] ?? '')
+              .toUpperCase();
         } else {
           final aktifKonum = konumlar[_aktifKonumIndex];
           konumBasligi = "${aktifKonum.ilAdi} / ${aktifKonum.ilceAdi}";
@@ -425,7 +425,6 @@ class _AnaSayfaState extends State<AnaSayfa>
         _konumPageController = PageController(initialPage: _aktifKonumIndex);
       });
     }
-
   }
 
   // Change location
@@ -445,13 +444,11 @@ class _AnaSayfaState extends State<AnaSayfa>
       // Refresh prayer list and widgets
       if (mounted) {
         setState(() {
-          _vakitListesiKey =
-              UniqueKey(); // Force rebuild prayer list
+          _vakitListesiKey = UniqueKey(); // Force rebuild prayer list
         });
       }
     }
   }
-
 
   // App info popup
   void _showAppInfoDialog() {
@@ -504,7 +501,7 @@ class _AnaSayfaState extends State<AnaSayfa>
             ),
             const SizedBox(height: 4),
             Text(
-                _languageService['prayer_times_assistant'] ?? '',
+              _languageService['prayer_times_assistant'] ?? '',
               style: TextStyle(color: renkler.yaziSecondary, fontSize: 12),
               textAlign: TextAlign.center,
             ),
@@ -575,7 +572,7 @@ class _AnaSayfaState extends State<AnaSayfa>
           width: double.maxFinite,
           child: _konumlar.isEmpty
               ? Text(
-                    _languageService['no_saved_locations'] ?? '',
+                  _languageService['no_saved_locations'] ?? '',
                   style: TextStyle(color: renkler.yaziSecondary),
                 )
               : ListView.builder(
@@ -650,7 +647,7 @@ class _AnaSayfaState extends State<AnaSayfa>
                                       backgroundColor: renkler.kartArkaPlan,
                                       title: Text(
                                         _languageService['delete_location'] ??
-                                          '',
+                                            '',
                                         style: TextStyle(
                                           color: renkler.yaziPrimary,
                                         ),
@@ -830,9 +827,7 @@ class _AnaSayfaState extends State<AnaSayfa>
         decoration: renkler.arkaPlanGradient != null
             ? BoxDecoration(gradient: renkler.arkaPlanGradient)
             : null,
-        child: SingleChildScrollView(
-          child: _buildHomeContentColumn(renkler),
-        ),
+        child: SingleChildScrollView(child: _buildHomeContentColumn(renkler)),
       ),
       floatingActionButton: AnimatedBuilder(
         animation: _fabAnimController,
@@ -864,7 +859,6 @@ class _AnaSayfaState extends State<AnaSayfa>
       floatingActionButtonLocation: FloatingActionButtonLocation.endFloat,
     );
   }
-
 
   Widget _buildHomeContentColumn(TemaRenkleri renkler) {
     return Column(
@@ -911,10 +905,7 @@ class _AnaSayfaState extends State<AnaSayfa>
                   ),
                 ),
                 IconButton(
-                  icon: const Icon(
-                    Icons.arrow_forward,
-                    color: Colors.orange,
-                  ),
+                  icon: const Icon(Icons.arrow_forward, color: Colors.orange),
                   onPressed: () {
                     Navigator.push(
                       context,
@@ -1136,7 +1127,7 @@ class _AnaSayfaState extends State<AnaSayfa>
                     ),
                     _buildMenuCard(
                       icon: Icons.place,
-                        title: _languageService['nearby_mosques'] ?? '',
+                      title: _languageService['nearby_mosques'] ?? '',
                       color: Colors.red,
                       onTap: () {
                         Navigator.pop(context);

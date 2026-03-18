@@ -113,10 +113,7 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
         'adi': _languageService['gunes'] ?? '',
         'saat': _vakitSaatleri['Gunes']!,
       },
-      {
-        'adi': _languageService['ogle'] ?? '',
-        'saat': _vakitSaatleri['Ogle']!,
-      },
+      {'adi': _languageService['ogle'] ?? '', 'saat': _vakitSaatleri['Ogle']!},
       {
         'adi': _languageService['ikindi'] ?? '',
         'saat': _vakitSaatleri['Ikindi']!,
@@ -231,12 +228,16 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
   /// Calculate moon phase fraction (0.0-1.0) - same as gun_donumu_sayac_widget.dart.
   /// 0.0=new moon, 0.5=full moon, 1.0=new moon.
   double _getMoonPhaseFraction(DateTime date) {
-    // Known new moon date: Dec 29, 2024 (updated reference).
+    // Known new moon date in UTC.
     final reference = DateTime.utc(2024, 12, 30, 22, 27);
     const synodicMonth = 29.53058867;
 
     final daysDiff = date.difference(reference).inHours / 24.0;
-    final phase = (daysDiff % synodicMonth) / synodicMonth;
+    var cycleDay = daysDiff % synodicMonth;
+    if (cycleDay < 0) {
+      cycleDay += synodicMonth;
+    }
+    final phase = cycleDay / synodicMonth;
 
     return phase;
   }
@@ -359,7 +360,9 @@ class _GeceSayacWidgetState extends State<GeceSayacWidget>
               child: SizedBox(
                 width: 50,
                 height: 50,
-                child: _buildMoonWithPhase(_getMoonPhaseFraction(DateTime.now())),
+                child: _buildMoonWithPhase(
+                  _getMoonPhaseFraction(DateTime.now()),
+                ),
               ),
             ),
 
@@ -636,6 +639,12 @@ class _MoonPhasePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 1;
+    final normalizedPhase = (1.0 - phase) % 1.0;
+
+    // Mirror horizontally so crescent direction matches reference flow.
+    canvas.save();
+    canvas.translate(size.width, 0);
+    canvas.scale(-1.0, 1.0);
 
     // Paint the moon fully dark first.
     final darkPaint = Paint()
@@ -644,7 +653,9 @@ class _MoonPhasePainter extends CustomPainter {
     canvas.drawCircle(center, radius, darkPaint);
 
     // Illumination amount from 0.0 to 1.0.
-    final illumination = phase <= 0.5 ? (phase * 2) : ((1 - phase) * 2);
+    final illumination = normalizedPhase <= 0.5
+        ? (normalizedPhase * 2)
+        : ((1 - normalizedPhase) * 2);
     if (illumination <= 0.001) {
       // New moon - keep it dark.
       return;
@@ -660,7 +671,8 @@ class _MoonPhasePainter extends CustomPainter {
     }
 
     final shadowRatio = 1 - math.pow(illumination, 0.35).toDouble();
-    final isWaxing = phase >= 0.5;
+    // Painter geometry requires this orientation to match expected phase flow.
+    final isWaxing = normalizedPhase >= 0.5;
 
     final path = Path();
 
@@ -743,6 +755,9 @@ class _MoonPhasePainter extends CustomPainter {
       ..color = const Color(0xFFFFFFFF)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius, lightPaint);
+    canvas.restore();
+
+    // Restore mirror transform.
     canvas.restore();
   }
 
