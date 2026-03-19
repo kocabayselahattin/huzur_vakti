@@ -169,7 +169,7 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
           ),
           const SizedBox(height: 4),
           Text(
-            '${_languageService['version'] ?? 'Sürüm'} $appVersion',
+            '${_languageService['version'] ?? 'Sürüm'} $displayAppVersion',
             style: TextStyle(
               color: renkler.yaziSecondary.withValues(alpha: 0.7),
               fontSize: 12,

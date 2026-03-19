@@ -496,7 +496,7 @@ class _AnaSayfaState extends State<AnaSayfa>
             ),
             const SizedBox(height: 8),
             Text(
-              '${_languageService['version'] ?? ''}: $appVersion',
+              '${_languageService['version'] ?? ''}: $displayAppVersion',
               style: TextStyle(color: renkler.yaziSecondary, fontSize: 14),
             ),
             const SizedBox(height: 4),

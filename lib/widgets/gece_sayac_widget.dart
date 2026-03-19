@@ -639,23 +639,16 @@ class _MoonPhasePainter extends CustomPainter {
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
     final radius = size.width / 2 - 1;
-    final normalizedPhase = (1.0 - phase) % 1.0;
-
-    // Mirror horizontally so crescent direction matches reference flow.
-    canvas.save();
-    canvas.translate(size.width, 0);
-    canvas.scale(-1.0, 1.0);
+    final phaseNorm = ((phase % 1.0) + 1.0) % 1.0;
 
     // Paint the moon fully dark first.
     final darkPaint = Paint()
-      ..color = const Color(0xFF0A0A15).withOpacity(0.92)
+      ..color = const Color(0xFF0A0A15)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius, darkPaint);
 
-    // Illumination amount from 0.0 to 1.0.
-    final illumination = normalizedPhase <= 0.5
-        ? (normalizedPhase * 2)
-        : ((1 - normalizedPhase) * 2);
+    // Physical illuminated fraction: 0=new, 0.5=full, 1=new.
+    final illumination = 0.5 * (1 - math.cos(2 * math.pi * phaseNorm));
     if (illumination <= 0.001) {
       // New moon - keep it dark.
       return;
@@ -670,83 +663,35 @@ class _MoonPhasePainter extends CustomPainter {
       return;
     }
 
-    final shadowRatio = 1 - math.pow(illumination, 0.35).toDouble();
-    // Painter geometry requires this orientation to match expected phase flow.
-    final isWaxing = normalizedPhase >= 0.5;
-
+    // k controls the terminator curvature across the cycle.
+    final k = math.cos(2 * math.pi * phaseNorm);
+    final isWaxing = phaseNorm < 0.5;
+    const steps = 96;
     final path = Path();
 
-    if (isWaxing) {
-      // Waxing moon - left dark, right bright.
-      path.moveTo(center.dx, center.dy - radius);
-      path.arcTo(
-        Rect.fromCircle(center: center, radius: radius),
-        -math.pi / 2,
-        -math.pi,
-        false,
-      );
-      final curveWidth = radius * (1 - shadowRatio * 2).abs();
-      if (illumination < 0.5) {
-        path.arcTo(
-          Rect.fromLTRB(
-            center.dx - curveWidth,
-            center.dy - radius,
-            center.dx + curveWidth,
-            center.dy + radius,
-          ),
-          -math.pi / 2,
-          -math.pi,
-          false,
-        );
+    // Traverse the illuminated limb (outer edge).
+    for (int i = 0; i <= steps; i++) {
+      final t = i / steps;
+      final y = -radius + (2 * radius * t);
+      final xOuter = math.sqrt(math.max(0.0, radius * radius - y * y));
+      final x = isWaxing ? xOuter : -xOuter;
+      final point = Offset(center.dx + x, center.dy + y);
+      if (i == 0) {
+        path.moveTo(point.dx, point.dy);
       } else {
-        path.arcTo(
-          Rect.fromLTRB(
-            center.dx - curveWidth,
-            center.dy - radius,
-            center.dx + curveWidth,
-            center.dy + radius,
-          ),
-          -math.pi / 2,
-          math.pi,
-          false,
-        );
-      }
-    } else {
-      // Waning moon - right dark, left bright.
-      path.moveTo(center.dx, center.dy - radius);
-      path.arcTo(
-        Rect.fromCircle(center: center, radius: radius),
-        -math.pi / 2,
-        math.pi,
-        false,
-      );
-      final curveWidth = radius * (1 - shadowRatio * 2).abs();
-      if (illumination < 0.5) {
-        path.arcTo(
-          Rect.fromLTRB(
-            center.dx - curveWidth,
-            center.dy - radius,
-            center.dx + curveWidth,
-            center.dy + radius,
-          ),
-          math.pi / 2,
-          -math.pi,
-          false,
-        );
-      } else {
-        path.arcTo(
-          Rect.fromLTRB(
-            center.dx - curveWidth,
-            center.dy - radius,
-            center.dx + curveWidth,
-            center.dy + radius,
-          ),
-          math.pi / 2,
-          math.pi,
-          false,
-        );
+        path.lineTo(point.dx, point.dy);
       }
     }
+
+    // Return over the terminator curve.
+    for (int i = steps; i >= 0; i--) {
+      final t = i / steps;
+      final y = -radius + (2 * radius * t);
+      final xOuter = math.sqrt(math.max(0.0, radius * radius - y * y));
+      final xTerm = isWaxing ? (k * xOuter) : (-k * xOuter);
+      path.lineTo(center.dx + xTerm, center.dy + y);
+    }
+    path.close();
 
     // Clip the bright area and paint it white.
     canvas.save();
@@ -755,9 +700,6 @@ class _MoonPhasePainter extends CustomPainter {
       ..color = const Color(0xFFFFFFFF)
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius, lightPaint);
-    canvas.restore();
-
-    // Restore mirror transform.
     canvas.restore();
   }
 
