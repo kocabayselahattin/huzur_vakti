@@ -68,10 +68,26 @@ class LockScreenNotificationService : Service() {
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
         Log.d(TAG, "✅ Kilit ekranı bildirimi servisi başlatıldı")
-        
-        // İlk bildirimi göster
-        val notification = createNotification()
-        startForeground(NOTIFICATION_ID, notification)
+
+        // Android 14/15+ bazı bağlamlarda (ör. BOOT_COMPLETED) FGS başlatımını engelleyebilir.
+        // Bu durumda çökme yerine servisi güvenli şekilde kapat.
+        val startedInForeground = try {
+            val notification = createNotification()
+            startForeground(NOTIFICATION_ID, notification)
+            true
+        } catch (e: ForegroundServiceStartNotAllowedException) {
+            Log.w(TAG, "⚠️ Foreground service başlatılamadı: ${e.message}")
+            false
+        } catch (e: RuntimeException) {
+            // Bazı sürümlerde aynı durum RuntimeException olarak gelebilir.
+            Log.w(TAG, "⚠️ Foreground service runtime hatası: ${e.message}")
+            false
+        }
+
+        if (!startedInForeground) {
+            stopSelf()
+            return START_NOT_STICKY
+        }
         
         // Periyodik güncelleme başlat
         handler.removeCallbacks(updateRunnable)

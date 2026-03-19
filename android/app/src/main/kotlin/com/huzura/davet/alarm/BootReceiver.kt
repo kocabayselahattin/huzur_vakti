@@ -7,7 +7,6 @@ import android.content.Context
 import android.content.Intent
 import android.os.Build
 import android.util.Log
-import com.huzura.davet.lockscreen.LockScreenNotificationService
 import java.text.SimpleDateFormat
 import java.util.*
 
@@ -42,11 +41,15 @@ class BootReceiver : BroadcastReceiver() {
             
             val prefs = context.getSharedPreferences("FlutterSharedPreferences", Context.MODE_PRIVATE)
             
-            // Kilit ekranı bildirimi aktif mi kontrol et ve başlat
+            // Android 15+ kısıtı: BOOT_COMPLETED alıcısından doğrudan FGS başlatılamaz.
+            // Bu nedenle boot sonrasında güvenli başlangıç için bayrak yazılır.
             val kilitEkraniBildirimiAktif = prefs.getBoolean("flutter.kilit_ekrani_bildirimi_aktif", false)
+            prefs.edit()
+                .putBoolean("flutter.pending_lock_screen_start_after_boot", kilitEkraniBildirimiAktif)
+                .apply()
+
             if (kilitEkraniBildirimiAktif) {
-                Log.d(TAG, "🔒 Kilit ekranı bildirimi servisi başlatılıyor...")
-                LockScreenNotificationService.start(context)
+                Log.d(TAG, "🔒 Kilit ekranı bildirimi aktif, uygulama açılınca güvenli başlatılacak")
             }
             
             // ÖNEMLİ: Kaydedilmiş vakit alarmlarını yeniden zamanla

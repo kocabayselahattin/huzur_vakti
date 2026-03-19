@@ -10,8 +10,10 @@ import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
+import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.huzura.davet.alarm.AlarmReceiver
@@ -23,12 +25,37 @@ import io.flutter.embedding.engine.FlutterEngine
 import io.flutter.plugin.common.MethodChannel
 
 class MainActivity : FlutterActivity() {
+	companion object {
+		private const val TAG = "MainActivity"
+		private const val PREF_DEFERRED_LOCK_SCREEN_START = "flutter.pending_lock_screen_start_after_boot"
+	}
+
 	private val dndChannelName = "huzur_vakti/dnd"
 	private val permissionsChannelName = "huzur_vakti/permissions"
 	private val widgetsChannelName = "huzur_vakti/widgets"
 	private val alarmChannelName = "huzur_vakti/alarms"
 	private val lockScreenChannelName = "huzur_vakti/lockscreen"
 	private val NOTIFICATION_PERMISSION_CODE = 1001
+
+	override fun onCreate(savedInstanceState: Bundle?) {
+		super.onCreate(savedInstanceState)
+		maybeStartDeferredLockScreenService()
+	}
+
+	private fun maybeStartDeferredLockScreenService() {
+		val prefs = getSharedPreferences("FlutterSharedPreferences", MODE_PRIVATE)
+		val lockScreenEnabled = prefs.getBoolean("flutter.kilit_ekrani_bildirimi_aktif", false)
+		val pendingStart = prefs.getBoolean(PREF_DEFERRED_LOCK_SCREEN_START, false)
+
+		if (lockScreenEnabled && pendingStart) {
+			Log.d(TAG, "Boot sonrası bekleyen kilit ekranı servisi başlatılıyor")
+			LockScreenNotificationService.start(this)
+		}
+
+		if (pendingStart) {
+			prefs.edit().putBoolean(PREF_DEFERRED_LOCK_SCREEN_START, false).apply()
+		}
+	}
 
 	override fun configureFlutterEngine(flutterEngine: FlutterEngine) {
 		super.configureFlutterEngine(flutterEngine)
