@@ -53,8 +53,10 @@ class _OzelGunDetaySayfaState extends State<OzelGunDetaySayfa> {
 
     return Scaffold(
       backgroundColor: renkler.arkaPlan,
-      body: CustomScrollView(
-        slivers: [
+      body: SafeArea(
+        top: false,
+        child: CustomScrollView(
+          slivers: [
           // AppBar
           SliverAppBar(
             expandedHeight: 200,
@@ -120,7 +122,8 @@ class _OzelGunDetaySayfaState extends State<OzelGunDetaySayfa> {
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

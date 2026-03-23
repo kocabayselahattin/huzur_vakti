@@ -55,9 +55,11 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
         elevation: 0,
         iconTheme: IconThemeData(color: renkler.yaziPrimary),
       ),
-      body: ListView(
-        padding: const EdgeInsets.all(20),
-        children: [
+      body: SafeArea(
+        top: false,
+        child: ListView(
+          padding: const EdgeInsets.all(20),
+          children: [
           // Notifications
           _ayarSatiri(
             icon: Icons.notifications,
@@ -234,7 +236,8 @@ class _AyarlarSayfaState extends State<AyarlarSayfa> {
             onTap: () => _verileriSilDialog(),
             renkler: renkler,
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

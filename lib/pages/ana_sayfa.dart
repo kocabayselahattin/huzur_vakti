@@ -37,6 +37,7 @@ import '../services/tema_service.dart';
 import '../services/language_service.dart';
 import '../services/home_widget_service.dart';
 import '../services/scheduled_notification_service.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import '../models/konum_model.dart';
 import 'imsakiye_sayfa.dart';
 import 'ayarlar_sayfa.dart';
@@ -105,7 +106,71 @@ class _AnaSayfaState extends State<AnaSayfa>
       _scheduleNotifications();
       // Auto location update check
       _checkLocationChange();
+      _showUpdateNotesIfNeeded();
     });
+  }
+
+  Future<void> _showUpdateNotesIfNeeded() async {
+    const seenKey = 'last_seen_update_notes_version';
+    final prefs = await SharedPreferences.getInstance();
+    final lastSeenVersion = prefs.getString(seenKey) ?? '';
+
+    if (lastSeenVersion == appVersion || !mounted) {
+      return;
+    }
+
+    // Mark as seen before dialog to avoid re-show loops on quick restarts.
+    await prefs.setString(seenKey, appVersion);
+
+    await Future.delayed(const Duration(milliseconds: 800));
+    if (!mounted) return;
+
+    await showDialog<void>(
+      context: context,
+      barrierDismissible: true,
+      builder: (context) {
+        final title = _languageService['update_notes_title'] ?? 'Yenilikler';
+        final body =
+            _languageService['update_notes_body'] ?? 'Uygulama guncellendi.';
+        final versionPrefix =
+            _languageService['update_notes_version_prefix'] ?? 'Surum';
+        final button = _languageService['ok'] ?? 'Tamam';
+
+        return AlertDialog(
+          backgroundColor: _temaService.renkler.kartArkaPlan,
+          title: Text(
+            title,
+            style: TextStyle(color: _temaService.renkler.yaziPrimary),
+          ),
+          content: SingleChildScrollView(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  '$versionPrefix $displayAppVersion',
+                  style: TextStyle(
+                    color: _temaService.renkler.vurgu,
+                    fontWeight: FontWeight.w700,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  body,
+                  style: TextStyle(color: _temaService.renkler.yaziSecondary),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: Text(button),
+            ),
+          ],
+        );
+      },
+    );
   }
 
   Future<void> _scheduleNotifications() async {
@@ -823,11 +888,16 @@ class _AnaSayfaState extends State<AnaSayfa>
           ),
         ],
       ),
-      body: Container(
-        decoration: renkler.arkaPlanGradient != null
-            ? BoxDecoration(gradient: renkler.arkaPlanGradient)
-            : null,
-        child: SingleChildScrollView(child: _buildHomeContentColumn(renkler)),
+      body: SafeArea(
+        top: false,
+        child: Container(
+          decoration: renkler.arkaPlanGradient != null
+              ? BoxDecoration(gradient: renkler.arkaPlanGradient)
+              : null,
+          child: SingleChildScrollView(
+            child: _buildHomeContentColumn(renkler),
+          ),
+        ),
       ),
       floatingActionButton: AnimatedBuilder(
         animation: _fabAnimController,

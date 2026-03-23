@@ -7,6 +7,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.util.TypedValue
+import android.view.View
 import android.widget.RemoteViews
 import com.huzura.davet.R
 import es.antonborri.home_widget.HomeWidgetPlugin
@@ -90,17 +91,50 @@ class KlasikTuruncuWidget : AppWidgetProvider() {
             val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
             val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
             val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
+            val compactMode = minHeight < 120
 
-            if (minWidth < 260 || minHeight < 120) {
-                views.setTextViewTextSize(R.id.tv_countdown, TypedValue.COMPLEX_UNIT_SP, 28f)
+            views.setViewPadding(R.id.widget_root, 3, 3, 3, if (compactMode) 3 else 4)
+
+            if (minWidth < 260 || compactMode) {
+                views.setTextViewTextSize(R.id.tv_countdown, TypedValue.COMPLEX_UNIT_SP, 24f)
                 views.setTextViewTextSize(R.id.tv_sonraki_vakit_adi, TypedValue.COMPLEX_UNIT_SP, 9f)
                 views.setTextViewTextSize(R.id.tv_hicri_tarih, TypedValue.COMPLEX_UNIT_SP, 9f)
                 views.setTextViewTextSize(R.id.tv_konum, TypedValue.COMPLEX_UNIT_SP, 9f)
+
+                val compactVisibility = if (compactMode) View.GONE else View.VISIBLE
+                views.setViewVisibility(R.id.label_imsak, compactVisibility)
+                views.setViewVisibility(R.id.label_gunes, compactVisibility)
+                views.setViewVisibility(R.id.label_ogle, compactVisibility)
+                views.setViewVisibility(R.id.label_ikindi, compactVisibility)
+                views.setViewVisibility(R.id.label_aksam, compactVisibility)
+                views.setViewVisibility(R.id.label_yatsi, compactVisibility)
+
+                val compactTimeSize = if (compactMode) 10f else 11f
+                views.setTextViewTextSize(R.id.tv_imsak, TypedValue.COMPLEX_UNIT_SP, compactTimeSize)
+                views.setTextViewTextSize(R.id.tv_gunes, TypedValue.COMPLEX_UNIT_SP, compactTimeSize)
+                views.setTextViewTextSize(R.id.tv_ogle, TypedValue.COMPLEX_UNIT_SP, compactTimeSize)
+                views.setTextViewTextSize(R.id.tv_ikindi, TypedValue.COMPLEX_UNIT_SP, compactTimeSize)
+                views.setTextViewTextSize(R.id.tv_aksam, TypedValue.COMPLEX_UNIT_SP, compactTimeSize)
+                views.setTextViewTextSize(R.id.tv_yatsi, TypedValue.COMPLEX_UNIT_SP, compactTimeSize)
             } else {
                 views.setTextViewTextSize(R.id.tv_countdown, TypedValue.COMPLEX_UNIT_SP, 36f)
                 views.setTextViewTextSize(R.id.tv_sonraki_vakit_adi, TypedValue.COMPLEX_UNIT_SP, 10f)
                 views.setTextViewTextSize(R.id.tv_hicri_tarih, TypedValue.COMPLEX_UNIT_SP, 11f)
                 views.setTextViewTextSize(R.id.tv_konum, TypedValue.COMPLEX_UNIT_SP, 10f)
+
+                views.setViewVisibility(R.id.label_imsak, View.VISIBLE)
+                views.setViewVisibility(R.id.label_gunes, View.VISIBLE)
+                views.setViewVisibility(R.id.label_ogle, View.VISIBLE)
+                views.setViewVisibility(R.id.label_ikindi, View.VISIBLE)
+                views.setViewVisibility(R.id.label_aksam, View.VISIBLE)
+                views.setViewVisibility(R.id.label_yatsi, View.VISIBLE)
+
+                views.setTextViewTextSize(R.id.tv_imsak, TypedValue.COMPLEX_UNIT_SP, 11f)
+                views.setTextViewTextSize(R.id.tv_gunes, TypedValue.COMPLEX_UNIT_SP, 11f)
+                views.setTextViewTextSize(R.id.tv_ogle, TypedValue.COMPLEX_UNIT_SP, 11f)
+                views.setTextViewTextSize(R.id.tv_ikindi, TypedValue.COMPLEX_UNIT_SP, 11f)
+                views.setTextViewTextSize(R.id.tv_aksam, TypedValue.COMPLEX_UNIT_SP, 11f)
+                views.setTextViewTextSize(R.id.tv_yatsi, TypedValue.COMPLEX_UNIT_SP, 11f)
             }
             
             // Arka plan ayarla

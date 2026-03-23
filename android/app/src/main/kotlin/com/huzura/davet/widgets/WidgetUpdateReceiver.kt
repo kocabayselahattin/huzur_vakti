@@ -22,6 +22,13 @@ class WidgetUpdateReceiver : BroadcastReceiver() {
     companion object {
         private const val TAG = "WidgetUpdateReceiver"
         private const val ACTION_UPDATE_WIDGETS = "com.huzura.davet.UPDATE_WIDGETS"
+        private val IMMEDIATE_REFRESH_ACTIONS = setOf(
+            Intent.ACTION_USER_PRESENT,
+            Intent.ACTION_SCREEN_ON,
+            Intent.ACTION_DATE_CHANGED,
+            Intent.ACTION_TIME_CHANGED,
+            Intent.ACTION_TIMEZONE_CHANGED
+        )
         private const val UPDATE_INTERVAL = 30_000L // 30 saniye - pil optimizasyonu için
         
         /**
@@ -122,12 +129,12 @@ class WidgetUpdateReceiver : BroadcastReceiver() {
             Intent.ACTION_MY_PACKAGE_REPLACED -> {
                 // Cihaz yeniden başlatıldığında veya uygulama güncellendiğinde
                 // widget güncellemelerini yeniden planla
+                updateAllWidgets(context)
                 scheduleWidgetUpdates(context)
             }
-            Intent.ACTION_USER_PRESENT -> {
-                // Ekran kilidi açıldığında widget'ları hemen güncelle
-                // ve periyodik güncelleme zincirini yeniden başlat
-                Log.d(TAG, "Screen unlocked, updating widgets immediately")
+            in IMMEDIATE_REFRESH_ACTIONS -> {
+                // Kilit acilinca / ekran acilinca / zaman degisince widget'lari aninda yenile.
+                Log.d(TAG, "Immediate widget refresh action: ${intent.action}")
                 updateAllWidgets(context)
                 scheduleWidgetUpdates(context)
             }

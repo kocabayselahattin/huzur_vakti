@@ -629,43 +629,51 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
     );
   }
 
+  int _kanal8den10a(int kanal8) {
+    return ((kanal8 / 255) * 1023).round().clamp(0, 1023);
+  }
+
+  int _kanal10dan8e(int kanal10) {
+    return ((kanal10.clamp(0, 1023) / 1023) * 255).round().clamp(0, 255);
+  }
+
+  Color _renk10BitOlustur(int r10, int g10, int b10) {
+    return Color.fromARGB(
+      255,
+      _kanal10dan8e(r10),
+      _kanal10dan8e(g10),
+      _kanal10dan8e(b10),
+    );
+  }
+
+  Color _renk10BiteHizala(Color renk) {
+    return _renk10BitOlustur(
+      _kanal8den10a(renk.red),
+      _kanal8den10a(renk.green),
+      _kanal8den10a(renk.blue),
+    );
+  }
+
+  String _renkHex(Color renk) {
+    return '#${renk.value.toRadixString(16).padLeft(8, '0').toUpperCase()}';
+  }
+
   void _showColorPicker(Color currentColor, Function(Color) onColorSelected) {
-    // All colors - background and accent colors combined
-    final List<Color> tumRenkler = [
-      // Blacks & darks
-      const Color(0xFF000000), const Color(0xFF0D0D0D), const Color(0xFF121212),
-      const Color(0xFF1A1A1A), const Color(0xFF1C1C1E), const Color(0xFF212121),
-      // Blue tones
-      const Color(0xFF0A192F), const Color(0xFF0A1628), const Color(0xFF1B2741),
-      const Color(0xFF0D2137), const Color(0xFF141B21), const Color(0xFF1565C0),
-      // Purple & purple-blue
-      const Color(0xFF0B0B1A), const Color(0xFF14081F), const Color(0xFF150A1F),
-      const Color(0xFF1E1A26), const Color(0xFF2D1B4E), const Color(0xFF2E1F47),
-      // Green tones
-      const Color(0xFF081A12), const Color(0xFF0D1F0D), const Color(0xFF0A140A),
-      const Color(0xFF142021), const Color(0xFF1B3D2F), const Color(0xFF2E3D1B),
-      // Red & burgundy
-      const Color(0xFF1A0A0F), const Color(0xFF1A080A), const Color(0xFF3E1A1A),
-      const Color(0xFF4A1C1C), const Color(0xFF3D2429), const Color(0xFF2D1B2D),
-      // Brown & earth
-      const Color(0xFF1A1215), const Color(0xFF1F1710), const Color(0xFF211A17),
-      const Color(0xFF2D1F14), const Color(0xFF1A1408), const Color(0xFF3E2723),
-      // Bright colors
-      const Color(0xFFFF1744), const Color(0xFFE53935), const Color(0xFFD32F2F),
-      const Color(0xFFFF4081), const Color(0xFFEC407A), const Color(0xFFE91E63),
-      const Color(0xFFAA00FF), const Color(0xFF7B1FA2), const Color(0xFF6A1B9A),
-      const Color(0xFF7C4DFF), const Color(0xFF651FFF), const Color(0xFF304FFE),
-      const Color(0xFF448AFF), const Color(0xFF1E88E5), const Color(0xFF0288D1),
-      const Color(0xFF00FFFF), const Color(0xFF00E5FF), const Color(0xFF26C6DA),
-      const Color(0xFF64FFDA), const Color(0xFF1DE9B6), const Color(0xFF00BFA5),
-      const Color(0xFF00FF41), const Color(0xFF00E676), const Color(0xFF43A047),
-      const Color(0xFFC6FF00), const Color(0xFFAEEA00), const Color(0xFF8BC34A),
-      const Color(0xFFFFFF00), const Color(0xFFFFD700), const Color(0xFFFFCA28),
-      const Color(0xFFFFAB40), const Color(0xFFFF9100), const Color(0xFFFF7043),
-      // White and gray tones
-      const Color(0xFFFFFFFF), const Color(0xFFFAFAFA), const Color(0xFFE0E0E0),
-      const Color(0xFFB0BEC5), const Color(0xFF78909C), const Color(0xFF455A64),
-    ];
+    final List<Color> hizliRenkler = [
+      const Color(0xFFB05FA5),
+      const Color(0xFF5450A6),
+      const Color(0xFF2D58A6),
+      const Color(0xFF66C2D0),
+      const Color(0xFF65BC2A),
+      const Color(0xFFE3E230),
+      const Color(0xFFF29B1D),
+      const Color(0xFFF12711),
+    ].map(_renk10BiteHizala).toList();
+
+    final baslangicRenk = _renk10BiteHizala(currentColor);
+    final baslangicHsv = HSVColor.fromColor(baslangicRenk);
+    final baslangicHue10 =
+        ((baslangicHsv.hue / 360) * 1023).round().clamp(0, 1023);
 
     showModalBottomSheet(
       context: context,
@@ -678,105 +686,189 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
         return DraggableScrollableSheet(
           initialChildSize: 0.6,
           minChildSize: 0.4,
-          maxChildSize: 0.85,
+          maxChildSize: 0.72,
           expand: false,
           builder: (context, scrollController) {
-            return Padding(
-              padding: const EdgeInsets.all(16),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  // Slider
-                  Container(
-                    width: 40,
-                    height: 4,
-                    margin: const EdgeInsets.only(bottom: 12),
-                    decoration: BoxDecoration(
-                      color: Colors.white24,
-                      borderRadius: BorderRadius.circular(2),
+            int hue10 = baslangicHue10;
+            double saturation = baslangicHsv.saturation.clamp(0.35, 1.0);
+            double value = baslangicHsv.value.clamp(0.35, 1.0);
+            Color seciliRenk = baslangicRenk;
+
+            return StatefulBuilder(
+              builder: (context, setSheetState) {
+                final hueColors = List<Color>.generate(
+                  8,
+                  (index) => HSVColor.fromAHSV(
+                    1,
+                    index * (360 / 7),
+                    0.85,
+                    0.95,
+                  ).toColor(),
+                );
+
+                return ListView(
+                  controller: scrollController,
+                  padding: const EdgeInsets.all(16),
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 4,
+                      margin: const EdgeInsets.only(bottom: 12),
+                      decoration: BoxDecoration(
+                        color: Colors.white24,
+                        borderRadius: BorderRadius.circular(2),
+                      ),
                     ),
-                  ),
-                  Text(
-                    _languageService['select_color'] ?? '',
-                    style: TextStyle(
-                      color: _temaService.renkler.yaziPrimary,
-                      fontSize: 18,
-                      fontWeight: FontWeight.bold,
+                    Text(
+                      _languageService['select_color'] ?? '',
+                      style: TextStyle(
+                        color: _temaService.renkler.yaziPrimary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.bold,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 16),
-                  // Selected color preview
-                  Container(
-                    width: 60,
-                    height: 60,
-                    margin: const EdgeInsets.only(bottom: 16),
-                    decoration: BoxDecoration(
-                      color: currentColor,
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(color: Colors.white, width: 2),
-                      boxShadow: [
-                        BoxShadow(
-                          color: currentColor.withOpacity(0.5),
-                          blurRadius: 12,
-                          spreadRadius: 2,
-                        ),
-                      ],
+                    const SizedBox(height: 8),
+                    Text(
+                      _renkHex(seciliRenk),
+                      style: TextStyle(
+                        color: _temaService.renkler.yaziSecondary,
+                        fontSize: 12,
+                      ),
                     ),
-                  ),
-                  // Color grid
-                  Expanded(
-                    child: GridView.builder(
-                      controller: scrollController,
-                      gridDelegate:
-                          const SliverGridDelegateWithFixedCrossAxisCount(
-                            crossAxisCount: 6,
-                            mainAxisSpacing: 8,
-                            crossAxisSpacing: 8,
-                            childAspectRatio: 1,
-                          ),
-                      itemCount: tumRenkler.length,
-                      itemBuilder: (context, index) {
-                        final color = tumRenkler[index];
-                        final isSelected = currentColor.value == color.value;
-                        return GestureDetector(
-                          onTap: () {
-                            onColorSelected(color);
-                            Navigator.pop(context);
-                          },
-                          child: Container(
-                            decoration: BoxDecoration(
-                              color: color,
-                              borderRadius: BorderRadius.circular(8),
-                              border: Border.all(
-                                color: isSelected
-                                    ? Colors.white
-                                    : Colors.white24,
-                                width: isSelected ? 3 : 1,
-                              ),
-                              boxShadow: isSelected
-                                  ? [
-                                      BoxShadow(
-                                        color: color.withOpacity(0.6),
-                                        blurRadius: 8,
-                                        spreadRadius: 1,
+                    const SizedBox(height: 12),
+                    Container(
+                      height: 76,
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: _temaService.renkler.arkaPlan.withOpacity(0.35),
+                        borderRadius: BorderRadius.circular(12),
+                        border: Border.all(color: Colors.white12),
+                      ),
+                      child: Row(
+                        children: [
+                          Expanded(
+                            child: ListView.separated(
+                              scrollDirection: Axis.horizontal,
+                              itemCount: hizliRenkler.length,
+                              separatorBuilder: (_, __) =>
+                                  const SizedBox(width: 8),
+                              itemBuilder: (context, index) {
+                                final color = hizliRenkler[index];
+                                final isSelected =
+                                    seciliRenk.value == color.value;
+                                return GestureDetector(
+                                  onTap: () {
+                                    final hsv = HSVColor.fromColor(color);
+                                    setSheetState(() {
+                                      seciliRenk = color;
+                                      hue10 = ((hsv.hue / 360) * 1023)
+                                          .round()
+                                          .clamp(0, 1023);
+                                      saturation = hsv.saturation;
+                                      value = hsv.value;
+                                    });
+                                    onColorSelected(seciliRenk);
+                                  },
+                                  child: Container(
+                                    width: 36,
+                                    decoration: BoxDecoration(
+                                      color: color,
+                                      borderRadius: BorderRadius.circular(6),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : Colors.white24,
+                                        width: isSelected ? 2.5 : 1,
                                       ),
-                                    ]
-                                  : null,
+                                    ),
+                                  ),
+                                );
+                              },
                             ),
-                            child: isSelected
-                                ? const Icon(
-                                    Icons.check,
-                                    color: Colors.white,
-                                    size: 20,
-                                  )
-                                : null,
                           ),
-                        );
-                      },
+                          const SizedBox(width: 10),
+                          Container(
+                            width: 44,
+                            decoration: BoxDecoration(
+                              color: seciliRenk,
+                              borderRadius: BorderRadius.circular(8),
+                              border: Border.all(color: Colors.white, width: 2),
+                            ),
+                          ),
+                        ],
+                      ),
                     ),
-                  ),
-                ],
-              ),
+                    const SizedBox(height: 14),
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 6,
+                      ),
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: hueColors,
+                          begin: Alignment.centerLeft,
+                          end: Alignment.centerRight,
+                        ),
+                        borderRadius: BorderRadius.circular(10),
+                        border: Border.all(color: Colors.white24),
+                      ),
+                      child: SliderTheme(
+                        data: SliderTheme.of(context).copyWith(
+                          trackHeight: 26,
+                          activeTrackColor: Colors.transparent,
+                          inactiveTrackColor: Colors.transparent,
+                          thumbColor: Colors.white,
+                          overlayColor: Colors.white24,
+                          thumbShape: const RoundSliderThumbShape(
+                            enabledThumbRadius: 10,
+                          ),
+                        ),
+                        child: Slider(
+                          value: hue10.toDouble(),
+                          min: 0,
+                          max: 1023,
+                          divisions: 1023,
+                          onChanged: (value10) {
+                            setSheetState(() {
+                              hue10 = value10.round();
+                              seciliRenk = _renk10BiteHizala(
+                                HSVColor.fromAHSV(
+                                  1,
+                                  (hue10 / 1023) * 360,
+                                  saturation,
+                                  value,
+                                ).toColor(),
+                              );
+                            });
+                            onColorSelected(seciliRenk);
+                          },
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Text(
+                      'Hue 10-bit: $hue10',
+                      style: TextStyle(
+                        color: _temaService.renkler.yaziSecondary,
+                        fontSize: 12,
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                    Align(
+                      alignment: Alignment.centerRight,
+                      child: TextButton.icon(
+                        onPressed: () => Navigator.pop(context),
+                        icon: const Icon(Icons.check),
+                        label: Text(_languageService['close'] ?? 'Kapat'),
+                        style: TextButton.styleFrom(
+                          foregroundColor: _temaService.renkler.vurgu,
+                        ),
+                      ),
+                    ),
+                  ],
+                );
+              },
             );
           },
         );

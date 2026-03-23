@@ -342,44 +342,44 @@ class HomeWidgetService {
         name: 'KlasikTuruncuWidget',
         androidName: 'KlasikTuruncuWidget',
         qualifiedAndroidName:
-            'com.example.huzur_vakti.widgets.KlasikTuruncuWidget',
+            'com.huzura.davet.widgets.KlasikTuruncuWidget',
       );
       await HomeWidget.updateWidget(
         name: 'MiniSunsetWidget',
         androidName: 'MiniSunsetWidget',
         qualifiedAndroidName:
-            'com.example.huzur_vakti.widgets.MiniSunsetWidget',
+            'com.huzura.davet.widgets.MiniSunsetWidget',
       );
       await HomeWidget.updateWidget(
         name: 'GlassmorphismWidget',
         androidName: 'GlassmorphismWidget',
         qualifiedAndroidName:
-            'com.example.huzur_vakti.widgets.GlassmorphismWidget',
+            'com.huzura.davet.widgets.GlassmorphismWidget',
       );
       await HomeWidget.updateWidget(
         name: 'NeonGlowWidget',
         androidName: 'NeonGlowWidget',
-        qualifiedAndroidName: 'com.example.huzur_vakti.widgets.NeonGlowWidget',
+        qualifiedAndroidName: 'com.huzura.davet.widgets.NeonGlowWidget',
       );
       await HomeWidget.updateWidget(
         name: 'TimelineWidget',
         androidName: 'TimelineWidget',
-        qualifiedAndroidName: 'com.example.huzur_vakti.widgets.TimelineWidget',
+        qualifiedAndroidName: 'com.huzura.davet.widgets.TimelineWidget',
       );
       await HomeWidget.updateWidget(
         name: 'CosmicWidget',
         androidName: 'CosmicWidget',
-        qualifiedAndroidName: 'com.example.huzur_vakti.widgets.CosmicWidget',
+        qualifiedAndroidName: 'com.huzura.davet.widgets.CosmicWidget',
       );
       await HomeWidget.updateWidget(
         name: 'ZenWidget',
         androidName: 'ZenWidget',
-        qualifiedAndroidName: 'com.example.huzur_vakti.widgets.ZenWidget',
+        qualifiedAndroidName: 'com.huzura.davet.widgets.ZenWidget',
       );
       await HomeWidget.updateWidget(
         name: 'OrigamiWidget',
         androidName: 'OrigamiWidget',
-        qualifiedAndroidName: 'com.example.huzur_vakti.widgets.OrigamiWidget',
+        qualifiedAndroidName: 'com.huzura.davet.widgets.OrigamiWidget',
       );
     } catch (e) {
       // Keep going if widget update fails.

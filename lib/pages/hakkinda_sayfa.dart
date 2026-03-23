@@ -39,8 +39,10 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
 
     return Scaffold(
       backgroundColor: renkler.arkaPlan,
-      body: CustomScrollView(
-        slivers: [
+      body: SafeArea(
+        top: false,
+        child: CustomScrollView(
+          slivers: [
           // AppBar
           SliverAppBar(
             expandedHeight: 200,
@@ -114,7 +116,8 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

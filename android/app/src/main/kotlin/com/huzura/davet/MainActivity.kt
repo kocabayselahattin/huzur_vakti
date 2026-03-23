@@ -16,6 +16,7 @@ import android.provider.Settings
 import android.util.Log
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import androidx.core.view.WindowCompat
 import com.huzura.davet.alarm.AlarmReceiver
 import com.huzura.davet.dnd.PrayerDndScheduler
 import com.huzura.davet.lockscreen.LockScreenNotificationService
@@ -39,6 +40,7 @@ class MainActivity : FlutterActivity() {
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
+		WindowCompat.setDecorFitsSystemWindows(window, false)
 		maybeStartDeferredLockScreenService()
 	}
 

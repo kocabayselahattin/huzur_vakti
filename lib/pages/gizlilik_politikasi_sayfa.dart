@@ -38,8 +38,10 @@ class _GizlilikPolitikasiSayfaState extends State<GizlilikPolitikasiSayfa> {
 
     return Scaffold(
       backgroundColor: renkler.arkaPlan,
-      body: CustomScrollView(
-        slivers: [
+      body: SafeArea(
+        top: false,
+        child: CustomScrollView(
+          slivers: [
           SliverAppBar(
             expandedHeight: 160,
             pinned: true,
@@ -87,7 +89,7 @@ class _GizlilikPolitikasiSayfaState extends State<GizlilikPolitikasiSayfa> {
                     renkler,
                     _lang['pp_intro_title'] ?? 'Giriş',
                     _lang['pp_intro_body'] ??
-                        'Bu gizlilik politikası, Huzura Davet uygulamasının kullanıcı verilerini nasıl topladığını, kullandığını ve koruduğunu açıklamaktadır.',
+                    'Bu gizlilik politikası, Huzur Vakti uygulamasının kullanıcı verilerini nasıl topladığını, kullandığını ve koruduğunu açıklamaktadır.',
                   ),
                   _bolum(
                     renkler,
@@ -165,7 +167,8 @@ class _GizlilikPolitikasiSayfaState extends State<GizlilikPolitikasiSayfa> {
               ),
             ),
           ),
-        ],
+          ],
+        ),
       ),
     );
   }

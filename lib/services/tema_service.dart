@@ -1032,8 +1032,41 @@ class TemaService extends ChangeNotifier {
     },
   ];
 
+  Color _canliRenk(
+    Color color, {
+    double saturationBoost = 0.12,
+    double lightnessDelta = 0.02,
+  }) {
+    final hsl = HSLColor.fromColor(color);
+    final saturation =
+        (hsl.saturation + saturationBoost).clamp(0.0, 1.0).toDouble();
+    final lightness =
+        (hsl.lightness + lightnessDelta).clamp(0.0, 1.0).toDouble();
+
+    return hsl.withSaturation(saturation).withLightness(lightness).toColor();
+  }
+
   ThemeData buildThemeData() {
     final r = renkler;
+    final primaryCanli =
+        _canliRenk(r.vurgu, saturationBoost: 0.18, lightnessDelta: 0.03);
+    final secondaryCanli = _canliRenk(
+      r.vurguSecondary,
+      saturationBoost: 0.14,
+      lightnessDelta: 0.02,
+    );
+    final tertiaryCanli =
+        _canliRenk(primaryCanli, saturationBoost: 0.08, lightnessDelta: -0.04);
+    final surfaceCanli =
+        Color.alphaBlend(primaryCanli.withOpacity(0.07), r.kartArkaPlan);
+    final arkaPlanCanli =
+        Color.alphaBlend(secondaryCanli.withOpacity(0.04), r.arkaPlan);
+
+    final onPrimary = ThemeData.estimateBrightnessForColor(primaryCanli) ==
+            Brightness.dark
+        ? Colors.white
+        : Colors.black;
+
     // Use try-catch while loading fonts - some fonts may fail to load
     TextTheme fontTextTheme;
     try {
@@ -1055,10 +1088,10 @@ class TemaService extends ChangeNotifier {
     );
     return ThemeData(
       useMaterial3: true,
-      scaffoldBackgroundColor: r.arkaPlan,
+      scaffoldBackgroundColor: arkaPlanCanli,
       fontFamily: _fontFamily,
       appBarTheme: AppBarTheme(
-        backgroundColor: Colors.transparent,
+        backgroundColor: surfaceCanli.withOpacity(0.55),
         elevation: 0,
         centerTitle: true,
         titleTextStyle: TextStyle(
@@ -1070,14 +1103,38 @@ class TemaService extends ChangeNotifier {
         iconTheme: IconThemeData(color: r.yaziPrimary),
       ),
       colorScheme: ColorScheme.dark(
-        primary: r.vurgu,
-        secondary: r.vurguSecondary,
-        surface: r.kartArkaPlan,
+        primary: primaryCanli,
+        onPrimary: onPrimary,
+        secondary: secondaryCanli,
+        tertiary: tertiaryCanli,
+        surface: surfaceCanli,
+        onSurface: r.yaziPrimary,
+        outline: r.ayirac,
       ),
       textTheme: textTheme,
-      iconTheme: IconThemeData(color: r.vurgu),
-      dividerColor: r.ayirac,
-      cardColor: r.kartArkaPlan,
+      iconTheme: IconThemeData(color: primaryCanli),
+      dividerColor: Color.alphaBlend(primaryCanli.withOpacity(0.18), r.ayirac),
+      cardColor: surfaceCanli,
+      floatingActionButtonTheme: FloatingActionButtonThemeData(
+        backgroundColor: primaryCanli,
+        foregroundColor: onPrimary,
+      ),
+      elevatedButtonTheme: ElevatedButtonThemeData(
+        style: ElevatedButton.styleFrom(
+          backgroundColor: primaryCanli,
+          foregroundColor: onPrimary,
+        ),
+      ),
+      filledButtonTheme: FilledButtonThemeData(
+        style: FilledButton.styleFrom(
+          backgroundColor: secondaryCanli,
+          foregroundColor:
+              ThemeData.estimateBrightnessForColor(secondaryCanli) ==
+                      Brightness.dark
+                  ? Colors.white
+                  : Colors.black,
+        ),
+      ),
     );
   }
 }

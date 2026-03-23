@@ -7,6 +7,7 @@ import android.content.Intent
 import android.graphics.Color
 import android.os.Bundle
 import android.util.TypedValue
+import android.view.View
 import android.widget.RemoteViews
 import com.huzura.davet.R
 import es.antonborri.home_widget.HomeWidgetPlugin
@@ -92,17 +93,27 @@ class MiniSunsetWidget : AppWidgetProvider() {
 
             val options = appWidgetManager.getAppWidgetOptions(appWidgetId)
             val minWidth = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_WIDTH)
+            val minHeight = options.getInt(AppWidgetManager.OPTION_APPWIDGET_MIN_HEIGHT)
+            val compactMode = minHeight < 120
 
-            if (minWidth < 280) {
-                views.setTextViewTextSize(R.id.tv_sonraki_label, TypedValue.COMPLEX_UNIT_SP, 10f)
-                views.setTextViewTextSize(R.id.tv_countdown, TypedValue.COMPLEX_UNIT_SP, 12f)
+            views.setViewPadding(R.id.widget_root, 3, 3, 3, if (compactMode) 3 else 4)
+
+            if (minWidth < 280 || compactMode) {
+                views.setTextViewTextSize(R.id.tv_sonraki_label, TypedValue.COMPLEX_UNIT_SP, 9f)
+                views.setTextViewTextSize(R.id.tv_countdown, TypedValue.COMPLEX_UNIT_SP, if (compactMode) 11f else 12f)
                 views.setTextViewTextSize(R.id.tv_mevcut_vakit, TypedValue.COMPLEX_UNIT_SP, 10f)
                 views.setTextViewTextSize(R.id.tv_sonraki_vakit, TypedValue.COMPLEX_UNIT_SP, 10f)
+
+                views.setViewVisibility(R.id.tv_mevcut_vakit, if (compactMode) View.GONE else View.VISIBLE)
+                views.setViewVisibility(R.id.tv_sonraki_vakit, if (compactMode) View.GONE else View.VISIBLE)
             } else {
                 views.setTextViewTextSize(R.id.tv_sonraki_label, TypedValue.COMPLEX_UNIT_SP, 12f)
                 views.setTextViewTextSize(R.id.tv_countdown, TypedValue.COMPLEX_UNIT_SP, 15f)
                 views.setTextViewTextSize(R.id.tv_mevcut_vakit, TypedValue.COMPLEX_UNIT_SP, 11f)
                 views.setTextViewTextSize(R.id.tv_sonraki_vakit, TypedValue.COMPLEX_UNIT_SP, 11f)
+
+                views.setViewVisibility(R.id.tv_mevcut_vakit, View.VISIBLE)
+                views.setViewVisibility(R.id.tv_sonraki_vakit, View.VISIBLE)
             }
             
             // Arka plan ayarla
