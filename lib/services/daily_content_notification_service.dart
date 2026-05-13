@@ -18,18 +18,23 @@ class DailyContentNotificationService {
   static const String _defaultVerseTime = '08:00';
   static const String _defaultHadithTime = '13:00';
   static const String _defaultPrayerTime = '20:00';
+  static const String _defaultTahajjudTime = '03:00';
 
   static const String _verseTimeKey = 'daily_content_verse_time';
   static const String _hadithTimeKey = 'daily_content_hadith_time';
   static const String _prayerTimeKey = 'daily_content_prayer_time';
+  static const String _tahajjudTimeKey = 'daily_content_tahajjud_time';
 
   // Notification IDs
   static const int verseNotificationId = 1000;
   static const int hadithNotificationId = 1001;
   static const int prayerNotificationId = 1002;
+  static const int tahajjudNotificationId = 1003;
 
   // Default sound file
   static const String defaultNotificationSound = 'ding_dong';
+  static const String _tahajjudSoundKey = 'daily_content_tahajjud_sound';
+  static const String _tahajjudEnabledKey = 'daily_content_tahajjud_enabled';
 
   /// Set daily content alarm sound.
   static Future<void> setDailyContentNotificationSound(
@@ -54,16 +59,29 @@ class DailyContentNotificationService {
         defaultNotificationSound;
   }
 
+  /// Get tahajjud alarm sound (sound ID).
+  static Future<String> getDailyTahajjudNotificationSound() async {
+    final prefs = await SharedPreferences.getInstance();
+    final tahajjudSound = prefs.getString(_tahajjudSoundKey);
+    if (tahajjudSound != null && tahajjudSound.isNotEmpty) {
+      return tahajjudSound;
+    }
+    return prefs.getString('daily_content_notification_sound') ??
+        defaultNotificationSound;
+  }
+
   /// Set daily content alarm times.
   static Future<void> setDailyContentNotificationTimes({
     required String verseTime,
     required String hadithTime,
     required String prayerTime,
+    required String tahajjudTime,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setString(_verseTimeKey, verseTime);
     await prefs.setString(_hadithTimeKey, hadithTime);
     await prefs.setString(_prayerTimeKey, prayerTime);
+    await prefs.setString(_tahajjudTimeKey, tahajjudTime);
 
     _initialized = false;
     await initialize();
@@ -73,17 +91,23 @@ class DailyContentNotificationService {
   /// Update daily content alarm settings.
   static Future<void> setDailyContentNotificationSettings({
     required bool enabled,
+    required bool tahajjudEnabled,
     required String soundFileName,
+    required String tahajjudSoundFileName,
     required String verseTime,
     required String hadithTime,
     required String prayerTime,
+    required String tahajjudTime,
   }) async {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool('daily_content_notifications_enabled', enabled);
+    await prefs.setBool(_tahajjudEnabledKey, tahajjudEnabled);
     await prefs.setString('daily_content_notification_sound', soundFileName);
+    await prefs.setString(_tahajjudSoundKey, tahajjudSoundFileName);
     await prefs.setString(_verseTimeKey, verseTime);
     await prefs.setString(_hadithTimeKey, hadithTime);
     await prefs.setString(_prayerTimeKey, prayerTime);
+    await prefs.setString(_tahajjudTimeKey, tahajjudTime);
 
     _initialized = false;
     await initialize();
@@ -190,9 +214,7 @@ class DailyContentNotificationService {
           showBadge: true,
         );
         await androidImplementation.createNotificationChannel(channel);
-        debugPrint(
-          '✅ Daily content channel created (sound ID: $soundId)',
-        );
+        debugPrint('✅ Daily content channel created (sound ID: $soundId)');
       }
 
       _initialized = true;
@@ -232,7 +254,10 @@ class DailyContentNotificationService {
       final verseTimeParts = times['verse']!;
       final hadithTimeParts = times['hadith']!;
       final prayerTimeParts = times['prayer']!;
+      final tahajjudTimeParts = times['tahajjud']!;
       final now = tz.TZDateTime.now(tz.local);
+      final contentSoundId = await getDailyContentNotificationSound();
+      final tahajjudSoundId = await getDailyTahajjudNotificationSound();
       int scheduledCount = 0;
 
       for (int day = 0; day < 7; day++) {
@@ -254,6 +279,7 @@ class DailyContentNotificationService {
             title: 'todays_verse',
             body: 'daily_verse_notification_desc',
             scheduledDate: verseTime,
+            soundId: contentSoundId,
           );
           scheduledCount++;
         }
@@ -274,6 +300,7 @@ class DailyContentNotificationService {
             title: 'todays_hadith',
             body: 'daily_hadith_notification_desc',
             scheduledDate: hadithTime,
+            soundId: contentSoundId,
           );
           scheduledCount++;
         }
@@ -294,8 +321,39 @@ class DailyContentNotificationService {
             title: 'todays_dua',
             body: 'daily_prayer_notification_desc',
             scheduledDate: prayerTime,
+            soundId: contentSoundId,
           );
           scheduledCount++;
+        }
+
+        // Daily tahajjud reminder
+        final tahajjudEnabled =
+            prefs.getBool(_tahajjudEnabledKey) ?? true;
+        if (tahajjudEnabled) {
+          final tahajjudTime = tz.TZDateTime(
+            tz.local,
+            targetDate.year,
+            targetDate.month,
+            targetDate.day,
+            tahajjudTimeParts[0],
+            tahajjudTimeParts[1],
+            0,
+          );
+          if (tahajjudTime.isAfter(now)) {
+            await _scheduleNotification(
+              id: tahajjudNotificationId + day * 10,
+              title: 'todays_tahajjud',
+              body: 'daily_tahajjud_notification_desc',
+              scheduledDate: tahajjudTime,
+              soundId: tahajjudSoundId,
+            );
+            scheduledCount++;
+          }
+        } else {
+          // Tahajjud devre disi - mevcut alarmlari iptal et
+          await AlarmService.cancelDailyContentAlarm(
+            tahajjudNotificationId + day * 10,
+          );
         }
       }
 
@@ -309,6 +367,9 @@ class DailyContentNotificationService {
       debugPrint(
         '   🤲 Dua time: ${times['prayer']![0].toString().padLeft(2, '0')}:${times['prayer']![1].toString().padLeft(2, '0')}',
       );
+      debugPrint(
+        '   🌙 Tahajjud time: ${times['tahajjud']![0].toString().padLeft(2, '0')}:${times['tahajjud']![1].toString().padLeft(2, '0')}',
+      );
     } catch (e) {
       debugPrint('❌ Daily content alarm scheduling failed: $e');
     }
@@ -319,11 +380,13 @@ class DailyContentNotificationService {
     final verse = prefs.getString(_verseTimeKey) ?? _defaultVerseTime;
     final hadith = prefs.getString(_hadithTimeKey) ?? _defaultHadithTime;
     final prayer = prefs.getString(_prayerTimeKey) ?? _defaultPrayerTime;
+    final tahajjud = prefs.getString(_tahajjudTimeKey) ?? _defaultTahajjudTime;
 
     return {
       'verse': _parseTimeParts(verse, _defaultVerseTime),
       'hadith': _parseTimeParts(hadith, _defaultHadithTime),
       'prayer': _parseTimeParts(prayer, _defaultPrayerTime),
+      'tahajjud': _parseTimeParts(tahajjud, _defaultTahajjudTime),
     };
   }
 
@@ -346,6 +409,7 @@ class DailyContentNotificationService {
     required String title, // Localization key
     required String body, // Localization key
     required tz.TZDateTime scheduledDate,
+    required String soundId,
   }) async {
     // Load translations
     final languageService = LanguageService();
@@ -407,9 +471,6 @@ class DailyContentNotificationService {
     } else {
       bodyText = languageService[body] ?? body;
     }
-
-    // Get sound ID
-    final soundId = await getDailyContentNotificationSound();
 
     debugPrint('🔊 Daily content sound ID: $soundId');
 
@@ -524,18 +585,25 @@ class DailyContentNotificationService {
         }
         id = 9002;
         break;
+      case 'tahajjud':
+        title = languageService['todays_tahajjud'] ?? '';
+        body = languageService['daily_tahajjud_notification_desc'] ?? '';
+        id = 9003;
+        break;
       default:
         return;
     }
 
-    final soundId = await getDailyContentNotificationSound();
+    final soundId = type == 'tahajjud'
+        ? await getDailyTahajjudNotificationSound()
+        : await getDailyContentNotificationSound();
     final channelName =
-      languageService['daily_content_channel_name'] ?? 'Daily Content';
+        languageService['daily_content_channel_name'] ?? 'Daily Content';
     final channelDescription =
-      languageService['daily_content_channel_desc'] ??
-      'Daily verse, hadith, and dua notifications';
+        languageService['daily_content_channel_desc'] ??
+        'Daily verse, hadith, and dua notifications';
     final channelTicker =
-      languageService['daily_content_channel_ticker'] ?? 'Daily content';
+        languageService['daily_content_channel_ticker'] ?? 'Daily content';
     final appName = languageService['app_name'] ?? 'Huzura Davet';
 
     final androidPlatformChannelSpecifics = AndroidNotificationDetails(
