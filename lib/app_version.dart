@@ -1,6 +1,6 @@
 /// Uygulama versiyon bilgisi — tek yerden yönetilir.
 /// Versiyon yükseltmek için sadece burayı ve pubspec.yaml'ı güncelleyin.
-const String appVersion = '1.1.10+14';
+const String appVersion = '1.1.13+17';
 
 /// Kullanıcıya gösterilecek sürüm (build numarasız).
-const String displayAppVersion = '1.1.10';
+const String displayAppVersion = '1.1.13';

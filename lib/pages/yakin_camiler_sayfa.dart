@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:geolocator/geolocator.dart';
 import 'dart:convert';
+import 'dart:math' as math;
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import '../services/tema_service.dart';
@@ -16,11 +17,13 @@ class YakinCamilerSayfa extends StatefulWidget {
 class _YakinCamilerSayfaState extends State<YakinCamilerSayfa> {
   final TemaService _temaService = TemaService();
   final LanguageService _languageService = LanguageService();
-  static const int _aramaYaricapiMetre = 5000;
+  static const int _aramaYaricapiMetre = 2000;
+  static const Duration _overpassTimeout = Duration(seconds: 7);
+  static const Duration _nominatimTimeout = Duration(seconds: 6);
   static const List<String> _overpassEndpoints = [
     'https://overpass-api.de/api/interpreter',
+    'https://lz4.overpass-api.de/api/interpreter',
     'https://overpass.kumi.systems/api/interpreter',
-    'https://overpass.openstreetmap.ru/api/interpreter',
   ];
 
   List<Map<String, dynamic>> _camiler = [];
@@ -127,10 +130,7 @@ class _YakinCamilerSayfaState extends State<YakinCamilerSayfa> {
     final Position? sonBilinenKonum = await Geolocator.getLastKnownPosition();
     Object? sonHata;
 
-    Future<Position> dene(
-      LocationAccuracy accuracy,
-      int timeoutSeconds,
-    ) async {
+    Future<Position> dene(LocationAccuracy accuracy, int timeoutSeconds) async {
       return Geolocator.getCurrentPosition(
         desiredAccuracy: accuracy,
         timeLimit: Duration(seconds: timeoutSeconds),
@@ -140,9 +140,9 @@ class _YakinCamilerSayfaState extends State<YakinCamilerSayfa> {
     // Bazı cihazlarda (özellikle MIUI) yüksek doğruluk kilitlenebildiği için
     // farklı doğruluk seviyeleriyle art arda deneniyor.
     final denemeler = <Future<Position> Function()>[
-      () => dene(LocationAccuracy.high, 20),
-      () => dene(LocationAccuracy.medium, 15),
-      () => dene(LocationAccuracy.low, 10),
+      () => dene(LocationAccuracy.high, 12),
+      () => dene(LocationAccuracy.medium, 8),
+      () => dene(LocationAccuracy.low, 6),
     ];
 
     for (final deneme in denemeler) {
@@ -177,94 +177,54 @@ class _YakinCamilerSayfaState extends State<YakinCamilerSayfa> {
 
   Future<void> _yakinCamileriAra(double enlem, double boylam) async {
     try {
-      // Overpass API sorgusu (önce sıkı filtre, sonuç çıkmazsa geniş filtre)
-      final strictQuery =
+      final query =
           '''
-        [out:json][timeout:25];
+        [out:json][timeout:12];
         (
           node["amenity"="place_of_worship"]["religion"="muslim"](around:$_aramaYaricapiMetre,$enlem,$boylam);
-          way["amenity"="place_of_worship"]["religion"="muslim"](around:$_aramaYaricapiMetre,$enlem,$boylam);
-          relation["amenity"="place_of_worship"]["religion"="muslim"](around:$_aramaYaricapiMetre,$enlem,$boylam);
-        );
-        out center;
-      ''';
-
-      final fallbackQuery =
-          '''
-        [out:json][timeout:25];
-        (
-          node["amenity"="place_of_worship"](around:$_aramaYaricapiMetre,$enlem,$boylam);
           node["building"="mosque"](around:$_aramaYaricapiMetre,$enlem,$boylam);
           node["amenity"="mosque"](around:$_aramaYaricapiMetre,$enlem,$boylam);
-          way["amenity"="place_of_worship"](around:$_aramaYaricapiMetre,$enlem,$boylam);
+          way["amenity"="place_of_worship"]["religion"="muslim"](around:$_aramaYaricapiMetre,$enlem,$boylam);
           way["building"="mosque"](around:$_aramaYaricapiMetre,$enlem,$boylam);
           way["amenity"="mosque"](around:$_aramaYaricapiMetre,$enlem,$boylam);
-          relation["amenity"="place_of_worship"](around:$_aramaYaricapiMetre,$enlem,$boylam);
+          relation["amenity"="place_of_worship"]["religion"="muslim"](around:$_aramaYaricapiMetre,$enlem,$boylam);
           relation["building"="mosque"](around:$_aramaYaricapiMetre,$enlem,$boylam);
           relation["amenity"="mosque"](around:$_aramaYaricapiMetre,$enlem,$boylam);
         );
         out center;
       ''';
 
-      final strictResponse = await _overpassIstekYap(strictQuery);
-      if (strictResponse.statusCode != 200) {
-        throw Exception('Overpass HTTP ${strictResponse.statusCode}');
-      }
+      List<Map<String, dynamic>> camiler = [];
+      Object? overpassHata;
 
-      final strictData = json.decode(strictResponse.body);
-      final strictElements = (strictData['elements'] as List?) ?? [];
-
-      List<dynamic> elements;
-      if (strictElements.isNotEmpty) {
-        elements = strictElements;
-      } else {
-        final fallbackResponse = await _overpassIstekYap(fallbackQuery);
-        if (fallbackResponse.statusCode != 200) {
-          throw Exception('Overpass HTTP ${fallbackResponse.statusCode}');
-        }
-        final fallbackData = json.decode(fallbackResponse.body);
-        elements = (fallbackData['elements'] as List?) ?? [];
-      }
-
-      final List<Map<String, dynamic>> camiler = [];
-      for (final element in elements) {
-        if (element is! Map<String, dynamic>) continue;
-
-        double? lat;
-        double? lon;
-        Map<String, dynamic>? tags;
-
-        if (element['type'] == 'node') {
-          lat = (element['lat'] as num?)?.toDouble();
-          lon = (element['lon'] as num?)?.toDouble();
-          tags = (element['tags'] as Map?)?.cast<String, dynamic>();
-        } else if (element['type'] == 'way' || element['type'] == 'relation') {
-          // Way ve relation için merkez koordinatlarını kullan
-          final center = (element['center'] as Map?)?.cast<String, dynamic>();
-          if (center != null) {
-            lat = (center['lat'] as num?)?.toDouble();
-            lon = (center['lon'] as num?)?.toDouble();
-          }
-          tags = (element['tags'] as Map?)?.cast<String, dynamic>();
+      try {
+        final response = await _overpassIstekYap(query);
+        if (response.statusCode != 200) {
+          throw Exception('Overpass HTTP ${response.statusCode}');
         }
 
-        if (lat != null && lon != null && tags != null && tags['name'] != null) {
-          final mesafe = Geolocator.distanceBetween(enlem, boylam, lat, lon);
-
-          camiler.add({
-            'ad': tags['name'].toString(),
-            'enlem': lat,
-            'boylam': lon,
-            'mesafe': mesafe,
-            'adres': tags['addr:street'] ?? tags['addr:full'] ?? '',
-          });
-        }
+        final data = json.decode(response.body);
+        final elements = (data['elements'] as List?) ?? [];
+        camiler = _overpassElemanlariniDonustur(
+          elements: elements,
+          enlem: enlem,
+          boylam: boylam,
+        );
+      } catch (e) {
+        overpassHata = e;
+        debugPrint('⚠️ Overpass ile sonuç alınamadı, Nominatim fallback: $e');
       }
 
-      // Mesafeye göre sırala (en yakından en uzağa)
-      camiler.sort(
-        (a, b) => (a['mesafe'] as double).compareTo(b['mesafe'] as double),
-      );
+      if (camiler.isEmpty) {
+        final nominatimSonuclar = await _nominatimIleCamileriAra(enlem, boylam);
+        camiler.addAll(nominatimSonuclar);
+      }
+
+      camiler = _camileriBenzersizlestirVeSirala(camiler);
+
+      if (camiler.isEmpty && overpassHata != null) {
+        throw overpassHata;
+      }
 
       debugPrint(
         '✅ ${camiler.length} cami bulundu, en yakın: ${camiler.isNotEmpty ? camiler[0]['ad'] : 'yok'} (${camiler.isNotEmpty ? (camiler[0]['mesafe'] as double).round() : 0}m)',
@@ -299,7 +259,7 @@ class _YakinCamilerSayfaState extends State<YakinCamilerSayfa> {
               },
               body: query,
             )
-            .timeout(const Duration(seconds: 35));
+            .timeout(_overpassTimeout);
 
         if (response.statusCode == 200) {
           return response;
@@ -316,6 +276,151 @@ class _YakinCamilerSayfaState extends State<YakinCamilerSayfa> {
     throw Exception(
       'Overpass servislerine bağlanılamadı (${sonHata ?? 'bilinmeyen hata'})',
     );
+  }
+
+  List<Map<String, dynamic>> _overpassElemanlariniDonustur({
+    required List<dynamic> elements,
+    required double enlem,
+    required double boylam,
+  }) {
+    final List<Map<String, dynamic>> camiler = [];
+
+    for (final element in elements) {
+      if (element is! Map<String, dynamic>) continue;
+
+      double? lat;
+      double? lon;
+      Map<String, dynamic>? tags;
+
+      if (element['type'] == 'node') {
+        lat = (element['lat'] as num?)?.toDouble();
+        lon = (element['lon'] as num?)?.toDouble();
+        tags = (element['tags'] as Map?)?.cast<String, dynamic>();
+      } else if (element['type'] == 'way' || element['type'] == 'relation') {
+        final center = (element['center'] as Map?)?.cast<String, dynamic>();
+        if (center != null) {
+          lat = (center['lat'] as num?)?.toDouble();
+          lon = (center['lon'] as num?)?.toDouble();
+        }
+        tags = (element['tags'] as Map?)?.cast<String, dynamic>();
+      }
+
+      if (lat == null || lon == null || tags == null) continue;
+
+      final ad = (tags['name'] ?? tags['name:tr'] ?? '').toString().trim();
+      if (ad.isEmpty) continue;
+
+      final mesafe = Geolocator.distanceBetween(enlem, boylam, lat, lon);
+      if (mesafe > _aramaYaricapiMetre + 150) continue;
+
+      camiler.add({
+        'ad': ad,
+        'enlem': lat,
+        'boylam': lon,
+        'mesafe': mesafe,
+        'adres': tags['addr:street'] ?? tags['addr:full'] ?? '',
+      });
+    }
+
+    return camiler;
+  }
+
+  Future<List<Map<String, dynamic>>> _nominatimIleCamileriAra(
+    double enlem,
+    double boylam,
+  ) async {
+    final latDelta = _aramaYaricapiMetre / 111320.0;
+    final cosDeger = math.cos(enlem * math.pi / 180).abs();
+    final guvenliCosDeger = cosDeger < 0.01 ? 0.01 : cosDeger;
+    final lonDelta = _aramaYaricapiMetre / (111320.0 * guvenliCosDeger);
+
+    final sol = (boylam - lonDelta).toStringAsFixed(6);
+    final sag = (boylam + lonDelta).toStringAsFixed(6);
+    final ust = (enlem + latDelta).toStringAsFixed(6);
+    final alt = (enlem - latDelta).toStringAsFixed(6);
+
+    final List<Map<String, dynamic>> tumSonuclar = [];
+
+    for (final sorgu in ['cami', 'mosque']) {
+      try {
+        final uri = Uri.https('nominatim.openstreetmap.org', '/search', {
+          'format': 'jsonv2',
+          'q': sorgu,
+          'bounded': '1',
+          'limit': '30',
+          'viewbox': '$sol,$ust,$sag,$alt',
+          'addressdetails': '1',
+        });
+
+        final response = await http
+            .get(
+              uri,
+              headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'HuzuraDavet/1.0 (NearbyMosques)',
+              },
+            )
+            .timeout(_nominatimTimeout);
+
+        if (response.statusCode != 200) {
+          debugPrint('⚠️ Nominatim başarısız [$sorgu]: ${response.statusCode}');
+          continue;
+        }
+
+        final data = json.decode(response.body);
+        if (data is! List) continue;
+
+        for (final item in data) {
+          if (item is! Map<String, dynamic>) continue;
+
+          final lat = double.tryParse(item['lat']?.toString() ?? '');
+          final lon = double.tryParse(item['lon']?.toString() ?? '');
+          if (lat == null || lon == null) continue;
+
+          final mesafe = Geolocator.distanceBetween(enlem, boylam, lat, lon);
+          if (mesafe > _aramaYaricapiMetre + 150) continue;
+
+          final ad = (item['name']?.toString().trim().isNotEmpty ?? false)
+              ? item['name'].toString().trim()
+              : (item['display_name']?.toString().split(',').first.trim() ??
+                    'İsimsiz Cami');
+
+          tumSonuclar.add({
+            'ad': ad,
+            'enlem': lat,
+            'boylam': lon,
+            'mesafe': mesafe,
+            'adres': item['display_name']?.toString() ?? '',
+          });
+        }
+      } catch (e) {
+        debugPrint('⚠️ Nominatim erişim hatası [$sorgu]: $e');
+      }
+    }
+
+    return _camileriBenzersizlestirVeSirala(tumSonuclar);
+  }
+
+  List<Map<String, dynamic>> _camileriBenzersizlestirVeSirala(
+    List<Map<String, dynamic>> camiler,
+  ) {
+    final gorulen = <String>{};
+    final benzersiz = <Map<String, dynamic>>[];
+
+    for (final cami in camiler) {
+      final lat = (cami['enlem'] as num?)?.toDouble();
+      final lon = (cami['boylam'] as num?)?.toDouble();
+      if (lat == null || lon == null) continue;
+
+      final key = '${lat.toStringAsFixed(5)}_${lon.toStringAsFixed(5)}';
+      if (!gorulen.add(key)) continue;
+      benzersiz.add(cami);
+    }
+
+    benzersiz.sort(
+      (a, b) => (a['mesafe'] as double).compareTo(b['mesafe'] as double),
+    );
+    return benzersiz;
   }
 
   String _hataMesajiOlustur(Object e) {

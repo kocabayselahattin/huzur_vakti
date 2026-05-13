@@ -147,7 +147,7 @@
   "widget_origami_desc": "Elegant design with paper folding aesthetics",
   "update_notes_title": "What's New",
   "update_notes_version_prefix": "Version",
-  "update_notes_body": "This release improves theme vibrancy, adds a 10-bit color picker, enhances Android 15 edge-to-edge compatibility, and optimizes widget visibility for different phone themes.",
+  "update_notes_body": "This release strengthens Nearby Mosques: timeout handling is improved, fallback service support is added, and location acquisition is now faster.",
   "version": "Version",
   "developer": "Developer",
   "contact": "Contact",
