@@ -16,6 +16,13 @@ class YakinCamilerSayfa extends StatefulWidget {
 class _YakinCamilerSayfaState extends State<YakinCamilerSayfa> {
   final TemaService _temaService = TemaService();
   final LanguageService _languageService = LanguageService();
+  static const int _aramaYaricapiMetre = 5000;
+  static const List<String> _overpassEndpoints = [
+    'https://overpass-api.de/api/interpreter',
+    'https://overpass.kumi.systems/api/interpreter',
+    'https://overpass.openstreetmap.ru/api/interpreter',
+  ];
+
   List<Map<String, dynamic>> _camiler = [];
   bool _yukleniyor = true;
   String? _hata;
@@ -97,43 +104,7 @@ class _YakinCamilerSayfaState extends State<YakinCamilerSayfa> {
         return;
       }
 
-      Position? position;
-
-      // Önce son bilinen konumu al (hızlı başlangıç için)
-      Position? lastKnown = await Geolocator.getLastKnownPosition();
-
-      try {
-        // Konum al (30 saniye timeout)
-        position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high,
-          timeLimit: const Duration(seconds: 30),
-        );
-      } catch (e) {
-        // getCurrentPosition başarısızsa son bilinen konumu kullan
-        if (lastKnown != null) {
-          position = lastKnown;
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  _languageService['last_known_location_used'] ??
-                      'Canlı konum alınamadı, son bilinen konum kullanıldı.',
-                ),
-                backgroundColor: Colors.orange,
-              ),
-            );
-          }
-        } else {
-          setState(() {
-            _hata =
-                '${_languageService['could_not_get_location'] ?? 'Konum alınamadı. Lütfen GPS\'i açık alanda tekrar deneyin.'}\n${_languageService['error'] ?? 'Hata'}: $e';
-            _hataAksiyon = _camileriYukle;
-            _hataAksiyonLabel = _languageService['try_again'] ?? 'Tekrar Dene';
-            _yukleniyor = false;
-          });
-          return;
-        }
-      }
+      final position = await _mevcutKonumuAl();
 
       // Position artık null olamaz (ya getCurrentPosition ya da lastKnown)
       setState(() {
@@ -144,8 +115,7 @@ class _YakinCamilerSayfaState extends State<YakinCamilerSayfa> {
       await _yakinCamileriAra(position.latitude, position.longitude);
     } catch (e) {
       setState(() {
-        _hata =
-            '${_languageService['could_not_get_location'] ?? 'Konum alınamadı'}: $e';
+        _hata = _hataMesajiOlustur(e);
         _hataAksiyon = _camileriYukle;
         _hataAksiyonLabel = _languageService['try_again'] ?? 'Tekrar Dene';
         _yukleniyor = false;
@@ -153,91 +123,224 @@ class _YakinCamilerSayfaState extends State<YakinCamilerSayfa> {
     }
   }
 
+  Future<Position> _mevcutKonumuAl() async {
+    final Position? sonBilinenKonum = await Geolocator.getLastKnownPosition();
+    Object? sonHata;
+
+    Future<Position> dene(
+      LocationAccuracy accuracy,
+      int timeoutSeconds,
+    ) async {
+      return Geolocator.getCurrentPosition(
+        desiredAccuracy: accuracy,
+        timeLimit: Duration(seconds: timeoutSeconds),
+      );
+    }
+
+    // Bazı cihazlarda (özellikle MIUI) yüksek doğruluk kilitlenebildiği için
+    // farklı doğruluk seviyeleriyle art arda deneniyor.
+    final denemeler = <Future<Position> Function()>[
+      () => dene(LocationAccuracy.high, 20),
+      () => dene(LocationAccuracy.medium, 15),
+      () => dene(LocationAccuracy.low, 10),
+    ];
+
+    for (final deneme in denemeler) {
+      try {
+        final position = await deneme();
+        return position;
+      } catch (e) {
+        sonHata = e;
+        debugPrint('⚠️ Konum denemesi başarısız: $e');
+      }
+    }
+
+    if (sonBilinenKonum != null) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              _languageService['last_known_location_used'] ??
+                  'Canlı konum alınamadı, son bilinen konum kullanıldı.',
+            ),
+            backgroundColor: Colors.orange,
+          ),
+        );
+      }
+      return sonBilinenKonum;
+    }
+
+    throw Exception(
+      '${_languageService['could_not_get_location'] ?? 'Konum alınamadı. Lütfen GPS\'i açık alanda tekrar deneyin.'}\n${_languageService['error'] ?? 'Hata'}: ${sonHata ?? 'bilinmeyen hata'}',
+    );
+  }
+
   Future<void> _yakinCamileriAra(double enlem, double boylam) async {
     try {
-      // Overpass API sorgusu (2km yarıçapında camiler)
-      final query =
+      // Overpass API sorgusu (önce sıkı filtre, sonuç çıkmazsa geniş filtre)
+      final strictQuery =
           '''
         [out:json][timeout:25];
         (
-          node["amenity"="place_of_worship"]["religion"="muslim"](around:2000,$enlem,$boylam);
-          way["amenity"="place_of_worship"]["religion"="muslim"](around:2000,$enlem,$boylam);
-          relation["amenity"="place_of_worship"]["religion"="muslim"](around:2000,$enlem,$boylam);
+          node["amenity"="place_of_worship"]["religion"="muslim"](around:$_aramaYaricapiMetre,$enlem,$boylam);
+          way["amenity"="place_of_worship"]["religion"="muslim"](around:$_aramaYaricapiMetre,$enlem,$boylam);
+          relation["amenity"="place_of_worship"]["religion"="muslim"](around:$_aramaYaricapiMetre,$enlem,$boylam);
         );
         out center;
       ''';
 
-      final response = await http.post(
-        Uri.parse('https://overpass-api.de/api/interpreter'),
-        body: query,
-      );
+      final fallbackQuery =
+          '''
+        [out:json][timeout:25];
+        (
+          node["amenity"="place_of_worship"](around:$_aramaYaricapiMetre,$enlem,$boylam);
+          node["building"="mosque"](around:$_aramaYaricapiMetre,$enlem,$boylam);
+          node["amenity"="mosque"](around:$_aramaYaricapiMetre,$enlem,$boylam);
+          way["amenity"="place_of_worship"](around:$_aramaYaricapiMetre,$enlem,$boylam);
+          way["building"="mosque"](around:$_aramaYaricapiMetre,$enlem,$boylam);
+          way["amenity"="mosque"](around:$_aramaYaricapiMetre,$enlem,$boylam);
+          relation["amenity"="place_of_worship"](around:$_aramaYaricapiMetre,$enlem,$boylam);
+          relation["building"="mosque"](around:$_aramaYaricapiMetre,$enlem,$boylam);
+          relation["amenity"="mosque"](around:$_aramaYaricapiMetre,$enlem,$boylam);
+        );
+        out center;
+      ''';
 
-      if (response.statusCode == 200) {
-        final data = json.decode(response.body);
-        final elements = data['elements'] as List;
+      final strictResponse = await _overpassIstekYap(strictQuery);
+      if (strictResponse.statusCode != 200) {
+        throw Exception('Overpass HTTP ${strictResponse.statusCode}');
+      }
 
-        final List<Map<String, dynamic>> camiler = [];
-        for (final element in elements) {
-          double? lat;
-          double? lon;
-          Map<String, dynamic>? tags;
+      final strictData = json.decode(strictResponse.body);
+      final strictElements = (strictData['elements'] as List?) ?? [];
 
-          if (element['type'] == 'node') {
-            lat = element['lat'] as double?;
-            lon = element['lon'] as double?;
-            tags = element['tags'] as Map<String, dynamic>?;
-          } else if (element['type'] == 'way' ||
-              element['type'] == 'relation') {
-            // Way ve relation için merkez koordinatlarını kullan
-            final center = element['center'] as Map<String, dynamic>?;
-            if (center != null) {
-              lat = center['lat'] as double?;
-              lon = center['lon'] as double?;
-            }
-            tags = element['tags'] as Map<String, dynamic>?;
+      List<dynamic> elements;
+      if (strictElements.isNotEmpty) {
+        elements = strictElements;
+      } else {
+        final fallbackResponse = await _overpassIstekYap(fallbackQuery);
+        if (fallbackResponse.statusCode != 200) {
+          throw Exception('Overpass HTTP ${fallbackResponse.statusCode}');
+        }
+        final fallbackData = json.decode(fallbackResponse.body);
+        elements = (fallbackData['elements'] as List?) ?? [];
+      }
+
+      final List<Map<String, dynamic>> camiler = [];
+      for (final element in elements) {
+        if (element is! Map<String, dynamic>) continue;
+
+        double? lat;
+        double? lon;
+        Map<String, dynamic>? tags;
+
+        if (element['type'] == 'node') {
+          lat = (element['lat'] as num?)?.toDouble();
+          lon = (element['lon'] as num?)?.toDouble();
+          tags = (element['tags'] as Map?)?.cast<String, dynamic>();
+        } else if (element['type'] == 'way' || element['type'] == 'relation') {
+          // Way ve relation için merkez koordinatlarını kullan
+          final center = (element['center'] as Map?)?.cast<String, dynamic>();
+          if (center != null) {
+            lat = (center['lat'] as num?)?.toDouble();
+            lon = (center['lon'] as num?)?.toDouble();
           }
-
-          if (lat != null &&
-              lon != null &&
-              tags != null &&
-              tags['name'] != null) {
-            final mesafe = Geolocator.distanceBetween(enlem, boylam, lat, lon);
-
-            camiler.add({
-              'ad': tags['name'] ?? 'İsimsiz Cami',
-              'enlem': lat,
-              'boylam': lon,
-              'mesafe': mesafe,
-              'adres': tags['addr:street'] ?? tags['addr:full'] ?? '',
-            });
-          }
+          tags = (element['tags'] as Map?)?.cast<String, dynamic>();
         }
 
-        // Mesafeye göre sırala (en yakından en uzağa)
-        camiler.sort(
-          (a, b) => (a['mesafe'] as double).compareTo(b['mesafe'] as double),
-        );
+        if (lat != null && lon != null && tags != null && tags['name'] != null) {
+          final mesafe = Geolocator.distanceBetween(enlem, boylam, lat, lon);
 
-        print(
-          '✅ ${camiler.length} cami bulundu, en yakın: ${camiler.isNotEmpty ? camiler[0]['ad'] : 'yok'} (${camiler.isNotEmpty ? (camiler[0]['mesafe'] as double).round() : 0}m)',
-        );
-
-        setState(() {
-          _camiler = camiler;
-          _yukleniyor = false;
-        });
-      } else {
-        setState(() {
-          _hata = 'Camiler yüklenemedi';
-          _yukleniyor = false;
-        });
+          camiler.add({
+            'ad': tags['name'].toString(),
+            'enlem': lat,
+            'boylam': lon,
+            'mesafe': mesafe,
+            'adres': tags['addr:street'] ?? tags['addr:full'] ?? '',
+          });
+        }
       }
+
+      // Mesafeye göre sırala (en yakından en uzağa)
+      camiler.sort(
+        (a, b) => (a['mesafe'] as double).compareTo(b['mesafe'] as double),
+      );
+
+      debugPrint(
+        '✅ ${camiler.length} cami bulundu, en yakın: ${camiler.isNotEmpty ? camiler[0]['ad'] : 'yok'} (${camiler.isNotEmpty ? (camiler[0]['mesafe'] as double).round() : 0}m)',
+      );
+
+      setState(() {
+        _camiler = camiler;
+        _yukleniyor = false;
+      });
     } catch (e) {
       setState(() {
-        _hata = 'Camiler aranırken hata oluştu: $e';
+        _hata = _hataMesajiOlustur(e);
+        _hataAksiyon = _camileriYukle;
+        _hataAksiyonLabel = _languageService['try_again'] ?? 'Tekrar Dene';
         _yukleniyor = false;
       });
     }
+  }
+
+  Future<http.Response> _overpassIstekYap(String query) async {
+    Object? sonHata;
+
+    for (final endpoint in _overpassEndpoints) {
+      try {
+        final response = await http
+            .post(
+              Uri.parse(endpoint),
+              headers: {
+                'Accept': 'application/json',
+                'Content-Type': 'text/plain; charset=utf-8',
+                'User-Agent': 'HuzuraDavet/1.0 (NearbyMosques)',
+              },
+              body: query,
+            )
+            .timeout(const Duration(seconds: 35));
+
+        if (response.statusCode == 200) {
+          return response;
+        }
+
+        sonHata = Exception('HTTP ${response.statusCode}');
+        debugPrint('⚠️ Overpass başarısız [$endpoint]: ${response.statusCode}');
+      } catch (e) {
+        sonHata = e;
+        debugPrint('⚠️ Overpass erişim hatası [$endpoint]: $e');
+      }
+    }
+
+    throw Exception(
+      'Overpass servislerine bağlanılamadı (${sonHata ?? 'bilinmeyen hata'})',
+    );
+  }
+
+  String _hataMesajiOlustur(Object e) {
+    final mesaj = e.toString();
+    final lower = mesaj.toLowerCase();
+
+    if (lower.contains('timeout')) {
+      return 'İstek zaman aşımına uğradı. Konum veya internet gecikiyor olabilir. Lütfen tekrar deneyin.';
+    }
+
+    if (lower.contains('429')) {
+      return 'Cami servisi şu anda yoğun (HTTP 429). 1-2 dakika sonra tekrar deneyin.';
+    }
+
+    if (lower.contains('socketexception') ||
+        lower.contains('failed host lookup') ||
+        lower.contains('handshakeexception')) {
+      return 'İnternet bağlantısı veya ağ filtrelemesi nedeniyle cami verisi alınamadı. VPN/özel DNS/reklam engelleyici açıksa geçici olarak kapatıp tekrar deneyin.';
+    }
+
+    if (lower.contains('location')) {
+      return '${_languageService['could_not_get_location'] ?? 'Konum alınamadı. Lütfen GPS\'i açık alanda tekrar deneyin.'}\nDetay: $mesaj';
+    }
+
+    return 'Yakındaki camiler yüklenemedi.\nDetay: $mesaj';
   }
 
   @override
@@ -348,7 +451,7 @@ class _YakinCamilerSayfaState extends State<YakinCamilerSayfa> {
             ),
             const SizedBox(height: 8),
             Text(
-              '5 km ${_languageService['searching_within'] ?? 'yarıçapında arama yapılıyor'}',
+              '${(_aramaYaricapiMetre / 1000).toStringAsFixed(0)} km ${_languageService['searching_within'] ?? 'yarıçapında arama yapılıyor'}',
               style: TextStyle(
                 color: renkler.yaziSecondary.withValues(alpha: 0.7),
                 fontSize: 14,
@@ -396,7 +499,7 @@ class _YakinCamilerSayfaState extends State<YakinCamilerSayfa> {
                       ),
                       const SizedBox(height: 4),
                       Text(
-                        '${_camiler.length} ${_languageService['mosques_found'] ?? 'cami bulundu'} (2 km ${_languageService['within_km'] ?? 'içinde'})',
+                        '${_camiler.length} ${_languageService['mosques_found'] ?? 'cami bulundu'} (${(_aramaYaricapiMetre / 1000).toStringAsFixed(0)} km ${_languageService['within_km'] ?? 'içinde'})',
                         style: TextStyle(
                           color: renkler.yaziSecondary,
                           fontSize: 12,
