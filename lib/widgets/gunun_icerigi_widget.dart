@@ -82,12 +82,30 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
     return [];
   }
 
+  int _getMonthlyRotatingIndex({
+    required DateTime date,
+    required int length,
+    required int contentOffset,
+  }) {
+    if (length <= 0) return 0;
+
+    // Move the sequence base every month so consecutive months start differently.
+    final monthKey = date.year * 12 + date.month;
+    final monthOffset = (monthKey * 17 + contentOffset) % length;
+    final dayOffset = date.day - 1;
+
+    return (monthOffset + dayOffset) % length;
+  }
+
   Map<String, String> _getGununAyeti() {
     final verses = _getVerses();
     if (verses.isEmpty) return {'text': '', 'source': ''};
     final now = DateTime.now();
-    final dayOfYear = now.difference(DateTime(now.year, 1, 1)).inDays;
-    final index = dayOfYear % verses.length;
+    final index = _getMonthlyRotatingIndex(
+      date: now,
+      length: verses.length,
+      contentOffset: 0,
+    );
     return verses[index];
   }
 
@@ -95,8 +113,11 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
     final prayers = _getPrayers();
     if (prayers.isEmpty) return {'text': '', 'source': ''};
     final now = DateTime.now();
-    final dayOfYear = now.difference(DateTime(now.year, 1, 1)).inDays;
-    final index = (dayOfYear + 7) % prayers.length; // Offset for variation (+7).
+    final index = _getMonthlyRotatingIndex(
+      date: now,
+      length: prayers.length,
+      contentOffset: 7,
+    );
     return prayers[index];
   }
 
@@ -104,8 +125,11 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
     final hadiths = _getHadiths();
     if (hadiths.isEmpty) return {'text': '', 'source': ''};
     final now = DateTime.now();
-    final dayOfYear = now.difference(DateTime(now.year, 1, 1)).inDays;
-    final index = (dayOfYear + 14) % hadiths.length; // Offset for variation (+14).
+    final index = _getMonthlyRotatingIndex(
+      date: now,
+      length: hadiths.length,
+      contentOffset: 14,
+    );
     return hadiths[index];
   }
 
@@ -125,8 +149,7 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                (_languageService['todays_content'] ?? '')
-                    .toUpperCase(),
+                (_languageService['todays_content'] ?? '').toUpperCase(),
                 style: TextStyle(
                   color: renkler.yaziSecondary,
                   fontSize: 12,
@@ -161,24 +184,21 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
             },
             children: [
               _buildIcerikKart(
-                baslik: (_languageService['todays_verse'] ?? '')
-                    .toUpperCase(),
+                baslik: (_languageService['todays_verse'] ?? '').toUpperCase(),
                 icerik: gununAyeti['text'] ?? '',
                 kaynak: gununAyeti['source'] ?? '',
                 ikon: Icons.menu_book_rounded,
                 renkler: renkler,
               ),
               _buildIcerikKart(
-                baslik: (_languageService['todays_hadith'] ?? '')
-                    .toUpperCase(),
+                baslik: (_languageService['todays_hadith'] ?? '').toUpperCase(),
                 icerik: gununHadisi['text'] ?? '',
                 kaynak: gununHadisi['source'] ?? '',
                 ikon: Icons.star_rounded,
                 renkler: renkler,
               ),
               _buildIcerikKart(
-                baslik: (_languageService['todays_dua'] ?? '')
-                    .toUpperCase(),
+                baslik: (_languageService['todays_dua'] ?? '').toUpperCase(),
                 icerik: gununDuasi['text'] ?? '',
                 kaynak: gununDuasi['source'] ?? '',
                 ikon: Icons.favorite_rounded,

@@ -327,8 +327,7 @@ class DailyContentNotificationService {
         }
 
         // Daily tahajjud reminder
-        final tahajjudEnabled =
-            prefs.getBool(_tahajjudEnabledKey) ?? true;
+        final tahajjudEnabled = prefs.getBool(_tahajjudEnabledKey) ?? true;
         if (tahajjudEnabled) {
           final tahajjudTime = tz.TZDateTime(
             tz.local,
@@ -403,6 +402,21 @@ class DailyContentNotificationService {
     return [hour, minute];
   }
 
+  static int _getMonthlyRotatingIndex({
+    required DateTime date,
+    required int length,
+    required int contentOffset,
+  }) {
+    if (length <= 0) return 0;
+
+    // Move the sequence base every month so consecutive months start differently.
+    final monthKey = date.year * 12 + date.month;
+    final monthOffset = (monthKey * 17 + contentOffset) % length;
+    final dayOffset = date.day - 1;
+
+    return (monthOffset + dayOffset) % length;
+  }
+
   /// Schedule a notification (7-day system).
   static Future<void> _scheduleNotification({
     required int id,
@@ -417,17 +431,18 @@ class DailyContentNotificationService {
 
     final titleText = languageService[title] ?? title;
 
-    // Calculate content by day
-    final dayOfYear = scheduledDate
-        .difference(DateTime(scheduledDate.year, 1, 1))
-        .inDays;
+    // Calculate content by month and day.
     String bodyText = '';
 
     if (title == 'todays_verse') {
       // Daily verse from verses list
       final versesList = languageService['verses'];
       if (versesList is List && versesList.isNotEmpty) {
-        final index = dayOfYear % versesList.length;
+        final index = _getMonthlyRotatingIndex(
+          date: scheduledDate,
+          length: versesList.length,
+          contentOffset: 0,
+        );
         final verse = versesList[index];
         if (verse is Map) {
           final text = verse['text']?.toString() ?? '';
@@ -442,7 +457,11 @@ class DailyContentNotificationService {
       // Daily hadith from hadiths list
       final hadithsList = languageService['hadiths'];
       if (hadithsList is List && hadithsList.isNotEmpty) {
-        final index = (dayOfYear + 14) % hadithsList.length;
+        final index = _getMonthlyRotatingIndex(
+          date: scheduledDate,
+          length: hadithsList.length,
+          contentOffset: 14,
+        );
         final hadith = hadithsList[index];
         if (hadith is Map) {
           final text = hadith['text']?.toString() ?? '';
@@ -457,7 +476,11 @@ class DailyContentNotificationService {
       // Daily dua from prayers list
       final prayersList = languageService['prayers'];
       if (prayersList is List && prayersList.isNotEmpty) {
-        final index = (dayOfYear + 7) % prayersList.length;
+        final index = _getMonthlyRotatingIndex(
+          date: scheduledDate,
+          length: prayersList.length,
+          contentOffset: 7,
+        );
         final prayer = prayersList[index];
         if (prayer is Map) {
           final text = prayer['text']?.toString() ?? '';
@@ -523,9 +546,8 @@ class DailyContentNotificationService {
     String body;
     int id;
 
-    // Calculate today's content
+    // Calculate today's content by month/day rotation.
     final now = DateTime.now();
-    final dayOfYear = now.difference(DateTime(now.year, 1, 1)).inDays;
 
     switch (type) {
       case 'verse':
@@ -533,7 +555,11 @@ class DailyContentNotificationService {
         // Daily verse
         final versesList = languageService['verses'];
         if (versesList is List && versesList.isNotEmpty) {
-          final index = dayOfYear % versesList.length;
+          final index = _getMonthlyRotatingIndex(
+            date: now,
+            length: versesList.length,
+            contentOffset: 0,
+          );
           final verse = versesList[index];
           if (verse is Map) {
             final text = verse['text']?.toString() ?? '';
@@ -552,7 +578,11 @@ class DailyContentNotificationService {
         // Daily hadith
         final hadithsList = languageService['hadiths'];
         if (hadithsList is List && hadithsList.isNotEmpty) {
-          final index = (dayOfYear + 14) % hadithsList.length;
+          final index = _getMonthlyRotatingIndex(
+            date: now,
+            length: hadithsList.length,
+            contentOffset: 14,
+          );
           final hadith = hadithsList[index];
           if (hadith is Map) {
             final text = hadith['text']?.toString() ?? '';
@@ -571,7 +601,11 @@ class DailyContentNotificationService {
         // Daily dua
         final prayersList = languageService['prayers'];
         if (prayersList is List && prayersList.isNotEmpty) {
-          final index = (dayOfYear + 7) % prayersList.length;
+          final index = _getMonthlyRotatingIndex(
+            date: now,
+            length: prayersList.length,
+            contentOffset: 7,
+          );
           final prayer = prayersList[index];
           if (prayer is Map) {
             final text = prayer['text']?.toString() ?? '';
