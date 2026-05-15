@@ -1507,18 +1507,6 @@
     {"arabic": "الرَّشِيدُ", "name": "Er-Reşid", "meaning": "Doğru yolu gösteren"},
     {"arabic": "الصَّبُورُ", "name": "Es-Sabur", "meaning": "Çok sabırlı olan"}
   ],
-  "hadiths": [
-    {"text": "En sevimli amel, az da olsa devamlı olanıdır.", "source": "Buhârî, Müslim"},
-    {"text": "Fakirliği seven ve ona rıza gösteren kimse, benim sevgilimdir.", "source": "Tirmizî"},
-    {"text": "Size iki şey bırakıyorum, onlara sarıldıkça sapmazsınız: Allah'ın kitabı ve Peygamberinin sünneti.", "source": "Mâlik"},
-    {"text": "İnsanların iyisi, insanlara en faydalı olanıdır.", "source": "Dârimî"},
-    {"text": "Mü'min, mü'minin aynasıdır.", "source": "Ebû Dâvûd"},
-    {"text": "Kibirlenmek hakkı reddetmek ve insanları küçümsemektir.", "source": "Müslim"},
-    {"text": "Kim Allah için bir şey bırakırsa, Allah ona daha iyisini verir.", "source": "Ahmed"},
-    {"text": "Sevdiğin şeyleri infak etmedikçe iyiliğe eremezsiniz.", "source": "Âl-i İmrân, 92"},
-    {"text": "Haramdan sakınmak, farz ibadetlerin en faziletlisidir.", "source": "Beyhakî"}
-  ],
-  
   "compass_heading": "Pusula",
   "location_error_gps": "Konum alınamadı. Lütfen GPS'i açık alanda tekrar deneyin.",
   "compass_heading": "Pusula",
