@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -1066,6 +1067,12 @@ class TemaService extends ChangeNotifier {
             Brightness.dark
         ? Colors.white
         : Colors.black;
+    final isDarkTopBar =
+      ThemeData.estimateBrightnessForColor(surfaceCanli) == Brightness.dark;
+    final topBarIconBrightness =
+      isDarkTopBar ? Brightness.light : Brightness.dark;
+    final topBarPlatformBrightness =
+      isDarkTopBar ? Brightness.dark : Brightness.light;
 
     // Use try-catch while loading fonts - some fonts may fail to load
     TextTheme fontTextTheme;
@@ -1094,6 +1101,15 @@ class TemaService extends ChangeNotifier {
         backgroundColor: surfaceCanli.withOpacity(0.55),
         elevation: 0,
         centerTitle: true,
+        systemOverlayStyle: SystemUiOverlayStyle(
+          // Intentionally keep bar colors null for Android 15 edge-to-edge
+          // compatibility; only icon/contrast behavior is controlled.
+          statusBarIconBrightness: topBarIconBrightness,
+          statusBarBrightness: topBarPlatformBrightness,
+          systemNavigationBarIconBrightness: topBarIconBrightness,
+          systemStatusBarContrastEnforced: false,
+          systemNavigationBarContrastEnforced: false,
+        ),
         titleTextStyle: TextStyle(
           color: r.yaziPrimary,
           fontSize: 20,
