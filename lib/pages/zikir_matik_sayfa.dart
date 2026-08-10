@@ -131,30 +131,39 @@ class _ZikirMatikSayfaState extends State<ZikirMatikSayfa>
   }
 
   void _artir() async {
-    if (_titresimAcik) {
-      await VibrationService.light();
-    }
-    
     _pulseController.forward().then((_) => _pulseController.reverse());
     _rippleController.forward(from: 0.0);
 
+    final turTamamlandi = _sayac + 1 >= _hedef;
+
     setState(() {
-      _sayac++;
-      if (_sayac >= _hedef) {
+      if (turTamamlandi) {
         _toplamTur++;
         _sayac = 0;
-        if (_titresimAcik) {
-          _turTamamTitresim();
-        }
+      } else {
+        _sayac++;
       }
     });
+
+    // Hedefe ulaşıldığında hafif dokunuş titreşimi çalınmaz: iki titreşim
+    // arka arkaya tetiklenirse ikincisi birincisini kesiyor ve tur titreşimi
+    // hissedilmiyordu.
+    if (_titresimAcik) {
+      if (turTamamlandi) {
+        await _turTamamTitresim();
+      } else {
+        await VibrationService.light();
+      }
+    }
+
     _verileriKaydet();
   }
-  
+
   Future<void> _turTamamTitresim() async {
-    await VibrationService.heavy();
-    await Future.delayed(const Duration(milliseconds: 150));
-    await VibrationService.heavy();
+    // Tek bir dalga deseni olarak gönderiliyor. Ayrı ayrı gönderilen kısa
+    // vibrate() çağrıları bazı cihazlarda (ör. Xiaomi/HyperOS) birbirini
+    // iptal ettiği için tur tamamlama titreşimi hiç hissedilmiyordu.
+    await VibrationService.vibratePattern([0, 250, 150, 250, 150, 400]);
   }
 
   void _sifirla() async {

@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
+import 'package:share_plus/share_plus.dart';
 import '../services/tema_service.dart';
 import '../services/language_service.dart';
 
@@ -14,12 +16,25 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
   final LanguageService _languageService = LanguageService();
   final PageController _pageController = PageController();
   int _currentPage = 0;
+  Timer? _midnightTimer;
 
   @override
   void initState() {
     super.initState();
     _temaService.addListener(_onTemaChanged);
     _languageService.addListener(_onTemaChanged);
+    _scheduleMidnightRefresh();
+  }
+
+  void _scheduleMidnightRefresh() {
+    _midnightTimer?.cancel();
+    final now = DateTime.now();
+    final nextMidnight = DateTime(now.year, now.month, now.day + 1);
+    final duration = nextMidnight.difference(now);
+    _midnightTimer = Timer(duration, () {
+      if (mounted) setState(() {});
+      _scheduleMidnightRefresh();
+    });
   }
 
   void _onTemaChanged() {
@@ -28,6 +43,7 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
 
   @override
   void dispose() {
+    _midnightTimer?.cancel();
     _pageController.dispose();
     _temaService.removeListener(_onTemaChanged);
     _languageService.removeListener(_onTemaChanged);
@@ -131,6 +147,53 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
       contentOffset: 14,
     );
     return hadiths[index];
+  }
+
+  /// Kartın içeriğini sistemin paylaşım penceresiyle paylaşır.
+  Future<void> _paylas({
+    required BuildContext butonContext,
+    required String baslik,
+    required String icerik,
+    required String kaynak,
+  }) async {
+    if (icerik.trim().isEmpty) return;
+
+    final imza = (_languageService['shared_via'] ?? '').toString();
+    final metin = StringBuffer()
+      ..writeln(baslik)
+      ..writeln()
+      ..writeln('"${icerik.trim()}"');
+    if (kaynak.trim().isNotEmpty) {
+      metin
+        ..writeln()
+        ..writeln('— ${kaynak.trim()}');
+    }
+    if (imza.isNotEmpty) {
+      metin
+        ..writeln()
+        ..writeln(imza);
+    }
+
+    // iPad'de paylaşım penceresinin butondan açılması için konum bilgisi.
+    final kutu = butonContext.findRenderObject() as RenderBox?;
+    final konum = (kutu != null && kutu.hasSize)
+        ? kutu.localToGlobal(Offset.zero) & kutu.size
+        : null;
+
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          text: metin.toString().trim(),
+          subject: baslik,
+          sharePositionOrigin: konum,
+        ),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      final hata = (_languageService['share_failed'] ?? '').toString();
+      if (hata.isEmpty) return;
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(hata)));
+    }
   }
 
   @override
@@ -296,13 +359,48 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
                 child: Icon(ikon, color: renkler.vurgu, size: 18),
               ),
               const SizedBox(width: 10),
-              Text(
-                baslik,
-                style: TextStyle(
-                  color: renkler.vurgu,
-                  fontSize: 11,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.5,
+              Expanded(
+                child: Text(
+                  baslik,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: renkler.vurgu,
+                    fontSize: 11,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 1.5,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // Paylaş butonu.
+              Builder(
+                builder: (butonContext) => Material(
+                  color: Colors.transparent,
+                  child: InkWell(
+                    onTap: () => _paylas(
+                      butonContext: butonContext,
+                      baslik: baslik,
+                      icerik: icerik,
+                      kaynak: kaynak,
+                    ),
+                    borderRadius: BorderRadius.circular(10),
+                    child: Tooltip(
+                      message: (_languageService['share'] ?? '').toString(),
+                      child: Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: renkler.vurgu.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(
+                          Icons.share_rounded,
+                          color: renkler.vurgu,
+                          size: 16,
+                        ),
+                      ),
+                    ),
+                  ),
                 ),
               ),
             ],

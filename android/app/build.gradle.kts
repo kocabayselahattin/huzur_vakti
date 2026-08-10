@@ -86,6 +86,15 @@ flutter {
     source = "../.."
 }
 
+// Force older stable glance versions to avoid AGP 9.1+ / compileSdk 37 requirement
+// brought in by home_widget 0.9.x transitive deps.
+configurations.all {
+    resolutionStrategy {
+        force("androidx.glance:glance:1.1.1")
+        force("androidx.glance:glance-appwidget:1.1.1")
+    }
+}
+
 dependencies {
     coreLibraryDesugaring("com.android.tools:desugar_jdk_libs:2.1.4")
 }

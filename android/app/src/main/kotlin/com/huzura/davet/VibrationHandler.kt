@@ -1,6 +1,7 @@
 package com.huzura.davet
 
 import android.content.Context
+import android.media.AudioAttributes
 import android.os.Build
 import android.os.VibrationEffect
 import android.os.Vibrator
@@ -11,6 +12,19 @@ import io.flutter.plugin.common.MethodChannel
 class VibrationHandler {
     companion object {
         private const val CHANNEL = "huzur_vakti/vibration"
+
+        /**
+         * Titreşimin hangi amaçla yapıldığını sisteme bildirir.
+         *
+         * Amaç belirtilmeyen titreşimler bazı cihazlarda (ör. Xiaomi/HyperOS)
+         * "dokunsal geri bildirim" sistem ayarı kapalıyken tamamen bastırılıyor.
+         * USAGE_NOTIFICATION ile titreşim, kullanıcının uygulama içinden açtığı
+         * kasıtlı bir geri bildirim olarak değerlendirilir.
+         */
+        private val vibrationAttributes: AudioAttributes = AudioAttributes.Builder()
+            .setUsage(AudioAttributes.USAGE_NOTIFICATION)
+            .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+            .build()
 
         fun setup(flutterEngine: FlutterEngine, context: Context) {
             MethodChannel(flutterEngine.dartExecutor.binaryMessenger, CHANNEL)
@@ -47,11 +61,12 @@ class VibrationHandler {
             if (vibrator.hasVibrator()) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                     vibrator.vibrate(
-                        VibrationEffect.createOneShot(durationMs, VibrationEffect.DEFAULT_AMPLITUDE)
+                        VibrationEffect.createOneShot(durationMs, VibrationEffect.DEFAULT_AMPLITUDE),
+                        vibrationAttributes
                     )
                 } else {
                     @Suppress("DEPRECATION")
-                    vibrator.vibrate(durationMs)
+                    vibrator.vibrate(durationMs, vibrationAttributes)
                 }
             }
         }
@@ -67,10 +82,13 @@ class VibrationHandler {
 
             if (vibrator.hasVibrator()) {
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                    vibrator.vibrate(VibrationEffect.createWaveform(pattern, -1))
+                    vibrator.vibrate(
+                        VibrationEffect.createWaveform(pattern, -1),
+                        vibrationAttributes
+                    )
                 } else {
                     @Suppress("DEPRECATION")
-                    vibrator.vibrate(pattern, -1)
+                    vibrator.vibrate(pattern, -1, vibrationAttributes)
                 }
             }
         }

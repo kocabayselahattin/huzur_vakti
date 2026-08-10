@@ -750,7 +750,7 @@ class _TemaAyarlariSayfaState extends State<TemaAyarlariSayfa>
                             child: ListView.separated(
                               scrollDirection: Axis.horizontal,
                               itemCount: hizliRenkler.length,
-                              separatorBuilder: (_, __) =>
+                              separatorBuilder: (_, _) =>
                                   const SizedBox(width: 8),
                               itemBuilder: (context, index) {
                                 final color = hizliRenkler[index];

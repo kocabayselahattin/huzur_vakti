@@ -397,13 +397,19 @@ class AlarmService : Service() {
         Log.d(TAG, "🎵 Ses çalınıyor - ID: $soundId, Resource ID: $resId")
 
         mediaPlayer = MediaPlayer().apply {
-            setDataSource(applicationContext, android.net.Uri.parse("android.resource://$packageName/$resId"))
+            // ÖNEMLİ: Ses nitelikleri setDataSource()'dan ÖNCE ayarlanmalı.
+            // MediaPlayer yalnızca "Idle" durumundayken bu ayarı güvenilir
+            // biçimde uygular; sonradan verildiğinde bazı cihazlar (ör. Xiaomi)
+            // niteliği yok sayıp varsayılan MEDYA akışını kullanıyor ve alarm
+            // medya ses seviyesine bağlı kalıyordu.
             setAudioAttributes(
                 AudioAttributes.Builder()
                     .setUsage(AudioAttributes.USAGE_ALARM)
                     .setContentType(AudioAttributes.CONTENT_TYPE_SONIFICATION)
+                    .setFlags(AudioAttributes.FLAG_AUDIBILITY_ENFORCED)
                     .build()
             )
+            setDataSource(applicationContext, android.net.Uri.parse("android.resource://$packageName/$resId"))
             isLooping = false
             prepareAsync()
             setOnPreparedListener {

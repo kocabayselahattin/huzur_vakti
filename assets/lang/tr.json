@@ -1,4 +1,4 @@
-﻿{
+{
     "app_name":  "Huzura Davet",
     "prayer_times":  "Namaz Vakitleri",
     "imsak":  "İmsak",
@@ -53,6 +53,9 @@
     "todays_dua":  "Günün Duası",
     "todays_tahajjud":  "Teheccüd Hatırlatması",
     "swipe_for_more":  "Kaydırarak diğer içeriği görün",
+    "share":  "Paylaş",
+    "shared_via":  "Huzura Davet uygulaması ile paylaşıldı",
+    "share_failed":  "Paylaşım yapılamadı",
     "daily_content_notifications":  "Günlük İçerik Alarmları",
     "daily_content_notifications_desc":  "Her gün seçilen saatlerde günün ayeti, hadisi ve duası alarm olarak çalar",
     "daily_content_channel_name":  "Günlük İçerik",
@@ -77,7 +80,7 @@
     "hadith_time":  "Hadis Bildirimi",
     "prayer_time":  "Dua Bildirimi",
     "test_notification":  "Bildirimi Test Et",
-    "esmaul_husna":  "Esmaül Hüsna",
+    "esmaul_husna":  "Esma'ul Hüsna",
     "remaining":  "kaldı",
     "hours":  "saat",
     "minutes":  "dakika",
@@ -578,7 +581,7 @@
     "feature_custom_dhikr_desc":  "Kendi zikirlerinizi ekleyin, düzenleyin ve silin",
     "feature_dhikr_counter":  "Zikir Matik",
     "feature_dhikr_counter_desc":  "Dijital tesbih, sayaç ve titreşim özelliği ile zikirlerinizi takip edin",
-    "feature_esmaul_husna":  "Esmaül Hüsna",
+    "feature_esmaul_husna":  "Esma'ul Hüsna",
     "feature_esmaul_husna_desc":  "Allah\u0027ın 99 güzel ismi ve anlamları, günün esması özelliği",
     "feature_qibla":  "Kıble Yönü",
     "feature_qibla_desc":  "Pusula ve GPS ile kıble yönü ve derece bilgisi",
@@ -598,7 +601,7 @@
     "widget_settings_saved":  "Widget ayarları kaydedildi",
     "transparent_theme_desc":  "Arka planı tamamen şeffaf yapar",
     "save_and_apply_settings":  "Ayarları Kaydet ve Uygula",
-    "esmaul_husna_title":  "Esmaül Hüsna",
+    "esmaul_husna_title":  "Esma'ul Hüsna",
     "location_updated":  "Konum kaydedildi ve güncelleniyor...",
     "live_location_unavailable":  "Canlı konum alınamadı, son bilinen konum kullanıldı.",
     "calendar_page":  "İmsakiye",
@@ -1071,7 +1074,7 @@
     "country_canada":  "Kanada",
     "feature_prayer_times_desc":  "Konuma göre günlük vakitler, manuel şehir ve yurtdışı desteği",
     "feature_notifications_desc":  "Erken hatırlatıcı, vaktinde alarm, özel ses ve titreşim",
-    "feature_content_desc":  "Kur\u0027an, hadis, dualar, Esmaül Hüsna ve ibadet rehberi",
+    "feature_content_desc":  "Kur\u0027an, hadis, dualar, Esma'ul Hüsna ve ibadet rehberi",
     "feature_dhikr_desc":  "Dijital tesbih, hedef ve özel zikir listeleri",
     "feature_dual_calendar_desc":  "Miladi ve Hicri tarihlerin birlikte gösterimi",
     "feature_counters_desc":  "Farklı sayaç tasarımları ve kalan süre görünümü",
@@ -1238,8 +1241,8 @@
                        "source":  "Fâtır, 10"
                    },
                    {
-                       "text":  "Allah\u0027ın yardımı ve fetih geldiğinde...",
-                       "source":  "Nasr, 1"
+                       "text":  "Allah\u0027ın yardımı ve fetih geldiğinde, insanların Allah'ın dinine dalga dalga girdiğini gördüğünde Rabbini hamd ile tesbih et ve O'ndan bağışlama dile. Şüphesiz O, tevbeleri çok kabul edendir.",
+                       "source":  "Nasr, 1-3"
                    },
                    {
                        "text":  "De ki: Rabbim! İlmimi artır.",
@@ -1598,7 +1601,7 @@
                         "source":  "Buhârî"
                     },
                     {
-                        "text":  "Beş şey gelmeden önce beş şeyi ganimet bil: Ölümünden önce hayatını...",
+                        "text":  "Beş şey gelmeden önce beş şeyi ganimet bil: Ölümünden önce hayatını, hastalığından önce sağlığını, meşguliyetinden önce boş vaktini, ihtiyarlığından önce gençliğini, fakirliğinden önce zenginliğini.",
                         "source":  "Hâkim"
                     },
                     {

@@ -43,19 +43,14 @@ class _EsmaulHusnaSayfaState extends State<EsmaulHusnaSayfa> {
         decoration: renkler.arkaPlanGradient != null
             ? BoxDecoration(gradient: renkler.arkaPlanGradient)
             : null,
-        child: GridView.builder(
+        child: ListView.builder(
           padding: const EdgeInsets.all(16),
-          gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: 2,
-            crossAxisSpacing: 12,
-            mainAxisSpacing: 12,
-            childAspectRatio: 0.85,
-          ),
           itemCount: _getEsmaList().length,
           itemBuilder: (context, index) {
             final esma = _getEsmaList()[index];
             return Container(
-              padding: const EdgeInsets.all(16),
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
               decoration: BoxDecoration(
                 gradient: LinearGradient(
                   begin: Alignment.topLeft,
@@ -75,13 +70,13 @@ class _EsmaulHusnaSayfaState extends State<EsmaulHusnaSayfa> {
                   ),
                 ],
               ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
+              child: Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
                 children: [
                   // Number
                   Container(
-                    width: 32,
-                    height: 32,
+                    width: 36,
+                    height: 36,
                     decoration: BoxDecoration(
                       color: renkler.vurgu.withOpacity(0.2),
                       shape: BoxShape.circle,
@@ -92,47 +87,44 @@ class _EsmaulHusnaSayfaState extends State<EsmaulHusnaSayfa> {
                       style: TextStyle(
                         color: renkler.vurgu,
                         fontWeight: FontWeight.bold,
-                        fontSize: 14,
+                        fontSize: 13,
                       ),
                     ),
                   ),
-                  const SizedBox(height: 12),
-                  
+                  const SizedBox(width: 14),
                   // Arabic
                   Text(
                     esma['arabic']!,
                     style: TextStyle(
                       color: renkler.yaziPrimary,
-                      fontSize: 28,
+                      fontSize: 26,
                       fontWeight: FontWeight.bold,
                     ),
-                    textAlign: TextAlign.center,
+                    textDirection: TextDirection.rtl,
                   ),
-                  const SizedBox(height: 8),
-                  
-                  // Name
-                  Text(
-                    esma['name']!,
-                    style: TextStyle(
-                      color: renkler.vurgu,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w600,
-                    ),
-                    textAlign: TextAlign.center,
-                  ),
-                  const SizedBox(height: 8),
-                  
-                  // Meaning
+                  const SizedBox(width: 14),
+                  // Name and Meaning
                   Expanded(
-                    child: Text(
-                      esma['meaning']!,
-                      style: TextStyle(
-                        color: renkler.yaziSecondary,
-                        fontSize: 11,
-                      ),
-                      textAlign: TextAlign.center,
-                      maxLines: 3,
-                      overflow: TextOverflow.ellipsis,
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          esma['name']!,
+                          style: TextStyle(
+                            color: renkler.vurgu,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 4),
+                        Text(
+                          esma['meaning']!,
+                          style: TextStyle(
+                            color: renkler.yaziSecondary,
+                            fontSize: 12,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ],
