@@ -4,6 +4,7 @@ import 'package:share_plus/share_plus.dart';
 import '../services/tema_service.dart';
 import '../services/language_service.dart';
 import '../services/gunluk_hadis_dua_service.dart';
+import '../services/kuran_veri_service.dart';
 
 class GununIcerigiWidget extends StatefulWidget {
   const GununIcerigiWidget({super.key});
@@ -34,6 +35,15 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
 
   Future<void> _canliIcerigiYukle() async {
     final now = DateTime.now();
+
+    // Kur'an verisi arka planda yükleniyor olabilir; hazır olunca günün
+    // ayetini yeniden çizdir (yüklüyse anında döner).
+    unawaited(
+      KuranVeriService.yukle().then((_) {
+        if (mounted) setState(() {});
+      }),
+    );
+
     final results = await Future.wait([
       GunlukHadisDuaService.gununHadisi(now),
       GunlukHadisDuaService.gununDuasi(now),
@@ -318,6 +328,167 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
     );
   }
 
+  /// Kartta kayan metnin tamamını okunabilir bir pencerede gösterir.
+  /// Uzun ayet/hadis/duaların kayma bitmeden okunabilmesi için.
+  Future<void> _tamMetniGoster({
+    required String baslik,
+    required String icerik,
+    required String kaynak,
+    required IconData ikon,
+    required TemaRenkleri renkler,
+  }) async {
+    if (icerik.trim().isEmpty) return;
+
+    await showDialog<void>(
+      context: context,
+      barrierColor: Colors.black.withValues(alpha: 0.6),
+      builder: (dialogContext) {
+        final ekranYuksekligi = MediaQuery.of(dialogContext).size.height;
+        return Dialog(
+          backgroundColor: Colors.transparent,
+          insetPadding: const EdgeInsets.symmetric(
+            horizontal: 20,
+            vertical: 40,
+          ),
+          child: Container(
+            constraints: BoxConstraints(maxHeight: ekranYuksekligi * 0.8),
+            decoration: BoxDecoration(
+              gradient: LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [
+                  renkler.kartArkaPlan,
+                  renkler.kartArkaPlan.withValues(alpha: 0.92),
+                ],
+              ),
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: renkler.vurgu.withValues(alpha: 0.3),
+                width: 1,
+              ),
+            ),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                // Başlık satırı.
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 20, 12, 12),
+                  child: Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(8),
+                        decoration: BoxDecoration(
+                          color: renkler.vurgu.withValues(alpha: 0.15),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Icon(ikon, color: renkler.vurgu, size: 18),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: Text(
+                          baslik,
+                          style: TextStyle(
+                            color: renkler.vurgu,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                      ),
+                      IconButton(
+                        icon: Icon(
+                          Icons.close_rounded,
+                          color: renkler.yaziSecondary,
+                          size: 22,
+                        ),
+                        tooltip: _languageService['close'] ?? 'Kapat',
+                        onPressed: () => Navigator.pop(dialogContext),
+                      ),
+                    ],
+                  ),
+                ),
+
+                // Metnin tamamı - elle kaydırılabilir.
+                Flexible(
+                  child: SingleChildScrollView(
+                    padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
+                    child: Text(
+                      '"${icerik.trim()}"',
+                      style: TextStyle(
+                        color: renkler.yaziPrimary,
+                        fontSize: 16,
+                        height: 1.6,
+                        fontStyle: FontStyle.italic,
+                      ),
+                    ),
+                  ),
+                ),
+
+                // Kaynak ve paylaş.
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(20, 0, 20, 20),
+                  child: Row(
+                    children: [
+                      if (kaynak.trim().isNotEmpty)
+                        Flexible(
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
+                            decoration: BoxDecoration(
+                              color: renkler.vurgu.withValues(alpha: 0.1),
+                              borderRadius: BorderRadius.circular(8),
+                            ),
+                            child: Text(
+                              '— $kaynak',
+                              style: TextStyle(
+                                color: renkler.yaziSecondary,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w500,
+                              ),
+                            ),
+                          ),
+                        ),
+                      const Spacer(),
+                      Builder(
+                        builder: (butonContext) => Material(
+                          color: Colors.transparent,
+                          child: InkWell(
+                            onTap: () => _paylas(
+                              butonContext: butonContext,
+                              baslik: baslik,
+                              icerik: icerik,
+                              kaynak: kaynak,
+                            ),
+                            borderRadius: BorderRadius.circular(10),
+                            child: Container(
+                              padding: const EdgeInsets.all(8),
+                              decoration: BoxDecoration(
+                                color: renkler.vurgu.withValues(alpha: 0.15),
+                                borderRadius: BorderRadius.circular(10),
+                              ),
+                              child: Icon(
+                                Icons.share_rounded,
+                                color: renkler.vurgu,
+                                size: 18,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
   Widget _buildIcerikKart({
     required String baslik,
     required String icerik,
@@ -414,15 +585,25 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
 
           const SizedBox(height: 16),
 
-          // Content.
+          // Content. Metne dokunulunca tamamı popup'ta gösterilir.
           Expanded(
-            child: _AutoScrollingText(
-              text: '"$icerik"',
-              style: TextStyle(
-                color: renkler.yaziPrimary,
-                fontSize: 15,
-                height: 1.5,
-                fontStyle: FontStyle.italic,
+            child: GestureDetector(
+              onTap: () => _tamMetniGoster(
+                baslik: baslik,
+                icerik: icerik,
+                kaynak: kaynak,
+                ikon: ikon,
+                renkler: renkler,
+              ),
+              behavior: HitTestBehavior.opaque,
+              child: _AutoScrollingText(
+                text: '"$icerik"',
+                style: TextStyle(
+                  color: renkler.yaziPrimary,
+                  fontSize: 15,
+                  height: 1.5,
+                  fontStyle: FontStyle.italic,
+                ),
               ),
             ),
           ),

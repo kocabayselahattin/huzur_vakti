@@ -96,6 +96,7 @@ flutter:
     - assets/sounds/
     - assets/lang/
     - assets/data/kuran_meal.json
+    - assets/data/gunluk_icerik_havuzu.json
     - assets/icon/app_icon.png
     - assets/icon/sun.png
     - assets/icon/moon.png

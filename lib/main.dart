@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'dart:async';
 import 'dart:io';
 import 'package:intl/date_symbol_data_local.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
@@ -142,24 +143,55 @@ Future<void> _initializeDefaultNotificationSettings(
   }
 }
 
+/// Uygulama dil kodunu tarih biçimlendirme locale'ine çevirir.
+String _dateLocale(String dilKodu) {
+  switch (dilKodu) {
+    case 'en':
+      return 'en_US';
+    case 'de':
+      return 'de_DE';
+    case 'fr':
+      return 'fr_FR';
+    case 'ar':
+      return 'ar_SA';
+    case 'fa':
+      return 'fa_IR';
+    default:
+      return 'tr_TR';
+  }
+}
+
+/// Aktif dil dışındaki tarih verilerini arka planda hazırlar; kullanıcı dil
+/// değiştirdiğinde bekleme olmaması için.
+Future<void> _digerTarihLocaleleriYukle(String aktifDil) async {
+  const tumLocaleler = ['tr_TR', 'en_US', 'de_DE', 'fr_FR', 'ar_SA', 'fa_IR'];
+  final aktifLocale = _dateLocale(aktifDil);
+  for (final locale in tumLocaleler) {
+    if (locale == aktifLocale) continue;
+    try {
+      await initializeDateFormatting(locale, null);
+    } catch (_) {
+      // Bir locale yüklenemezse diğerlerini engellemesin.
+    }
+  }
+}
+
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
 
   // Lock app orientation to portrait.
   await SystemChrome.setPreferredOrientations([DeviceOrientation.portraitUp]);
 
-  // Initialize date formatting for supported locales.
-  const supportedDateLocales = [
-    'tr_TR',
-    'en_US',
-    'de_DE',
-    'fr_FR',
-    'ar_SA',
-    'fa_IR',
-  ];
-  for (final locale in supportedDateLocales) {
-    await initializeDateFormatting(locale, null);
-  }
+  // NOTE: DndService is no longer used - AlarmService checks "sessize_al"
+  // and silences the phone. The systems conflicted, now only AlarmService is active.
+  final prefs = await SharedPreferences.getInstance();
+
+  // Only the active language's date data is needed to render the first frame;
+  // loading all six locales here delayed startup for no visible benefit.
+  // The rest are warmed up in the background.
+  final aktifDil = prefs.getString('language') ?? 'tr';
+  await initializeDateFormatting(_dateLocale(aktifDil), null);
+  unawaited(_digerTarihLocaleleriYukle(aktifDil));
 
   // Initialize theme service.
   final temaService = TemaService();
@@ -169,53 +201,63 @@ void main() async {
   final languageService = LanguageService();
   await languageService.load();
 
-  // NOTE: DndService is no longer used - AlarmService checks "sessize_al"
-  // and silences the phone. The systems conflicted, now only AlarmService is active.
-  final prefs = await SharedPreferences.getInstance();
-
   // 🔔 Save default early notification values on first run.
   await _initializeDefaultNotificationSettings(prefs);
 
-  // Initialize notification infrastructure.
-  await NotificationService.initialize(null);
+  // Everything required to render the first frame is ready — show the UI now.
+  // The remaining work (notification scheduling, network sync, widget updates)
+  // does not affect what is on screen and used to run BEFORE runApp(), leaving
+  // the user on a blank screen for seconds while network calls completed.
+  runApp(const HuzurVaktiApp());
 
-  // Initialize scheduled notification service.
-  await ScheduledNotificationService.initialize();
+  unawaited(_arkaPlanBaslatma());
+}
 
-  // Initialize daily content notification service.
-  await DailyContentNotificationService.initialize();
-  await DailyContentNotificationService.scheduleDailyContentNotifications();
-
-  // 🗓️ Sync Hijri calendar with Turkey/Diyanet to avoid 1-day drift (Ramadan, Berat, etc.).
-  // MUST run before HomeWidgetService.initialize() so hijriNowTR() uses the correct shift.
-  await OzelGunlerService.syncHijriDayShiftWithDiyanet();
-
-  // Initialize Home Widget service and schedule background updates.
-  await HomeWidgetService.initialize();
-
+/// Runs after the first frame: nothing here blocks the UI.
+Future<void> _arkaPlanBaslatma() async {
   // Load the locally bundled Quran (Elmalılı Hamdi Yazır meali) for the
   // Quran page and the daily-verse card — works fully offline.
-  await KuranVeriService.yukle();
+  // Parsed in a background isolate; screens that need it await
+  // KuranVeriService.yukle() themselves.
+  unawaited(KuranVeriService.yukle());
 
-  // Start background widget updates on Android.
-  if (Platform.isAndroid) {
-    try {
-      await const MethodChannel(
-        'huzur_vakti/widgets',
-      ).invokeMethod('scheduleWidgetUpdates');
-    } catch (e) {
-      debugPrint('⚠️ Failed to start widget background updates: $e');
+  try {
+    // Initialize notification infrastructure.
+    await NotificationService.initialize(null);
+    await ScheduledNotificationService.initialize();
+    await DailyContentNotificationService.initialize();
+
+    // 🗓️ Sync Hijri calendar with Turkey/Diyanet to avoid 1-day drift (Ramadan, Berat, etc.).
+    // MUST run before HomeWidgetService.initialize() so hijriNowTR() uses the correct shift.
+    await OzelGunlerService.syncHijriDayShiftWithDiyanet();
+
+    // Initialize Home Widget service and schedule background updates.
+    await HomeWidgetService.initialize();
+
+    // Start background widget updates on Android.
+    if (Platform.isAndroid) {
+      try {
+        await const MethodChannel(
+          'huzur_vakti/widgets',
+        ).invokeMethod('scheduleWidgetUpdates');
+      } catch (e) {
+        debugPrint('⚠️ Failed to start widget background updates: $e');
+      }
     }
+
+    // 🔔 Reschedule alarms on app start.
+    // Restores alarms after boot or app updates.
+    await ScheduledNotificationService.scheduleAllPrayerNotifications();
+
+    // 🔔 Special day notifications (holy nights, holidays, etc.).
+    await OzelGunlerService.scheduleOzelGunBildirimleri();
+
+    // Scheduled last: it fetches each day's verse/hadith/dua, so it is the
+    // slowest step and the least urgent.
+    await DailyContentNotificationService.scheduleDailyContentNotifications();
+  } catch (e) {
+    debugPrint('⚠️ Background startup error: $e');
   }
-
-  // 🔔 Special day notifications (holy nights, holidays, etc.).
-  await OzelGunlerService.scheduleOzelGunBildirimleri();
-
-  // 🔔 Reschedule alarms on app start.
-  // Restores alarms after boot or app updates.
-  await ScheduledNotificationService.scheduleAllPrayerNotifications();
-
-  runApp(const HuzurVaktiApp());
 }
 
 class HuzurVaktiApp extends StatefulWidget {

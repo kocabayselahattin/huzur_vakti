@@ -6,6 +6,7 @@ import 'package:flutter/foundation.dart';
 import 'language_service.dart';
 import 'alarm_service.dart';
 import 'gunluk_hadis_dua_service.dart';
+import 'kuran_veri_service.dart';
 
 /// Daily content alarm service.
 /// Sends daily verse, hadith, and dua notifications at set times.
@@ -430,6 +431,10 @@ class DailyContentNotificationService {
     );
 
     if (title == 'todays_verse') {
+      // Kur'an verisi arka planda yüklendiği için burada hazır olmasını
+      // bekle; aksi halde bildirim yerel yedek havuzdan ayet alır ve
+      // ana ekrandaki kartla farklı içerik gösterir.
+      await KuranVeriService.yukle();
       final ayet = GunlukHadisDuaService.gununAyeti(icerikTarihi);
       final text = ayet['text'] ?? '';
       if (text.isNotEmpty) {
@@ -508,6 +513,7 @@ class DailyContentNotificationService {
     switch (type) {
       case 'verse':
         title = languageService['todays_verse'] ?? '';
+        await KuranVeriService.yukle();
         final ayet = GunlukHadisDuaService.gununAyeti(now);
         final ayetMetni = ayet['text'] ?? '';
         body = ayetMetni.isEmpty

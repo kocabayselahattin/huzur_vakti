@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'package:flutter/services.dart' show rootBundle;
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'kuran_veri_service.dart';
@@ -19,19 +20,52 @@ import 'language_service.dart';
 /// - İnternet yoksa dil dosyasındaki yerel havuza düşülür ve o metin de
 ///   önbelleğe yazılır, böylece tutarlılık yine korunur.
 class GunlukHadisDuaService {
-  static const _tekHadisBase =
-      'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/tur-bukhari';
+  static const _cdnBase =
+      'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions';
 
-  // Sahih-i Buhârî Türkçe edisyonunda hadis numaraları 1-7563 arası.
-  static const int _hadisMinNo = 1;
-  static const int _hadisMaxNo = 7563;
+  /// Havuz dosyası: hangi kitabın hangi hadis numaralarının günlük içerik
+  /// olarak kullanılabileceğini tutar. Metinlerin kendisi değil, yalnızca
+  /// numaralar burada; içerik her gün CDN'den tek tek çekilir.
+  ///
+  /// Numaralar önceden süzülmüştür (çeviri mevcut ve karta/bildirime sığacak
+  /// uzunlukta). Aksi halde uygun içeriği bulmak için ileri arama gerekiyor ve
+  /// ardışık günler aynı hadise düşebiliyordu.
+  static const _havuzAsset = 'assets/data/gunluk_icerik_havuzu.json';
 
-  // 80. Bölüm "Invocations" (Dualar): 6304-6411 arası.
-  static const int _duaMinNo = 6304;
-  static const int _duaMaxNo = 6411;
+  static List<_HavuzKaynagi>? _hadisKaynaklari;
+  static List<_HavuzKaynagi>? _duaKaynaklari;
+  static Future<void>? _havuzFuture;
 
-  // Kart ve bildirimde makul görünmesi için uzunluk sınırı (karakter).
-  static const int _maxUzunluk = 500;
+  static Future<void> _havuzuYukle() {
+    if (_hadisKaynaklari != null) return Future.value();
+    return _havuzFuture ??= _havuzuOku();
+  }
+
+  static Future<void> _havuzuOku() async {
+    try {
+      final jsonStr = await rootBundle.loadString(_havuzAsset);
+      final data = json.decode(jsonStr) as Map<String, dynamic>;
+      _hadisKaynaklari = _kaynaklariAyristir(data['hadis']);
+      _duaKaynaklari = _kaynaklariAyristir(data['dua']);
+    } catch (_) {
+      _havuzFuture = null;
+    }
+  }
+
+  static List<_HavuzKaynagi> _kaynaklariAyristir(dynamic liste) {
+    if (liste is! List) return [];
+    return liste
+        .whereType<Map<String, dynamic>>()
+        .map(
+          (k) => _HavuzKaynagi(
+            kitap: k['kitap']?.toString() ?? '',
+            kisaAd: k['kisa']?.toString() ?? '',
+            nolar: (k['nolar'] as List?)?.whereType<int>().toList() ?? const [],
+          ),
+        )
+        .where((k) => k.kitap.isNotEmpty && k.nolar.isNotEmpty)
+        .toList();
+  }
 
   static String _gunAnahtari(DateTime tarih) =>
       '${tarih.year}-${tarih.month}-${tarih.day}';
@@ -42,15 +76,35 @@ class GunlukHadisDuaService {
   static String _cacheKaynakKey(String tur, DateTime tarih) =>
       'gunluk_${tur}_kaynak_${_gunAnahtari(tarih)}';
 
-  /// Referans tarihten bu yana geçen gün sayısına göre [aralikBaslangic]
-  /// ile [aralikBitis] (dahil) arasında dönen bir hadis numarası üretir.
-  static int _gunlukNo(DateTime tarih, int aralikBaslangic, int aralikBitis) {
+  /// Referans tarihten bu yana geçen gün sayısı (tarihe göre deterministik).
+  static int _gunSayisi(DateTime tarih) {
     final referans = DateTime(2024, 1, 1);
     final bugun = DateTime(tarih.year, tarih.month, tarih.day);
-    final gunSayisi = bugun.difference(referans).inDays;
-    final genislik = aralikBitis - aralikBaslangic + 1;
-    final index = ((gunSayisi % genislik) + genislik) % genislik;
-    return aralikBaslangic + index;
+    return bugun.difference(referans).inDays;
+  }
+
+  /// Birden fazla kitabın numara listelerini tek bir sıralı havuz gibi ele
+  /// alır; verilen sıra numarasının hangi kitabın hangi hadisine denk
+  /// geldiğini döndürür. Havuzdaki her numara kullanılabilir olduğu için
+  /// ardışık günler farklı içerik alır.
+  static ({String kitap, String kisaAd, int no})? _havuzKonumu(
+    List<_HavuzKaynagi> kaynaklar,
+    int sira,
+  ) {
+    final toplam = kaynaklar.fold<int>(0, (t, k) => t + k.nolar.length);
+    if (toplam == 0) return null;
+    var kalan = ((sira % toplam) + toplam) % toplam;
+    for (final kaynak in kaynaklar) {
+      if (kalan < kaynak.nolar.length) {
+        return (
+          kitap: kaynak.kitap,
+          kisaAd: kaynak.kisaAd,
+          no: kaynak.nolar[kalan],
+        );
+      }
+      kalan -= kaynak.nolar.length;
+    }
+    return null;
   }
 
   /// Yerel yedek havuz için ay bazında dönen index (eski davranışla aynı).
@@ -76,10 +130,15 @@ class GunlukHadisDuaService {
     return temiz.trim();
   }
 
-  static Future<Map<String, String>?> _hadisNoGetir(int no) async {
+  /// Tek bir hadisi CDN'den çeker (~1 KB'lık istek).
+  static Future<Map<String, String>?> _hadisNoGetir(
+    String kitap,
+    String kisaAd,
+    int no,
+  ) async {
     try {
       final response = await http
-          .get(Uri.parse('$_tekHadisBase/$no.json'))
+          .get(Uri.parse('$_cdnBase/$kitap/$no.json'))
           .timeout(const Duration(seconds: 6));
       if (response.statusCode != 200) return null;
       final data = json.decode(utf8.decode(response.bodyBytes));
@@ -90,29 +149,30 @@ class GunlukHadisDuaService {
       if (metin.isEmpty) return null;
       return {
         'text': metin,
-        'source': 'Buhârî, ${ilk['hadithnumber']}',
+        'source': '$kisaAd, ${ilk['hadithnumber']}',
       };
     } catch (_) {
       return null;
     }
   }
 
-  /// [baslangicNo]'dan itibaren, uzunluğu uygun olan ilk hadisi bulana kadar
-  /// aralık içinde ileri doğru arar (en fazla [denemeSayisi] adım).
+  /// Havuzdaki [baslangicSira] konumundan başlayarak, uzunluğu karta/bildirime
+  /// sığan ilk hadisi arar. Aradaki numaralar eksik olabildiği (ve bazı
+  /// rivayetler çok uzun olduğu) için sırayla ilerler.
   static Future<Map<String, String>?> _uygunHadisBul({
-    required int baslangicNo,
-    required int aralikBaslangic,
-    required int aralikBitis,
-    int denemeSayisi = 8,
+    required List<_HavuzKaynagi> kaynaklar,
+    required int baslangicSira,
+    int denemeSayisi = 3,
   }) async {
-    var no = baslangicNo;
+    // Havuzdaki numaralar önceden süzülmüş olduğu için ilk deneme normalde
+    // başarılı olur; ek denemeler yalnızca geçici ağ hatalarına karşıdır.
     for (int i = 0; i < denemeSayisi; i++) {
-      final sonuc = await _hadisNoGetir(no);
-      if (sonuc != null && (sonuc['text'] ?? '').length <= _maxUzunluk) {
+      final konum = _havuzKonumu(kaynaklar, baslangicSira + i);
+      if (konum == null) return null;
+      final sonuc = await _hadisNoGetir(konum.kitap, konum.kisaAd, konum.no);
+      if (sonuc != null && (sonuc['text'] ?? '').isNotEmpty) {
         return sonuc;
       }
-      no++;
-      if (no > aralikBitis) no = aralikBaslangic;
     }
     return null;
   }
@@ -159,8 +219,7 @@ class GunlukHadisDuaService {
   static Future<Map<String, String>> _icerikGetir({
     required String tur,
     required DateTime tarih,
-    required int aralikBaslangic,
-    required int aralikBitis,
+    required bool duaMi,
     required String yerelListeAnahtari,
     required int yerelOffset,
   }) async {
@@ -176,12 +235,16 @@ class GunlukHadisDuaService {
       };
     }
 
-    final baslangicNo = _gunlukNo(tarih, aralikBaslangic, aralikBitis);
-    final agSonucu = await _uygunHadisBul(
-      baslangicNo: baslangicNo,
-      aralikBaslangic: aralikBaslangic,
-      aralikBitis: aralikBitis,
-    );
+    await _havuzuYukle();
+    final kaynaklar =
+        (duaMi ? _duaKaynaklari : _hadisKaynaklari) ?? const <_HavuzKaynagi>[];
+
+    final agSonucu = kaynaklar.isEmpty
+        ? null
+        : await _uygunHadisBul(
+            kaynaklar: kaynaklar,
+            baslangicSira: _gunSayisi(tarih),
+          );
 
     final sonuc = agSonucu ??
         _yerelHavuzdan(
@@ -204,20 +267,18 @@ class GunlukHadisDuaService {
     return _icerikGetir(
       tur: 'hadis',
       tarih: tarih,
-      aralikBaslangic: _hadisMinNo,
-      aralikBitis: _hadisMaxNo,
+      duaMi: false,
       yerelListeAnahtari: 'hadiths',
       yerelOffset: 14,
     );
   }
 
-  /// Günün duası (Buhârî, "Dualar/Da'avât" bölümü).
+  /// Günün duası (Buhârî, Müslim ve Tirmizî'nin dua/zikir bölümleri).
   static Future<Map<String, String>> gununDuasi(DateTime tarih) {
     return _icerikGetir(
       tur: 'dua',
       tarih: tarih,
-      aralikBaslangic: _duaMinNo,
-      aralikBitis: _duaMaxNo,
+      duaMi: true,
       yerelListeAnahtari: 'prayers',
       yerelOffset: 7,
     );
@@ -243,4 +304,23 @@ class GunlukHadisDuaService {
       }
     }
   }
+}
+
+/// Bir hadis kitabının, günlük içerik havuzunda kullanılabilir hadis
+/// numaraları. Metinler burada tutulmaz; her gün yalnızca seçilen numara
+/// CDN'den çekilir.
+class _HavuzKaynagi {
+  /// CDN'deki edisyon adı (ör. "tur-bukhari").
+  final String kitap;
+
+  /// Kaynakta gösterilecek kısa ad (ör. "Buhârî").
+  final String kisaAd;
+
+  final List<int> nolar;
+
+  const _HavuzKaynagi({
+    required this.kitap,
+    required this.kisaAd,
+    required this.nolar,
+  });
 }

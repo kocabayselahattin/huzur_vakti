@@ -1,4 +1,5 @@
 import 'dart:convert';
+import 'package:flutter/foundation.dart' show compute;
 import 'package:flutter/services.dart' show rootBundle;
 
 /// Cihazda yerel olarak gömülü tam Kur'an-ı Kerim verisini (Elmalılı Hamdi
@@ -28,14 +29,33 @@ class KuranVeriService {
     'Felak', 'Nâs',
   ];
 
+  static Future<void>? _yuklemeFuture;
+
   static bool get yuklendiMi => _veri != null;
 
   /// Yerel Kur'an verisini bir kez yükler ve bellekte tutar.
-  static Future<void> yukle() async {
-    if (_veri != null) return;
-    final jsonStr = await rootBundle.loadString('assets/data/kuran_meal.json');
-    _veri = json.decode(jsonStr) as Map<String, dynamic>;
+  ///
+  /// ~3 MB'lık JSON'un ayrıştırılması ayrı bir isolate'te (compute) yapılır;
+  /// aksi halde açılışta arayüz donar ve uygulama beyaz ekranda bekler.
+  /// Eşzamanlı çağrılar aynı yüklemeyi paylaşır, veri iki kez ayrıştırılmaz.
+  static Future<void> yukle() {
+    if (_veri != null) return Future.value();
+    return _yuklemeFuture ??= _yukleVeAyristir();
   }
+
+  static Future<void> _yukleVeAyristir() async {
+    try {
+      final jsonStr = await rootBundle.loadString('assets/data/kuran_meal.json');
+      _veri = await compute(_jsonAyristir, jsonStr);
+    } catch (_) {
+      // Yükleme başarısızsa çağıranlar yerel yedek içeriğe düşer.
+      _yuklemeFuture = null;
+    }
+  }
+
+  /// compute() ile ayrı isolate'te çalışır; üst düzey/static olmak zorundadır.
+  static Map<String, dynamic> _jsonAyristir(String jsonStr) =>
+      json.decode(jsonStr) as Map<String, dynamic>;
 
   /// Belirtilen sureye ait ayetleri döndürür.
   /// Her öğe: {'no': int, 'arapca': String, 'okunus': String, 'meal': String}

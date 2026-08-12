@@ -1889,7 +1889,10 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
 
   Future<void> _ayetleriYukle() async {
     // Cihazda gömülü tam Kur'an verisi (Elmalılı Hamdi Yazır meali) — internet
-    // gerektirmez, her sure için kullanılabilir.
+    // gerektirmez, her sure için kullanılabilir. Açılışta arka planda
+    // yüklendiği için burada hazır olması beklenir (yüklüyse anında döner).
+    await KuranVeriService.yukle();
+
     if (KuranVeriService.yuklendiMi) {
       final yerelAyetler = KuranVeriService.sureAyetleri(widget.sure.no);
       if (yerelAyetler.isNotEmpty) {
