@@ -12,6 +12,7 @@ import 'services/notification_service.dart';
 import 'services/scheduled_notification_service.dart';
 import 'services/daily_content_notification_service.dart';
 import 'services/ozel_gunler_service.dart';
+import 'services/kuran_veri_service.dart';
 
 /// Save default notification settings in SharedPreferences on first run.
 Future<void> _initializeDefaultNotificationSettings(
@@ -191,6 +192,10 @@ void main() async {
 
   // Initialize Home Widget service and schedule background updates.
   await HomeWidgetService.initialize();
+
+  // Load the locally bundled Quran (Elmalılı Hamdi Yazır meali) for the
+  // Quran page and the daily-verse card — works fully offline.
+  await KuranVeriService.yukle();
 
   // Start background widget updates on Android.
   if (Platform.isAndroid) {

@@ -3,6 +3,8 @@ import 'dart:async';
 import 'package:share_plus/share_plus.dart';
 import '../services/tema_service.dart';
 import '../services/language_service.dart';
+import '../services/kuran_veri_service.dart';
+import '../services/gunluk_hadis_dua_service.dart';
 
 class GununIcerigiWidget extends StatefulWidget {
   const GununIcerigiWidget({super.key});
@@ -18,12 +20,30 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
   int _currentPage = 0;
   Timer? _midnightTimer;
 
+  // Her gün canlı çekilen hadis/dua (fawazahmed0/hadith-api, Buhârî Türkçe).
+  Map<String, String>? _canliHadis;
+  Map<String, String>? _canliDua;
+
   @override
   void initState() {
     super.initState();
     _temaService.addListener(_onTemaChanged);
     _languageService.addListener(_onTemaChanged);
     _scheduleMidnightRefresh();
+    _canliIcerigiYukle();
+  }
+
+  Future<void> _canliIcerigiYukle() async {
+    final now = DateTime.now();
+    final results = await Future.wait([
+      GunlukHadisDuaService.gununHadisi(now),
+      GunlukHadisDuaService.gununDuasi(now),
+    ]);
+    if (!mounted) return;
+    setState(() {
+      if (results[0] != null) _canliHadis = results[0];
+      if (results[1] != null) _canliDua = results[1];
+    });
   }
 
   void _scheduleMidnightRefresh() {
@@ -33,6 +53,7 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
     final duration = nextMidnight.difference(now);
     _midnightTimer = Timer(duration, () {
       if (mounted) setState(() {});
+      _canliIcerigiYukle();
       _scheduleMidnightRefresh();
     });
   }
@@ -114,6 +135,14 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
   }
 
   Map<String, String> _getGununAyeti() {
+    // Yerel olarak gömülü tam Kur'an'dan (Elmalılı Hamdi Yazır meali) günün
+    // ayetini al — 6236 ayet boyunca tekrar etmeden yıllarca sürer.
+    if (KuranVeriService.yuklendiMi) {
+      final ayet = KuranVeriService.gununAyeti(DateTime.now());
+      if ((ayet['text'] ?? '').isNotEmpty) return ayet;
+    }
+
+    // Yedek: Kur'an verisi henüz yüklenmemişse eski küçük listeyi kullan.
     final verses = _getVerses();
     if (verses.isEmpty) return {'text': '', 'source': ''};
     final now = DateTime.now();
@@ -126,6 +155,10 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
   }
 
   Map<String, String> _getGununDuasi() {
+    // Her gün canlı çekilen dua (Buhârî, "Dualar" bölümü) hazırsa onu göster.
+    if (_canliDua != null) return _canliDua!;
+
+    // Yedek: canlı içerik henüz yüklenmemişse/başarısızsa yerel havuzu kullan.
     final prayers = _getPrayers();
     if (prayers.isEmpty) return {'text': '', 'source': ''};
     final now = DateTime.now();
@@ -138,6 +171,10 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
   }
 
   Map<String, String> _getGununHadisi() {
+    // Her gün canlı çekilen hadis (Sahih-i Buhârî, Türkçe) hazırsa onu göster.
+    if (_canliHadis != null) return _canliHadis!;
+
+    // Yedek: canlı içerik henüz yüklenmemişse/başarısızsa yerel havuzu kullan.
     final hadiths = _getHadiths();
     if (hadiths.isEmpty) return {'text': '', 'source': ''};
     final now = DateTime.now();
@@ -466,90 +503,96 @@ class _AutoScrollingText extends StatefulWidget {
 
 class _AutoScrollingTextState extends State<_AutoScrollingText> {
   final ScrollController _scrollController = ScrollController();
-  bool _isScrolling = false;
+
+  /// Kaydırma hızı (saniyede piksel) - okumaya yetişilebilir bir tempo.
+  static const double _hizPikselSaniye = 16;
+
+  /// Uçlara gelindiğinde ve başlangıçta verilen bekleme süreleri.
+  static const double _ucBeklemeSaniye = 3;
+  static const double _baslangicBeklemeSaniye = 2;
+
+  static const Duration _tickAraligi = Duration(milliseconds: 32);
+
+  Timer? _ticker;
+  bool _basiliTutuluyor = false;
+  double _kalanBekleme = _baslangicBeklemeSaniye;
+  int _yon = 1; // 1: aşağı, -1: yukarı
 
   @override
   void initState() {
     super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) => _startAutoScroll());
+    _tickerBaslat();
   }
 
   @override
   void didUpdateWidget(covariant _AutoScrollingText oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.text != widget.text) {
-      _isScrolling = false;
+      // İçerik değişti: başa dön ve kaydırmayı yeniden başlat.
       if (_scrollController.hasClients) {
         _scrollController.jumpTo(0);
       }
-      WidgetsBinding.instance.addPostFrameCallback((_) => _startAutoScroll());
+      _yon = 1;
+      _kalanBekleme = _baslangicBeklemeSaniye;
+      _tickerBaslat();
     }
   }
 
-  Future<void> _startAutoScroll() async {
-    if (_isScrolling) return;
-    _isScrolling = true;
+  void _tickerBaslat() {
+    _ticker?.cancel();
+    _ticker = Timer.periodic(_tickAraligi, (_) => _tick());
+  }
 
-    // İlk bekleme
-    await Future.delayed(const Duration(seconds: 2));
-    if (!mounted || !_scrollController.hasClients) {
-      _isScrolling = false;
+  void _tick() {
+    if (!mounted || !_scrollController.hasClients) return;
+
+    // Kullanıcı parmağını basılı tutuyorsa kaydırmayı beklet.
+    if (_basiliTutuluyor) return;
+
+    final dt = _tickAraligi.inMilliseconds / 1000;
+
+    if (_kalanBekleme > 0) {
+      _kalanBekleme -= dt;
       return;
     }
 
-    final maxScroll = _scrollController.position.maxScrollExtent;
-    if (maxScroll <= 0) {
-      _isScrolling = false;
-      return; // Kaydırmaya gerek yok, metin sığıyor
+    final max = _scrollController.position.maxScrollExtent;
+    if (max <= 0) return; // Metin sığıyor, kaydırmaya gerek yok.
+
+    final yeniOffset = _scrollController.offset + (_yon * _hizPikselSaniye * dt);
+
+    if (yeniOffset >= max) {
+      _scrollController.jumpTo(max);
+      _yon = -1;
+      _kalanBekleme = _ucBeklemeSaniye;
+    } else if (yeniOffset <= 0) {
+      _scrollController.jumpTo(0);
+      _yon = 1;
+      _kalanBekleme = _ucBeklemeSaniye;
+    } else {
+      _scrollController.jumpTo(yeniOffset);
     }
-
-    while (mounted && _scrollController.hasClients) {
-      try {
-        final max = _scrollController.position.maxScrollExtent;
-        if (max <= 0) break;
-
-        // Aşağı kaydır
-        final duration = Duration(
-          milliseconds: (max * 40).toInt().clamp(2000, 15000),
-        );
-        await _scrollController.animateTo(
-          max,
-          duration: duration,
-          curve: Curves.linear,
-        );
-
-        if (!mounted || !_scrollController.hasClients) break;
-        await Future.delayed(const Duration(seconds: 3));
-        if (!mounted || !_scrollController.hasClients) break;
-
-        // Yukarı kaydır
-        await _scrollController.animateTo(
-          0,
-          duration: duration,
-          curve: Curves.linear,
-        );
-
-        if (!mounted || !_scrollController.hasClients) break;
-        await Future.delayed(const Duration(seconds: 3));
-      } catch (_) {
-        break;
-      }
-    }
-    _isScrolling = false;
   }
 
   @override
   void dispose() {
+    _ticker?.cancel();
     _scrollController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      controller: _scrollController,
-      physics: const NeverScrollableScrollPhysics(),
-      child: Text(widget.text, style: widget.style),
+    // Parmak basılıyken kaydırmayı duraklat, kaldırınca devam ettir.
+    return Listener(
+      onPointerDown: (_) => _basiliTutuluyor = true,
+      onPointerUp: (_) => _basiliTutuluyor = false,
+      onPointerCancel: (_) => _basiliTutuluyor = false,
+      child: SingleChildScrollView(
+        controller: _scrollController,
+        physics: const NeverScrollableScrollPhysics(),
+        child: Text(widget.text, style: widget.style),
+      ),
     );
   }
 }

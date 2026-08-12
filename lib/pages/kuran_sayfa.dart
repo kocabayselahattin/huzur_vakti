@@ -1,9 +1,12 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
+import 'package:audioplayers/audioplayers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/tema_service.dart';
 import '../services/language_service.dart';
+import '../services/kuran_veri_service.dart';
+import '../services/kuran_ses_service.dart';
 
 class KuranSayfa extends StatefulWidget {
   const KuranSayfa({super.key});
@@ -1642,6 +1645,15 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
   bool _okumaModu = false; // false: theme colors, true: black & white mode
   int? _gorunenAyetNo;
 
+  // Sesli okuma
+  final AudioPlayer _sesOynatici = AudioPlayer();
+  int? _calanAyetNo;
+  bool _sesYukleniyor = false;
+  bool _sureIndirilmis = false;
+  bool _sureIndiriliyor = false;
+  int _indirmeTamamlanan = 0;
+  int _indirmeToplam = 0;
+
   @override
   void initState() {
     super.initState();
@@ -1649,6 +1661,10 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     _loadFontScale();
     _loadOkumaModu();
     _scrollController.addListener(_onScroll);
+    _sesIndirmeDurumunuKontrolEt();
+    _sesOynatici.onPlayerComplete.listen((_) {
+      if (mounted) setState(() => _calanAyetNo = null);
+    });
   }
 
   @override
@@ -1656,7 +1672,73 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     _scrollController.removeListener(_onScroll);
     _scrollController.dispose();
     _kaydetSonOkunanYer();
+    _sesOynatici.dispose();
     super.dispose();
+  }
+
+  Future<void> _sesIndirmeDurumunuKontrolEt() async {
+    final indirilmis = await KuranSesService.sureTamIndirilmisMi(
+      widget.sure.no,
+    );
+    if (mounted) setState(() => _sureIndirilmis = indirilmis);
+  }
+
+  Future<void> _ayetiCalDurdur(Ayet ayet) async {
+    if (_calanAyetNo == ayet.no) {
+      await _sesOynatici.stop();
+      if (mounted) setState(() => _calanAyetNo = null);
+      return;
+    }
+
+    setState(() {
+      _sesYukleniyor = true;
+      _calanAyetNo = ayet.no;
+    });
+
+    try {
+      final sonuc = await KuranSesService.calmaKaynagi(
+        widget.sure.no,
+        ayet.no,
+      );
+      await _sesOynatici.stop();
+      await _sesOynatici.play(
+        sonuc.yerel ? DeviceFileSource(sonuc.kaynak) : UrlSource(sonuc.kaynak),
+      );
+    } catch (e) {
+      if (mounted) setState(() => _calanAyetNo = null);
+    } finally {
+      if (mounted) setState(() => _sesYukleniyor = false);
+    }
+  }
+
+  Future<void> _sureyiIndir() async {
+    setState(() {
+      _sureIndiriliyor = true;
+      _indirmeTamamlanan = 0;
+      _indirmeToplam = _ayetler.length;
+    });
+
+    await KuranSesService.sureyiIndir(
+      widget.sure.no,
+      ilerleme: (tamamlanan, toplam) {
+        if (!mounted) return;
+        setState(() {
+          _indirmeTamamlanan = tamamlanan;
+          _indirmeToplam = toplam;
+        });
+      },
+    );
+
+    if (!mounted) return;
+    setState(() {
+      _sureIndiriliyor = false;
+      _sureIndirilmis = true;
+    });
+  }
+
+  Future<void> _sureSesiniSil() async {
+    await KuranSesService.sureyiSil(widget.sure.no);
+    if (mounted) setState(() => _sureIndirilmis = false);
   }
 
   void _onScroll() {
@@ -1806,7 +1888,33 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
   }
 
   Future<void> _ayetleriYukle() async {
-    // Preloaded data for short surahs
+    // Cihazda gömülü tam Kur'an verisi (Elmalılı Hamdi Yazır meali) — internet
+    // gerektirmez, her sure için kullanılabilir.
+    if (KuranVeriService.yuklendiMi) {
+      final yerelAyetler = KuranVeriService.sureAyetleri(widget.sure.no);
+      if (yerelAyetler.isNotEmpty) {
+        final tumAyetler = yerelAyetler
+            .map(
+              (a) => Ayet(
+                no: a['no'] is int
+                    ? a['no'] as int
+                    : int.tryParse(a['no']?.toString() ?? '') ?? 0,
+                arapca: a['arapca']?.toString() ?? '',
+                okunus: a['okunus']?.toString() ?? '',
+                meal: a['meal']?.toString() ?? '',
+              ),
+            )
+            .toList();
+        setState(() {
+          _ayetler = _filtreAyetler(tumAyetler);
+          _yukleniyor = false;
+        });
+        _scrollToBaslangicAyet();
+        return;
+      }
+    }
+
+    // Yedek: Kısa sureler için önceden hazırlanmış veri (dil dosyasından).
     final hazirAyetler = _getHazirAyetler(widget.sure.no);
     if (hazirAyetler.isNotEmpty) {
       setState(() {
@@ -1817,7 +1925,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
       return;
     }
 
-    // Attempt to fetch from API
+    // Son çare: API'den çekmeyi dene (yerel veri yoksa/yüklenemediyse)
     try {
       final response = await http.get(
         Uri.parse(
@@ -1947,6 +2055,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
             onPressed: _increaseFontSize,
             tooltip: _languageService['font_increase'] ?? 'Increase Font',
           ),
+          _buildSesIndirmeButonu(),
         ],
       ),
       body: Container(
@@ -2048,6 +2157,69 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     );
   }
 
+  Widget _buildSesIndirmeButonu() {
+    if (_sureIndiriliyor) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 12),
+        child: SizedBox(
+          width: 24,
+          height: 24,
+          child: Stack(
+            alignment: Alignment.center,
+            children: [
+              CircularProgressIndicator(
+                strokeWidth: 2,
+                color: _vurguRengi,
+                value: _indirmeToplam > 0
+                    ? _indirmeTamamlanan / _indirmeToplam
+                    : null,
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+    return IconButton(
+      icon: Icon(
+        _sureIndirilmis ? Icons.download_done : Icons.download_outlined,
+        color: _sureIndirilmis ? Colors.green : _yaziRengi,
+      ),
+      tooltip: _sureIndirilmis
+          ? (_languageService['audio_downloaded'] ?? 'Ses indirildi')
+          : (_languageService['download_audio'] ?? 'Sesli okuyuşu indir'),
+      onPressed: _sureIndirilmis ? _sureSesiniSilOnayla : _sureyiIndir,
+    );
+  }
+
+  Future<void> _sureSesiniSilOnayla() async {
+    final onay = await showDialog<bool>(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(
+          _languageService['delete_audio'] ?? 'Ses dosyalarını sil',
+        ),
+        content: Text(
+          _languageService['delete_audio_confirm'] ??
+              'Bu surenin indirilen ses dosyaları cihazdan silinsin mi?',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: Text(_languageService['cancel'] ?? 'Vazgeç'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: Text(_languageService['delete'] ?? 'Sil'),
+          ),
+        ],
+      ),
+    );
+    if (onay == true) {
+      await _sureSesiniSil();
+    }
+  }
+
   Widget _buildAyetKarti(Ayet ayet, TemaRenkleri renkler) {
     // Hide recitation/translation for Arabic or Persian
     final currentLang = _languageService.currentLanguage;
@@ -2108,6 +2280,32 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                     color: _okumaModu ? Colors.black87 : renkler.vurgu,
                     fontSize: 12,
                     fontWeight: FontWeight.w500,
+                  ),
+                ),
+                const SizedBox(width: 8),
+                InkWell(
+                  onTap: () => _ayetiCalDurdur(ayet),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: _calanAyetNo == ayet.no && _sesYukleniyor
+                        ? SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: _vurguRengi,
+                            ),
+                          )
+                        : Icon(
+                            _calanAyetNo == ayet.no
+                                ? Icons.stop_circle_outlined
+                                : Icons.play_circle_outline,
+                            color: _calanAyetNo == ayet.no
+                                ? _vurguRengi
+                                : (_okumaModu ? Colors.black54 : renkler.vurgu),
+                            size: 22,
+                          ),
                   ),
                 ),
               ],

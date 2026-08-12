@@ -95,6 +95,7 @@ flutter:
   assets:
     - assets/sounds/
     - assets/lang/
+    - assets/data/kuran_meal.json
     - assets/icon/app_icon.png
     - assets/icon/sun.png
     - assets/icon/moon.png
