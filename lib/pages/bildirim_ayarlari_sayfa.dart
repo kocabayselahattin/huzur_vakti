@@ -11,6 +11,7 @@ import '../services/scheduled_notification_service.dart';
 import '../services/daily_content_notification_service.dart';
 import '../services/early_reminder_service.dart';
 import '../services/language_service.dart';
+import '../services/ses_onizleme_service.dart';
 import '../services/tema_service.dart';
 
 class BildirimAyarlariSayfa extends StatefulWidget {
@@ -320,6 +321,7 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     super.initState();
     _temaService.addListener(_onTemaChanged);
     _languageService.addListener(_onTemaChanged);
+    SesOnizlemeService.bitisiDinle(_onSesBitti);
     _ayarlariYukle();
     _baslangicAyarlari();
   }
@@ -343,6 +345,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
   void dispose() {
     _temaService.removeListener(_onTemaChanged);
     _languageService.removeListener(_onTemaChanged);
+    SesOnizlemeService.dinlemeyiBirak(_onSesBitti);
+    SesOnizlemeService.durdur();
     _audioPlayer.dispose();
     super.dispose();
   }
@@ -690,38 +694,45 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     }
   }
 
+  /// Çalmakta olanı, hangi kaynaktan geldiğine bakmadan susturur.
+  Future<void> _sesiDurdur() async {
+    await _audioPlayer.stop();
+    await SesOnizlemeService.durdur();
+  }
+
+  /// Yerel taraftaki ses kendiliğinden bitince düğmeyi eski hâline alır.
+  void _onSesBitti() {
+    if (mounted) setState(() => _sesCalanKey = null);
+  }
+
   Future<void> _sesCal(String key, String sesId) async {
     try {
       if (_sesCalanKey == key) {
         // Stop if the same button was pressed
-        await _audioPlayer.stop();
+        await _sesiDurdur();
         setState(() => _sesCalanKey = null);
       } else {
         // If a different button was pressed, stop then play new
-        await _audioPlayer.stop();
+        await _sesiDurdur();
 
         if (sesId == 'custom' && _ozelSesDosyalari.containsKey(key)) {
-          // Play custom sound
+          // Cihazdan seçilen özel ses: dosya yolundan çalınır.
           await _audioPlayer.play(DeviceFileSource(_ozelSesDosyalari[key]!));
+
+          // Auto toggle when playback ends
+          _audioPlayer.onPlayerStateChanged.listen((state) {
+            if (state == PlayerState.stopped || state == PlayerState.completed) {
+              if (mounted) setState(() => _sesCalanKey = null);
+            }
+          });
         } else if (sesId != 'custom') {
-          // Resolve file name from ID
-          final sesSecenegi = _sesSecenekleri.firstWhere(
-            (s) => s['id'] == sesId,
-            orElse: () => _sesSecenekleri.first,
-          );
-          final sesDosyasi = sesSecenegi['dosya']!;
-          // Play asset sound
-          await _audioPlayer.play(AssetSource('sounds/$sesDosyasi'));
+          // Uygulamayla gelen ses: res/raw'dan yerel tarafta çalınır.
+          // Bitişi SesOnizlemeService dinleyicisinden gelir.
+          final basladi = await SesOnizlemeService.cal(sesId);
+          if (!basladi) throw Exception(sesId);
         }
 
         setState(() => _sesCalanKey = key);
-
-        // Auto toggle when playback ends
-        _audioPlayer.onPlayerStateChanged.listen((state) {
-          if (state == PlayerState.stopped || state == PlayerState.completed) {
-            setState(() => _sesCalanKey = null);
-          }
-        });
       }
     } catch (e) {
       setState(() => _sesCalanKey = null);

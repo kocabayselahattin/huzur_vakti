@@ -91,9 +91,10 @@ flutter:
   # the material Icons class.
   uses-material-design: true
 
-  # Ses dosyaları, dil dosyaları ve icon
+  # Dil dosyaları, veri ve icon
+  # Sesler burada değil: bildirim/alarm ile ön dinleme aynı dosyaları
+  # android/app/src/main/res/raw altından kullanır (bkz. SesOnizleme.kt).
   assets:
-    - assets/sounds/
     - assets/lang/
     - assets/data/kuran_meal.json
     - assets/data/gunluk_icerik_havuzu.json

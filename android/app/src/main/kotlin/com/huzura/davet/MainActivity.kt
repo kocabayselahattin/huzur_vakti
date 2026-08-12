@@ -71,6 +71,9 @@ class MainActivity : FlutterActivity() {
 		// Vibration Handler
 		VibrationHandler.setup(flutterEngine, this)
 
+		// Uygulama içi ses ön dinlemesi (res/raw'dan çalar)
+		SesOnizleme.setup(flutterEngine, this)
+
 		// Widget Channel
 		MethodChannel(flutterEngine.dartExecutor.binaryMessenger, widgetsChannelName)
 			.setMethodCallHandler { call, result ->
