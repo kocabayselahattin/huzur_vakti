@@ -5,6 +5,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter/foundation.dart';
 import 'language_service.dart';
 import 'alarm_service.dart';
+import 'gunluk_hadis_dua_service.dart';
 
 /// Daily content alarm service.
 /// Sends daily verse, hadith, and dua notifications at set times.
@@ -402,21 +403,6 @@ class DailyContentNotificationService {
     return [hour, minute];
   }
 
-  static int _getMonthlyRotatingIndex({
-    required DateTime date,
-    required int length,
-    required int contentOffset,
-  }) {
-    if (length <= 0) return 0;
-
-    // Move the sequence base every month so consecutive months start differently.
-    final monthKey = date.year * 12 + date.month;
-    final monthOffset = (monthKey * 17 + contentOffset) % length;
-    final dayOffset = date.day - 1;
-
-    return (monthOffset + dayOffset) % length;
-  }
-
   /// Schedule a notification (7-day system).
   static Future<void> _scheduleNotification({
     required int id,
@@ -434,62 +420,32 @@ class DailyContentNotificationService {
     // Calculate content by month and day.
     String bodyText = '';
 
+    // İçerik, ana ekrandaki "Günün İçeriği" kartıyla aynı kaynaktan gelir
+    // (GunlukHadisDuaService). Sonuç tarih anahtarlı önbelleğe yazıldığı için
+    // o gün geldiğinde kart ile bildirim birebir aynı içeriği gösterir.
+    final icerikTarihi = DateTime(
+      scheduledDate.year,
+      scheduledDate.month,
+      scheduledDate.day,
+    );
+
     if (title == 'todays_verse') {
-      // Daily verse from verses list
-      final versesList = languageService['verses'];
-      if (versesList is List && versesList.isNotEmpty) {
-        final index = _getMonthlyRotatingIndex(
-          date: scheduledDate,
-          length: versesList.length,
-          contentOffset: 0,
-        );
-        final verse = versesList[index];
-        if (verse is Map) {
-          final text = verse['text']?.toString() ?? '';
-          final source = verse['source']?.toString() ?? '';
-          bodyText = '$text\n📖 $source';
-        }
-      }
-      if (bodyText.isEmpty) {
-        bodyText = '';
+      final ayet = GunlukHadisDuaService.gununAyeti(icerikTarihi);
+      final text = ayet['text'] ?? '';
+      if (text.isNotEmpty) {
+        bodyText = '$text\n📖 ${ayet['source'] ?? ''}';
       }
     } else if (title == 'todays_hadith') {
-      // Daily hadith from hadiths list
-      final hadithsList = languageService['hadiths'];
-      if (hadithsList is List && hadithsList.isNotEmpty) {
-        final index = _getMonthlyRotatingIndex(
-          date: scheduledDate,
-          length: hadithsList.length,
-          contentOffset: 14,
-        );
-        final hadith = hadithsList[index];
-        if (hadith is Map) {
-          final text = hadith['text']?.toString() ?? '';
-          final source = hadith['source']?.toString() ?? '';
-          bodyText = '$text\n📿 $source';
-        }
-      }
-      if (bodyText.isEmpty) {
-        bodyText = '';
+      final hadis = await GunlukHadisDuaService.gununHadisi(icerikTarihi);
+      final text = hadis['text'] ?? '';
+      if (text.isNotEmpty) {
+        bodyText = '$text\n📿 ${hadis['source'] ?? ''}';
       }
     } else if (title == 'todays_dua') {
-      // Daily dua from prayers list
-      final prayersList = languageService['prayers'];
-      if (prayersList is List && prayersList.isNotEmpty) {
-        final index = _getMonthlyRotatingIndex(
-          date: scheduledDate,
-          length: prayersList.length,
-          contentOffset: 7,
-        );
-        final prayer = prayersList[index];
-        if (prayer is Map) {
-          final text = prayer['text']?.toString() ?? '';
-          final source = prayer['source']?.toString() ?? '';
-          bodyText = '$text\n🤲 $source';
-        }
-      }
-      if (bodyText.isEmpty) {
-        bodyText = '';
+      final dua = await GunlukHadisDuaService.gununDuasi(icerikTarihi);
+      final text = dua['text'] ?? '';
+      if (text.isNotEmpty) {
+        bodyText = '$text\n🤲 ${dua['source'] ?? ''}';
       }
     } else {
       bodyText = languageService[body] ?? body;
@@ -552,71 +508,27 @@ class DailyContentNotificationService {
     switch (type) {
       case 'verse':
         title = languageService['todays_verse'] ?? '';
-        // Daily verse
-        final versesList = languageService['verses'];
-        if (versesList is List && versesList.isNotEmpty) {
-          final index = _getMonthlyRotatingIndex(
-            date: now,
-            length: versesList.length,
-            contentOffset: 0,
-          );
-          final verse = versesList[index];
-          if (verse is Map) {
-            final text = verse['text']?.toString() ?? '';
-            final source = verse['source']?.toString() ?? '';
-            body = '$text\n📖 $source';
-          } else {
-            body = '';
-          }
-        } else {
-          body = '';
-        }
+        final ayet = GunlukHadisDuaService.gununAyeti(now);
+        final ayetMetni = ayet['text'] ?? '';
+        body = ayetMetni.isEmpty
+            ? ''
+            : '$ayetMetni\n📖 ${ayet['source'] ?? ''}';
         id = 9000;
         break;
       case 'hadith':
         title = languageService['todays_hadith'] ?? '';
-        // Daily hadith
-        final hadithsList = languageService['hadiths'];
-        if (hadithsList is List && hadithsList.isNotEmpty) {
-          final index = _getMonthlyRotatingIndex(
-            date: now,
-            length: hadithsList.length,
-            contentOffset: 14,
-          );
-          final hadith = hadithsList[index];
-          if (hadith is Map) {
-            final text = hadith['text']?.toString() ?? '';
-            final source = hadith['source']?.toString() ?? '';
-            body = '$text\n📿 $source';
-          } else {
-            body = '';
-          }
-        } else {
-          body = '';
-        }
+        final hadis = await GunlukHadisDuaService.gununHadisi(now);
+        final hadisMetni = hadis['text'] ?? '';
+        body = hadisMetni.isEmpty
+            ? ''
+            : '$hadisMetni\n📿 ${hadis['source'] ?? ''}';
         id = 9001;
         break;
       case 'prayer':
         title = languageService['todays_dua'] ?? '';
-        // Daily dua
-        final prayersList = languageService['prayers'];
-        if (prayersList is List && prayersList.isNotEmpty) {
-          final index = _getMonthlyRotatingIndex(
-            date: now,
-            length: prayersList.length,
-            contentOffset: 7,
-          );
-          final prayer = prayersList[index];
-          if (prayer is Map) {
-            final text = prayer['text']?.toString() ?? '';
-            final source = prayer['source']?.toString() ?? '';
-            body = '$text\n🤲 $source';
-          } else {
-            body = '';
-          }
-        } else {
-          body = '';
-        }
+        final dua = await GunlukHadisDuaService.gununDuasi(now);
+        final duaMetni = dua['text'] ?? '';
+        body = duaMetni.isEmpty ? '' : '$duaMetni\n🤲 ${dua['source'] ?? ''}';
         id = 9002;
         break;
       case 'tahajjud':

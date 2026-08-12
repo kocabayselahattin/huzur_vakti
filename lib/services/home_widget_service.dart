@@ -6,6 +6,7 @@ import 'diyanet_api_service.dart';
 import 'konum_service.dart';
 import 'ozel_gunler_service.dart';
 import 'language_service.dart';
+import 'gunluk_hadis_dua_service.dart';
 
 /// Service that updates Android home screen widgets.
 class HomeWidgetService {
@@ -573,23 +574,14 @@ class HomeWidgetService {
     return '';
   }
 
+  /// Günün hadisi — uygulama içi kart ve bildirimlerle aynı kaynaktan gelir,
+  /// böylece ana ekran widget'ı da aynı içeriği gösterir.
   static Future<Map<String, String>> _getGununHadisi() async {
-    final languageService = LanguageService();
-    final hadisler = languageService['hadiths'];
-    if (hadisler is List && hadisler.isNotEmpty) {
-      final dayOfYear = DateTime.now()
-          .difference(DateTime(DateTime.now().year, 1, 1))
-          .inDays;
-      final index = dayOfYear % hadisler.length;
-      final hadis = hadisler[index];
-      if (hadis is Map) {
-        return {
-          'metin': hadis['text']?.toString() ?? '',
-          'kaynak': hadis['source']?.toString() ?? '',
-        };
-      }
-    }
-    return {'metin': '', 'kaynak': ''};
+    final hadis = await GunlukHadisDuaService.gununHadisi(DateTime.now());
+    return {
+      'metin': hadis['text'] ?? '',
+      'kaynak': hadis['source'] ?? '',
+    };
   }
 
   static Map<String, String> _getGununEsmasi() {

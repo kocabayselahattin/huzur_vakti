@@ -2,13 +2,22 @@ import 'dart:async';
 import 'dart:convert';
 import 'package:http/http.dart' as http;
 import 'package:shared_preferences/shared_preferences.dart';
+import 'kuran_veri_service.dart';
+import 'language_service.dart';
 
-/// Günün hadisi ve günün duasını, ücretsiz/kayıtsız CDN üzerinden
-/// (fawazahmed0/hadith-api, Sahih-i Buhârî Türkçe çevirisi) her gün canlı
-/// olarak çeker. Tek hadis boyutu ~1KB olduğu için hafif ve hızlıdır.
+/// Günün ayeti / hadisi / duası için **tek kaynak**.
 ///
-/// Günlük sonuç SharedPreferences'ta önbelleklenir; internet yoksa (veya
-/// içerik uygunsuz uzunluktaysa) çağıran taraf yerel yedek havuza düşer.
+/// Hem ana ekrandaki "Günün İçeriği" kartı hem de günlük içerik bildirimleri
+/// buradan beslenir; böylece ikisi her zaman aynı içeriği gösterir.
+///
+/// - Ayet: cihazda gömülü tam Kur'an'dan (Elmalılı Hamdi Yazır meali) —
+///   tarihe göre deterministik, internet gerektirmez.
+/// - Hadis / Dua: ücretsiz ve kayıtsız CDN'den (fawazahmed0/hadith-api,
+///   Sahih-i Buhârî Türkçe çevirisi) çekilir. Sonuç **tarih anahtarlı** olarak
+///   önbelleğe yazılır; bildirimler ileri tarihler için önceden çektiğinde o
+///   gün gelince kart aynı önbellekten okur ve içerik birebir aynı olur.
+/// - İnternet yoksa dil dosyasındaki yerel havuza düşülür ve o metin de
+///   önbelleğe yazılır, böylece tutarlılık yine korunur.
 class GunlukHadisDuaService {
   static const _tekHadisBase =
       'https://cdn.jsdelivr.net/gh/fawazahmed0/hadith-api@1/editions/tur-bukhari';
@@ -21,19 +30,17 @@ class GunlukHadisDuaService {
   static const int _duaMinNo = 6304;
   static const int _duaMaxNo = 6411;
 
-  // Kart içinde makul görünmesi için uzunluk sınırı (karakter).
+  // Kart ve bildirimde makul görünmesi için uzunluk sınırı (karakter).
   static const int _maxUzunluk = 500;
-
-  static const _prefsHadisTarih = 'gunluk_hadis_tarih';
-  static const _prefsHadisMetin = 'gunluk_hadis_metin';
-  static const _prefsHadisKaynak = 'gunluk_hadis_kaynak';
-
-  static const _prefsDuaTarih = 'gunluk_dua_tarih';
-  static const _prefsDuaMetin = 'gunluk_dua_metin';
-  static const _prefsDuaKaynak = 'gunluk_dua_kaynak';
 
   static String _gunAnahtari(DateTime tarih) =>
       '${tarih.year}-${tarih.month}-${tarih.day}';
+
+  static String _cacheMetinKey(String tur, DateTime tarih) =>
+      'gunluk_${tur}_metin_${_gunAnahtari(tarih)}';
+
+  static String _cacheKaynakKey(String tur, DateTime tarih) =>
+      'gunluk_${tur}_kaynak_${_gunAnahtari(tarih)}';
 
   /// Referans tarihten bu yana geçen gün sayısına göre [aralikBaslangic]
   /// ile [aralikBitis] (dahil) arasında dönen bir hadis numarası üretir.
@@ -44,6 +51,19 @@ class GunlukHadisDuaService {
     final genislik = aralikBitis - aralikBaslangic + 1;
     final index = ((gunSayisi % genislik) + genislik) % genislik;
     return aralikBaslangic + index;
+  }
+
+  /// Yerel yedek havuz için ay bazında dönen index (eski davranışla aynı).
+  static int _yerelIndex({
+    required DateTime date,
+    required int length,
+    required int contentOffset,
+  }) {
+    if (length <= 0) return 0;
+    final monthKey = date.year * 12 + date.month;
+    final monthOffset = (monthKey * 17 + contentOffset) % length;
+    final dayOffset = date.day - 1;
+    return (monthOffset + dayOffset) % length;
   }
 
   /// Referans metninde geçen "Tekrar: 54, 2529...", "Diğer Tahric:: ..."
@@ -71,7 +91,6 @@ class GunlukHadisDuaService {
       return {
         'text': metin,
         'source': 'Buhârî, ${ilk['hadithnumber']}',
-        'no': no.toString(),
       };
     } catch (_) {
       return null;
@@ -98,59 +117,130 @@ class GunlukHadisDuaService {
     return null;
   }
 
-  /// Günün hadisini döndürür. Önce bugüne ait önbelleği kontrol eder,
-  /// yoksa canlı çeker ve önbelleğe alır. Başarısız olursa null döner
-  /// (çağıran taraf yerel yedek havuzu kullanmalı).
-  static Future<Map<String, String>?> gununHadisi(DateTime tarih) async {
-    final prefs = await SharedPreferences.getInstance();
-    final anahtar = _gunAnahtari(tarih);
-
-    if (prefs.getString(_prefsHadisTarih) == anahtar) {
-      final metin = prefs.getString(_prefsHadisMetin);
-      final kaynak = prefs.getString(_prefsHadisKaynak);
-      if (metin != null && metin.isNotEmpty) {
-        return {'text': metin, 'source': kaynak ?? ''};
+  static Map<String, String> _yerelHavuzdan({
+    required String listeAnahtari,
+    required DateTime tarih,
+    required int contentOffset,
+  }) {
+    final liste = LanguageService()[listeAnahtari];
+    if (liste is List && liste.isNotEmpty) {
+      final index = _yerelIndex(
+        date: tarih,
+        length: liste.length,
+        contentOffset: contentOffset,
+      );
+      final oge = liste[index];
+      if (oge is Map) {
+        return {
+          'text': oge['text']?.toString() ?? '',
+          'source': oge['source']?.toString() ?? '',
+        };
       }
     }
+    return {'text': '', 'source': ''};
+  }
 
-    final baslangicNo = _gunlukNo(tarih, _hadisMinNo, _hadisMaxNo);
-    final sonuc = await _uygunHadisBul(
-      baslangicNo: baslangicNo,
-      aralikBaslangic: _hadisMinNo,
-      aralikBitis: _hadisMaxNo,
+  /// Günün ayeti — gömülü tam Kur'an'dan, tarihe göre deterministik.
+  /// Kur'an verisi henüz yüklenmemişse yerel havuza düşer.
+  static Map<String, String> gununAyeti(DateTime tarih) {
+    if (KuranVeriService.yuklendiMi) {
+      final ayet = KuranVeriService.gununAyeti(tarih);
+      if ((ayet['text'] ?? '').isNotEmpty) return ayet;
+    }
+    return _yerelHavuzdan(
+      listeAnahtari: 'verses',
+      tarih: tarih,
+      contentOffset: 0,
     );
-    if (sonuc == null) return null;
+  }
 
-    await prefs.setString(_prefsHadisTarih, anahtar);
-    await prefs.setString(_prefsHadisMetin, sonuc['text']!);
-    await prefs.setString(_prefsHadisKaynak, sonuc['source']!);
+  /// Ortak akış: önbellek → ağ → yerel havuz. Sonuç her durumda önbelleğe
+  /// yazılır, böylece kart ve bildirim aynı içeriği gösterir.
+  static Future<Map<String, String>> _icerikGetir({
+    required String tur,
+    required DateTime tarih,
+    required int aralikBaslangic,
+    required int aralikBitis,
+    required String yerelListeAnahtari,
+    required int yerelOffset,
+  }) async {
+    final prefs = await SharedPreferences.getInstance();
+    final metinKey = _cacheMetinKey(tur, tarih);
+    final kaynakKey = _cacheKaynakKey(tur, tarih);
+
+    final onbellekMetin = prefs.getString(metinKey);
+    if (onbellekMetin != null && onbellekMetin.isNotEmpty) {
+      return {
+        'text': onbellekMetin,
+        'source': prefs.getString(kaynakKey) ?? '',
+      };
+    }
+
+    final baslangicNo = _gunlukNo(tarih, aralikBaslangic, aralikBitis);
+    final agSonucu = await _uygunHadisBul(
+      baslangicNo: baslangicNo,
+      aralikBaslangic: aralikBaslangic,
+      aralikBitis: aralikBitis,
+    );
+
+    final sonuc = agSonucu ??
+        _yerelHavuzdan(
+          listeAnahtari: yerelListeAnahtari,
+          tarih: tarih,
+          contentOffset: yerelOffset,
+        );
+
+    if ((sonuc['text'] ?? '').isNotEmpty) {
+      await prefs.setString(metinKey, sonuc['text']!);
+      await prefs.setString(kaynakKey, sonuc['source'] ?? '');
+      await _eskiOnbellegiTemizle(prefs);
+    }
+
     return sonuc;
   }
 
-  /// Günün duasını döndürür (Buhârî, 80. Bölüm "Dualar/Da'avât").
-  static Future<Map<String, String>?> gununDuasi(DateTime tarih) async {
-    final prefs = await SharedPreferences.getInstance();
-    final anahtar = _gunAnahtari(tarih);
+  /// Günün hadisi (Sahih-i Buhârî, Türkçe).
+  static Future<Map<String, String>> gununHadisi(DateTime tarih) {
+    return _icerikGetir(
+      tur: 'hadis',
+      tarih: tarih,
+      aralikBaslangic: _hadisMinNo,
+      aralikBitis: _hadisMaxNo,
+      yerelListeAnahtari: 'hadiths',
+      yerelOffset: 14,
+    );
+  }
 
-    if (prefs.getString(_prefsDuaTarih) == anahtar) {
-      final metin = prefs.getString(_prefsDuaMetin);
-      final kaynak = prefs.getString(_prefsDuaKaynak);
-      if (metin != null && metin.isNotEmpty) {
-        return {'text': metin, 'source': kaynak ?? ''};
-      }
-    }
-
-    final baslangicNo = _gunlukNo(tarih, _duaMinNo, _duaMaxNo);
-    final sonuc = await _uygunHadisBul(
-      baslangicNo: baslangicNo,
+  /// Günün duası (Buhârî, "Dualar/Da'avât" bölümü).
+  static Future<Map<String, String>> gununDuasi(DateTime tarih) {
+    return _icerikGetir(
+      tur: 'dua',
+      tarih: tarih,
       aralikBaslangic: _duaMinNo,
       aralikBitis: _duaMaxNo,
+      yerelListeAnahtari: 'prayers',
+      yerelOffset: 7,
     );
-    if (sonuc == null) return null;
+  }
 
-    await prefs.setString(_prefsDuaTarih, anahtar);
-    await prefs.setString(_prefsDuaMetin, sonuc['text']!);
-    await prefs.setString(_prefsDuaKaynak, sonuc['source']!);
-    return sonuc;
+  /// 30 günden eski önbellek kayıtlarını siler (SharedPreferences şişmesin).
+  static Future<void> _eskiOnbellegiTemizle(SharedPreferences prefs) async {
+    final sinir = DateTime.now().subtract(const Duration(days: 30));
+    for (final key in prefs.getKeys().toList()) {
+      if (!key.startsWith('gunluk_hadis_') && !key.startsWith('gunluk_dua_')) {
+        continue;
+      }
+      final parcalar = key.split('_');
+      if (parcalar.length < 4) continue;
+      final tarihParcalari = parcalar.last.split('-');
+      if (tarihParcalari.length != 3) continue;
+      final yil = int.tryParse(tarihParcalari[0]);
+      final ay = int.tryParse(tarihParcalari[1]);
+      final gun = int.tryParse(tarihParcalari[2]);
+      if (yil == null || ay == null || gun == null) continue;
+      if (DateTime(yil, ay, gun).isBefore(sinir)) {
+        await prefs.remove(key);
+      }
+    }
   }
 }

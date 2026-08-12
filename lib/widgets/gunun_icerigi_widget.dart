@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:share_plus/share_plus.dart';
 import '../services/tema_service.dart';
 import '../services/language_service.dart';
-import '../services/kuran_veri_service.dart';
 import '../services/gunluk_hadis_dua_service.dart';
 
 class GununIcerigiWidget extends StatefulWidget {
@@ -41,8 +40,8 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
     ]);
     if (!mounted) return;
     setState(() {
-      if (results[0] != null) _canliHadis = results[0];
-      if (results[1] != null) _canliDua = results[1];
+      if ((results[0]['text'] ?? '').isNotEmpty) _canliHadis = results[0];
+      if ((results[1]['text'] ?? '').isNotEmpty) _canliDua = results[1];
     });
   }
 
@@ -69,22 +68,6 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
     _temaService.removeListener(_onTemaChanged);
     _languageService.removeListener(_onTemaChanged);
     super.dispose();
-  }
-
-  List<Map<String, String>> _getVerses() {
-    final versesList = _languageService['verses'];
-    if (versesList is List) {
-      return versesList.map<Map<String, String>>((item) {
-        if (item is Map) {
-          return {
-            'text': item['text']?.toString() ?? '',
-            'source': item['source']?.toString() ?? '',
-          };
-        }
-        return {'text': '', 'source': ''};
-      }).toList();
-    }
-    return [];
   }
 
   List<Map<String, String>> _getPrayers() {
@@ -135,23 +118,9 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
   }
 
   Map<String, String> _getGununAyeti() {
-    // Yerel olarak gömülü tam Kur'an'dan (Elmalılı Hamdi Yazır meali) günün
-    // ayetini al — 6236 ayet boyunca tekrar etmeden yıllarca sürer.
-    if (KuranVeriService.yuklendiMi) {
-      final ayet = KuranVeriService.gununAyeti(DateTime.now());
-      if ((ayet['text'] ?? '').isNotEmpty) return ayet;
-    }
-
-    // Yedek: Kur'an verisi henüz yüklenmemişse eski küçük listeyi kullan.
-    final verses = _getVerses();
-    if (verses.isEmpty) return {'text': '', 'source': ''};
-    final now = DateTime.now();
-    final index = _getMonthlyRotatingIndex(
-      date: now,
-      length: verses.length,
-      contentOffset: 0,
-    );
-    return verses[index];
+    // Bildirimlerle aynı kaynaktan: gömülü tam Kur'an'ın Türkçe meali
+    // (Elmalılı Hamdi Yazır). Kur'an verisi yoksa yerel havuza düşer.
+    return GunlukHadisDuaService.gununAyeti(DateTime.now());
   }
 
   Map<String, String> _getGununDuasi() {

@@ -47,6 +47,9 @@ class KuranVeriService {
     return liste.cast<Map<String, dynamic>>();
   }
 
+  /// Günün ayeti havuzunu oluşturur. Tek başına gösterildiğinde anlamlı
+  /// olmayacak kadar kısa mealler (ör. huruf-u mukattaa: "Elif, lâm, mîm.")
+  /// havuza hiç alınmaz — böylece her gün farklı ve anlamlı bir ayet gelir.
   static void _siraliListeyiOlustur() {
     if (_tumAyetlerSirali != null) return;
     final veri = _veri;
@@ -60,13 +63,15 @@ class KuranVeriService {
       if (ayetler is! List) continue;
       for (final a in ayetler) {
         if (a is Map) {
+          final meal = a['meal']?.toString() ?? '';
+          if (meal.trim().length < _minMealUzunlugu) continue;
           sonuc.add(
             _FlatAyet(
               sureNo: sureNo,
               ayetNo: a['no'] is int
                   ? a['no'] as int
                   : int.tryParse(a['no']?.toString() ?? '') ?? 0,
-              meal: a['meal']?.toString() ?? '',
+              meal: meal,
             ),
           );
         }
@@ -75,9 +80,16 @@ class KuranVeriService {
     _tumAyetlerSirali = sonuc;
   }
 
+  /// Tek başına gösterildiğinde anlamlı olmayacak kadar kısa mealler
+  /// (ör. huruf-u mukattaa: "Elif, lâm, mîm.") için alt sınır.
+  static const int _minMealUzunlugu = 30;
+
   /// Günün ayetini Kur'an sırasına göre (Fatiha 1'den başlayarak) döndürür.
   /// Sabit bir referans tarihe göre gün saydığı için her gün farklı bir ayet
   /// gösterir ve tüm Kur'an'ı bitirmesi ~17 yıl sürer.
+  ///
+  /// Çok kısa mealler atlanır; bu seçim tarihe bağlı olarak deterministiktir,
+  /// yani kart, bildirim ve ana ekran widget'ı hep aynı ayeti gösterir.
   static Map<String, String> gununAyeti(DateTime tarih) {
     _siraliListeyiOlustur();
     final liste = _tumAyetlerSirali;
@@ -86,17 +98,16 @@ class KuranVeriService {
     final referans = DateTime(2024, 1, 1);
     final bugun = DateTime(tarih.year, tarih.month, tarih.day);
     final gunSayisi = bugun.difference(referans).inDays;
-    final index = gunSayisi % liste.length;
-    final normalizedIndex = index < 0 ? index + liste.length : index;
+    final index = ((gunSayisi % liste.length) + liste.length) % liste.length;
+    final secilen = liste[index];
 
-    final ayet = liste[normalizedIndex];
-    final sureAdi = ayet.sureNo >= 1 && ayet.sureNo <= sureAdlari.length
-        ? sureAdlari[ayet.sureNo - 1]
+    final sureAdi = secilen.sureNo >= 1 && secilen.sureNo <= sureAdlari.length
+        ? sureAdlari[secilen.sureNo - 1]
         : '';
 
     return {
-      'text': ayet.meal,
-      'source': '$sureAdi, ${ayet.ayetNo}',
+      'text': secilen.meal,
+      'source': '$sureAdi, ${secilen.ayetNo}',
     };
   }
 }

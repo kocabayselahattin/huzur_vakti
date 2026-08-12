@@ -48,6 +48,15 @@ class AlarmService : Service() {
         const val ACTION_EXIT_SILENT = "com.huzura.davet.EXIT_SILENT"  // Çık butonu
         const val ACTION_AUTO_EXIT_SILENT = "com.huzura.davet.AUTO_EXIT_SILENT" // Otomatik sessiz moddan çıkış
         private const val AUTO_EXIT_ALARM_ID = 999888 // Otomatik çıkış alarm ID'si
+
+        // Alarm bildirimi setFullScreenIntent ile ekranı kendisi açtığı için,
+        // alarmın ilk anlarında gelen SCREEN_ON olayı kullanıcıdan değil
+        // alarmın kendisinden gelir. Yalnızca bu durumu filtrelemek için
+        // kullanılır; ses tuşu ve ekran KAPATMA her zaman alarmı susturur.
+        private const val SELF_TRIGGER_GRACE_MS = 3000L
+
+        // Ses seviyesi değişimi yayını (resmî sabit olarak açılmamıştır).
+        private const val VOLUME_CHANGED_ACTION = "android.media.VOLUME_CHANGED_ACTION"
         
         @Volatile
         private var instance: AlarmService? = null
@@ -67,6 +76,16 @@ class AlarmService : Service() {
     private val handler = Handler(Looper.getMainLooper())
     private var wakeLock: PowerManager.WakeLock? = null
     private var isPlaying = false
+
+    // Alarmın başladığı an. Alarm bildirimi setFullScreenIntent ile ekranı
+    // kendisi açtığı ve sistem bu sırada ses ayarlarına dokunabildiği için,
+    // ilk saniyelerdeki SCREEN_ON / ses değişikliği olayları yok sayılır.
+    // Aksi halde alarm kendi tetiklediği olayla anında kendini susturuyordu.
+    private var alarmStartTime = 0L
+
+    // Ses tuşu algılamasında yanlış pozitifleri önlemek için son alarm ses
+    // seviyesi; ContentObserver tetiklendiğinde gerçekten değişmiş mi bakılır.
+    private var lastAlarmVolume = -1
 
     // Alarm bilgilerini saklayarak kalıcı bildirim ve sessiz mod için kullanma
     private var currentVakitName = ""
@@ -158,12 +177,30 @@ class AlarmService : Service() {
                         Log.d(TAG, "📴 Ekran kapandı (güç/kilit tuşu), alarm durduruluyor...")
                         stopAlarm()
                     }
+                    VOLUME_CHANGED_ACTION -> {
+                        // ContentObserver bazı cihazlarda ses tuşunu güvenilir
+                        // yakalayamıyor; bu yayın ek güvence sağlar. Kullanıcı
+                        // eylemi olduğu için koruma süresi uygulanmaz.
+                        if (isPlaying) {
+                            Log.d(TAG, "🔊 Ses tuşu yayını alındı, alarm durduruluyor...")
+                            stopAlarm()
+                        }
+                    }
                     Intent.ACTION_SCREEN_ON -> {
                         // Ekran tekrar açıldı ama alarm hala çalıyorsa durdur
                         // (İlk tuşta durmadıysa ikinci tuşta kesin durdur)
-                        if (isPlaying) {
+                        //
+                        // DİKKAT: Alarm bildirimi setFullScreenIntent ile ekranı
+                        // kendisi açıyor. Bu yüzden alarmın ilk saniyelerinde
+                        // gelen SCREEN_ON kullanıcıdan değil, alarmın kendisinden
+                        // gelir ve yok sayılmalıdır; aksi halde alarm çalar
+                        // çalmaz kendi kendini susturur.
+                        val gecenSure = System.currentTimeMillis() - alarmStartTime
+                        if (isPlaying && gecenSure > SELF_TRIGGER_GRACE_MS) {
                             Log.d(TAG, "📱 Ekran açıldı ama alarm hala çalıyor, durduruluyor...")
                             stopAlarm()
+                        } else if (isPlaying) {
+                            Log.d(TAG, "⏳ Ekran açılması alarmın kendisinden (${gecenSure}ms), yok sayıldı")
                         }
                     }
                 }
@@ -173,9 +210,13 @@ class AlarmService : Service() {
         val filter = IntentFilter().apply {
             addAction(Intent.ACTION_SCREEN_OFF)
             addAction(Intent.ACTION_SCREEN_ON)
+            addAction(VOLUME_CHANGED_ACTION)
         }
+        // VOLUME_CHANGED_ACTION sistem tarafından yayınlandığı için alıcının
+        // dışa açık (exported) olması gerekir; RECEIVER_NOT_EXPORTED ile
+        // kayıtlanırsa bu yayın hiç ulaşmaz.
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-            registerReceiver(screenOffReceiver, filter, Context.RECEIVER_NOT_EXPORTED)
+            registerReceiver(screenOffReceiver, filter, Context.RECEIVER_EXPORTED)
         } else {
             registerReceiver(screenOffReceiver, filter)
         }
@@ -208,13 +249,27 @@ class AlarmService : Service() {
     private fun registerVolumeObserver() {
         if (volumeObserver != null) return // Zaten kayıtlı
 
+        val audioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+        lastAlarmVolume = audioManager.getStreamVolume(AudioManager.STREAM_ALARM)
+
         volumeObserver = object : ContentObserver(handler) {
             override fun onChange(selfChange: Boolean) {
                 super.onChange(selfChange)
-                if (isPlaying) {
-                    Log.d(TAG, "🔊 Ses seviyesi değişti (ses tuşu), alarm durduruluyor...")
-                    stopAlarm()
-                }
+                if (!isPlaying) return
+
+                // Settings.System.CONTENT_URI çok geniş bir alan dinler; ses
+                // dışındaki sistem ayarı değişiklikleri de buraya düşer.
+                // Bu yüzden alarm ses seviyesi gerçekten değişmiş mi bakılır,
+                // yoksa alarm alakasız bir ayar değişikliğiyle susuyordu.
+                // Ses seviyesi gerçekten değiştiyse bu kullanıcının ses tuşuna
+                // basmasıdır; alarm KOŞULSUZ ve anında susar (koruma süresi
+                // uygulanmaz, aksi halde kullanıcı alarmı susturamazdı).
+                val currentVolume = audioManager.getStreamVolume(AudioManager.STREAM_ALARM)
+                if (currentVolume == lastAlarmVolume) return
+                lastAlarmVolume = currentVolume
+
+                Log.d(TAG, "🔊 Ses seviyesi değişti (ses tuşu), alarm durduruluyor...")
+                stopAlarm()
             }
         }
 
@@ -317,6 +372,30 @@ class AlarmService : Service() {
         val contentBody = intent?.getStringExtra("content_body") // Günlük içerik için
         val isDailyContent = intent?.action == "DAILY_CONTENT_ALARM"
 
+        // AlarmService tek bir servis örneği üzerinden çalışır; vakit alarmı,
+        // erken hatırlatma ve günlük içerik alarmı aynı servisi kullanır.
+        // Zaten çalan bir alarm varken yeni bir alarm gelirse, aşağıdaki
+        // playSound() mevcut MediaPlayer'ı release edip çalan sesi yarıda
+        // keserdi. Bu durumda çalan alarma dokunmuyoruz.
+        if (isPlaying) {
+            Log.w(TAG, "⚠️ Zaten bir alarm çalıyor ($currentVakitName), yeni alarm ($vakitName) sesi başlatılmadı")
+            // startForegroundService() çağrısının kontratı gereği servis kısa
+            // sürede startForeground() çağırmak zorunda; çalan alarmın kendi
+            // bildirimini yeniden yayınlayarak bunu karşılıyoruz.
+            createNotificationChannels()
+            val mevcutAudioManager = getSystemService(Context.AUDIO_SERVICE) as AudioManager
+            val mevcutSessiz = mevcutAudioManager.ringerMode == AudioManager.RINGER_MODE_SILENT ||
+                mevcutAudioManager.ringerMode == AudioManager.RINGER_MODE_VIBRATE
+            val mevcutKanal = if (mevcutSessiz) CHANNEL_ID_SILENT else CHANNEL_ID_ALARM
+            val mevcutBildirim = if (currentIsDailyContent) {
+                createDailyContentNotification(currentVakitName, currentContentBody, mevcutKanal)
+            } else {
+                createAlarmNotification(currentVakitName, currentIsEarly, currentEarlyMinutes, mevcutKanal)
+            }
+            startForeground(NOTIFICATION_ID, mevcutBildirim)
+            return
+        }
+
         // Alarm bilgilerini sakla (kalıcı bildirim ve sessiz mod için)
         currentVakitName = vakitName
         currentIsEarly = isEarly
@@ -334,7 +413,11 @@ class AlarmService : Service() {
         wasPhoneSilentBefore = isSilentOrVibrate
 
         Log.d(TAG, "📱 Telefon modu: $ringerMode (Sessiz/Titreşim: $isSilentOrVibrate)")
-        
+
+        // Alarmın kendi tetiklediği ekran açılması / ses ayarı değişikliğiyle
+        // anında susmasını önleyen koruma süresinin başlangıcı.
+        alarmStartTime = System.currentTimeMillis()
+
         createNotificationChannels()
 
         val channelId = if (isSilentOrVibrate) CHANNEL_ID_SILENT else CHANNEL_ID_ALARM
@@ -767,8 +850,16 @@ class AlarmService : Service() {
             PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
         )
 
-        val title = if (isEarly) "$vakitName Vakti Yaklaşıyor" else "$vakitName Vakti Girdi"
-        val body = if (isEarly) "$vakitName vaktine $earlyMinutes dakika kaldı." else "Hayırlı ibadetler!"
+        // Alarm ÇALARKEN gösterilen bildirim. "Vakti Girdi / Hayırlı ibadetler"
+        // mesajı burada gösterilmez; o mesaj alarm bittikten sonra
+        // showPersistentNotification() ile gelir. Böylece kullanıcı önce
+        // alarmı dinler, ardından vakit bildirimini görür.
+        val title = if (isEarly) "$vakitName Vakti Yaklaşıyor" else "🔔 $vakitName Vakti"
+        val body = if (isEarly) {
+            "$vakitName vaktine $earlyMinutes dakika kaldı."
+        } else {
+            "Alarm çalıyor — durdurmak için dokunun"
+        }
 
         return NotificationCompat.Builder(this, channelId)
             .setSmallIcon(R.mipmap.ic_launcher)
