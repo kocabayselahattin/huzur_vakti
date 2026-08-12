@@ -92,14 +92,14 @@ class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
     if (_paylasiliyor) return;
     setState(() => _paylasiliyor = true);
 
-    // Görselin metin karşılığı da eklenir: görseli açamayan uygulamalarda
-    // (veya kopyalarken) içerik yine okunabilir kalsın.
+    // Yalnızca görsel gönderilir; metin eklenmez. Aksi halde WhatsApp gibi
+    // uygulamalar kartın yanına bir de aynı içeriği yazı olarak koyuyor.
+    // İçeriğin yazılı hâlini isteyen "Metin olarak" düğmesini kullanır.
     // Beklenmedik bir hata çıksa bile düğme "yükleniyor"da kilitli kalmamalı.
     var basarili = false;
     try {
       basarili = await PaylasimKartiService.gorselPaylas(
         kartAnahtari: _kartAnahtari,
-        metin: widget.icerik.duzMetin(_ceviri('shared_via', '')),
         konu: widget.icerik.baslik,
         konum: PaylasimKartiService.konumBul(butonContext),
       );
