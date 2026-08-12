@@ -72,7 +72,8 @@ class MiniSunsetWidget : AppWidgetProvider() {
             val mevcutVakit = WidgetUtils.getTranslatedVakitAdi(widgetData, vakitBilgisi["mevcutVakit"] ?: "Imsak")
             
             // Diğer bilgiler
-            val miladiTarih = widgetData.getString("miladi_tarih", "17 Ocak 2026") ?: "17 Ocak 2026"
+            // Miladi tarihi native hesapla (Flutter kapalıyken de güncel kalır)
+            val miladiTarih = WidgetUtils.getMiladiTarih(context)
             // Hicri tarihi native hesapla (Flutter kapalıyken de güncel kalır)
             val hicriTarih = WidgetUtils.getHicriTarih(context)
             val konum = widgetData.getString("konum", "İstanbul") ?: "İstanbul"

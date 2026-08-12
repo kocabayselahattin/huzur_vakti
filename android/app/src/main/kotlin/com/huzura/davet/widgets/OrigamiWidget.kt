@@ -102,7 +102,8 @@ class OrigamiWidget : AppWidgetProvider() {
             val konum = widgetData.getString("konum", "İstanbul") ?: "İstanbul"
             // Hicri tarihi native hesapla (Flutter kapalıyken de güncel kalır)
             val hicriTarih = WidgetUtils.getHicriTarih(context)
-            val miladiTarih = widgetData.getString("miladi_tarih", "21 Ocak 2026") ?: "21 Ocak 2026"
+            // Miladi tarihi native hesapla (Flutter kapalıyken de güncel kalır)
+            val miladiTarih = WidgetUtils.getMiladiTarih(context)
             
             // Önce widget'a özel ayarları kontrol et, yoksa varsayılanı kullan
             val arkaPlanKey = widgetData.getString("origami_arkaplan_key", null) 

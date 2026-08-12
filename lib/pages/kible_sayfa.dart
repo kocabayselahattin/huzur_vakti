@@ -154,7 +154,7 @@ class _KibleSayfaState extends State<KibleSayfa> {
       await VibrationService.vibratePattern([0, 150, 100, 150, 100, 200]);
 
       // Sound effect.
-      await _audioPlayer?.play(AssetSource('sounds/ding_dong.mp3'));
+      await _audioPlayer?.play(AssetSource('sounds/Ding_Dong.mp3'));
     } catch (e) {
       debugPrint('⚠️ Qibla feedback error: $e');
     }

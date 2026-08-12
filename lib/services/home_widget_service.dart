@@ -165,6 +165,9 @@ class HomeWidgetService {
     final hicri = OzelGunlerService.hijriNowTR();
     final hicriTarih = '${hicri.hDay} ${_getHicriAyAdi(hicri.hMonth)} ${hicri.hYear}';
 
+    // Native widget'ların doğru dilde miladi ay ismi gösterebilmesi için.
+    await HomeWidget.saveWidgetData<String>('app_dil', LanguageService().currentLanguage);
+
     // Save hijri_day_shift and month names for native widget Hicri calculation
     await HomeWidget.saveWidgetData<int>('hijri_day_shift', OzelGunlerService.hijriDayShift);
     for (int i = 1; i <= 12; i++) {

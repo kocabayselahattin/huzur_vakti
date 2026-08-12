@@ -65,7 +65,35 @@ object WidgetUtils {
             return widgetData.getString("hicri_tarih", "") ?: ""
         }
     }
-    
+
+    /**
+     * Miladi (Gregoryen) tarihi cihazın güncel sistem tarihinden hesaplar.
+     * Hicri tarihte olduğu gibi, uygulama kapalıyken (gece yarısı geçişi dahil)
+     * de her zaman güncel kalması için native olarak hesaplanır.
+     *
+     * @return "gün Ay yıl" formatında kısa miladi tarih (ör. "12 Ağu 2026")
+     */
+    fun getMiladiTarih(context: Context): String {
+        return try {
+            val widgetData = HomeWidgetPlugin.getData(context)
+            val dilKodu = widgetData.getString("app_dil", "tr") ?: "tr"
+            val locale = when (dilKodu) {
+                "en" -> Locale("en", "US")
+                "de" -> Locale("de", "DE")
+                "fr" -> Locale("fr", "FR")
+                "ar" -> Locale("ar", "SA")
+                "fa" -> Locale("fa", "IR")
+                else -> Locale("tr", "TR")
+            }
+            val sdf = SimpleDateFormat("d MMM yyyy", locale)
+            sdf.format(Calendar.getInstance().time)
+        } catch (e: Exception) {
+            // Hata durumunda Flutter'ın kaydettiği değeri kullan
+            val widgetData = HomeWidgetPlugin.getData(context)
+            widgetData.getString("miladi_tarih", "") ?: ""
+        }
+    }
+
     /**
      * Natively hesaplanan vakit anahtarını (ör. "Imsak") çevirilmiş isme çevirir.
      * Flutter label_imsak, label_gunes vb. olarak kaydettiği çevirileri kullanır.
