@@ -35,6 +35,8 @@ class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
 
   late List<PaylasimKartiStili> _stiller;
   int _seciliStil = 0;
+  PaylasimKartiDuzeni _seciliDuzen = PaylasimKartiDuzeni.klasik;
+  PaylasimKartiOrani _seciliOran = PaylasimKartiOrani.serbest;
   bool _arapcaGoster = true;
   bool _paylasiliyor = false;
 
@@ -76,6 +78,10 @@ class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
   }
 
   String get _imza => _ceviri('app_name', 'Huzura Davet');
+
+  /// İmzanın altında görünen tanıtım satırı; kartı görenler uygulamanın ne
+  /// olduğunu anlasın diye eklenir.
+  String get _tanitim => _ceviri('share_tagline', 'Namaz Vakti Uygulaması');
 
   void _mesajGoster(String mesaj) {
     if (!mounted || mesaj.trim().isEmpty) return;
@@ -171,7 +177,10 @@ class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
                           child: PaylasimKarti(
                             icerik: widget.icerik,
                             stil: _stiller[_seciliStil],
+                            duzen: _seciliDuzen,
+                            oran: _seciliOran,
                             imza: _imza,
+                            tanitim: _tanitim,
                             arapcaGoster: _arapcaGoster,
                           ),
                         ),
@@ -200,46 +209,173 @@ class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
           top: BorderSide(color: renkler.vurgu.withValues(alpha: 0.2)),
         ),
       ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            _ceviri('card_style', 'Kart stili').toUpperCase(),
-            style: TextStyle(
-              color: renkler.yaziSecondary,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
-              letterSpacing: 1.6,
-            ),
-          ),
-          const SizedBox(height: 12),
-          SizedBox(height: 62, child: _stilSeridi(renkler)),
+      // Seçiciler alt alta uzun bir liste oluşturduğu için küçük ekranlarda
+      // panelin kendisi kaydırılır; paylaş butonları hep erişilebilir kalır.
+      child: ConstrainedBox(
+        constraints: BoxConstraints(
+          maxHeight: MediaQuery.of(context).size.height * 0.55,
+        ),
+        child: SingleChildScrollView(
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              _bolumBasligi(_ceviri('card_layout', 'Tasarım'), renkler),
+              const SizedBox(height: 10),
+              SizedBox(height: 66, child: _duzenSeridi(renkler)),
+              const SizedBox(height: 14),
+              _bolumBasligi(_ceviri('card_style', 'Kart stili'), renkler),
+              const SizedBox(height: 10),
+              SizedBox(height: 62, child: _stilSeridi(renkler)),
+              const SizedBox(height: 14),
+              _bolumBasligi(_ceviri('card_ratio', 'Oran'), renkler),
+              const SizedBox(height: 10),
+              SizedBox(height: 40, child: _oranSeridi(renkler)),
 
-          // Arapça metin yalnızca içerikte varsa açılıp kapatılabilir.
-          if (_arapcaVar)
-            Padding(
-              padding: const EdgeInsets.only(top: 4),
-              child: SwitchListTile.adaptive(
-                contentPadding: EdgeInsets.zero,
-                dense: true,
-                value: _arapcaGoster,
-                activeThumbColor: renkler.vurgu,
-                title: Text(
-                  _ceviri('show_arabic', 'Arapça metni göster'),
-                  style: TextStyle(
-                    color: renkler.yaziPrimary,
-                    fontSize: 14,
+              // Arapça metin yalnızca içerikte varsa açılıp kapatılabilir.
+              if (_arapcaVar)
+                Padding(
+                  padding: const EdgeInsets.only(top: 4),
+                  child: SwitchListTile.adaptive(
+                    contentPadding: EdgeInsets.zero,
+                    dense: true,
+                    value: _arapcaGoster,
+                    activeThumbColor: renkler.vurgu,
+                    title: Text(
+                      _ceviri('show_arabic', 'Arapça metni göster'),
+                      style: TextStyle(
+                        color: renkler.yaziPrimary,
+                        fontSize: 14,
+                      ),
+                    ),
+                    onChanged: (deger) => setState(() => _arapcaGoster = deger),
                   ),
                 ),
-                onChanged: (deger) => setState(() => _arapcaGoster = deger),
+
+              const SizedBox(height: 12),
+              _paylasButonlari(renkler),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _bolumBasligi(String metin, TemaRenkleri renkler) {
+    return Text(
+      metin.toUpperCase(),
+      style: TextStyle(
+        color: renkler.yaziSecondary,
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        letterSpacing: 1.6,
+      ),
+    );
+  }
+
+  /// Kartın yerleşim tasarımını seçen şerit.
+  Widget _duzenSeridi(TemaRenkleri renkler) {
+    const duzenler = PaylasimKartiDuzeni.values;
+    return ListView.separated(
+      scrollDirection: Axis.horizontal,
+      itemCount: duzenler.length,
+      separatorBuilder: (_, _) => const SizedBox(width: 10),
+      itemBuilder: (context, index) {
+        final duzen = duzenler[index];
+        final secili = duzen == _seciliDuzen;
+        return GestureDetector(
+          onTap: () => setState(() => _seciliDuzen = duzen),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: secili
+                  ? renkler.vurgu.withValues(alpha: 0.15)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(14),
+              border: Border.all(
+                color: secili
+                    ? renkler.vurgu
+                    : renkler.yaziSecondary.withValues(alpha: 0.3),
+                width: secili ? 2 : 1,
               ),
             ),
+            child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  duzen.ikon,
+                  size: 20,
+                  color: secili ? renkler.vurgu : renkler.yaziSecondary,
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  _ceviri(duzen.isimAnahtari, duzen.yedekIsim),
+                  style: TextStyle(
+                    color: secili ? renkler.vurgu : renkler.yaziSecondary,
+                    fontSize: 10,
+                    fontWeight: secili ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
 
-          const SizedBox(height: 12),
-          _paylasButonlari(renkler),
-        ],
-      ),
+  /// Görselin en–boy oranını seçen şerit. "Durum" seçeneği, WhatsApp/Instagram
+  /// durumunda kartın tam ekran görünmesi için 9:16 üretir.
+  Widget _oranSeridi(TemaRenkleri renkler) {
+    const oranlar = PaylasimKartiOrani.values;
+    return ListView.separated(
+      scrollDirection: Axis.horizontal,
+      itemCount: oranlar.length,
+      separatorBuilder: (_, _) => const SizedBox(width: 8),
+      itemBuilder: (context, index) {
+        final oran = oranlar[index];
+        final secili = oran == _seciliOran;
+        return GestureDetector(
+          onTap: () => setState(() => _seciliOran = oran),
+          child: AnimatedContainer(
+            duration: const Duration(milliseconds: 180),
+            padding: const EdgeInsets.symmetric(horizontal: 14),
+            decoration: BoxDecoration(
+              color: secili
+                  ? renkler.vurgu.withValues(alpha: 0.15)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(
+                color: secili
+                    ? renkler.vurgu
+                    : renkler.yaziSecondary.withValues(alpha: 0.3),
+                width: secili ? 2 : 1,
+              ),
+            ),
+            child: Row(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Icon(
+                  oran.ikon,
+                  size: 15,
+                  color: secili ? renkler.vurgu : renkler.yaziSecondary,
+                ),
+                const SizedBox(width: 6),
+                Text(
+                  _ceviri(oran.isimAnahtari, oran.yedekIsim),
+                  style: TextStyle(
+                    color: secili ? renkler.vurgu : renkler.yaziSecondary,
+                    fontSize: 11.5,
+                    fontWeight: secili ? FontWeight.w700 : FontWeight.w500,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        );
+      },
     );
   }
 

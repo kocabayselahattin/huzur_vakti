@@ -229,8 +229,10 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
         const SizedBox(height: 12),
 
         // Scrollable content.
+        // Yükseklik, ayet kartındaki büyütülmüş besmele satırını karşılayacak ve
+        // metne bir satır daha yer bırakacak şekilde ölçüldü.
         SizedBox(
-          height: 180,
+          height: 252,
           child: PageView(
             controller: _pageController,
             onPageChanged: (index) {
@@ -592,17 +594,21 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
 
           const SizedBox(height: 12),
 
-          // Ayetler besmele ile başlar.
+          // Ayetler besmele ile başlar; kart metni sola yaslı olsa da besmele
+          // ortalanır.
           if (tur == PaylasimIcerikTuru.ayet) ...[
-            Text(
-              KuranVeriService.besmele,
-              textAlign: TextAlign.center,
-              textDirection: TextDirection.rtl,
-              style: TextStyle(
-                color: renkler.vurgu,
-                fontFamily: 'Amiri',
-                fontSize: 13,
-                height: 1.4,
+            SizedBox(
+              width: double.infinity,
+              child: Text(
+                KuranVeriService.besmele,
+                textAlign: TextAlign.center,
+                textDirection: TextDirection.rtl,
+                style: TextStyle(
+                  color: renkler.vurgu,
+                  fontFamily: 'Amiri',
+                  fontSize: 26,
+                  height: 1.4,
+                ),
               ),
             ),
             const SizedBox(height: 8),

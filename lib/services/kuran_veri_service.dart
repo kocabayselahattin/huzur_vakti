@@ -109,21 +109,26 @@ class KuranVeriService {
   /// (ör. huruf-u mukattaa: "Elif, lâm, mîm.") için alt sınır.
   static const int _minMealUzunlugu = 30;
 
-  /// Günün ayetini Kur'an sırasına göre (Fatiha 1'den başlayarak) döndürür.
-  /// Sabit bir referans tarihe göre gün saydığı için her gün farklı bir ayet
-  /// gösterir ve tüm Kur'an'ı bitirmesi ~17 yıl sürer.
+  /// Günün ayeti sayacının başlangıcı. Sıranın nereden başladığını belirleyen
+  /// keyfi bir sabittir; değiştirilirse sıra tümüyle kayar.
+  static final DateTime _ayetReferansTarihi = DateTime(2024, 1, 1);
+
+  /// Günün ayetini, Kur'an'ın tamamına yayılmış tekrarsız bir sırayla döndürür.
   ///
-  /// Çok kısa mealler atlanır; bu seçim tarihe bağlı olarak deterministiktir,
-  /// yani kart, bildirim ve ana ekran widget'ı hep aynı ayeti gösterir.
+  /// Ayetler mushaf sırasıyla değil karışık gelir; böylece her gün farklı bir
+  /// sureden ayet çıkar. Buna rağmen sıra rastgele değildir: seçim yalnızca
+  /// tarihe bağlıdır, dolayısıyla kart, bildirim ve ana ekran widget'ı hep aynı
+  /// ayeti gösterir ve aynı gün her cihazda aynı ayet görünür.
+  ///
+  /// Çok kısa mealler (huruf-u mukattaa gibi) havuza hiç alınmaz.
   static Map<String, String> gununAyeti(DateTime tarih) {
     _siraliListeyiOlustur();
     final liste = _tumAyetlerSirali;
     if (liste == null || liste.isEmpty) return {'text': '', 'source': ''};
 
-    final referans = DateTime(2024, 1, 1);
     final bugun = DateTime(tarih.year, tarih.month, tarih.day);
-    final gunSayisi = bugun.difference(referans).inDays;
-    final index = ((gunSayisi % liste.length) + liste.length) % liste.length;
+    final gunSayisi = bugun.difference(_ayetReferansTarihi).inDays;
+    final index = _karisikIndex(gunSayisi, liste.length);
     final secilen = liste[index];
 
     final sureAdi = secilen.sureNo >= 1 && secilen.sureNo <= sureAdlari.length
@@ -137,6 +142,36 @@ class KuranVeriService {
       // gösteren tüketiciler yalnızca 'text' ve 'source' okur.
       'arabic': secilen.arapca,
     };
+  }
+
+  /// Gün sayısını, havuzun tamamını tekrarsız dolaşan karışık bir sıraya çevirir.
+  ///
+  /// Her gün [_adim] kadar ileri atlanır. Adım, havuz uzunluğuyla aralarında
+  /// asal seçildiği için bu atlayış tüm havuzu ziyaret etmeden başa dönmez:
+  /// ayetler karışık gelir ama havuz bitmeden hiçbiri ikinci kez çıkmaz.
+  static int _karisikIndex(int gunSayisi, int uzunluk) {
+    if (uzunluk <= 1) return 0;
+
+    var adim = 7919; // Havuz uzunluğuna göre ayarlanan büyük asal.
+    while (_obeb(adim, uzunluk) != 1) {
+      adim++;
+    }
+
+    // Referans tarihten önceki günlerde çarpım negatif olabilir.
+    final ham = (gunSayisi * adim) % uzunluk;
+    return (ham + uzunluk) % uzunluk;
+  }
+
+  /// En büyük ortak bölen (Öklid).
+  static int _obeb(int a, int b) {
+    var x = a.abs();
+    var y = b.abs();
+    while (y != 0) {
+      final kalan = x % y;
+      x = y;
+      y = kalan;
+    }
+    return x;
   }
 }
 
