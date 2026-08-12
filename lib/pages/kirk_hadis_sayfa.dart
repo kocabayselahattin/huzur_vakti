@@ -2,6 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import '../services/tema_service.dart';
 import '../services/language_service.dart';
+import '../widgets/paylasim_karti.dart';
+import 'paylasim_onizleme_sayfa.dart';
 
 class KirkHadisSayfa extends StatefulWidget {
   const KirkHadisSayfa({super.key});
@@ -55,6 +57,23 @@ class _KirkHadisSayfaState extends State<KirkHadisSayfa> {
       });
       _saveFontScale();
     }
+  }
+
+  /// O anda görüntülenen hadis için paylaşım önizlemesini açar.
+  void _hadisPaylas(List<Map<String, String>> hadisler) {
+    if (_seciliIndex < 0 || _seciliIndex >= hadisler.length) return;
+    final hadis = hadisler[_seciliIndex];
+
+    PaylasimOnizlemeSayfa.ac(
+      context,
+      PaylasimIcerigi(
+        tur: PaylasimIcerikTuru.hadis,
+        baslik: hadis['baslik'] ?? (_languageService['hadith'] ?? 'Hadis'),
+        metin: hadis['turkce'] ?? '',
+        kaynak: hadis['kaynak'] ?? '',
+        arapca: hadis['arapca'],
+      ),
+    );
   }
 
   // 40 Hadith list sourced from localization files.
@@ -128,6 +147,11 @@ class _KirkHadisSayfaState extends State<KirkHadisSayfa> {
           onPressed: () => Navigator.pop(context),
         ),
         actions: [
+          IconButton(
+            icon: const Icon(Icons.share_rounded),
+            onPressed: () => _hadisPaylas(hadisler),
+            tooltip: _languageService['share'] ?? 'Share',
+          ),
           IconButton(
             icon: const Icon(Icons.text_decrease),
             onPressed: _decreaseFontSize,

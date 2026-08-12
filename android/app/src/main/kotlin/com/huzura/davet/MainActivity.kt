@@ -40,7 +40,13 @@ class MainActivity : FlutterActivity() {
 
 	override fun onCreate(savedInstanceState: Bundle?) {
 		super.onCreate(savedInstanceState)
-		WindowCompat.setDecorFitsSystemWindows(window, false)
+		// Android 15 (API 35) ve üzeri uçtan uca çizimi zaten varsayılan yapar ve
+		// setDecorFitsSystemWindows orada kullanımdan kaldırılmıştır. Eski
+		// sürümlerde aynı görünümü korumak için çağrı yalnızca orada yapılır.
+		if (Build.VERSION.SDK_INT < 35) {
+			@Suppress("DEPRECATION")
+			WindowCompat.setDecorFitsSystemWindows(window, false)
+		}
 		maybeStartDeferredLockScreenService()
 	}
 

@@ -9,6 +9,10 @@ class KuranVeriService {
   static Map<String, dynamic>? _veri;
   static List<_FlatAyet>? _tumAyetlerSirali;
 
+  /// Besmele-i şerif. Ayet gösterilen her yerde (günün ayeti kartı, paylaşım
+  /// görseli, düz metin paylaşımı) metnin başına konur.
+  static const String besmele = 'بِسْمِ ٱللَّهِ ٱلرَّحْمَٰنِ ٱلرَّحِيمِ';
+
   // Sure no (1-114) -> Türkçe sure adı.
   static const List<String> sureAdlari = [
     'Fatiha', 'Bakara', 'Âl-i İmrân', 'Nisâ', 'Mâide', "En'âm", "A'râf",
@@ -92,6 +96,7 @@ class KuranVeriService {
                   ? a['no'] as int
                   : int.tryParse(a['no']?.toString() ?? '') ?? 0,
               meal: meal,
+              arapca: a['arapca']?.toString() ?? '',
             ),
           );
         }
@@ -128,6 +133,9 @@ class KuranVeriService {
     return {
       'text': secilen.meal,
       'source': '$sureAdi, ${secilen.ayetNo}',
+      // Paylaşım kartı Arapça metni de basabilsin diye taşınır; metin
+      // gösteren tüketiciler yalnızca 'text' ve 'source' okur.
+      'arabic': secilen.arapca,
     };
   }
 }
@@ -136,6 +144,12 @@ class _FlatAyet {
   final int sureNo;
   final int ayetNo;
   final String meal;
+  final String arapca;
 
-  _FlatAyet({required this.sureNo, required this.ayetNo, required this.meal});
+  _FlatAyet({
+    required this.sureNo,
+    required this.ayetNo,
+    required this.meal,
+    required this.arapca,
+  });
 }

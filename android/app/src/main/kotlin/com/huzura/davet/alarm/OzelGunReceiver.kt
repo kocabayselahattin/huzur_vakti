@@ -17,6 +17,7 @@ import android.os.VibratorManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import com.huzura.davet.MainActivity
+import com.huzura.davet.BildirimIkonu
 import com.huzura.davet.R
 
 /**
@@ -117,7 +118,7 @@ class OzelGunReceiver : BroadcastReceiver() {
             .setContentIntent(mainPendingIntent)
             .setAutoCancel(false) // Tıklayınca silinmesin
             .setOngoing(false)   // Kaydırılarak silinebilsin
-            .setLargeIcon(android.graphics.BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
+            .setLargeIcon(BildirimIkonu.buyukIkon(context))
             .build()
         
         notificationManager.notify(notificationId, notification)

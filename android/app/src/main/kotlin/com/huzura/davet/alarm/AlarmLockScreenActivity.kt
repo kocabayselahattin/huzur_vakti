@@ -103,7 +103,12 @@ class AlarmLockScreenActivity : Activity() {
         }
         
         // Modern edge-to-edge fullscreen handling.
-        WindowCompat.setDecorFitsSystemWindows(window, false)
+        // Android 15 (API 35) ve üzeri uçtan uca çizer; setDecorFitsSystemWindows
+        // orada kullanımdan kaldırıldığı için yalnızca eski sürümlerde çağrılır.
+        if (Build.VERSION.SDK_INT < 35) {
+            @Suppress("DEPRECATION")
+            WindowCompat.setDecorFitsSystemWindows(window, false)
+        }
         WindowCompat.getInsetsController(window, window.decorView)?.let { controller ->
             controller.systemBarsBehavior =
                 WindowInsetsControllerCompat.BEHAVIOR_SHOW_TRANSIENT_BARS_BY_SWIPE

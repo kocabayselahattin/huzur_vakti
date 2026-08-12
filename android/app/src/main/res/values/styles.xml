@@ -49,7 +49,8 @@
         <item name="android:windowBackground">@android:color/black</item>
         <item name="android:windowShowWallpaper">false</item>
         <item name="android:windowNoTitle">true</item>
-        <item name="android:windowDrawsSystemBarBackgrounds">true</item>
+        <!-- windowDrawsSystemBarBackgrounds Android 15'te kullanımdan kaldırıldı;
+             uçtan uca çizim artık varsayılan davranış. -->
         <item name="android:windowLayoutInDisplayCutoutMode">shortEdges</item>
     </style>
 </resources>

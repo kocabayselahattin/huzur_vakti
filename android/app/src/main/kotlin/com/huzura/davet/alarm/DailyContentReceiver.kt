@@ -20,6 +20,7 @@ import android.os.VibratorManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
+import com.huzura.davet.BildirimIkonu
 import com.huzura.davet.R
 
 /**
@@ -271,7 +272,7 @@ class DailyContentReceiver : BroadcastReceiver() {
             .setOngoing(false)
             .setVisibility(NotificationCompat.VISIBILITY_PUBLIC)
             .setContentIntent(mainPendingIntent)
-            .setLargeIcon(android.graphics.BitmapFactory.decodeResource(context.resources, R.mipmap.ic_launcher))
+            .setLargeIcon(BildirimIkonu.buyukIkon(context))
 
         if (soundUri != null) {
             builder.setSound(soundUri)

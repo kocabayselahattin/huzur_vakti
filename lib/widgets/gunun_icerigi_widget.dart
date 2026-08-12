@@ -1,10 +1,11 @@
 import 'package:flutter/material.dart';
 import 'dart:async';
-import 'package:share_plus/share_plus.dart';
+import '../pages/paylasim_onizleme_sayfa.dart';
 import '../services/tema_service.dart';
 import '../services/language_service.dart';
 import '../services/gunluk_hadis_dua_service.dart';
 import '../services/kuran_veri_service.dart';
+import 'paylasim_karti.dart';
 
 class GununIcerigiWidget extends StatefulWidget {
   const GununIcerigiWidget({super.key});
@@ -165,51 +166,27 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
     return hadiths[index];
   }
 
-  /// Kartın içeriğini sistemin paylaşım penceresiyle paylaşır.
-  Future<void> _paylas({
-    required BuildContext butonContext,
+  /// Paylaşım önizlemesini açar; kullanıcı orada kartı görsel olarak ya da
+  /// içeriği düz metin olarak paylaşmayı seçer.
+  void _paylas({
+    required PaylasimIcerikTuru tur,
     required String baslik,
     required String icerik,
     required String kaynak,
-  }) async {
+    String? arapca,
+  }) {
     if (icerik.trim().isEmpty) return;
 
-    final imza = (_languageService['shared_via'] ?? '').toString();
-    final metin = StringBuffer()
-      ..writeln(baslik)
-      ..writeln()
-      ..writeln('"${icerik.trim()}"');
-    if (kaynak.trim().isNotEmpty) {
-      metin
-        ..writeln()
-        ..writeln('— ${kaynak.trim()}');
-    }
-    if (imza.isNotEmpty) {
-      metin
-        ..writeln()
-        ..writeln(imza);
-    }
-
-    // iPad'de paylaşım penceresinin butondan açılması için konum bilgisi.
-    final kutu = butonContext.findRenderObject() as RenderBox?;
-    final konum = (kutu != null && kutu.hasSize)
-        ? kutu.localToGlobal(Offset.zero) & kutu.size
-        : null;
-
-    try {
-      await SharePlus.instance.share(
-        ShareParams(
-          text: metin.toString().trim(),
-          subject: baslik,
-          sharePositionOrigin: konum,
-        ),
-      );
-    } catch (_) {
-      if (!mounted) return;
-      final hata = (_languageService['share_failed'] ?? '').toString();
-      if (hata.isEmpty) return;
-      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(hata)));
-    }
+    PaylasimOnizlemeSayfa.ac(
+      context,
+      PaylasimIcerigi(
+        tur: tur,
+        baslik: baslik,
+        metin: icerik,
+        kaynak: kaynak,
+        arapca: arapca,
+      ),
+    );
   }
 
   @override
@@ -263,13 +240,16 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
             },
             children: [
               _buildIcerikKart(
+                tur: PaylasimIcerikTuru.ayet,
                 baslik: (_languageService['todays_verse'] ?? '').toUpperCase(),
                 icerik: gununAyeti['text'] ?? '',
                 kaynak: gununAyeti['source'] ?? '',
+                arapca: gununAyeti['arabic'],
                 ikon: Icons.menu_book_rounded,
                 renkler: renkler,
               ),
               _buildIcerikKart(
+                tur: PaylasimIcerikTuru.hadis,
                 baslik: (_languageService['todays_hadith'] ?? '').toUpperCase(),
                 icerik: gununHadisi['text'] ?? '',
                 kaynak: gununHadisi['source'] ?? '',
@@ -277,6 +257,7 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
                 renkler: renkler,
               ),
               _buildIcerikKart(
+                tur: PaylasimIcerikTuru.dua,
                 baslik: (_languageService['todays_dua'] ?? '').toUpperCase(),
                 icerik: gununDuasi['text'] ?? '',
                 kaynak: gununDuasi['source'] ?? '',
@@ -331,11 +312,13 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
   /// Kartta kayan metnin tamamını okunabilir bir pencerede gösterir.
   /// Uzun ayet/hadis/duaların kayma bitmeden okunabilmesi için.
   Future<void> _tamMetniGoster({
+    required PaylasimIcerikTuru tur,
     required String baslik,
     required String icerik,
     required String kaynak,
     required IconData ikon,
     required TemaRenkleri renkler,
+    String? arapca,
   }) async {
     if (icerik.trim().isEmpty) return;
 
@@ -413,14 +396,34 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
                 Flexible(
                   child: SingleChildScrollView(
                     padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
-                    child: Text(
-                      '"${icerik.trim()}"',
-                      style: TextStyle(
-                        color: renkler.yaziPrimary,
-                        fontSize: 16,
-                        height: 1.6,
-                        fontStyle: FontStyle.italic,
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.stretch,
+                      children: [
+                        // Ayetler besmele ile başlar.
+                        if (tur == PaylasimIcerikTuru.ayet) ...[
+                          Text(
+                            KuranVeriService.besmele,
+                            textAlign: TextAlign.center,
+                            textDirection: TextDirection.rtl,
+                            style: TextStyle(
+                              color: renkler.vurgu,
+                              fontFamily: 'Amiri',
+                              fontSize: 16,
+                              height: 1.6,
+                            ),
+                          ),
+                          const SizedBox(height: 14),
+                        ],
+                        Text(
+                          '"${icerik.trim()}"',
+                          style: TextStyle(
+                            color: renkler.yaziPrimary,
+                            fontSize: 16,
+                            height: 1.6,
+                            fontStyle: FontStyle.italic,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -452,28 +455,31 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
                           ),
                         ),
                       const Spacer(),
-                      Builder(
-                        builder: (butonContext) => Material(
-                          color: Colors.transparent,
-                          child: InkWell(
-                            onTap: () => _paylas(
-                              butonContext: butonContext,
+                      Material(
+                        color: Colors.transparent,
+                        child: InkWell(
+                          // Önizleme tam ekran açıldığı için önce popup kapanır.
+                          onTap: () {
+                            Navigator.pop(dialogContext);
+                            _paylas(
+                              tur: tur,
                               baslik: baslik,
                               icerik: icerik,
                               kaynak: kaynak,
+                              arapca: arapca,
+                            );
+                          },
+                          borderRadius: BorderRadius.circular(10),
+                          child: Container(
+                            padding: const EdgeInsets.all(8),
+                            decoration: BoxDecoration(
+                              color: renkler.vurgu.withValues(alpha: 0.15),
+                              borderRadius: BorderRadius.circular(10),
                             ),
-                            borderRadius: BorderRadius.circular(10),
-                            child: Container(
-                              padding: const EdgeInsets.all(8),
-                              decoration: BoxDecoration(
-                                color: renkler.vurgu.withValues(alpha: 0.15),
-                                borderRadius: BorderRadius.circular(10),
-                              ),
-                              child: Icon(
-                                Icons.share_rounded,
-                                color: renkler.vurgu,
-                                size: 18,
-                              ),
+                            child: Icon(
+                              Icons.share_rounded,
+                              color: renkler.vurgu,
+                              size: 18,
                             ),
                           ),
                         ),
@@ -490,11 +496,13 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
   }
 
   Widget _buildIcerikKart({
+    required PaylasimIcerikTuru tur,
     required String baslik,
     required String icerik,
     required String kaynak,
     required IconData ikon,
     required TemaRenkleri renkler,
+    String? arapca,
   }) {
     return Container(
       margin: const EdgeInsets.symmetric(horizontal: 20),
@@ -551,30 +559,29 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
               const SizedBox(width: 8),
 
               // Paylaş butonu.
-              Builder(
-                builder: (butonContext) => Material(
-                  color: Colors.transparent,
-                  child: InkWell(
-                    onTap: () => _paylas(
-                      butonContext: butonContext,
-                      baslik: baslik,
-                      icerik: icerik,
-                      kaynak: kaynak,
-                    ),
-                    borderRadius: BorderRadius.circular(10),
-                    child: Tooltip(
-                      message: (_languageService['share'] ?? '').toString(),
-                      child: Container(
-                        padding: const EdgeInsets.all(8),
-                        decoration: BoxDecoration(
-                          color: renkler.vurgu.withValues(alpha: 0.15),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                        child: Icon(
-                          Icons.share_rounded,
-                          color: renkler.vurgu,
-                          size: 16,
-                        ),
+              Material(
+                color: Colors.transparent,
+                child: InkWell(
+                  onTap: () => _paylas(
+                    tur: tur,
+                    baslik: baslik,
+                    icerik: icerik,
+                    kaynak: kaynak,
+                    arapca: arapca,
+                  ),
+                  borderRadius: BorderRadius.circular(10),
+                  child: Tooltip(
+                    message: (_languageService['share'] ?? '').toString(),
+                    child: Container(
+                      padding: const EdgeInsets.all(8),
+                      decoration: BoxDecoration(
+                        color: renkler.vurgu.withValues(alpha: 0.15),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        Icons.share_rounded,
+                        color: renkler.vurgu,
+                        size: 16,
                       ),
                     ),
                   ),
@@ -583,15 +590,33 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
             ],
           ),
 
-          const SizedBox(height: 16),
+          const SizedBox(height: 12),
+
+          // Ayetler besmele ile başlar.
+          if (tur == PaylasimIcerikTuru.ayet) ...[
+            Text(
+              KuranVeriService.besmele,
+              textAlign: TextAlign.center,
+              textDirection: TextDirection.rtl,
+              style: TextStyle(
+                color: renkler.vurgu,
+                fontFamily: 'Amiri',
+                fontSize: 13,
+                height: 1.4,
+              ),
+            ),
+            const SizedBox(height: 8),
+          ],
 
           // Content. Metne dokunulunca tamamı popup'ta gösterilir.
           Expanded(
             child: GestureDetector(
               onTap: () => _tamMetniGoster(
+                tur: tur,
                 baslik: baslik,
                 icerik: icerik,
                 kaynak: kaynak,
+                arapca: arapca,
                 ikon: ikon,
                 renkler: renkler,
               ),

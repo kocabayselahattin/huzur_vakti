@@ -7,6 +7,8 @@ import '../services/tema_service.dart';
 import '../services/language_service.dart';
 import '../services/kuran_veri_service.dart';
 import '../services/kuran_ses_service.dart';
+import '../widgets/paylasim_karti.dart';
+import 'paylasim_onizleme_sayfa.dart';
 
 class KuranSayfa extends StatefulWidget {
   const KuranSayfa({super.key});
@@ -2223,6 +2225,21 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     }
   }
 
+  /// Ayeti paylaşım önizlemesinde açar. Kart, ayet olduğu için besmele ile
+  /// başlar; kaynak "Sure adı, ayet no" biçiminde yazılır.
+  void _ayetiPaylas(Ayet ayet) {
+    PaylasimOnizlemeSayfa.ac(
+      context,
+      PaylasimIcerigi(
+        tur: PaylasimIcerikTuru.ayet,
+        baslik: _languageService['quran'] ?? 'Kur\'an-ı Kerim',
+        metin: ayet.meal,
+        kaynak: '${widget.sure.turkceAd}, ${ayet.no}',
+        arapca: ayet.arapca,
+      ),
+    );
+  }
+
   Widget _buildAyetKarti(Ayet ayet, TemaRenkleri renkler) {
     // Hide recitation/translation for Arabic or Persian
     final currentLang = _languageService.currentLanguage;
@@ -2285,7 +2302,20 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                     fontWeight: FontWeight.w500,
                   ),
                 ),
-                const SizedBox(width: 8),
+                const SizedBox(width: 4),
+                InkWell(
+                  onTap: () => _ayetiPaylas(ayet),
+                  borderRadius: BorderRadius.circular(20),
+                  child: Padding(
+                    padding: const EdgeInsets.all(4),
+                    child: Icon(
+                      Icons.share_rounded,
+                      color: _okumaModu ? Colors.black54 : renkler.vurgu,
+                      size: 19,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 4),
                 InkWell(
                   onTap: () => _ayetiCalDurdur(ayet),
                   borderRadius: BorderRadius.circular(20),
