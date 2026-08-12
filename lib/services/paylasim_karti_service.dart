@@ -23,17 +23,17 @@ class PaylasimKartiService {
   ///
   /// Kart henüz boyanmadıysa bir kare beklenir; yakalanamazsa null döner.
   static Future<Uint8List?> pngUret(GlobalKey anahtar) async {
-    final sinir =
-        anahtar.currentContext?.findRenderObject() as RenderRepaintBoundary?;
-    if (sinir == null) return null;
-
-    // İlk karede kart henüz boyanmamış olabilir; boyanmasını bekle.
-    if (sinir.debugNeedsPaint) {
-      await Future<void>.delayed(const Duration(milliseconds: 60));
-      if (sinir.debugNeedsPaint) return null;
-    }
-
     try {
+      final sinir =
+          anahtar.currentContext?.findRenderObject() as RenderRepaintBoundary?;
+      if (sinir == null) return null;
+
+      // İlk karede kart henüz boyanmamış olabilir; boyanmasını bekle.
+      // Burada RenderObject.debugNeedsPaint kullanılamaz: değeri yalnızca
+      // assert içinde atandığı için sürüm derlemesinde okunduğunda hata
+      // fırlatır ve paylaşım sonsuza dek "yükleniyor"da kalır.
+      await WidgetsBinding.instance.endOfFrame;
+
       final gorsel = await sinir.toImage(pixelRatio: _pikselOrani);
       final baytlar = await gorsel.toByteData(format: ui.ImageByteFormat.png);
       gorsel.dispose();

@@ -94,15 +94,20 @@ class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
 
     // Görselin metin karşılığı da eklenir: görseli açamayan uygulamalarda
     // (veya kopyalarken) içerik yine okunabilir kalsın.
-    final basarili = await PaylasimKartiService.gorselPaylas(
-      kartAnahtari: _kartAnahtari,
-      metin: widget.icerik.duzMetin(_ceviri('shared_via', '')),
-      konu: widget.icerik.baslik,
-      konum: PaylasimKartiService.konumBul(butonContext),
-    );
+    // Beklenmedik bir hata çıksa bile düğme "yükleniyor"da kilitli kalmamalı.
+    var basarili = false;
+    try {
+      basarili = await PaylasimKartiService.gorselPaylas(
+        kartAnahtari: _kartAnahtari,
+        metin: widget.icerik.duzMetin(_ceviri('shared_via', '')),
+        konu: widget.icerik.baslik,
+        konum: PaylasimKartiService.konumBul(butonContext),
+      );
+    } finally {
+      if (mounted) setState(() => _paylasiliyor = false);
+    }
 
     if (!mounted) return;
-    setState(() => _paylasiliyor = false);
     if (!basarili) {
       _mesajGoster(_ceviri('share_image_failed', _ceviri('share_failed', '')));
     }
@@ -112,14 +117,18 @@ class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
     if (_paylasiliyor) return;
     setState(() => _paylasiliyor = true);
 
-    final basarili = await PaylasimKartiService.metinPaylas(
-      metin: widget.icerik.duzMetin(_ceviri('shared_via', '')),
-      konu: widget.icerik.baslik,
-      konum: PaylasimKartiService.konumBul(butonContext),
-    );
+    var basarili = false;
+    try {
+      basarili = await PaylasimKartiService.metinPaylas(
+        metin: widget.icerik.duzMetin(_ceviri('shared_via', '')),
+        konu: widget.icerik.baslik,
+        konum: PaylasimKartiService.konumBul(butonContext),
+      );
+    } finally {
+      if (mounted) setState(() => _paylasiliyor = false);
+    }
 
     if (!mounted) return;
-    setState(() => _paylasiliyor = false);
     if (!basarili) _mesajGoster(_ceviri('share_failed', ''));
   }
 
