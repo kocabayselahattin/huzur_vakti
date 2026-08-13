@@ -489,7 +489,7 @@ class _HakkindaSayfaState extends State<HakkindaSayfa> {
           _iletisimSatiri(
             Icons.email,
             _languageService['email'] ?? '',
-            ' ',
+            'huzuradavetapp@gmail.com',
             renkler,
           ),
           _iletisimSatiri(

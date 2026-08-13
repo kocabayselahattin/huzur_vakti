@@ -132,22 +132,6 @@ class PaylasimIcerigi {
   static const String magazaBaglantisi =
       'https://play.google.com/store/apps/details?id=com.huzura.davet';
 
-  /// Görsel paylaşımına eklenen kısa alt yazı.
-  ///
-  /// İçeriğin kendisini tekrar etmez — kart zaten ayeti/hadisi taşıyor ve
-  /// WhatsApp gibi uygulamalar uzun metni kartın yanına ikinci kez basıyordu.
-  /// Yalnızca uygulamayı tanıtır ve mağaza bağlantısını iletir.
-  String kisaTanitim(String imza, String tanitim) {
-    final baslikSatiri = [
-      imza.trim(),
-      tanitim.trim(),
-    ].where((p) => p.isNotEmpty).join(' · ');
-    return [
-      if (baslikSatiri.isNotEmpty) baslikSatiri,
-      magazaBaglantisi,
-    ].join('\n');
-  }
-
   /// Görsel paylaşılamazsa / metin olarak paylaşılırsa kullanılacak düz metin.
   String duzMetin(String imza) {
     final tampon = StringBuffer()

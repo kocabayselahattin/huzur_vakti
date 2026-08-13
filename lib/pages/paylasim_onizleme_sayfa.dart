@@ -92,15 +92,13 @@ class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
     if (_paylasiliyor) return;
     setState(() => _paylasiliyor = true);
 
-    // Görselin yanına içeriğin tamamı değil, yalnızca iki satırlık tanıtım ve
-    // mağaza bağlantısı eklenir: WhatsApp bunu kartın alt yazısı olarak
-    // gösteriyor, dolayısıyla ayet ikinci kez yazılmış olmuyor.
+    // Görselin yanına metin eklenmez: WhatsApp gibi uygulamalar bunu
+    // kartın alt yazısı olarak gösteriyor ve kart zaten kendi içeriğini taşıyor.
     // Beklenmedik bir hata çıksa bile düğme "yükleniyor"da kilitli kalmamalı.
     var basarili = false;
     try {
       basarili = await PaylasimKartiService.gorselPaylas(
         kartAnahtari: _kartAnahtari,
-        metin: widget.icerik.kisaTanitim(_imza, _tanitim),
         konu: widget.icerik.baslik,
         konum: PaylasimKartiService.konumBul(butonContext),
       );

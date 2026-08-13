@@ -14,6 +14,7 @@ import 'services/scheduled_notification_service.dart';
 import 'services/daily_content_notification_service.dart';
 import 'services/ozel_gunler_service.dart';
 import 'services/kuran_veri_service.dart';
+import 'app_version.dart';
 
 /// Save default notification settings in SharedPreferences on first run.
 Future<void> _initializeDefaultNotificationSettings(
@@ -207,6 +208,10 @@ void main() async {
 
   // 🔔 Save default early notification values on first run.
   await _initializeDefaultNotificationSettings(prefs);
+
+  // pubspec.yaml'daki sürümü oku; "Hakkında" ve ana sayfa bunu ayrı ayrı
+  // güncellemek zorunda kalmadan otomatik yansıtır.
+  await appVersionYukle();
 
   // Everything required to render the first frame is ready — show the UI now.
   // The remaining work (notification scheduling, network sync, widget updates)
