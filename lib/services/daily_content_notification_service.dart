@@ -34,7 +34,7 @@ class DailyContentNotificationService {
   static const int tahajjudNotificationId = 1003;
 
   // Default sound file
-  static const String defaultNotificationSound = 'ding_dong';
+  static const String defaultNotificationSound = 'best';
   static const String _tahajjudSoundKey = 'daily_content_tahajjud_sound';
   static const String _tahajjudEnabledKey = 'daily_content_tahajjud_enabled';
 

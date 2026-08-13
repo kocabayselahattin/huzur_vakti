@@ -37,6 +37,10 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
   bool yukleniyor = false;
   bool konumTespit = false;
   bool _manuelAraniyor = false;
+
+  /// "Tamam"a basıldıktan sonra kayıt/widget güncellemesi sürerken true olur;
+  /// düğme dönen göstergeye çevrilir ve tekrar basılamaz.
+  bool _kaydediliyor = false;
   double? _manuelLat;
   double? _manuelLon;
   String? _manuelCity;
@@ -1078,64 +1082,109 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
     return dLat * dLat + dLon * dLon;
   }
 
-  Future<void> _kaydet() async {
-    if (secilenIlId != null && secilenIlceId != null) {
-      if (KonumService.isManualIlceId(secilenIlceId)) {
-        if (_manuelLat == null ||
-            _manuelLon == null ||
-            _manuelCity == null ||
-            _manuelCountry == null) {
-          if (mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              SnackBar(
-                content: Text(
-                  _languageService['location_unavailable_enable_gps'] ??
-                      'Location search failed. Try again.',
-                ),
+  /// Konumu kaydeden "Tamam" düğmesi.
+  ///
+  /// Kayıt sırasında widget güncellemesi ve vakit yenilemesi yapıldığı için
+  /// birkaç saniye sürebiliyor; bu sürede düğme dönen göstergeye çevrilir ve
+  /// yeniden basılamaz. Aksi hâlde ekran donmuş gibi görünüyordu.
+  Widget _tamamDugmesi() {
+    return ElevatedButton.icon(
+      onPressed: _kaydediliyor ? null : _kaydet,
+      style: ElevatedButton.styleFrom(
+        backgroundColor: Colors.cyanAccent,
+        foregroundColor: const Color(0xFF1B2741),
+        disabledBackgroundColor: Colors.cyanAccent.withOpacity(0.7),
+        disabledForegroundColor: const Color(0xFF1B2741),
+        padding: const EdgeInsets.symmetric(vertical: 14),
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+      ),
+      icon: _kaydediliyor
+          ? const SizedBox(
+              width: 18,
+              height: 18,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.4,
+                valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF1B2741)),
               ),
-            );
+            )
+          : const Icon(Icons.check),
+      label: Text(
+        _kaydediliyor
+            ? (_languageService['location_saved_updating'] ?? 'Updating...')
+            : (_languageService['ok'] ?? 'OK'),
+        style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+      ),
+    );
+  }
+
+  Future<void> _kaydet() async {
+    if (_kaydediliyor) return;
+    if (secilenIlId != null && secilenIlceId != null) {
+      setState(() => _kaydediliyor = true);
+      try {
+        if (KonumService.isManualIlceId(secilenIlceId)) {
+          if (_manuelLat == null ||
+              _manuelLon == null ||
+              _manuelCity == null ||
+              _manuelCountry == null) {
+            if (mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                SnackBar(
+                  content: Text(
+                    _languageService['location_unavailable_enable_gps'] ??
+                        'Location search failed. Try again.',
+                  ),
+                ),
+              );
+            }
+            return;
           }
-          return;
+          await KonumService.setManualKonumData(
+            key: secilenIlceId!,
+            lat: _manuelLat!,
+            lon: _manuelLon!,
+            city: _manuelCity!,
+            country: _manuelCountry!,
+          );
         }
-        await KonumService.setManualKonumData(
-          key: secilenIlceId!,
-          lat: _manuelLat!,
-          lon: _manuelLon!,
-          city: _manuelCity!,
-          country: _manuelCountry!,
+        // Create a new location model
+        final yeniKonum = KonumModel(
+          ilAdi: secilenIlAdi!,
+          ilId: secilenIlId!,
+          ilceAdi: secilenIlceAdi!,
+          ilceId: secilenIlceId!,
+          aktif: true,
         );
-      }
-      // Create a new location model
-      final yeniKonum = KonumModel(
-        ilAdi: secilenIlAdi!,
-        ilId: secilenIlId!,
-        ilceAdi: secilenIlceAdi!,
-        ilceId: secilenIlceId!,
-        aktif: true,
-      );
 
-      // Add location to list (no-op if already exists)
-      await KonumService.addKonum(yeniKonum);
+        // Add location to list (no-op if already exists)
+        await KonumService.addKonum(yeniKonum);
 
-      // Save to legacy system as well (compatibility)
-      await KonumService.setIl(secilenIlAdi!, secilenIlId!);
-      await KonumService.setIlce(secilenIlceAdi!, secilenIlceId!);
+        // Save to legacy system as well (compatibility)
+        await KonumService.setIl(secilenIlAdi!, secilenIlId!);
+        await KonumService.setIlce(secilenIlceAdi!, secilenIlceId!);
 
-      // Update widgets and app data immediately
-      print('🔄 Location changed, updating data...');
-      await HomeWidgetService.updateAllWidgets();
+        // Update widgets and app data immediately
+        print('🔄 Location changed, updating data...');
+        await HomeWidgetService.updateAllWidgets();
 
-      if (mounted) {
-        ScaffoldMessenger.of(context).showSnackBar(
-          SnackBar(
-            content: Text(
-              _languageService['location_saved_updating'] ??
-                  'Location saved and updating...',
+        if (mounted) {
+          ScaffoldMessenger.of(context).showSnackBar(
+            SnackBar(
+              content: Text(
+                _languageService['location_saved_updating'] ??
+                    'Location saved and updating...',
+              ),
             ),
-          ),
-        );
-        // Return true to trigger home page refresh
-        Navigator.pop(context, true);
+          );
+          // Return true to trigger home page refresh
+          Navigator.pop(context, true);
+        }
+      } finally {
+        // Sayfa kapanmışsa setState çağrılmaz; kalırsa düğme yeniden basılabilir
+        // hâle gelir (ör. konum verisi eksik olduğu için erken dönüldüğünde).
+        if (mounted) setState(() => _kaydediliyor = false);
       }
     }
   }
@@ -1756,25 +1805,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                       top: false,
                       child: SizedBox(
                         width: double.infinity,
-                        child: ElevatedButton.icon(
-                          onPressed: _kaydet,
-                          style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.cyanAccent,
-                            foregroundColor: const Color(0xFF1B2741),
-                            padding: const EdgeInsets.symmetric(vertical: 14),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
-                          ),
-                          icon: const Icon(Icons.check),
-                          label: Text(
-                            _languageService['ok'] ?? 'OK',
-                            style: const TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
-                        ),
+                        child: _tamamDugmesi(),
                       ),
                     ),
                   ),
@@ -1800,25 +1831,7 @@ class _IlIlceSecSayfaState extends State<IlIlceSecSayfa> {
                     top: false,
                     child: SizedBox(
                       width: double.infinity,
-                      child: ElevatedButton.icon(
-                        onPressed: _kaydet,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: Colors.cyanAccent,
-                          foregroundColor: const Color(0xFF1B2741),
-                          padding: const EdgeInsets.symmetric(vertical: 14),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        icon: const Icon(Icons.check),
-                        label: Text(
-                          _languageService['ok'] ?? 'OK',
-                          style: const TextStyle(
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
+                      child: _tamamDugmesi(),
                     ),
                   ),
                 ),

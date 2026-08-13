@@ -74,8 +74,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
   TimeOfDay _gunlukHadisSaati = const TimeOfDay(hour: 13, minute: 0);
   TimeOfDay _gunlukDuaSaati = const TimeOfDay(hour: 20, minute: 0);
   TimeOfDay _gunlukTeheccudSaati = const TimeOfDay(hour: 3, minute: 0);
-  String _gunlukIcerikSesi = 'ding_dong'; // Ses ID'si
-  String _gunlukTeheccudSesi = 'ding_dong'; // Ses ID'si
+  String _gunlukIcerikSesi = 'best'; // Ses ID'si
+  String _gunlukTeheccudSesi = 'best'; // Ses ID'si
 
   // Sound playback state (play/pause toggle)
   String? _sesCalanKey; // Which prayer is playing
@@ -415,6 +415,88 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
       _kilitEkraniBildirimi =
           prefs.getBool('kilit_ekrani_bildirimi_aktif') ?? false;
     });
+
+    await _eskiVarsayilanSesiDuzelt(prefs);
+  }
+
+  /// Eski sürümlerde her vakit için varsayılan ses "Akşam Ezanı" idi; sonradan
+  /// "best" yapıldı ama zaten kaydedilmiş cihazlarda (ve yedekten geri
+  /// yüklenen kurulumlarda) eski değer kalıcı olarak duruyordu — kullanıcı
+  /// hiçbir vakti değiştirmediği hâlde hepsinde "Akşam Ezanı" görünüyordu.
+  ///
+  /// Tek seferlik göç: hâlâ eski varsayılanda duran vakitleri "best"e çevirir.
+  /// Kullanıcının bilerek "Akşam Ezanı" seçtiği vakitler bir daha çalışmayacağı
+  /// için etkilenmez; bayrak kaydedildikten sonra tekrar tetiklenmez.
+  Future<void> _eskiVarsayilanSesiDuzelt(SharedPreferences prefs) async {
+    const bayrak = 'ses_varsayilani_best_migrasyonu_v1';
+    if (prefs.getBool(bayrak) ?? false) return;
+
+    const eskiVarsayilan = 'aksam_ezani';
+    const yeniVarsayilan = 'best';
+    var degisti = false;
+
+    setState(() {
+      for (final vakit in _bildirimSesi.keys) {
+        if (_bildirimSesi[vakit] == eskiVarsayilan) {
+          _bildirimSesi[vakit] = yeniVarsayilan;
+          degisti = true;
+        }
+        if (_erkenBildirimSesi[vakit] == eskiVarsayilan) {
+          _erkenBildirimSesi[vakit] = yeniVarsayilan;
+          degisti = true;
+        }
+      }
+      if (_gunlukIcerikSesi == eskiVarsayilan) {
+        _gunlukIcerikSesi = yeniVarsayilan;
+        degisti = true;
+      }
+      if (_gunlukTeheccudSesi == eskiVarsayilan) {
+        _gunlukTeheccudSesi = yeniVarsayilan;
+        degisti = true;
+      }
+    });
+
+    if (degisti) {
+      for (final vakit in _bildirimSesi.keys) {
+        await prefs.setString('bildirim_sesi_$vakit', _bildirimSesi[vakit]!);
+        await prefs.setString(
+          'erken_bildirim_sesi_$vakit',
+          _erkenBildirimSesi[vakit]!,
+        );
+      }
+      await prefs.setString(
+        'daily_content_notification_sound',
+        _gunlukIcerikSesi,
+      );
+      await prefs.setString(
+        'daily_content_tahajjud_sound',
+        _gunlukTeheccudSesi,
+      );
+
+      // Yeni ses zamanlanmış alarmlara da yansımalı; aksi hâlde bir sonraki
+      // vakit hâlâ eski sesle çalar. _ayarlariKaydet() burada çağrılmaz:
+      // o akış izin diyalogları açıyor, sayfa açılışında uygun değil.
+      try {
+        await EarlyReminderService.saveAndReschedule(
+          erkenSureler: Map<String, int>.from(_erkenBildirim),
+          erkenSesler: Map<String, String>.from(_erkenBildirimSesi),
+        );
+        await ScheduledNotificationService.scheduleAllPrayerNotifications();
+        await DailyContentNotificationService.setDailyContentNotificationSettings(
+          enabled: _gunlukIcerikBildirimleri,
+          tahajjudEnabled: _teheccudBildirimiAcik,
+          soundFileName: _gunlukIcerikSesi,
+          tahajjudSoundFileName: _gunlukTeheccudSesi,
+          verseTime: _formatTimeOfDay(_gunlukAyetSaati),
+          hadithTime: _formatTimeOfDay(_gunlukHadisSaati),
+          prayerTime: _formatTimeOfDay(_gunlukDuaSaati),
+          tahajjudTime: _formatTimeOfDay(_gunlukTeheccudSaati),
+        );
+      } catch (e) {
+        debugPrint('⚠️ Ses göçü sonrası yeniden zamanlama hatası: $e');
+      }
+    }
+    await prefs.setBool(bayrak, true);
   }
 
   Future<void> _ayarlariKaydet() async {

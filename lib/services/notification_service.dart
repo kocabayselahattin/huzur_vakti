@@ -36,7 +36,7 @@ class NotificationService {
 
   // Convert sound file name to Android raw resource name
   static String _getSoundResourceName(String? soundAsset) {
-    if (soundAsset == null || soundAsset.isEmpty) return 'ding_dong';
+    if (soundAsset == null || soundAsset.isEmpty) return 'best';
 
     // Get file name and remove extension
     String name = soundAsset.toLowerCase();

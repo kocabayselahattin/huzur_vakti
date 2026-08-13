@@ -92,14 +92,15 @@ class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
     if (_paylasiliyor) return;
     setState(() => _paylasiliyor = true);
 
-    // Yalnızca görsel gönderilir; metin eklenmez. Aksi halde WhatsApp gibi
-    // uygulamalar kartın yanına bir de aynı içeriği yazı olarak koyuyor.
-    // İçeriğin yazılı hâlini isteyen "Metin olarak" düğmesini kullanır.
+    // Görselin yanına içeriğin tamamı değil, yalnızca iki satırlık tanıtım ve
+    // mağaza bağlantısı eklenir: WhatsApp bunu kartın alt yazısı olarak
+    // gösteriyor, dolayısıyla ayet ikinci kez yazılmış olmuyor.
     // Beklenmedik bir hata çıksa bile düğme "yükleniyor"da kilitli kalmamalı.
     var basarili = false;
     try {
       basarili = await PaylasimKartiService.gorselPaylas(
         kartAnahtari: _kartAnahtari,
+        metin: widget.icerik.kisaTanitim(_imza, _tanitim),
         konu: widget.icerik.baslik,
         konum: PaylasimKartiService.konumBul(butonContext),
       );
