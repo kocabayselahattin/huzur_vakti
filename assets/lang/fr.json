@@ -131,6 +131,7 @@
     "gregorian_date":  "Date grégorienne",
     "search":  "Rechercher",
     "search_city":  "Rechercher ville...",
+    "updating_from_internet":  "Récupération de la liste à jour depuis internet...",
     "search_district":  "Rechercher district...",
     "select_district":  "Sélectionner un quartier",
     "use_current_location":  "Utiliser l\u0027emplacement actuel",

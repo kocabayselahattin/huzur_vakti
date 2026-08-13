@@ -1085,6 +1085,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                           await _toggleSessizeAl(value);
                         },
                         activeThumbColor: renkler.vurguSecondary,
+                        inactiveThumbColor: renkler.yaziSecondary,
+                        inactiveTrackColor: renkler.yaziSecondary.withOpacity(
+                          0.3,
+                        ),
                       ),
                     ],
                   ),
@@ -1141,6 +1145,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                           });
                         },
                         activeThumbColor: renkler.vurgu,
+                        inactiveThumbColor: renkler.yaziSecondary,
+                        inactiveTrackColor: renkler.yaziSecondary.withOpacity(
+                          0.3,
+                        ),
                       ),
                     ],
                   ),
@@ -1355,6 +1363,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                           });
                         },
                         activeThumbColor: renkler.vurgu,
+                        inactiveThumbColor: renkler.yaziSecondary,
+                        inactiveTrackColor: renkler.yaziSecondary.withOpacity(
+                          0.3,
+                        ),
                       ),
                     ],
                   ),
@@ -1505,6 +1517,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                           await _toggleKilitEkraniBildirimi(value);
                         },
                         activeThumbColor: renkler.vurguSecondary,
+                        inactiveThumbColor: renkler.yaziSecondary,
+                        inactiveTrackColor: renkler.yaziSecondary.withOpacity(
+                          0.3,
+                        ),
                       ),
                     ],
                   ),
@@ -1690,6 +1706,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                 });
               },
               activeThumbColor: renkler.vurgu,
+              inactiveThumbColor: renkler.yaziSecondary,
+              inactiveTrackColor: renkler.yaziSecondary.withOpacity(0.3),
             ),
           ),
 
@@ -1747,6 +1765,9 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                             });
                           },
                           activeThumbColor: renkler.vurguSecondary,
+                          inactiveThumbColor: renkler.yaziSecondary,
+                          inactiveTrackColor: renkler.yaziSecondary
+                              .withOpacity(0.3),
                         ),
                       ],
                     ),
@@ -1949,8 +1970,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                               padding: const EdgeInsets.only(top: 6),
                               child: Text(
                                 '${_languageService['custom'] ?? ''}: ${_ozelSesDosyalari[key]!.split('/').last.split('\\').last}',
-                                style: const TextStyle(
-                                  color: Colors.white38,
+                                style: TextStyle(
+                                  color: renkler.yaziSecondary.withOpacity(
+                                    0.7,
+                                  ),
                                   fontSize: 11,
                                 ),
                                 overflow: TextOverflow.ellipsis,
@@ -1977,16 +2000,16 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                         children: [
                           Row(
                             children: [
-                              const Icon(
+                              Icon(
                                 Icons.timer,
-                                color: Colors.cyanAccent,
+                                color: renkler.vurgu,
                                 size: 18,
                               ),
                               const SizedBox(width: 8),
                               Text(
                                 _languageService['early_sound'] ?? '',
-                                style: const TextStyle(
-                                  color: Colors.cyanAccent,
+                                style: TextStyle(
+                                  color: renkler.vurgu,
                                   fontSize: 13,
                                   fontWeight: FontWeight.bold,
                                 ),
@@ -2000,7 +2023,9 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                                 child: Container(
                                   height: 36,
                                   decoration: BoxDecoration(
-                                    color: Colors.white.withOpacity(0.1),
+                                    color: renkler.kartArkaPlan.withOpacity(
+                                      0.5,
+                                    ),
                                     borderRadius: BorderRadius.circular(8),
                                   ),
                                   child: DropdownButtonHideUnderline(
@@ -2012,16 +2037,16 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                                           ? erkenSeciliSes
                                           : _sesSecenekleri.first['id'],
                                       isExpanded: true,
-                                      dropdownColor: const Color(0xFF2B3151),
-                                      icon: const Icon(
+                                      dropdownColor: renkler.kartArkaPlan,
+                                      icon: Icon(
                                         Icons.arrow_drop_down,
-                                        color: Colors.cyanAccent,
+                                        color: renkler.vurgu,
                                       ),
                                       padding: const EdgeInsets.symmetric(
                                         horizontal: 12,
                                       ),
-                                      style: const TextStyle(
-                                        color: Colors.white,
+                                      style: TextStyle(
+                                        color: renkler.yaziPrimary,
                                       ),
                                       items: _sesSecenekleri.map((ses) {
                                         return DropdownMenuItem(
@@ -2049,8 +2074,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                               Container(
                                 decoration: BoxDecoration(
                                   color: _sesCalanKey == '${key}_erken'
-                                      ? Colors.red.withOpacity(0.3)
-                                      : Colors.green.withOpacity(0.2),
+                                      ? renkler.vurguSecondary.withOpacity(0.3)
+                                      : renkler.vurgu.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(6),
                                 ),
                                 child: IconButton(
@@ -2061,8 +2086,8 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                                         ? Icons.stop_circle
                                         : Icons.play_circle,
                                     color: _sesCalanKey == '${key}_erken'
-                                        ? Colors.red
-                                        : Colors.green,
+                                        ? renkler.vurguSecondary
+                                        : renkler.vurgu,
                                     size: 28,
                                   ),
                                   tooltip: _sesCalanKey == '${key}_erken'
@@ -2083,8 +2108,10 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
                               padding: const EdgeInsets.only(top: 6),
                               child: Text(
                                 '${_languageService['custom'] ?? ''}: ${_ozelSesDosyalari['${key}_erken']!.split('/').last.split('\\').last}',
-                                style: const TextStyle(
-                                  color: Colors.white38,
+                                style: TextStyle(
+                                  color: renkler.yaziSecondary.withOpacity(
+                                    0.7,
+                                  ),
                                   fontSize: 11,
                                 ),
                                 overflow: TextOverflow.ellipsis,

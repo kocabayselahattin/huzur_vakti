@@ -146,6 +146,7 @@
     "gregorian_date":  "Miladi Tarih",
     "search":  "Ara",
     "search_city":  "İl ara...",
+    "updating_from_internet":  "Güncel liste internetten alınıyor...",
     "search_district":  "İlçe ara...",
     "select_district":  "İlçe Seç",
     "use_current_location":  "Mevcut Konumu Kullan",

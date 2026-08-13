@@ -140,6 +140,7 @@
     "gregorian_date":  "تاریخ میلادی",
     "search":  "جستجو",
     "search_city":  "جستجوی شهر",
+    "updating_from_internet":  "در حال دریافت فهرست به‌روز از اینترنت...",
     "search_district":  "جستجوی منطقه",
     "select_district":  "انتخاب منطقه",
     "use_current_location":  "استفاده از موقعیت فعلی",

@@ -140,6 +140,7 @@
     "gregorian_date":  "التاريخ الميلادي",
     "search":  "بحث",
     "search_city":  "ابحث عن مدينة",
+    "updating_from_internet":  "جارٍ جلب أحدث قائمة من الإنترنت...",
     "search_district":  "ابحث عن منطقة",
     "select_district":  "اختر المنطقة",
     "use_current_location":  "استخدم الموقع الحالي",

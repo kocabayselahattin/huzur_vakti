@@ -122,6 +122,7 @@
     "gregorian_date":  "Gregorian Date",
     "search":  "Search",
     "search_city":  "Search city...",
+    "updating_from_internet":  "Fetching the latest list from the internet...",
     "search_district":  "Search district...",
     "select_district":  "Select District",
     "use_current_location":  "Use Current Location",
