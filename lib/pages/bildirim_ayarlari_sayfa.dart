@@ -419,39 +419,49 @@ class _BildirimAyarlariSayfaState extends State<BildirimAyarlariSayfa> {
     await _eskiVarsayilanSesiDuzelt(prefs);
   }
 
-  /// Eski sürümlerde her vakit için varsayılan ses "Akşam Ezanı" idi; sonradan
-  /// "best" yapıldı ama zaten kaydedilmiş cihazlarda (ve yedekten geri
-  /// yüklenen kurulumlarda) eski değer kalıcı olarak duruyordu — kullanıcı
-  /// hiçbir vakti değiştirmediği hâlde hepsinde "Akşam Ezanı" görünüyordu.
+  /// main.dart'taki ilk kurulum varsayılanları eskiden ".mp3" uzantılı
+  /// kaydediliyordu (ör. "best.mp3"), ama dropdown'daki ve her yerdeki ses
+  /// kimlikleri uzantısızdır ("best"). Uzantılı değer hiçbir seçenekle
+  /// eşleşmediği için ekran listenin ilk öğesine ("Akşam Ezanı") düşüyordu —
+  /// gerçek ses zaten "best" çalıyordu, sadece görünen isim yanlıştı.
   ///
-  /// Tek seferlik göç: hâlâ eski varsayılanda duran vakitleri "best"e çevirir.
-  /// Kullanıcının bilerek "Akşam Ezanı" seçtiği vakitler bir daha çalışmayacağı
-  /// için etkilenmez; bayrak kaydedildikten sonra tekrar tetiklenmez.
+  /// Tek seferlik göç: kayıtlı ses kimliklerinden ".mp3" uzantısını temizler.
+  /// Kullanıcının kendi seçtiği bir ses de aynı biçimde düzeltilir, bu ses
+  /// tercihini bozmaz. Bayrak kaydedildikten sonra tekrar tetiklenmez.
   Future<void> _eskiVarsayilanSesiDuzelt(SharedPreferences prefs) async {
-    const bayrak = 'ses_varsayilani_best_migrasyonu_v1';
+    const bayrak = 'ses_uzantisi_temizligi_migrasyonu_v1';
     if (prefs.getBool(bayrak) ?? false) return;
 
-    const eskiVarsayilan = 'aksam_ezani';
-    const yeniVarsayilan = 'best';
+    String temizle(String sesId) {
+      if (sesId.toLowerCase().endsWith('.mp3')) {
+        return sesId.substring(0, sesId.length - 4);
+      }
+      return sesId;
+    }
+
     var degisti = false;
 
     setState(() {
       for (final vakit in _bildirimSesi.keys) {
-        if (_bildirimSesi[vakit] == eskiVarsayilan) {
-          _bildirimSesi[vakit] = yeniVarsayilan;
+        final temizSes = temizle(_bildirimSesi[vakit]!);
+        if (temizSes != _bildirimSesi[vakit]) {
+          _bildirimSesi[vakit] = temizSes;
           degisti = true;
         }
-        if (_erkenBildirimSesi[vakit] == eskiVarsayilan) {
-          _erkenBildirimSesi[vakit] = yeniVarsayilan;
+        final temizErkenSes = temizle(_erkenBildirimSesi[vakit]!);
+        if (temizErkenSes != _erkenBildirimSesi[vakit]) {
+          _erkenBildirimSesi[vakit] = temizErkenSes;
           degisti = true;
         }
       }
-      if (_gunlukIcerikSesi == eskiVarsayilan) {
-        _gunlukIcerikSesi = yeniVarsayilan;
+      final temizGunlukSes = temizle(_gunlukIcerikSesi);
+      if (temizGunlukSes != _gunlukIcerikSesi) {
+        _gunlukIcerikSesi = temizGunlukSes;
         degisti = true;
       }
-      if (_gunlukTeheccudSesi == eskiVarsayilan) {
-        _gunlukTeheccudSesi = yeniVarsayilan;
+      final temizTeheccudSes = temizle(_gunlukTeheccudSesi);
+      if (temizTeheccudSes != _gunlukTeheccudSesi) {
+        _gunlukTeheccudSesi = temizTeheccudSes;
         degisti = true;
       }
     });

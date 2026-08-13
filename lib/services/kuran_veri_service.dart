@@ -88,7 +88,7 @@ class KuranVeriService {
       for (final a in ayetler) {
         if (a is Map) {
           final meal = a['meal']?.toString() ?? '';
-          if (meal.trim().length < _minMealUzunlugu) continue;
+          if (!_tekBasinaAnlamliMi(meal)) continue;
           sonuc.add(
             _FlatAyet(
               sureNo: sureNo,
@@ -107,7 +107,33 @@ class KuranVeriService {
 
   /// Tek başına gösterildiğinde anlamlı olmayacak kadar kısa mealler
   /// (ör. huruf-u mukattaa: "Elif, lâm, mîm.") için alt sınır.
-  static const int _minMealUzunlugu = 30;
+  static const int _minMealUzunlugu = 60;
+
+  /// Cümlenin bittiğini gösteren noktalama. Tırnak/parantez kapanışları
+  /// noktadan sonra gelebildiği için onlara da izin verilir.
+  static final RegExp _cumleSonuNoktalamasi = RegExp(r'''[.!?]["”»’')\s]*$''');
+
+  /// Ayetin günün ayeti havuzuna girip giremeyeceğini belirler.
+  ///
+  /// Kur'an'daki bazı ayetler bir sonrakine bağlanır; tek başına
+  /// gösterildiklerinde anlam bütünlüğü olmaz (ör. Bürûc 85:6 "Hani o ateşin
+  /// başına oturmuşlar,"). Bunlar üç ölçütle elenir:
+  ///
+  /// 1. Çok kısa olanlar (huruf-u mukattaa gibi) havuza alınmaz.
+  /// 2. Cümle sonu noktalaması olmadan biten mealler (virgül, iki nokta)
+  ///    sonraki ayete bağlanır.
+  /// 3. Küçük harfle başlayanlar önceki ayetin devamıdır.
+  static bool _tekBasinaAnlamliMi(String meal) {
+    final temiz = meal.trim();
+    if (temiz.length < _minMealUzunlugu) return false;
+    if (!_cumleSonuNoktalamasi.hasMatch(temiz)) return false;
+
+    final ilkHarf = temiz[0];
+    final kucugu = ilkHarf.toLowerCase();
+    if (ilkHarf == kucugu && ilkHarf.toUpperCase() != ilkHarf) return false;
+
+    return true;
+  }
 
   /// Günün ayeti sayacının başlangıcı. Sıranın nereden başladığını belirleyen
   /// keyfi bir sabittir; değiştirilirse sıra tümüyle kayar.

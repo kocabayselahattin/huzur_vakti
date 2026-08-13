@@ -47,24 +47,28 @@ Future<void> _initializeDefaultNotificationSettings(
     'yatsi': true,
   };
 
-  // Default notification sounds.
+  // Default notification sounds. Ses kimlikleri uzantısız tutulur
+  // ("best", "aksam_ezani" ...) — bildirim ayarları sayfasındaki dropdown
+  // seçenekleri de aynı biçimde. Buraya ".mp3" uzantılı yazılırsa hiçbir
+  // seçenekle eşleşmediği için dropdown listenin ilk öğesine ("Akşam Ezanı")
+  // düşüyor; gerçek ses "best" olsa bile ekranda yanlış isim görünüyordu.
   const defaultBildirimSesi = {
-    'imsak': 'best.mp3',
-    'gunes': 'best.mp3',
-    'ogle': 'best.mp3',
-    'ikindi': 'best.mp3',
-    'aksam': 'best.mp3',
-    'yatsi': 'best.mp3',
+    'imsak': 'best',
+    'gunes': 'best',
+    'ogle': 'best',
+    'ikindi': 'best',
+    'aksam': 'best',
+    'yatsi': 'best',
   };
 
   // Default early notification sounds (same as on-time).
   const defaultErkenBildirimSesi = {
-    'imsak': 'best.mp3',
-    'gunes': 'best.mp3',
-    'ogle': 'best.mp3',
-    'ikindi': 'best.mp3',
-    'aksam': 'best.mp3',
-    'yatsi': 'best.mp3',
+    'imsak': 'best',
+    'gunes': 'best',
+    'ogle': 'best',
+    'ikindi': 'best',
+    'aksam': 'best',
+    'yatsi': 'best',
   };
 
   // Default on-time reminder states.
