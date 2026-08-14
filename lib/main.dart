@@ -14,6 +14,7 @@ import 'services/scheduled_notification_service.dart';
 import 'services/daily_content_notification_service.dart';
 import 'services/ozel_gunler_service.dart';
 import 'services/kuran_veri_service.dart';
+import 'services/hatim_plan_service.dart';
 import 'app_version.dart';
 
 /// Save default notification settings in SharedPreferences on first run.
@@ -264,6 +265,10 @@ Future<void> _arkaPlanBaslatma() async {
     // Scheduled last: it fetches each day's verse/hadith/dua, so it is the
     // slowest step and the least urgent.
     await DailyContentNotificationService.scheduleDailyContentNotifications();
+
+    // 📖 Reading plan reminder: AlarmManager has no infinite repeat, so the
+    // rolling reminder window (bkz. HatimPlanService) is refilled here too.
+    await HatimPlanService.tumHatirlaticilariYenidenZamanla();
   } catch (e) {
     debugPrint('⚠️ Background startup error: $e');
   }

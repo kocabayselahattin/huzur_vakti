@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'dart:convert';
+import 'dart:io';
 import 'package:http/http.dart' as http;
 import 'package:audioplayers/audioplayers.dart';
 import 'package:shared_preferences/shared_preferences.dart';
@@ -7,6 +8,8 @@ import '../services/tema_service.dart';
 import '../services/language_service.dart';
 import '../services/kuran_veri_service.dart';
 import '../services/kuran_ses_service.dart';
+import '../services/hatim_plan_service.dart';
+import 'hatim_plani_sayfa.dart';
 import '../widgets/paylasim_karti.dart';
 import 'paylasim_onizleme_sayfa.dart';
 
@@ -27,6 +30,12 @@ class _KuranSayfaState extends State<KuranSayfa>
   int? _sonOkunanSureNo;
   int? _sonOkunanAyetNo;
   String? _sonOkunanSureAd;
+  List<HatimPlani> _hatimPlanlari = [];
+
+  final TextEditingController _aramaController = TextEditingController();
+  String _aramaSorgusu = '';
+  List<Sure> _aramaSureSonuclari = [];
+  List<_AyetAramaSonucu> _aramaAyetSonuclari = [];
 
   @override
   void initState() {
@@ -34,6 +43,71 @@ class _KuranSayfaState extends State<KuranSayfa>
     _tabController = TabController(length: 2, vsync: this);
     _sureleriYukle();
     _sonOkunanYeriYukle();
+    _hatimPlaniYukle();
+    // Ayet metninde arama yapabilmek için Kur'an verisi önceden yüklenir;
+    // henüz yüklenmemişse arama sadece sure adlarında çalışır.
+    KuranVeriService.yukle().then((_) {
+      if (mounted && _aramaSorgusu.isNotEmpty) _aramayiUygula();
+    });
+  }
+
+  Future<void> _hatimPlaniYukle() async {
+    final planlar = await HatimPlanService.tumPlanlar();
+    if (mounted) setState(() => _hatimPlanlari = planlar);
+  }
+
+  @override
+  void dispose() {
+    _tabController.dispose();
+    _aramaController.dispose();
+    super.dispose();
+  }
+
+  /// Türkçe'ye özgü büyük/küçük harf kurallarını (İ/i, I/ı) doğru uygulayan
+  /// karşılaştırma anahtarı üretir. Karakter sayısını değiştirmediği için
+  /// eşleşen aralığı orijinal metinde de doğrudan kullanabiliriz.
+  String _turkceKucult(String s) =>
+      s.replaceAll('İ', 'i').replaceAll('I', 'ı').toLowerCase();
+
+  void _aramaDegisti(String sorgu) {
+    setState(() {
+      _aramaSorgusu = sorgu.trim();
+      _aramayiUygula();
+    });
+  }
+
+  void _aramayiUygula() {
+    if (_aramaSorgusu.isEmpty) {
+      _aramaSureSonuclari = [];
+      _aramaAyetSonuclari = [];
+      return;
+    }
+
+    final q = _turkceKucult(_aramaSorgusu);
+
+    _aramaSureSonuclari = _tumSureler
+        .where((s) => _turkceKucult(s.turkceAd).contains(q))
+        .toList();
+
+    final ayetSonuclari = <_AyetAramaSonucu>[];
+    if (KuranVeriService.yuklendiMi) {
+      for (final sure in _tumSureler) {
+        for (final a in KuranVeriService.sureAyetleri(sure.no)) {
+          final meal = a['meal']?.toString() ?? '';
+          if (!_turkceKucult(meal).contains(q)) continue;
+          final ayetNo = a['no'] is int
+              ? a['no'] as int
+              : int.tryParse(a['no']?.toString() ?? '') ?? 0;
+          ayetSonuclari.add(
+            _AyetAramaSonucu(sure: sure, ayetNo: ayetNo, meal: meal),
+          );
+          // Çok yaygın kelimelerde (ör. "Allah") binlerce sonuç oluşmasın.
+          if (ayetSonuclari.length >= 100) break;
+        }
+        if (ayetSonuclari.length >= 100) break;
+      }
+    }
+    _aramaAyetSonuclari = ayetSonuclari;
   }
 
   Future<void> _sonOkunanYeriYukle() async {
@@ -62,6 +136,64 @@ class _KuranSayfaState extends State<KuranSayfa>
         ),
       ).then((_) => _sonOkunanYeriYukle());
     }
+  }
+
+  /// Kayıtlı konumu yok sayıp Kur'an'ın başından (Fatiha) okumaya başlar.
+  void _kaldiginYerdenBastanBasla() {
+    final fatiha = _sureler.firstWhere(
+      (s) => s.no == 1,
+      orElse: () => _sureler.first,
+    );
+    Navigator.push(
+      context,
+      MaterialPageRoute(builder: (context) => SureDetaySayfa(sure: fatiha)),
+    ).then((_) => _sonOkunanYeriYukle());
+  }
+
+  /// "Kaldığın yerden devam et" kartını kaldırır. Kaydı geri alınamaz
+  /// şekilde sildiği için önce kullanıcıdan onay istenir.
+  Future<void> _kaldiginYerdenIptalOnayla() async {
+    final renkler = _temaService.renkler;
+    final onay = await showDialog<bool>(
+      context: context,
+      builder: (dialogContext) => AlertDialog(
+        backgroundColor: renkler.kartArkaPlan,
+        title: Text(
+          _languageService['resume_reading_cancel'] ?? 'Kaydı Sil',
+          style: TextStyle(color: renkler.yaziPrimary),
+        ),
+        content: Text(
+          _languageService['resume_reading_cancel_confirm'] ??
+              'Kaldığın yer kaydını silmek istediğine emin misin?',
+          style: TextStyle(color: renkler.yaziSecondary),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, false),
+            child: Text(_languageService['cancel'] ?? 'Vazgeç'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(dialogContext, true),
+            child: Text(
+              _languageService['resume_reading_cancel'] ?? 'Kaydı Sil',
+              style: const TextStyle(color: Colors.redAccent),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (onay != true) return;
+
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.remove('son_okunan_sure_no');
+    await prefs.remove('son_okunan_ayet_no');
+    await prefs.remove('son_okunan_sure_ad');
+    if (!mounted) return;
+    setState(() {
+      _sonOkunanSureNo = null;
+      _sonOkunanAyetNo = null;
+      _sonOkunanSureAd = null;
+    });
   }
 
   int? _getResumeAyetNo() {
@@ -96,12 +228,6 @@ class _KuranSayfaState extends State<KuranSayfa>
       }
     }
     return null;
-  }
-
-  @override
-  void dispose() {
-    _tabController.dispose();
-    super.dispose();
   }
 
   Future<void> _sureleriYukle() async {
@@ -152,49 +278,550 @@ class _KuranSayfaState extends State<KuranSayfa>
         decoration: renkler.arkaPlanGradient != null
             ? BoxDecoration(gradient: renkler.arkaPlanGradient)
             : null,
-        child: _yukleniyor
-            ? Center(child: CircularProgressIndicator(color: renkler.vurgu))
-            : TabBarView(
-                controller: _tabController,
-                children: [
-                  // Surahs tab
-                  ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount:
-                        _sureler.length + (_sonOkunanSureNo != null ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      // Resume card at the top
-                      if (index == 0 && _sonOkunanSureNo != null) {
-                        return _buildKaldiginYerdenKarti(renkler);
-                      }
-                      // Regular surah cards
-                      final sureIndex = _sonOkunanSureNo != null
-                          ? index - 1
-                          : index;
-                      final sure = _sureler[sureIndex];
-                      return _buildSureKarti(sure, renkler);
-                    },
+        child: Column(
+          children: [
+            Padding(
+              padding: const EdgeInsets.fromLTRB(12, 12, 12, 4),
+              child: _buildAramaAlani(renkler),
+            ),
+            Expanded(
+              child: _yukleniyor
+                  ? Center(
+                      child: CircularProgressIndicator(color: renkler.vurgu),
+                    )
+                  : _aramaSorgusu.isNotEmpty
+                  ? _buildAramaSonuclari(renkler)
+                  : TabBarView(
+                      controller: _tabController,
+                      children: [
+                        // Surahs tab
+                        ListView.builder(
+                          padding: const EdgeInsets.all(12),
+                          itemCount:
+                              _sureler.length +
+                              1 +
+                              (_sonOkunanSureNo != null ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            // Tüm hatim planları tek bir bölümde, en üstte.
+                            if (index == 0) {
+                              return _buildHatimPlanlariBolumu(renkler);
+                            }
+                            final kalanIndex = index - 1;
+                            // Resume card, hemen altında.
+                            if (kalanIndex == 0 && _sonOkunanSureNo != null) {
+                              return _buildKaldiginYerdenKarti(renkler);
+                            }
+                            // Regular surah cards
+                            final sureIndex =
+                                kalanIndex - (_sonOkunanSureNo != null ? 1 : 0);
+                            final sure = _sureler[sureIndex];
+                            return _buildSureKarti(sure, renkler);
+                          },
+                        ),
+                        // Juz tab
+                        ListView.builder(
+                          padding: const EdgeInsets.all(12),
+                          itemCount:
+                              _cuzler.length +
+                              (_sonOkunanSureNo != null ? 1 : 0),
+                          itemBuilder: (context, index) {
+                            // Resume card at the top
+                            if (index == 0 && _sonOkunanSureNo != null) {
+                              return _buildKaldiginYerdenKarti(renkler);
+                            }
+                            // Regular juz cards
+                            final cuzIndex = _sonOkunanSureNo != null
+                                ? index - 1
+                                : index;
+                            final cuz = _cuzler[cuzIndex];
+                            return _buildCuzKarti(cuz, renkler);
+                          },
+                        ),
+                      ],
+                    ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAramaAlani(TemaRenkleri renkler) {
+    return Container(
+      decoration: BoxDecoration(
+        color: renkler.kartArkaPlan,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(color: renkler.vurgu.withOpacity(0.08), blurRadius: 6),
+        ],
+      ),
+      child: TextField(
+        controller: _aramaController,
+        onChanged: _aramaDegisti,
+        style: TextStyle(color: renkler.yaziPrimary, fontSize: 14),
+        decoration: InputDecoration(
+          hintText:
+              _languageService['search_quran_hint'] ??
+              'Sure adı veya ayet içinde ara...',
+          hintStyle: TextStyle(color: renkler.yaziSecondary, fontSize: 14),
+          prefixIcon: Icon(Icons.search, color: renkler.yaziSecondary),
+          suffixIcon: _aramaSorgusu.isEmpty
+              ? null
+              : IconButton(
+                  icon: Icon(Icons.close, color: renkler.yaziSecondary),
+                  onPressed: () {
+                    _aramaController.clear();
+                    _aramaDegisti('');
+                  },
+                ),
+          border: InputBorder.none,
+          contentPadding: const EdgeInsets.symmetric(
+            horizontal: 16,
+            vertical: 14,
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAramaSonuclari(TemaRenkleri renkler) {
+    final ayetlerHazir = KuranVeriService.yuklendiMi;
+
+    if (_aramaSureSonuclari.isEmpty && _aramaAyetSonuclari.isEmpty) {
+      if (!ayetlerHazir) {
+        return Center(
+          child: Padding(
+            padding: const EdgeInsets.all(24),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                CircularProgressIndicator(color: renkler.vurgu),
+                const SizedBox(height: 12),
+                Text(
+                  _languageService['search_verses_indexing'] ??
+                      "Loading Quran data to search verses...",
+                  textAlign: TextAlign.center,
+                  style: TextStyle(color: renkler.yaziSecondary, fontSize: 13),
+                ),
+              ],
+            ),
+          ),
+        );
+      }
+      return Center(
+        child: Text(
+          _languageService['search_no_results'] ?? 'No results found',
+          style: TextStyle(color: renkler.yaziSecondary, fontSize: 14),
+        ),
+      );
+    }
+
+    return ListView(
+      padding: const EdgeInsets.all(12),
+      children: [
+        if (_aramaSureSonuclari.isNotEmpty) ...[
+          _buildAramaBolumBasligi(
+            _languageService['search_surahs_section'] ?? 'SURAHS',
+            renkler,
+          ),
+          ..._aramaSureSonuclari.map((s) => _buildSureKarti(s, renkler)),
+        ],
+        if (_aramaAyetSonuclari.isNotEmpty) ...[
+          _buildAramaBolumBasligi(
+            _languageService['search_verses_section'] ?? 'VERSES',
+            renkler,
+          ),
+          ..._aramaAyetSonuclari.map((r) => _buildAyetSonucKarti(r, renkler)),
+        ],
+        if (!ayetlerHazir)
+          Padding(
+            padding: const EdgeInsets.symmetric(vertical: 12),
+            child: Text(
+              _languageService['search_verses_indexing'] ??
+                  "Loading Quran data to search verses...",
+              textAlign: TextAlign.center,
+              style: TextStyle(color: renkler.yaziSecondary, fontSize: 12),
+            ),
+          ),
+      ],
+    );
+  }
+
+  Widget _buildAramaBolumBasligi(String baslik, TemaRenkleri renkler) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(4, 8, 4, 8),
+      child: Text(
+        baslik,
+        style: TextStyle(
+          color: renkler.yaziSecondary,
+          fontSize: 12,
+          fontWeight: FontWeight.w700,
+          letterSpacing: 1.5,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildAyetSonucKarti(_AyetAramaSonucu sonuc, TemaRenkleri renkler) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      decoration: BoxDecoration(
+        color: renkler.kartArkaPlan,
+        borderRadius: BorderRadius.circular(16),
+        boxShadow: [
+          BoxShadow(color: renkler.vurgu.withOpacity(0.1), blurRadius: 8),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SureDetaySayfa(
+                  sure: sonuc.sure,
+                  baslangicAyetNo: sonuc.ayetNo,
+                ),
+              ),
+            );
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  '${sonuc.sure.turkceAd} ${sonuc.ayetNo}',
+                  style: TextStyle(
+                    color: renkler.vurgu,
+                    fontSize: 13,
+                    fontWeight: FontWeight.bold,
                   ),
-                  // Juz tab
-                  ListView.builder(
-                    padding: const EdgeInsets.all(12),
-                    itemCount:
-                        _cuzler.length + (_sonOkunanSureNo != null ? 1 : 0),
-                    itemBuilder: (context, index) {
-                      // Resume card at the top
-                      if (index == 0 && _sonOkunanSureNo != null) {
-                        return _buildKaldiginYerdenKarti(renkler);
-                      }
-                      // Regular juz cards
-                      final cuzIndex = _sonOkunanSureNo != null
-                          ? index - 1
-                          : index;
-                      final cuz = _cuzler[cuzIndex];
-                      return _buildCuzKarti(cuz, renkler);
-                    },
+                ),
+                const SizedBox(height: 6),
+                _buildVurgulanmisMeal(sonuc.meal, renkler),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Meal metninde arama kelimesinin geçtiği kısmı vurgulayarak, çok uzun
+  /// ayetlerde eşleşmenin etrafından kısa bir bağlam gösterir.
+  Widget _buildVurgulanmisMeal(String meal, TemaRenkleri renkler) {
+    final q = _turkceKucult(_aramaSorgusu);
+    final mealKucuk = _turkceKucult(meal);
+    final eslesmeIndex = q.isEmpty ? -1 : mealKucuk.indexOf(q);
+
+    if (eslesmeIndex < 0) {
+      return Text(
+        meal,
+        maxLines: 3,
+        overflow: TextOverflow.ellipsis,
+        style: TextStyle(color: renkler.yaziPrimary, fontSize: 14, height: 1.4),
+      );
+    }
+
+    const baglamUzunlugu = 60;
+    final baslangic = (eslesmeIndex - baglamUzunlugu).clamp(0, meal.length);
+    final bitis = (eslesmeIndex + q.length + baglamUzunlugu).clamp(
+      0,
+      meal.length,
+    );
+
+    final oncesi =
+        (baslangic > 0 ? '…' : '') + meal.substring(baslangic, eslesmeIndex);
+    final eslesen = meal.substring(eslesmeIndex, eslesmeIndex + q.length);
+    final sonrasi =
+        meal.substring(eslesmeIndex + q.length, bitis) +
+        (bitis < meal.length ? '…' : '');
+
+    return RichText(
+      maxLines: 3,
+      overflow: TextOverflow.ellipsis,
+      text: TextSpan(
+        style: TextStyle(color: renkler.yaziPrimary, fontSize: 14, height: 1.4),
+        children: [
+          TextSpan(text: oncesi),
+          TextSpan(
+            text: eslesen,
+            style: TextStyle(
+              color: renkler.vurgu,
+              fontWeight: FontWeight.bold,
+              backgroundColor: renkler.vurgu.withOpacity(0.15),
+            ),
+          ),
+          TextSpan(text: sonrasi),
+        ],
+      ),
+    );
+  }
+
+  /// Tüm hatim planlarını (varsa) ve yeni plan ekleme seçeneğini tek bir
+  /// bölümde toplar. Hiç plan yoksa büyük, tek bir davet kartı gösterilir
+  /// (ilk tasarımdaki gibi, sade ve dikkat çekici); plan(lar) varsa hepsi
+  /// aynı çerçeve içinde kompakt satırlar halinde listelenir ve en altta
+  /// "Yeni Hatim Planı Ekle" satırı yer alır. Böylece birden fazla plan
+  /// (ör. Ramazan + senelik) aynı anda çalışabilir ama ekran karışmaz.
+  Widget _buildHatimPlanlariBolumu(TemaRenkleri renkler) {
+    if (_hatimPlanlari.isEmpty) {
+      return _buildHatimDavetKarti(renkler);
+    }
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: renkler.kartArkaPlan,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: renkler.vurgu.withOpacity(0.35), width: 1.5),
+        boxShadow: [
+          BoxShadow(color: renkler.vurgu.withOpacity(0.1), blurRadius: 10),
+        ],
+      ),
+      child: Column(
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 14, 16, 10),
+            child: Row(
+              children: [
+                Icon(Icons.menu_book_rounded, color: renkler.vurgu, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  _languageService['hatim_plan_section_title'] ??
+                      'Hatim Planlarım',
+                  style: TextStyle(
+                    color: renkler.yaziPrimary,
+                    fontSize: 15,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+              ],
+            ),
+          ),
+          for (final plan in _hatimPlanlari)
+            _buildHatimPlaniSatiri(plan, renkler),
+          _buildYeniPlanEkleSatiri(renkler),
+        ],
+      ),
+    );
+  }
+
+  /// Hiç plan yokken gösterilen tek, büyük davet kartı.
+  Widget _buildHatimDavetKarti(TemaRenkleri renkler) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      decoration: BoxDecoration(
+        color: renkler.kartArkaPlan,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: renkler.vurgu.withOpacity(0.35), width: 1.5),
+        boxShadow: [
+          BoxShadow(color: renkler.vurgu.withOpacity(0.1), blurRadius: 10),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(20),
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (context) => const HatimPlaniSayfa()),
+            ).then((_) => _hatimPlaniYukle());
+          },
+          child: Padding(
+            padding: const EdgeInsets.all(18),
+            child: Row(
+              children: [
+                Container(
+                  width: 54,
+                  height: 54,
+                  decoration: BoxDecoration(
+                    color: renkler.vurgu.withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                  child: Icon(
+                    Icons.menu_book_rounded,
+                    color: renkler.vurgu,
+                    size: 28,
+                  ),
+                ),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _languageService['hatim_plan_entry_title_new'] ??
+                            'Hatim Planı Oluştur',
+                        style: TextStyle(
+                          color: renkler.yaziPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        _languageService['hatim_plan_entry_desc_new'] ??
+                            'Günde ne kadar okuyacağını seç, uygulama seni takip etsin.',
+                        style: TextStyle(
+                          color: renkler.yaziSecondary,
+                          fontSize: 13,
+                          height: 1.3,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  Icons.chevron_right_rounded,
+                  color: renkler.yaziSecondary,
+                  size: 28,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Birleşik bölüm içindeki tek bir planın kompakt satırı: adı + bugünün
+  /// hedefi. Alarm saati her planda bağımsızdır (plan ayarlarından
+  /// değiştirilir), o yüzden burada tekrar gösterilmez.
+  Widget _buildHatimPlaniSatiri(HatimPlani plan, TemaRenkleri renkler) {
+    final hedef = HatimPlanService.gunlukHedef(plan);
+    final aciklama =
+        (_languageService['hatim_plan_entry_desc_active'] ??
+                'Bugünün hedefi: {hedef}')
+            .replaceAll('{hedef}', hedef.etiket);
+    final sonMu = plan == _hatimPlanlari.last;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => HatimPlaniSayfa(planId: plan.id),
+            ),
+          ).then((_) => _hatimPlaniYukle());
+        },
+        child: Padding(
+          padding: const EdgeInsets.fromLTRB(16, 10, 16, 10),
+          child: Column(
+            children: [
+              Row(
+                children: [
+                  Container(
+                    width: 42,
+                    height: 42,
+                    decoration: BoxDecoration(
+                      color: renkler.vurgu.withOpacity(0.15),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: Icon(
+                      plan.turu == HatimPlanTuru.ramazan
+                          ? Icons.nights_stay_rounded
+                          : Icons.menu_book_rounded,
+                      color: renkler.vurgu,
+                      size: 21,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          plan.ad,
+                          style: TextStyle(
+                            color: renkler.yaziPrimary,
+                            fontSize: 15,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          aciklama,
+                          style: TextStyle(
+                            color: renkler.yaziSecondary,
+                            fontSize: 12.5,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.chevron_right_rounded,
+                    color: renkler.yaziSecondary,
+                    size: 24,
                   ),
                 ],
               ),
+              if (!sonMu)
+                Padding(
+                  padding: const EdgeInsets.only(top: 10),
+                  child: Divider(
+                    height: 1,
+                    color: renkler.yaziSecondary.withOpacity(0.15),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  /// Birleşik bölümün altında, mevcut plan satırlarından görsel olarak
+  /// ayrılan, daha sade "yeni plan ekle" satırı (kendi başına büyük bir
+  /// kart değil).
+  Widget _buildYeniPlanEkleSatiri(TemaRenkleri renkler) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: const BorderRadius.vertical(bottom: Radius.circular(20)),
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(builder: (context) => const HatimPlaniSayfa()),
+          ).then((_) => _hatimPlaniYukle());
+        },
+        child: Container(
+          decoration: BoxDecoration(
+            color: renkler.vurgu.withOpacity(0.06),
+            borderRadius: const BorderRadius.vertical(
+              bottom: Radius.circular(20),
+            ),
+          ),
+          padding: const EdgeInsets.symmetric(vertical: 12, horizontal: 16),
+          child: Row(
+            children: [
+              Icon(
+                Icons.add_circle_outline_rounded,
+                color: renkler.vurgu,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                _languageService['hatim_plan_entry_title_add'] ??
+                    'Yeni Hatim Planı Ekle',
+                style: TextStyle(
+                  color: renkler.vurgu,
+                  fontSize: 14,
+                  fontWeight: FontWeight.w600,
+                ),
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }
@@ -224,71 +851,141 @@ class _KuranSayfaState extends State<KuranSayfa>
           ),
         ],
       ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(20),
-          onTap: _kaldirKaldiginYerden,
-          child: Padding(
-            padding: const EdgeInsets.all(20),
+      child: Column(
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(20),
+              ),
+              onTap: _kaldirKaldiginYerden,
+              child: Padding(
+                padding: const EdgeInsets.fromLTRB(20, 20, 20, 12),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 56,
+                      height: 56,
+                      decoration: BoxDecoration(
+                        color: Colors.white.withOpacity(0.3),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: const Icon(
+                        Icons.bookmark,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(width: 16),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            _languageService['resume_reading'] ??
+                                'CONTINUE WHERE YOU LEFT OFF',
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 13,
+                              fontWeight: FontWeight.bold,
+                              letterSpacing: 0.5,
+                            ),
+                          ),
+                          const SizedBox(height: 6),
+                          Text(
+                            _sonOkunanSureAd ??
+                                (_languageService['chapter'] ?? 'Surah'),
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                            ),
+                          ),
+                          if (resumeAyetNo != null)
+                            Text(
+                              '${cuzNo != null ? '${_languageService['juz'] ?? 'Juz'} $cuzNo • ' : ''}${_sonOkunanSureAd ?? (_languageService['chapter'] ?? 'Surah')} • ${_languageService['verse'] ?? 'Verse'} $resumeAyetNo',
+                              style: TextStyle(
+                                color: Colors.white.withOpacity(0.9),
+                                fontSize: 13,
+                              ),
+                            ),
+                        ],
+                      ),
+                    ),
+                    Icon(
+                      Icons.play_circle_fill,
+                      color: Colors.white.withOpacity(0.9),
+                      size: 40,
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 16),
             child: Row(
               children: [
-                Container(
-                  width: 56,
-                  height: 56,
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.3),
-                    borderRadius: BorderRadius.circular(16),
-                  ),
-                  child: const Icon(
-                    Icons.bookmark,
-                    color: Colors.white,
-                    size: 30,
-                  ),
-                ),
-                const SizedBox(width: 16),
                 Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        _languageService['resume_reading'] ??
-                          'CONTINUE WHERE YOU LEFT OFF',
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 13,
-                          fontWeight: FontWeight.bold,
-                          letterSpacing: 0.5,
-                        ),
-                      ),
-                      const SizedBox(height: 6),
-                      Text(
-                        _sonOkunanSureAd ??
-                          (_languageService['chapter'] ?? 'Surah'),
-                        style: const TextStyle(
-                          color: Colors.white,
-                          fontSize: 18,
-                          fontWeight: FontWeight.bold,
-                        ),
-                      ),
-                      if (resumeAyetNo != null)
-                        Text(
-                          '${cuzNo != null ? '${_languageService['juz'] ?? 'Juz'} $cuzNo • ' : ''}${_sonOkunanSureAd ?? (_languageService['chapter'] ?? 'Surah')} • ${_languageService['verse'] ?? 'Verse'} $resumeAyetNo',
-                          style: TextStyle(
-                            color: Colors.white.withOpacity(0.9),
-                            fontSize: 13,
-                          ),
-                        ),
-                    ],
+                  child: _buildKucukAksiyonButonu(
+                    ikon: Icons.replay_rounded,
+                    etiket:
+                        _languageService['resume_reading_restart'] ??
+                        'Baştan Başla',
+                    onTap: _kaldiginYerdenBastanBasla,
                   ),
                 ),
-                Icon(
-                  Icons.play_circle_fill,
-                  color: Colors.white.withOpacity(0.9),
-                  size: 40,
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _buildKucukAksiyonButonu(
+                    ikon: Icons.close_rounded,
+                    etiket:
+                        _languageService['resume_reading_cancel'] ?? 'İptal',
+                    onTap: _kaldiginYerdenIptalOnayla,
+                  ),
                 ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildKucukAksiyonButonu({
+    required IconData ikon,
+    required String etiket,
+    required VoidCallback onTap,
+  }) {
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(12),
+        onTap: onTap,
+        child: Container(
+          padding: const EdgeInsets.symmetric(vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.18),
+            borderRadius: BorderRadius.circular(12),
+          ),
+          child: Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(ikon, color: Colors.white, size: 16),
+              const SizedBox(width: 6),
+              Flexible(
+                child: Text(
+                  etiket,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                  ),
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
         ),
       ),
@@ -779,807 +1476,822 @@ class _KuranSayfaState extends State<KuranSayfa>
     ),
   ];
 
-  // 114 Sure listesi
-  final List<Sure> _tumSureler = [
-    Sure(
-      no: 1,
-      arapca: 'الفاتحة',
-      turkceAd: 'Fatiha',
-      ayetSayisi: 7,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 2,
-      arapca: 'البقرة',
-      turkceAd: 'Bakara',
-      ayetSayisi: 286,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 3,
-      arapca: 'آل عمران',
-      turkceAd: 'Âl-i İmrân',
-      ayetSayisi: 200,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 4,
-      arapca: 'النساء',
-      turkceAd: 'Nisâ',
-      ayetSayisi: 176,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 5,
-      arapca: 'المائدة',
-      turkceAd: 'Mâide',
-      ayetSayisi: 120,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 6,
-      arapca: 'الأنعام',
-      turkceAd: 'En\'âm',
-      ayetSayisi: 165,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 7,
-      arapca: 'الأعراف',
-      turkceAd: 'A\'râf',
-      ayetSayisi: 206,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 8,
-      arapca: 'الأنفال',
-      turkceAd: 'Enfâl',
-      ayetSayisi: 75,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 9,
-      arapca: 'التوبة',
-      turkceAd: 'Tevbe',
-      ayetSayisi: 129,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 10,
-      arapca: 'يونس',
-      turkceAd: 'Yûnus',
-      ayetSayisi: 109,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 11,
-      arapca: 'هود',
-      turkceAd: 'Hûd',
-      ayetSayisi: 123,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 12,
-      arapca: 'يوسف',
-      turkceAd: 'Yûsuf',
-      ayetSayisi: 111,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 13,
-      arapca: 'الرعد',
-      turkceAd: 'Ra\'d',
-      ayetSayisi: 43,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 14,
-      arapca: 'إبراهيم',
-      turkceAd: 'İbrâhîm',
-      ayetSayisi: 52,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 15,
-      arapca: 'الحجر',
-      turkceAd: 'Hicr',
-      ayetSayisi: 99,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 16,
-      arapca: 'النحل',
-      turkceAd: 'Nahl',
-      ayetSayisi: 128,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 17,
-      arapca: 'الإسراء',
-      turkceAd: 'İsrâ',
-      ayetSayisi: 111,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 18,
-      arapca: 'الكهف',
-      turkceAd: 'Kehf',
-      ayetSayisi: 110,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 19,
-      arapca: 'مريم',
-      turkceAd: 'Meryem',
-      ayetSayisi: 98,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 20,
-      arapca: 'طه',
-      turkceAd: 'Tâhâ',
-      ayetSayisi: 135,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 21,
-      arapca: 'الأنبياء',
-      turkceAd: 'Enbiyâ',
-      ayetSayisi: 112,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 22,
-      arapca: 'الحج',
-      turkceAd: 'Hac',
-      ayetSayisi: 78,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 23,
-      arapca: 'المؤمنون',
-      turkceAd: 'Mü\'minûn',
-      ayetSayisi: 118,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 24,
-      arapca: 'النور',
-      turkceAd: 'Nûr',
-      ayetSayisi: 64,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 25,
-      arapca: 'الفرقان',
-      turkceAd: 'Furkân',
-      ayetSayisi: 77,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 26,
-      arapca: 'الشعراء',
-      turkceAd: 'Şuarâ',
-      ayetSayisi: 227,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 27,
-      arapca: 'النمل',
-      turkceAd: 'Neml',
-      ayetSayisi: 93,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 28,
-      arapca: 'القصص',
-      turkceAd: 'Kasas',
-      ayetSayisi: 88,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 29,
-      arapca: 'العنكبوت',
-      turkceAd: 'Ankebût',
-      ayetSayisi: 69,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 30,
-      arapca: 'الروم',
-      turkceAd: 'Rûm',
-      ayetSayisi: 60,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 31,
-      arapca: 'لقمان',
-      turkceAd: 'Lokmân',
-      ayetSayisi: 34,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 32,
-      arapca: 'السجدة',
-      turkceAd: 'Secde',
-      ayetSayisi: 30,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 33,
-      arapca: 'الأحزاب',
-      turkceAd: 'Ahzâb',
-      ayetSayisi: 73,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 34,
-      arapca: 'سبأ',
-      turkceAd: 'Sebe\'',
-      ayetSayisi: 54,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 35,
-      arapca: 'فاطر',
-      turkceAd: 'Fâtır',
-      ayetSayisi: 45,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 36,
-      arapca: 'يس',
-      turkceAd: 'Yâsîn',
-      ayetSayisi: 83,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 37,
-      arapca: 'الصافات',
-      turkceAd: 'Sâffât',
-      ayetSayisi: 182,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 38,
-      arapca: 'ص',
-      turkceAd: 'Sâd',
-      ayetSayisi: 88,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 39,
-      arapca: 'الزمر',
-      turkceAd: 'Zümer',
-      ayetSayisi: 75,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 40,
-      arapca: 'غافر',
-      turkceAd: 'Mü\'min',
-      ayetSayisi: 85,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 41,
-      arapca: 'فصلت',
-      turkceAd: 'Fussilet',
-      ayetSayisi: 54,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 42,
-      arapca: 'الشورى',
-      turkceAd: 'Şûrâ',
-      ayetSayisi: 53,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 43,
-      arapca: 'الزخرف',
-      turkceAd: 'Zuhruf',
-      ayetSayisi: 89,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 44,
-      arapca: 'الدخان',
-      turkceAd: 'Duhân',
-      ayetSayisi: 59,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 45,
-      arapca: 'الجاثية',
-      turkceAd: 'Câsiye',
-      ayetSayisi: 37,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 46,
-      arapca: 'الأحقاف',
-      turkceAd: 'Ahkâf',
-      ayetSayisi: 35,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 47,
-      arapca: 'محمد',
-      turkceAd: 'Muhammed',
-      ayetSayisi: 38,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 48,
-      arapca: 'الفتح',
-      turkceAd: 'Fetih',
-      ayetSayisi: 29,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 49,
-      arapca: 'الحجرات',
-      turkceAd: 'Hucurât',
-      ayetSayisi: 18,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 50,
-      arapca: 'ق',
-      turkceAd: 'Kâf',
-      ayetSayisi: 45,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 51,
-      arapca: 'الذاريات',
-      turkceAd: 'Zâriyât',
-      ayetSayisi: 60,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 52,
-      arapca: 'الطور',
-      turkceAd: 'Tûr',
-      ayetSayisi: 49,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 53,
-      arapca: 'النجم',
-      turkceAd: 'Necm',
-      ayetSayisi: 62,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 54,
-      arapca: 'القمر',
-      turkceAd: 'Kamer',
-      ayetSayisi: 55,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 55,
-      arapca: 'الرحمن',
-      turkceAd: 'Rahmân',
-      ayetSayisi: 78,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 56,
-      arapca: 'الواقعة',
-      turkceAd: 'Vâkıa',
-      ayetSayisi: 96,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 57,
-      arapca: 'الحديد',
-      turkceAd: 'Hadîd',
-      ayetSayisi: 29,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 58,
-      arapca: 'المجادلة',
-      turkceAd: 'Mücâdele',
-      ayetSayisi: 22,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 59,
-      arapca: 'الحشر',
-      turkceAd: 'Haşr',
-      ayetSayisi: 24,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 60,
-      arapca: 'الممتحنة',
-      turkceAd: 'Mümtehine',
-      ayetSayisi: 13,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 61,
-      arapca: 'الصف',
-      turkceAd: 'Saf',
-      ayetSayisi: 14,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 62,
-      arapca: 'الجمعة',
-      turkceAd: 'Cuma',
-      ayetSayisi: 11,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 63,
-      arapca: 'المنافقون',
-      turkceAd: 'Münâfikûn',
-      ayetSayisi: 11,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 64,
-      arapca: 'التغابن',
-      turkceAd: 'Teğâbün',
-      ayetSayisi: 18,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 65,
-      arapca: 'الطلاق',
-      turkceAd: 'Talâk',
-      ayetSayisi: 12,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 66,
-      arapca: 'التحريم',
-      turkceAd: 'Tahrîm',
-      ayetSayisi: 12,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 67,
-      arapca: 'الملك',
-      turkceAd: 'Mülk',
-      ayetSayisi: 30,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 68,
-      arapca: 'القلم',
-      turkceAd: 'Kalem',
-      ayetSayisi: 52,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 69,
-      arapca: 'الحاقة',
-      turkceAd: 'Hâkka',
-      ayetSayisi: 52,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 70,
-      arapca: 'المعارج',
-      turkceAd: 'Meâric',
-      ayetSayisi: 44,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 71,
-      arapca: 'نوح',
-      turkceAd: 'Nûh',
-      ayetSayisi: 28,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 72,
-      arapca: 'الجن',
-      turkceAd: 'Cin',
-      ayetSayisi: 28,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 73,
-      arapca: 'المزمل',
-      turkceAd: 'Müzzemmil',
-      ayetSayisi: 20,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 74,
-      arapca: 'المدثر',
-      turkceAd: 'Müddessir',
-      ayetSayisi: 56,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 75,
-      arapca: 'القيامة',
-      turkceAd: 'Kıyâme',
-      ayetSayisi: 40,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 76,
-      arapca: 'الإنسان',
-      turkceAd: 'İnsân',
-      ayetSayisi: 31,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 77,
-      arapca: 'المرسلات',
-      turkceAd: 'Mürselât',
-      ayetSayisi: 50,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 78,
-      arapca: 'النبأ',
-      turkceAd: 'Nebe\'',
-      ayetSayisi: 40,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 79,
-      arapca: 'النازعات',
-      turkceAd: 'Nâziât',
-      ayetSayisi: 46,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 80,
-      arapca: 'عبس',
-      turkceAd: 'Abese',
-      ayetSayisi: 42,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 81,
-      arapca: 'التكوير',
-      turkceAd: 'Tekvîr',
-      ayetSayisi: 29,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 82,
-      arapca: 'الانفطار',
-      turkceAd: 'İnfitâr',
-      ayetSayisi: 19,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 83,
-      arapca: 'المطففين',
-      turkceAd: 'Mutaffifîn',
-      ayetSayisi: 36,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 84,
-      arapca: 'الانشقاق',
-      turkceAd: 'İnşikâk',
-      ayetSayisi: 25,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 85,
-      arapca: 'البروج',
-      turkceAd: 'Bürûc',
-      ayetSayisi: 22,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 86,
-      arapca: 'الطارق',
-      turkceAd: 'Târık',
-      ayetSayisi: 17,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 87,
-      arapca: 'الأعلى',
-      turkceAd: 'A\'lâ',
-      ayetSayisi: 19,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 88,
-      arapca: 'الغاشية',
-      turkceAd: 'Gâşiye',
-      ayetSayisi: 26,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 89,
-      arapca: 'الفجر',
-      turkceAd: 'Fecr',
-      ayetSayisi: 30,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 90,
-      arapca: 'البلد',
-      turkceAd: 'Beled',
-      ayetSayisi: 20,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 91,
-      arapca: 'الشمس',
-      turkceAd: 'Şems',
-      ayetSayisi: 15,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 92,
-      arapca: 'الليل',
-      turkceAd: 'Leyl',
-      ayetSayisi: 21,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 93,
-      arapca: 'الضحى',
-      turkceAd: 'Duhâ',
-      ayetSayisi: 11,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 94,
-      arapca: 'الشرح',
-      turkceAd: 'İnşirâh',
-      ayetSayisi: 8,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 95,
-      arapca: 'التين',
-      turkceAd: 'Tîn',
-      ayetSayisi: 8,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 96,
-      arapca: 'العلق',
-      turkceAd: 'Alak',
-      ayetSayisi: 19,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 97,
-      arapca: 'القدر',
-      turkceAd: 'Kadir',
-      ayetSayisi: 5,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 98,
-      arapca: 'البينة',
-      turkceAd: 'Beyyine',
-      ayetSayisi: 8,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 99,
-      arapca: 'الزلزلة',
-      turkceAd: 'Zilzâl',
-      ayetSayisi: 8,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 100,
-      arapca: 'العاديات',
-      turkceAd: 'Âdiyât',
-      ayetSayisi: 11,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 101,
-      arapca: 'القارعة',
-      turkceAd: 'Kâria',
-      ayetSayisi: 11,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 102,
-      arapca: 'التكاثر',
-      turkceAd: 'Tekâsür',
-      ayetSayisi: 8,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 103,
-      arapca: 'العصر',
-      turkceAd: 'Asr',
-      ayetSayisi: 3,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 104,
-      arapca: 'الهمزة',
-      turkceAd: 'Hümeze',
-      ayetSayisi: 9,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 105,
-      arapca: 'الفيل',
-      turkceAd: 'Fîl',
-      ayetSayisi: 5,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 106,
-      arapca: 'قريش',
-      turkceAd: 'Kureyş',
-      ayetSayisi: 4,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 107,
-      arapca: 'الماعون',
-      turkceAd: 'Mâûn',
-      ayetSayisi: 7,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 108,
-      arapca: 'الكوثر',
-      turkceAd: 'Kevser',
-      ayetSayisi: 3,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 109,
-      arapca: 'الكافرون',
-      turkceAd: 'Kâfirûn',
-      ayetSayisi: 6,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 110,
-      arapca: 'النصر',
-      turkceAd: 'Nasr',
-      ayetSayisi: 3,
-      indirildigiYer: 'Medine',
-    ),
-    Sure(
-      no: 111,
-      arapca: 'المسد',
-      turkceAd: 'Tebbet',
-      ayetSayisi: 5,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 112,
-      arapca: 'الإخلاص',
-      turkceAd: 'İhlâs',
-      ayetSayisi: 4,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 113,
-      arapca: 'الفلق',
-      turkceAd: 'Felak',
-      ayetSayisi: 5,
-      indirildigiYer: 'Mekke',
-    ),
-    Sure(
-      no: 114,
-      arapca: 'الناس',
-      turkceAd: 'Nâs',
-      ayetSayisi: 6,
-      indirildigiYer: 'Mekke',
-    ),
-  ];
+  List<Sure> get _tumSureler => sureListesi;
+}
+
+// 114 Sure listesi
+const List<Sure> sureListesi = [
+  Sure(
+    no: 1,
+    arapca: 'الفاتحة',
+    turkceAd: 'Fatiha',
+    ayetSayisi: 7,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 2,
+    arapca: 'البقرة',
+    turkceAd: 'Bakara',
+    ayetSayisi: 286,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 3,
+    arapca: 'آل عمران',
+    turkceAd: 'Âl-i İmrân',
+    ayetSayisi: 200,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 4,
+    arapca: 'النساء',
+    turkceAd: 'Nisâ',
+    ayetSayisi: 176,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 5,
+    arapca: 'المائدة',
+    turkceAd: 'Mâide',
+    ayetSayisi: 120,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 6,
+    arapca: 'الأنعام',
+    turkceAd: 'En\'âm',
+    ayetSayisi: 165,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 7,
+    arapca: 'الأعراف',
+    turkceAd: 'A\'râf',
+    ayetSayisi: 206,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 8,
+    arapca: 'الأنفال',
+    turkceAd: 'Enfâl',
+    ayetSayisi: 75,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 9,
+    arapca: 'التوبة',
+    turkceAd: 'Tevbe',
+    ayetSayisi: 129,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 10,
+    arapca: 'يونس',
+    turkceAd: 'Yûnus',
+    ayetSayisi: 109,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 11,
+    arapca: 'هود',
+    turkceAd: 'Hûd',
+    ayetSayisi: 123,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 12,
+    arapca: 'يوسف',
+    turkceAd: 'Yûsuf',
+    ayetSayisi: 111,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 13,
+    arapca: 'الرعد',
+    turkceAd: 'Ra\'d',
+    ayetSayisi: 43,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 14,
+    arapca: 'إبراهيم',
+    turkceAd: 'İbrâhîm',
+    ayetSayisi: 52,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 15,
+    arapca: 'الحجر',
+    turkceAd: 'Hicr',
+    ayetSayisi: 99,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 16,
+    arapca: 'النحل',
+    turkceAd: 'Nahl',
+    ayetSayisi: 128,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 17,
+    arapca: 'الإسراء',
+    turkceAd: 'İsrâ',
+    ayetSayisi: 111,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 18,
+    arapca: 'الكهف',
+    turkceAd: 'Kehf',
+    ayetSayisi: 110,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 19,
+    arapca: 'مريم',
+    turkceAd: 'Meryem',
+    ayetSayisi: 98,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 20,
+    arapca: 'طه',
+    turkceAd: 'Tâhâ',
+    ayetSayisi: 135,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 21,
+    arapca: 'الأنبياء',
+    turkceAd: 'Enbiyâ',
+    ayetSayisi: 112,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 22,
+    arapca: 'الحج',
+    turkceAd: 'Hac',
+    ayetSayisi: 78,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 23,
+    arapca: 'المؤمنون',
+    turkceAd: 'Mü\'minûn',
+    ayetSayisi: 118,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 24,
+    arapca: 'النور',
+    turkceAd: 'Nûr',
+    ayetSayisi: 64,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 25,
+    arapca: 'الفرقان',
+    turkceAd: 'Furkân',
+    ayetSayisi: 77,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 26,
+    arapca: 'الشعراء',
+    turkceAd: 'Şuarâ',
+    ayetSayisi: 227,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 27,
+    arapca: 'النمل',
+    turkceAd: 'Neml',
+    ayetSayisi: 93,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 28,
+    arapca: 'القصص',
+    turkceAd: 'Kasas',
+    ayetSayisi: 88,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 29,
+    arapca: 'العنكبوت',
+    turkceAd: 'Ankebût',
+    ayetSayisi: 69,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 30,
+    arapca: 'الروم',
+    turkceAd: 'Rûm',
+    ayetSayisi: 60,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 31,
+    arapca: 'لقمان',
+    turkceAd: 'Lokmân',
+    ayetSayisi: 34,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 32,
+    arapca: 'السجدة',
+    turkceAd: 'Secde',
+    ayetSayisi: 30,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 33,
+    arapca: 'الأحزاب',
+    turkceAd: 'Ahzâb',
+    ayetSayisi: 73,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 34,
+    arapca: 'سبأ',
+    turkceAd: 'Sebe\'',
+    ayetSayisi: 54,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 35,
+    arapca: 'فاطر',
+    turkceAd: 'Fâtır',
+    ayetSayisi: 45,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 36,
+    arapca: 'يس',
+    turkceAd: 'Yâsîn',
+    ayetSayisi: 83,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 37,
+    arapca: 'الصافات',
+    turkceAd: 'Sâffât',
+    ayetSayisi: 182,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 38,
+    arapca: 'ص',
+    turkceAd: 'Sâd',
+    ayetSayisi: 88,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 39,
+    arapca: 'الزمر',
+    turkceAd: 'Zümer',
+    ayetSayisi: 75,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 40,
+    arapca: 'غافر',
+    turkceAd: 'Mü\'min',
+    ayetSayisi: 85,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 41,
+    arapca: 'فصلت',
+    turkceAd: 'Fussilet',
+    ayetSayisi: 54,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 42,
+    arapca: 'الشورى',
+    turkceAd: 'Şûrâ',
+    ayetSayisi: 53,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 43,
+    arapca: 'الزخرف',
+    turkceAd: 'Zuhruf',
+    ayetSayisi: 89,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 44,
+    arapca: 'الدخان',
+    turkceAd: 'Duhân',
+    ayetSayisi: 59,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 45,
+    arapca: 'الجاثية',
+    turkceAd: 'Câsiye',
+    ayetSayisi: 37,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 46,
+    arapca: 'الأحقاف',
+    turkceAd: 'Ahkâf',
+    ayetSayisi: 35,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 47,
+    arapca: 'محمد',
+    turkceAd: 'Muhammed',
+    ayetSayisi: 38,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 48,
+    arapca: 'الفتح',
+    turkceAd: 'Fetih',
+    ayetSayisi: 29,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 49,
+    arapca: 'الحجرات',
+    turkceAd: 'Hucurât',
+    ayetSayisi: 18,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 50,
+    arapca: 'ق',
+    turkceAd: 'Kâf',
+    ayetSayisi: 45,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 51,
+    arapca: 'الذاريات',
+    turkceAd: 'Zâriyât',
+    ayetSayisi: 60,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 52,
+    arapca: 'الطور',
+    turkceAd: 'Tûr',
+    ayetSayisi: 49,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 53,
+    arapca: 'النجم',
+    turkceAd: 'Necm',
+    ayetSayisi: 62,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 54,
+    arapca: 'القمر',
+    turkceAd: 'Kamer',
+    ayetSayisi: 55,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 55,
+    arapca: 'الرحمن',
+    turkceAd: 'Rahmân',
+    ayetSayisi: 78,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 56,
+    arapca: 'الواقعة',
+    turkceAd: 'Vâkıa',
+    ayetSayisi: 96,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 57,
+    arapca: 'الحديد',
+    turkceAd: 'Hadîd',
+    ayetSayisi: 29,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 58,
+    arapca: 'المجادلة',
+    turkceAd: 'Mücâdele',
+    ayetSayisi: 22,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 59,
+    arapca: 'الحشر',
+    turkceAd: 'Haşr',
+    ayetSayisi: 24,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 60,
+    arapca: 'الممتحنة',
+    turkceAd: 'Mümtehine',
+    ayetSayisi: 13,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 61,
+    arapca: 'الصف',
+    turkceAd: 'Saf',
+    ayetSayisi: 14,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 62,
+    arapca: 'الجمعة',
+    turkceAd: 'Cuma',
+    ayetSayisi: 11,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 63,
+    arapca: 'المنافقون',
+    turkceAd: 'Münâfikûn',
+    ayetSayisi: 11,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 64,
+    arapca: 'التغابن',
+    turkceAd: 'Teğâbün',
+    ayetSayisi: 18,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 65,
+    arapca: 'الطلاق',
+    turkceAd: 'Talâk',
+    ayetSayisi: 12,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 66,
+    arapca: 'التحريم',
+    turkceAd: 'Tahrîm',
+    ayetSayisi: 12,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 67,
+    arapca: 'الملك',
+    turkceAd: 'Mülk',
+    ayetSayisi: 30,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 68,
+    arapca: 'القلم',
+    turkceAd: 'Kalem',
+    ayetSayisi: 52,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 69,
+    arapca: 'الحاقة',
+    turkceAd: 'Hâkka',
+    ayetSayisi: 52,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 70,
+    arapca: 'المعارج',
+    turkceAd: 'Meâric',
+    ayetSayisi: 44,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 71,
+    arapca: 'نوح',
+    turkceAd: 'Nûh',
+    ayetSayisi: 28,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 72,
+    arapca: 'الجن',
+    turkceAd: 'Cin',
+    ayetSayisi: 28,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 73,
+    arapca: 'المزمل',
+    turkceAd: 'Müzzemmil',
+    ayetSayisi: 20,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 74,
+    arapca: 'المدثر',
+    turkceAd: 'Müddessir',
+    ayetSayisi: 56,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 75,
+    arapca: 'القيامة',
+    turkceAd: 'Kıyâme',
+    ayetSayisi: 40,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 76,
+    arapca: 'الإنسان',
+    turkceAd: 'İnsân',
+    ayetSayisi: 31,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 77,
+    arapca: 'المرسلات',
+    turkceAd: 'Mürselât',
+    ayetSayisi: 50,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 78,
+    arapca: 'النبأ',
+    turkceAd: 'Nebe\'',
+    ayetSayisi: 40,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 79,
+    arapca: 'النازعات',
+    turkceAd: 'Nâziât',
+    ayetSayisi: 46,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 80,
+    arapca: 'عبس',
+    turkceAd: 'Abese',
+    ayetSayisi: 42,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 81,
+    arapca: 'التكوير',
+    turkceAd: 'Tekvîr',
+    ayetSayisi: 29,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 82,
+    arapca: 'الانفطار',
+    turkceAd: 'İnfitâr',
+    ayetSayisi: 19,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 83,
+    arapca: 'المطففين',
+    turkceAd: 'Mutaffifîn',
+    ayetSayisi: 36,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 84,
+    arapca: 'الانشقاق',
+    turkceAd: 'İnşikâk',
+    ayetSayisi: 25,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 85,
+    arapca: 'البروج',
+    turkceAd: 'Bürûc',
+    ayetSayisi: 22,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 86,
+    arapca: 'الطارق',
+    turkceAd: 'Târık',
+    ayetSayisi: 17,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 87,
+    arapca: 'الأعلى',
+    turkceAd: 'A\'lâ',
+    ayetSayisi: 19,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 88,
+    arapca: 'الغاشية',
+    turkceAd: 'Gâşiye',
+    ayetSayisi: 26,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 89,
+    arapca: 'الفجر',
+    turkceAd: 'Fecr',
+    ayetSayisi: 30,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 90,
+    arapca: 'البلد',
+    turkceAd: 'Beled',
+    ayetSayisi: 20,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 91,
+    arapca: 'الشمس',
+    turkceAd: 'Şems',
+    ayetSayisi: 15,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 92,
+    arapca: 'الليل',
+    turkceAd: 'Leyl',
+    ayetSayisi: 21,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 93,
+    arapca: 'الضحى',
+    turkceAd: 'Duhâ',
+    ayetSayisi: 11,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 94,
+    arapca: 'الشرح',
+    turkceAd: 'İnşirâh',
+    ayetSayisi: 8,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 95,
+    arapca: 'التين',
+    turkceAd: 'Tîn',
+    ayetSayisi: 8,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 96,
+    arapca: 'العلق',
+    turkceAd: 'Alak',
+    ayetSayisi: 19,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 97,
+    arapca: 'القدر',
+    turkceAd: 'Kadir',
+    ayetSayisi: 5,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 98,
+    arapca: 'البينة',
+    turkceAd: 'Beyyine',
+    ayetSayisi: 8,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 99,
+    arapca: 'الزلزلة',
+    turkceAd: 'Zilzâl',
+    ayetSayisi: 8,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 100,
+    arapca: 'العاديات',
+    turkceAd: 'Âdiyât',
+    ayetSayisi: 11,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 101,
+    arapca: 'القارعة',
+    turkceAd: 'Kâria',
+    ayetSayisi: 11,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 102,
+    arapca: 'التكاثر',
+    turkceAd: 'Tekâsür',
+    ayetSayisi: 8,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 103,
+    arapca: 'العصر',
+    turkceAd: 'Asr',
+    ayetSayisi: 3,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 104,
+    arapca: 'الهمزة',
+    turkceAd: 'Hümeze',
+    ayetSayisi: 9,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 105,
+    arapca: 'الفيل',
+    turkceAd: 'Fîl',
+    ayetSayisi: 5,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 106,
+    arapca: 'قريش',
+    turkceAd: 'Kureyş',
+    ayetSayisi: 4,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 107,
+    arapca: 'الماعون',
+    turkceAd: 'Mâûn',
+    ayetSayisi: 7,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 108,
+    arapca: 'الكوثر',
+    turkceAd: 'Kevser',
+    ayetSayisi: 3,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 109,
+    arapca: 'الكافرون',
+    turkceAd: 'Kâfirûn',
+    ayetSayisi: 6,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 110,
+    arapca: 'النصر',
+    turkceAd: 'Nasr',
+    ayetSayisi: 3,
+    indirildigiYer: 'Medine',
+  ),
+  Sure(
+    no: 111,
+    arapca: 'المسد',
+    turkceAd: 'Tebbet',
+    ayetSayisi: 5,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 112,
+    arapca: 'الإخلاص',
+    turkceAd: 'İhlâs',
+    ayetSayisi: 4,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 113,
+    arapca: 'الفلق',
+    turkceAd: 'Felak',
+    ayetSayisi: 5,
+    indirildigiYer: 'Mekke',
+  ),
+  Sure(
+    no: 114,
+    arapca: 'الناس',
+    turkceAd: 'Nâs',
+    ayetSayisi: 6,
+    indirildigiYer: 'Mekke',
+  ),
+];
+
+/// Ayet metninde arama sonucu: eşleşen ayetin sure bilgisiyle birlikte.
+class _AyetAramaSonucu {
+  final Sure sure;
+  final int ayetNo;
+  final String meal;
+
+  _AyetAramaSonucu({
+    required this.sure,
+    required this.ayetNo,
+    required this.meal,
+  });
 }
 
 class Sure {
@@ -1589,7 +2301,7 @@ class Sure {
   final int ayetSayisi;
   final String indirildigiYer;
 
-  Sure({
+  const Sure({
     required this.no,
     required this.arapca,
     required this.turkceAd,
@@ -1625,11 +2337,16 @@ class SureDetaySayfa extends StatefulWidget {
   final int? baslangicAyetNo;
   final int? bitisAyetNo;
 
+  /// Verildiyse, okuma ilerlemesi genel "kaldığın yer" kaydına ek olarak bu
+  /// hatim planına da işlenir (bkz. HatimPlanService.ilerlemeGuncelle).
+  final String? hatimPlanId;
+
   const SureDetaySayfa({
     super.key,
     required this.sure,
     this.baslangicAyetNo,
     this.bitisAyetNo,
+    this.hatimPlanId,
   });
 
   @override
@@ -1698,19 +2415,55 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     });
 
     try {
-      final sonuc = await KuranSesService.calmaKaynagi(
-        widget.sure.no,
-        ayet.no,
-      );
+      final sonuc = await KuranSesService.calmaKaynagi(widget.sure.no, ayet.no);
+
+      // Ayet indirilmemişse akıştan (CDN'den) çalınacak; internet yoksa
+      // sessizce başarısız olmak yerine kullanıcıyı önceden bilgilendir.
+      if (!sonuc.yerel && !await _internetVarMi()) {
+        if (mounted) {
+          setState(() => _calanAyetNo = null);
+          _internetYokUyarisiGoster();
+        }
+        return;
+      }
+
       await _sesOynatici.stop();
       await _sesOynatici.play(
         sonuc.yerel ? DeviceFileSource(sonuc.kaynak) : UrlSource(sonuc.kaynak),
       );
     } catch (e) {
-      if (mounted) setState(() => _calanAyetNo = null);
+      if (mounted) {
+        setState(() => _calanAyetNo = null);
+        _internetYokUyarisiGoster();
+      }
     } finally {
       if (mounted) setState(() => _sesYukleniyor = false);
     }
+  }
+
+  /// Kısa bir DNS sorgusuyla internet bağlantısını yoklar. VPN/kısıtlı
+  /// ağlarda yanlış negatif vermemesi için gerçek CDN adresine bakar.
+  Future<bool> _internetVarMi() async {
+    try {
+      final sonuc = await InternetAddress.lookup(
+        'cdn.islamic.network',
+      ).timeout(const Duration(seconds: 4));
+      return sonuc.isNotEmpty && sonuc.first.rawAddress.isNotEmpty;
+    } catch (_) {
+      return false;
+    }
+  }
+
+  void _internetYokUyarisiGoster() {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(
+          _languageService['connection_error_check_internet'] ??
+              'Connection error: Please check your internet connection',
+        ),
+        backgroundColor: Colors.red.shade700,
+      ),
+    );
   }
 
   Future<void> _sureyiIndir() async {
@@ -1760,11 +2513,39 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
   }
 
   Future<void> _kaydetSonOkunanYer() async {
-    if (_gorunenAyetNo != null) {
+    // _gorunenAyetNo yalnızca kaydırma olduğunda güncellenir (bkz.
+    // _onScroll). Fatiha gibi tamamı ekrana sığan kısa sureler hiç
+    // kaydırma tetiklemez ve _gorunenAyetNo null kalır; bu durumda okuma
+    // ilerlemesi hiç kaydedilmez ve hatim planı hep baştan (Fatiha)
+    // başlatılır. Bunu önlemek için: içerik zaten tamamen görünür
+    // durumdaysa (kaydırma alanı yok) sayfadaki son ayet okunmuş sayılır;
+    // sayfa henüz layout almadıysa bile en azından başlangıç ayeti
+    // kaydedilir.
+    final gorunenAyetNo =
+        _gorunenAyetNo ??
+        (_ayetler.isEmpty
+            ? null
+            : (_scrollController.hasClients &&
+                      _scrollController.position.maxScrollExtent <= 0
+                  ? _ayetler.last.no
+                  : (widget.baslangicAyetNo ?? _ayetler.first.no)));
+
+    if (gorunenAyetNo != null) {
       final prefs = await SharedPreferences.getInstance();
       await prefs.setInt('son_okunan_sure_no', widget.sure.no);
-      await prefs.setInt('son_okunan_ayet_no', _gorunenAyetNo!);
+      await prefs.setInt('son_okunan_ayet_no', gorunenAyetNo);
       await prefs.setString('son_okunan_sure_ad', widget.sure.turkceAd);
+      // Bu okuma bir hatim planından başlatıldıysa (bkz. "Kaldığın Yerden
+      // Oku" butonu), ilerleme yalnızca o plana işlenir. Birden fazla plan
+      // aynı anda aktif olabildiğinden, hangi plandan okunduğu bilinmeden
+      // otomatik güncelleme yapılamaz.
+      if (widget.hatimPlanId != null) {
+        await HatimPlanService.ilerlemeGuncelle(
+          widget.hatimPlanId!,
+          widget.sure.no,
+          gorunenAyetNo,
+        );
+      }
     }
   }
 
@@ -1965,7 +2746,8 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
       } else {
         setState(() {
           _hata =
-              _languageService['verses_load_failed'] ?? 'Verses could not be loaded';
+              _languageService['verses_load_failed'] ??
+              'Verses could not be loaded';
           _yukleniyor = false;
         });
       }
@@ -2032,7 +2814,8 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                     ),
                     const SizedBox(width: 12),
                     Text(
-                      _languageService['black_white_mode'] ?? 'Black & White Mode',
+                      _languageService['black_white_mode'] ??
+                          'Black & White Mode',
                     ),
                   ],
                 ),
@@ -2042,8 +2825,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                 child: Padding(
                   padding: EdgeInsets.only(left: 32),
                   child: Text(
-                      _languageService['reading_mode_desc'] ??
-                        'Eases reading',
+                    _languageService['reading_mode_desc'] ?? 'Eases reading',
                     style: const TextStyle(fontSize: 11, color: Colors.grey),
                   ),
                 ),
@@ -2077,8 +2859,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                     CircularProgressIndicator(color: _vurguRengi),
                     const SizedBox(height: 16),
                     Text(
-                        _languageService['verses_loading'] ??
-                          'Loading verses...',
+                      _languageService['verses_loading'] ?? 'Loading verses...',
                       style: TextStyle(color: _yaziSecondaryRengi),
                     ),
                   ],
@@ -2121,7 +2902,10 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
             : ListView.builder(
                 controller: _scrollController,
                 padding: const EdgeInsets.all(12),
-                itemCount: _ayetler.length + 1, // +1 for Besmele
+                itemCount:
+                    _ayetler.length +
+                    1 + // +1 for Besmele
+                    (widget.hatimPlanId != null ? 1 : 0),
                 itemBuilder: (context, index) {
                   if (index == 0 &&
                       widget.sure.no != 1 &&
@@ -2147,9 +2931,15 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                     );
                   }
 
-                  final ayetIndex = widget.sure.no != 1 && widget.sure.no != 9
-                      ? index - 1
-                      : index;
+                  final besmeleVarMi =
+                      widget.sure.no != 1 && widget.sure.no != 9;
+                  final sonAyetIndex =
+                      _ayetler.length - 1 + (besmeleVarMi ? 1 : 0);
+                  if (widget.hatimPlanId != null && index > sonAyetIndex) {
+                    return _buildDevamEtButonu(renkler);
+                  }
+
+                  final ayetIndex = besmeleVarMi ? index - 1 : index;
                   if (ayetIndex < 0 || ayetIndex >= _ayetler.length) {
                     return const SizedBox();
                   }
@@ -2158,6 +2948,112 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                   return _buildAyetKarti(ayet, renkler);
                 },
               ),
+      ),
+    );
+  }
+
+  /// Hatim planından okunurken sure sonuna gelindiğinde gösterilen buton.
+  /// Bu sayfa yalnızca tek bir sureyi gösterdiğinden, günün hedefi başka
+  /// bir surede bitiyorsa kullanıcı buradan bir sonraki sureye "devam
+  /// edebilir"; ilerleme kaydı (bkz. _kaydetSonOkunanYer) her surede
+  /// otomatik güncellendiğinden ertesi gün "Kaldığın Yerden Oku" doğrudan
+  /// bırakılan yerden başlar.
+  Widget _buildDevamEtButonu(TemaRenkleri renkler) {
+    final sonraNo = widget.sure.no + 1;
+    if (sonraNo > 114) {
+      return Container(
+        margin: const EdgeInsets.only(top: 8, bottom: 24),
+        padding: const EdgeInsets.all(20),
+        decoration: BoxDecoration(
+          color: renkler.vurgu.withOpacity(0.12),
+          borderRadius: BorderRadius.circular(18),
+        ),
+        child: Column(
+          children: [
+            Icon(Icons.celebration_rounded, color: renkler.vurgu, size: 32),
+            const SizedBox(height: 8),
+            Text(
+              _languageService['hatim_plan_completed'] ??
+                  'Tebrikler, hatmini tamamladın! 🎉',
+              textAlign: TextAlign.center,
+              style: TextStyle(
+                color: renkler.yaziPrimary,
+                fontSize: 15,
+                fontWeight: FontWeight.bold,
+              ),
+            ),
+          ],
+        ),
+      );
+    }
+
+    final sonrakiSure = sureListesi.firstWhere(
+      (s) => s.no == sonraNo,
+      orElse: () => sureListesi.first,
+    );
+
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 24),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () {
+            // Kullanıcı bu sureyi bitirdiğini bildirdi; ilerlemeyi sonuna
+            // kadar işleyip bir sonraki sureye geç.
+            _gorunenAyetNo = _ayetler.isNotEmpty
+                ? _ayetler.last.no
+                : _gorunenAyetNo;
+            _kaydetSonOkunanYer();
+            Navigator.pushReplacement(
+              context,
+              MaterialPageRoute(
+                builder: (context) => SureDetaySayfa(
+                  sure: sonrakiSure,
+                  baslangicAyetNo: 1,
+                  hatimPlanId: widget.hatimPlanId,
+                ),
+              ),
+            );
+          },
+          child: Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: renkler.vurgu.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: renkler.vurgu.withOpacity(0.4)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _languageService['hatim_plan_continue_next_surah'] ??
+                            'Devam Et',
+                        style: TextStyle(
+                          color: renkler.vurgu,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        '${_languageService['hatim_plan_next_surah_label'] ?? 'Sıradaki sure'}: ${sonrakiSure.turkceAd}',
+                        style: TextStyle(
+                          color: renkler.yaziSecondary,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.arrow_forward_rounded, color: renkler.vurgu),
+              ],
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -2201,9 +3097,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     final onay = await showDialog<bool>(
       context: context,
       builder: (context) => AlertDialog(
-        title: Text(
-          _languageService['delete_audio'] ?? 'Ses dosyalarını sil',
-        ),
+        title: Text(_languageService['delete_audio'] ?? 'Ses dosyalarını sil'),
         content: Text(
           _languageService['delete_audio_confirm'] ??
               'Bu surenin indirilen ses dosyaları cihazdan silinsin mi?',
@@ -2437,7 +3331,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
       final sureData = data[sureNo.toString()];
       if (sureData is List) {
         return sureData
-          .whereType<Map<String, dynamic>>()
+            .whereType<Map<String, dynamic>>()
             .map((item) {
               final noValue = item['no'];
               final no = noValue is int
@@ -2498,7 +3392,7 @@ class _CuzDetaySayfaState extends State<CuzDetaySayfa> {
   final TemaService _temaService = TemaService();
 
   List<_CuzSureSegment> _getCuzSureleri() {
-    final tumSureler = _KuranSayfaState()._tumSureler;
+    final tumSureler = sureListesi;
 
     int baslangicIndex = tumSureler.indexWhere(
       (s) => s.no == widget.cuz.baslangicSureNo,

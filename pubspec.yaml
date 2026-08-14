@@ -99,6 +99,7 @@ flutter:
     - assets/lang/
     - assets/data/kuran_meal.json
     - assets/data/gunluk_icerik_havuzu.json
+    - assets/data/mushaf_sayfalari.json
     - assets/icon/app_icon.png
     - assets/icon/sun.png
     - assets/icon/moon.png

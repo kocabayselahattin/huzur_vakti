@@ -15,27 +15,275 @@ class KuranVeriService {
 
   // Sure no (1-114) -> Türkçe sure adı.
   static const List<String> sureAdlari = [
-    'Fatiha', 'Bakara', 'Âl-i İmrân', 'Nisâ', 'Mâide', "En'âm", "A'râf",
-    'Enfâl', 'Tevbe', 'Yûnus', 'Hûd', 'Yûsuf', "Ra'd", 'İbrâhîm', 'Hicr',
-    'Nahl', 'İsrâ', 'Kehf', 'Meryem', 'Tâhâ', 'Enbiyâ', 'Hac', "Mü'minûn",
-    'Nûr', 'Furkân', 'Şuarâ', 'Neml', 'Kasas', 'Ankebût', 'Rûm', 'Lokmân',
-    'Secde', 'Ahzâb', "Sebe'", 'Fâtır', 'Yâsîn', 'Sâffât', 'Sâd', 'Zümer',
-    "Mü'min", 'Fussilet', 'Şûrâ', 'Zuhruf', 'Duhân', 'Câsiye', 'Ahkâf',
-    'Muhammed', 'Fetih', 'Hucurât', 'Kâf', 'Zâriyât', 'Tûr', 'Necm', 'Kamer',
-    'Rahmân', 'Vâkıa', 'Hadîd', 'Mücâdele', 'Haşr', 'Mümtehine', 'Saf',
-    'Cuma', 'Münâfikûn', 'Teğâbün', 'Talâk', 'Tahrîm', 'Mülk', 'Kalem',
-    'Hâkka', 'Meâric', 'Nûh', 'Cin', 'Müzzemmil', 'Müddessir', 'Kıyâme',
-    'İnsân', 'Mürselât', "Nebe'", 'Nâziât', 'Abese', 'Tekvîr', 'İnfitâr',
-    'Mutaffifîn', 'İnşikâk', 'Bürûc', 'Târık', "A'lâ", 'Gâşiye', 'Fecr',
-    'Beled', 'Şems', 'Leyl', 'Duhâ', 'İnşirâh', 'Tîn', 'Alak', 'Kadir',
-    'Beyyine', 'Zilzâl', 'Âdiyât', 'Kâria', 'Tekâsür', 'Asr', 'Hümeze',
-    'Fîl', 'Kureyş', 'Mâûn', 'Kevser', 'Kâfirûn', 'Nasr', 'Tebbet', 'İhlâs',
-    'Felak', 'Nâs',
+    'Fatiha',
+    'Bakara',
+    'Âl-i İmrân',
+    'Nisâ',
+    'Mâide',
+    "En'âm",
+    "A'râf",
+    'Enfâl',
+    'Tevbe',
+    'Yûnus',
+    'Hûd',
+    'Yûsuf',
+    "Ra'd",
+    'İbrâhîm',
+    'Hicr',
+    'Nahl',
+    'İsrâ',
+    'Kehf',
+    'Meryem',
+    'Tâhâ',
+    'Enbiyâ',
+    'Hac',
+    "Mü'minûn",
+    'Nûr',
+    'Furkân',
+    'Şuarâ',
+    'Neml',
+    'Kasas',
+    'Ankebût',
+    'Rûm',
+    'Lokmân',
+    'Secde',
+    'Ahzâb',
+    "Sebe'",
+    'Fâtır',
+    'Yâsîn',
+    'Sâffât',
+    'Sâd',
+    'Zümer',
+    "Mü'min",
+    'Fussilet',
+    'Şûrâ',
+    'Zuhruf',
+    'Duhân',
+    'Câsiye',
+    'Ahkâf',
+    'Muhammed',
+    'Fetih',
+    'Hucurât',
+    'Kâf',
+    'Zâriyât',
+    'Tûr',
+    'Necm',
+    'Kamer',
+    'Rahmân',
+    'Vâkıa',
+    'Hadîd',
+    'Mücâdele',
+    'Haşr',
+    'Mümtehine',
+    'Saf',
+    'Cuma',
+    'Münâfikûn',
+    'Teğâbün',
+    'Talâk',
+    'Tahrîm',
+    'Mülk',
+    'Kalem',
+    'Hâkka',
+    'Meâric',
+    'Nûh',
+    'Cin',
+    'Müzzemmil',
+    'Müddessir',
+    'Kıyâme',
+    'İnsân',
+    'Mürselât',
+    "Nebe'",
+    'Nâziât',
+    'Abese',
+    'Tekvîr',
+    'İnfitâr',
+    'Mutaffifîn',
+    'İnşikâk',
+    'Bürûc',
+    'Târık',
+    "A'lâ",
+    'Gâşiye',
+    'Fecr',
+    'Beled',
+    'Şems',
+    'Leyl',
+    'Duhâ',
+    'İnşirâh',
+    'Tîn',
+    'Alak',
+    'Kadir',
+    'Beyyine',
+    'Zilzâl',
+    'Âdiyât',
+    'Kâria',
+    'Tekâsür',
+    'Asr',
+    'Hümeze',
+    'Fîl',
+    'Kureyş',
+    'Mâûn',
+    'Kevser',
+    'Kâfirûn',
+    'Nasr',
+    'Tebbet',
+    'İhlâs',
+    'Felak',
+    'Nâs',
   ];
 
   static Future<void>? _yuklemeFuture;
 
   static bool get yuklendiMi => _veri != null;
+
+  // Sure no (1-114) -> ayet sayısı. Sayfa/hatim planı gibi ayet-sayımına
+  // dayalı hesaplamalar için; sureAdlari ile aynı sırada.
+  static const List<int> ayetSayilari = [
+    7,
+    286,
+    200,
+    176,
+    120,
+    165,
+    206,
+    75,
+    129,
+    109,
+    123,
+    111,
+    43,
+    52,
+    99,
+    128,
+    111,
+    110,
+    98,
+    135,
+    112,
+    78,
+    118,
+    64,
+    77,
+    227,
+    93,
+    88,
+    69,
+    60,
+    34,
+    30,
+    73,
+    54,
+    45,
+    83,
+    182,
+    88,
+    75,
+    85,
+    54,
+    53,
+    89,
+    59,
+    37,
+    35,
+    38,
+    29,
+    18,
+    45,
+    60,
+    49,
+    62,
+    55,
+    78,
+    96,
+    29,
+    22,
+    24,
+    13,
+    14,
+    11,
+    11,
+    18,
+    12,
+    12,
+    30,
+    52,
+    52,
+    44,
+    28,
+    28,
+    20,
+    56,
+    40,
+    31,
+    50,
+    40,
+    46,
+    42,
+    29,
+    19,
+    36,
+    25,
+    22,
+    17,
+    19,
+    26,
+    30,
+    20,
+    15,
+    21,
+    11,
+    8,
+    8,
+    19,
+    5,
+    8,
+    8,
+    11,
+    11,
+    8,
+    3,
+    9,
+    5,
+    4,
+    7,
+    3,
+    6,
+    3,
+    5,
+    4,
+    5,
+    6,
+  ];
+
+  /// Kur'an'ın tamamındaki ayet sayısı.
+  static const int toplamAyetSayisi = 6236;
+
+  /// Standart 604 sayfalık Mushaf baskısındaki toplam sayfa sayısı.
+  static const int toplamSayfaSayisi = 604;
+
+  static List<int>? _sureAyetOfsetleri;
+
+  /// offset[s] = s. sureden önceki toplam ayet sayısı (s: 1-114).
+  static List<int> get _ofsetler {
+    final mevcut = _sureAyetOfsetleri;
+    if (mevcut != null) return mevcut;
+    final offs = List<int>.filled(116, 0);
+    for (int s = 1; s <= 114; s++) {
+      offs[s + 1] = offs[s] + ayetSayilari[s - 1];
+    }
+    _sureAyetOfsetleri = offs;
+    return offs;
+  }
+
+  /// Bir ayetin Kur'an'ın başından itibaren kaçıncı ayet olduğunu (1-6236)
+  /// döndürür. Hatim planında ilerleme yüzdesi bununla hesaplanır.
+  static int globalAyetNo(int sureNo, int ayetNo) => _ofsetler[sureNo] + ayetNo;
+
+  // 604 sayfalık standart Mushaf baskısının her sayfasının başladığı
+  // [sureNo, ayetNo] çifti. Kaynak: quran-center/quran-meta (MIT), Hafs
+  // rivayeti, King Fahd Kompleksi standart sayfalaması.
+  static List<List<int>>? _sayfaBaslangiclari;
+
+  static bool get sayfaVerisiHazirMi => _sayfaBaslangiclari != null;
 
   /// Yerel Kur'an verisini bir kez yükler ve bellekte tutar.
   ///
@@ -49,12 +297,53 @@ class KuranVeriService {
 
   static Future<void> _yukleVeAyristir() async {
     try {
-      final jsonStr = await rootBundle.loadString('assets/data/kuran_meal.json');
+      final jsonStr = await rootBundle.loadString(
+        'assets/data/kuran_meal.json',
+      );
       _veri = await compute(_jsonAyristir, jsonStr);
+
+      final sayfaJsonStr = await rootBundle.loadString(
+        'assets/data/mushaf_sayfalari.json',
+      );
+      _sayfaBaslangiclari = (json.decode(sayfaJsonStr) as List)
+          .map<List<int>>(
+            (e) => (e as List).map((x) => x as int).toList(growable: false),
+          )
+          .toList(growable: false);
     } catch (_) {
       // Yükleme başarısızsa çağıranlar yerel yedek içeriğe düşer.
       _yuklemeFuture = null;
     }
+  }
+
+  /// Verilen sayfa numarasının (1-604) başladığı [sureNo, ayetNo].
+  static List<int> sayfaBaslangici(int sayfaNo) {
+    final liste = _sayfaBaslangiclari;
+    if (liste == null || liste.isEmpty) return const [1, 1];
+    final index = sayfaNo.clamp(1, liste.length) - 1;
+    return liste[index];
+  }
+
+  /// Verilen ayetin içinde bulunduğu Mushaf sayfa numarasını (1-604) döndürür.
+  /// Sayfa verisi henüz yüklenmemişse 1 döner.
+  static int sayfaNoForSureAyet(int sureNo, int ayetNo) {
+    final liste = _sayfaBaslangiclari;
+    if (liste == null || liste.isEmpty) return 1;
+
+    final hedef = globalAyetNo(sureNo, ayetNo);
+    // Binary search: başlangıcı hedefe eşit ya da öncesinde olan son sayfa.
+    int lo = 0, hi = liste.length - 1, sonucIndex = 0;
+    while (lo <= hi) {
+      final mid = (lo + hi) >> 1;
+      final baslangic = globalAyetNo(liste[mid][0], liste[mid][1]);
+      if (baslangic <= hedef) {
+        sonucIndex = mid;
+        lo = mid + 1;
+      } else {
+        hi = mid - 1;
+      }
+    }
+    return sonucIndex + 1;
   }
 
   /// compute() ile ayrı isolate'te çalışır; üst düzey/static olmak zorundadır.

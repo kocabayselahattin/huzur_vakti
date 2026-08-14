@@ -696,6 +696,7 @@ class _AutoScrollingTextState extends State<_AutoScrollingText> {
 
   Timer? _ticker;
   bool _basiliTutuluyor = false;
+  bool _tasiyorMu = false; // Metin sığmıyor mu (kayma gerekiyor mu).
   double _kalanBekleme = _baslangicBeklemeSaniye;
   int _yon = 1; // 1: aşağı, -1: yukarı
 
@@ -727,6 +728,12 @@ class _AutoScrollingTextState extends State<_AutoScrollingText> {
   void _tick() {
     if (!mounted || !_scrollController.hasClients) return;
 
+    final max = _scrollController.position.maxScrollExtent;
+    final tasiyor = max > 0;
+    if (tasiyor != _tasiyorMu) {
+      setState(() => _tasiyorMu = tasiyor);
+    }
+
     // Kullanıcı parmağını basılı tutuyorsa kaydırmayı beklet.
     if (_basiliTutuluyor) return;
 
@@ -737,7 +744,6 @@ class _AutoScrollingTextState extends State<_AutoScrollingText> {
       return;
     }
 
-    final max = _scrollController.position.maxScrollExtent;
     if (max <= 0) return; // Metin sığıyor, kaydırmaya gerek yok.
 
     final yeniOffset = _scrollController.offset + (_yon * _hizPikselSaniye * dt);
@@ -765,15 +771,46 @@ class _AutoScrollingTextState extends State<_AutoScrollingText> {
   @override
   Widget build(BuildContext context) {
     // Parmak basılıyken kaydırmayı duraklat, kaldırınca devam ettir.
-    return Listener(
-      onPointerDown: (_) => _basiliTutuluyor = true,
-      onPointerUp: (_) => _basiliTutuluyor = false,
-      onPointerCancel: (_) => _basiliTutuluyor = false,
-      child: SingleChildScrollView(
-        controller: _scrollController,
-        physics: const NeverScrollableScrollPhysics(),
-        child: Text(widget.text, style: widget.style),
-      ),
+    return Stack(
+      children: [
+        Listener(
+          onPointerDown: (_) => _basiliTutuluyor = true,
+          onPointerUp: (_) => _basiliTutuluyor = false,
+          onPointerCancel: (_) => _basiliTutuluyor = false,
+          child: SingleChildScrollView(
+            controller: _scrollController,
+            physics: const NeverScrollableScrollPhysics(),
+            child: Text(widget.text, style: widget.style),
+          ),
+        ),
+        // Metin uzun ve kayıyorsa, tamamını popup'ta okuyabileceğine dair ipucu.
+        if (_tasiyorMu)
+          Positioned(
+            right: 0,
+            bottom: 0,
+            child: AnimatedOpacity(
+              duration: const Duration(milliseconds: 300),
+              opacity: 0.7,
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                decoration: BoxDecoration(
+                  color: (widget.style.color ?? Colors.black).withValues(
+                    alpha: 0.08,
+                  ),
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text(
+                  'tamamı için dokun',
+                  style: TextStyle(
+                    color: widget.style.color,
+                    fontSize: 10,
+                    fontStyle: FontStyle.normal,
+                  ),
+                ),
+              ),
+            ),
+          ),
+      ],
     );
   }
 }
