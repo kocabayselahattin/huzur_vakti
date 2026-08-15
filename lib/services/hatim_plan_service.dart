@@ -25,6 +25,13 @@ class HatimPlani {
   final bool hatirlaticiAcik;
   final String hatirlaticiSaati; // "HH:mm"
 
+  /// Hatırlatma bildiriminde çalacak ses. Genelde res/raw dosya adıdır (ör.
+  /// "best"); "custom" ise [hatirlaticiOzelSesYolu]'ndaki cihaz dosyası
+  /// çalınır (bkz. bildirim_ayarlari_sayfa.dart'taki genel bildirim sesi
+  /// listesi ve akışı).
+  final String hatirlaticiSesi;
+  final String? hatirlaticiOzelSesYolu;
+
   const HatimPlani({
     required this.id,
     required this.ad,
@@ -35,6 +42,8 @@ class HatimPlani {
     this.mevcutAyetNo = 0,
     this.hatirlaticiAcik = true,
     this.hatirlaticiSaati = '21:00',
+    this.hatirlaticiSesi = 'best',
+    this.hatirlaticiOzelSesYolu,
   });
 
   HatimPlani kopyala({
@@ -43,6 +52,8 @@ class HatimPlani {
     int? mevcutAyetNo,
     bool? hatirlaticiAcik,
     String? hatirlaticiSaati,
+    String? hatirlaticiSesi,
+    String? hatirlaticiOzelSesYolu,
   }) => HatimPlani(
     id: id,
     ad: ad ?? this.ad,
@@ -53,6 +64,9 @@ class HatimPlani {
     mevcutAyetNo: mevcutAyetNo ?? this.mevcutAyetNo,
     hatirlaticiAcik: hatirlaticiAcik ?? this.hatirlaticiAcik,
     hatirlaticiSaati: hatirlaticiSaati ?? this.hatirlaticiSaati,
+    hatirlaticiSesi: hatirlaticiSesi ?? this.hatirlaticiSesi,
+    hatirlaticiOzelSesYolu:
+        hatirlaticiOzelSesYolu ?? this.hatirlaticiOzelSesYolu,
   );
 
   int get tamamlananAyetSayisi => mevcutAyetNo == 0
@@ -88,6 +102,9 @@ class HatimPlani {
     'mevcutAyetNo': mevcutAyetNo,
     'hatirlaticiAcik': hatirlaticiAcik,
     'hatirlaticiSaati': hatirlaticiSaati,
+    'hatirlaticiSesi': hatirlaticiSesi,
+    if (hatirlaticiOzelSesYolu != null)
+      'hatirlaticiOzelSesYolu': hatirlaticiOzelSesYolu,
   };
 
   factory HatimPlani.fromJson(Map<String, dynamic> j) {
@@ -109,6 +126,8 @@ class HatimPlani {
       mevcutAyetNo: j['mevcutAyetNo'] as int? ?? 0,
       hatirlaticiAcik: j['hatirlaticiAcik'] as bool? ?? true,
       hatirlaticiSaati: j['hatirlaticiSaati'] as String? ?? '21:00',
+      hatirlaticiSesi: j['hatirlaticiSesi'] as String? ?? 'best',
+      hatirlaticiOzelSesYolu: j['hatirlaticiOzelSesYolu'] as String?,
     );
   }
 }
@@ -248,6 +267,8 @@ class HatimPlanService {
     int? gunlukSayfaHedefi,
     bool hatirlaticiAcik = true,
     String hatirlaticiSaati = '21:00',
+    String hatirlaticiSesi = 'best',
+    String? hatirlaticiOzelSesYolu,
   }) async {
     final baslangic = HatimPlani._saatsiz(baslangicTarihi ?? DateTime.now());
 
@@ -271,6 +292,8 @@ class HatimPlanService {
       toplamGun: toplamGun,
       hatirlaticiAcik: hatirlaticiAcik,
       hatirlaticiSaati: hatirlaticiSaati,
+      hatirlaticiSesi: hatirlaticiSesi,
+      hatirlaticiOzelSesYolu: hatirlaticiOzelSesYolu,
     );
     await _planiEkle(plan);
     return plan;
@@ -283,6 +306,8 @@ class HatimPlanService {
     DateTime? baslangicTarihi,
     bool hatirlaticiAcik = true,
     String hatirlaticiSaati = '21:00',
+    String hatirlaticiSesi = 'best',
+    String? hatirlaticiOzelSesYolu,
   }) async {
     final baslangic = HatimPlani._saatsiz(
       baslangicTarihi ?? ramazanBaslangicTahmini() ?? DateTime.now(),
@@ -295,6 +320,8 @@ class HatimPlanService {
       toplamGun: 30,
       hatirlaticiAcik: hatirlaticiAcik,
       hatirlaticiSaati: hatirlaticiSaati,
+      hatirlaticiSesi: hatirlaticiSesi,
+      hatirlaticiOzelSesYolu: hatirlaticiOzelSesYolu,
     );
     await _planiEkle(plan);
     return plan;
@@ -385,8 +412,7 @@ class HatimPlanService {
     if (hedefSayfa >= toplamSayfa) {
       hedefSureAyet = const [114, 6];
     } else {
-      final sonrakiBaslangic = KuranVeriService.sayfaBaslangici(hedefSayfa + 1);
-      hedefSureAyet = _birOncekiAyet(sonrakiBaslangic[0], sonrakiBaslangic[1]);
+      hedefSureAyet = KuranVeriService.sayfaBitisi(hedefSayfa);
     }
 
     return HatimGunlukHedef(
@@ -397,27 +423,25 @@ class HatimPlanService {
     );
   }
 
-  static List<int> _birOncekiAyet(int sureNo, int ayetNo) {
-    if (ayetNo > 1) return [sureNo, ayetNo - 1];
-    if (sureNo > 1) {
-      final oncekiSure = sureNo - 1;
-      return [oncekiSure, KuranVeriService.ayetSayilari[oncekiSure - 1]];
-    }
-    return const [1, 1];
-  }
-
   // ---------------- Hatırlatma bildirimi ----------------
 
-  /// Bir planın hatırlatma açık/kapalı ve saat ayarını değiştirir.
+  /// Bir planın hatırlatma açık/kapalı, saat ve ses ayarını değiştirir.
   static Future<void> planHatirlaticisiniAyarla(
     String planId, {
     bool? acik,
     String? saat,
+    String? ses,
+    String? ozelSesYolu,
   }) async {
     final plan = await planGetir(planId);
     if (plan == null) return;
 
-    final guncel = plan.kopyala(hatirlaticiAcik: acik, hatirlaticiSaati: saat);
+    final guncel = plan.kopyala(
+      hatirlaticiAcik: acik,
+      hatirlaticiSaati: saat,
+      hatirlaticiSesi: ses,
+      hatirlaticiOzelSesYolu: ozelSesYolu,
+    );
     await planiGuncelle(guncel);
     await _planinHatirlaticisiniZamanla(guncel);
   }
@@ -469,12 +493,21 @@ class HatimPlanService {
 
       final hedef = gunlukHedef(plan, hedefTarih);
 
+      // "custom" ise gerçek dosya yolu gönderilir — native taraf soundFile
+      // içinde "/" görünce onu res/raw kaynağı değil, doğrudan çalınacak
+      // bir dosya olarak ele alır (bkz. AlarmService.kt::playSound).
+      final soundParam =
+          plan.hatirlaticiSesi == 'custom' &&
+              plan.hatirlaticiOzelSesYolu != null
+          ? plan.hatirlaticiOzelSesYolu!
+          : plan.hatirlaticiSesi;
+
       await AlarmService.scheduleDailyContentAlarm(
         notificationId: baseId + gun,
         title: '${plan.ad} — $baslikOneki',
         body: '${hedef.etiket}: $govdeOneki',
         triggerAtMillis: tetiklenmeZamani.millisecondsSinceEpoch,
-        soundFile: 'best',
+        soundFile: soundParam,
       );
     }
   }

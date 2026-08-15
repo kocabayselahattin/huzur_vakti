@@ -31,6 +31,7 @@ import android.view.KeyEvent
 import androidx.core.app.NotificationCompat
 import com.huzura.davet.MainActivity
 import com.huzura.davet.R
+import java.io.File
 import java.util.Calendar
 
 class AlarmService : Service() {
@@ -474,10 +475,24 @@ class AlarmService : Service() {
         }
     }
 
+    /// Kullanıcının cihazdan seçtiği özel ses, Flutter tarafında dosya yolu
+    /// olarak (bkz. bildirim_ayarlari_sayfa.dart / hatim_plan_service.dart)
+    /// gönderilir — kısa bir ID ("best" vb.) değil, "/" içeren tam bir yol.
+    /// Böyle bir yol geldiğinde raw kaynak aramak yerine doğrudan o dosya
+    /// çalınır.
+    private fun ozelSesDosyasi(soundId: String): File? {
+        if (!soundId.contains('/')) return null
+        val dosya = File(soundId)
+        return if (dosya.exists()) dosya else null
+    }
+
     private fun playSound(soundId: String) {
         mediaPlayer?.release()
-        val resId = getSoundResourceId(soundId)
-        Log.d(TAG, "🎵 Ses çalınıyor - ID: $soundId, Resource ID: $resId")
+        val ozelDosya = ozelSesDosyasi(soundId)
+        Log.d(
+            TAG,
+            "🎵 Ses çalınıyor - ID: $soundId, özelDosya=${ozelDosya?.absolutePath}"
+        )
 
         mediaPlayer = MediaPlayer().apply {
             // ÖNEMLİ: Ses nitelikleri setDataSource()'dan ÖNCE ayarlanmalı.
@@ -492,7 +507,21 @@ class AlarmService : Service() {
                     .setFlags(AudioAttributes.FLAG_AUDIBILITY_ENFORCED)
                     .build()
             )
-            setDataSource(applicationContext, android.net.Uri.parse("android.resource://$packageName/$resId"))
+            try {
+                if (soundId == "system_default") {
+                    val defaultUri = RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+                    setDataSource(applicationContext, defaultUri)
+                } else if (ozelDosya != null) {
+                    setDataSource(ozelDosya.absolutePath)
+                } else {
+                    val resId = getSoundResourceId(soundId)
+                    setDataSource(applicationContext, android.net.Uri.parse("android.resource://$packageName/$resId"))
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "❌ Özel ses dosyası okunamadı, varsayılana dönülüyor: ${e.message}")
+                val resId = getSoundResourceId("best")
+                setDataSource(applicationContext, android.net.Uri.parse("android.resource://$packageName/$resId"))
+            }
             isLooping = false
             prepareAsync()
             setOnPreparedListener {

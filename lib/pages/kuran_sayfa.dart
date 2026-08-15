@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'dart:async';
 import 'dart:convert';
 import 'dart:io';
 import 'package:http/http.dart' as http;
@@ -920,6 +921,18 @@ class _KuranSayfaState extends State<KuranSayfa>
                     ),
                   ],
                 ),
+              ),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(20, 0, 20, 12),
+            child: Text(
+              _languageService['resume_reading_no_plan_note'] ??
+                  'Bu, herhangi bir hatim planına bağlı olmadan yaptığın genel okumanın ilerlemesidir.',
+              style: TextStyle(
+                color: Colors.white.withOpacity(0.75),
+                fontSize: 11.5,
+                height: 1.3,
               ),
             ),
           ),
@@ -2341,31 +2354,114 @@ class SureDetaySayfa extends StatefulWidget {
   /// hatim planına da işlenir (bkz. HatimPlanService.ilerlemeGuncelle).
   final String? hatimPlanId;
 
+  /// Hatim planından okunurken günün hedefi (bkz. HatimPlanService.
+  /// gunlukHedef). [bitisAyetNo] verilmemişse ve hedef bu surede bitiyorsa,
+  /// görünüm surenin tamamı yerine tam olarak günün hedefine kadar sınırlanır
+  /// — kullanıcı o gün kaç sayfa okuması gerekiyorsa yalnızca o kadarını
+  /// görür. Hedefe ulaşıldıktan sonra "Devam Et" ile Mushaf'ın gerçek sayfa
+  /// sınırlarına göre birer sayfa eklenir (bkz. _buildDevamEtButonu).
+  final int? hedefSureNo;
+  final int? hedefAyetNo;
+
   const SureDetaySayfa({
     super.key,
     required this.sure,
     this.baslangicAyetNo,
     this.bitisAyetNo,
     this.hatimPlanId,
+    this.hedefSureNo,
+    this.hedefAyetNo,
   });
 
   @override
   State<SureDetaySayfa> createState() => _SureDetaySayfaState();
 }
 
+/// Bir ayeti, hangi sureye ait olduğuyla birlikte tutar. Hatim planından
+/// okurken görünüm birden fazla sureye yayılabildiğinden (bkz.
+/// _SureDetaySayfaState), düz ayet listesinin her öğesi kaynağını bilmek
+/// zorundadır.
+class _SureAyet {
+  final int sureNo;
+  final Ayet ayet;
+  const _SureAyet(this.sureNo, this.ayet);
+}
+
+/// Okuma listesindeki bir öğe: bir sureye geçiş başlığı, bir besmele bloğu
+/// ya da tek bir ayet kartı. Birden fazla sureye yayılan hatim planı
+/// okumalarında listeyi oluşturmak için kullanılır (bkz.
+/// _renderListesiOlustur).
+class _OkumaOgesi {
+  final int? sureBasligi;
+  final bool besmele;
+  final _SureAyet? ayet;
+
+  const _OkumaOgesi.baslik(int sureNo)
+    : sureBasligi = sureNo,
+      besmele = false,
+      ayet = null;
+  const _OkumaOgesi.besmeleBlok()
+    : sureBasligi = null,
+      besmele = true,
+      ayet = null;
+  const _OkumaOgesi.ayetKarti(_SureAyet a)
+    : sureBasligi = null,
+      besmele = false,
+      ayet = a;
+}
+
 class _SureDetaySayfaState extends State<SureDetaySayfa> {
   final TemaService _temaService = TemaService();
   final LanguageService _languageService = LanguageService();
   final ScrollController _scrollController = ScrollController();
-  List<Ayet> _ayetler = [];
+
+  // Bu okuma oturumuna dahil sureler (sırayla) ve her birinin tüm ayetleri.
+  // Hatim planı dışı normal okumada tek elemanlıdır; hatim planından
+  // okurken günün hedefi (ör. 1 cüz, N sayfa) birden fazla sureye
+  // yayılıyorsa hepsi burada birikir — kullanıcı "Devam Et"e basmadan
+  // günün tüm hedefini tek seferde görür (bkz. _ayetleriYukle, _sayfaEkle).
+  List<Sure> _sureSegmentleri = [];
+  final Map<int, List<Ayet>> _sureAyetleriMap = {};
+  int _etkinBitisSureNo = 0;
+  int _etkinBitisAyetNo = 0;
+  // Hatim planından okurken görünüm tam olarak kaldığın ayetten başlar,
+  // öncesi hiç yüklenmez. "Öncesini Göster" ile kullanıcı isterse geriye
+  // doğru (Mushaf sayfa sınırına göre) genişletebilir; bu iki alan o anki
+  // etkin başlangıcı tutar (bkz. _oncekiSayfayiEkle).
+  int _etkinBaslangicSureNo = 0;
+  int _etkinBaslangicAyetNo = 0;
+
+  // Görüntülenen (baslangic/bitis'e göre filtrelenmiş), sureleri birlikte
+  // taşıyan düz ayet listesi. _duzListeOlustur() ile üretilir.
+  List<_SureAyet> _ayetler = [];
+  // ListView'de fiilen render edilen öğe dizisi (sure başlığı / besmele /
+  // ayet kartı) — _ayetler her değiştiğinde _renderListesiOlustur() ile
+  // yeniden üretilir.
+  List<_OkumaOgesi> _renderOgeleri = [];
+
   bool _yukleniyor = true;
   String _hata = '';
   double _fontScale = 1.0;
   bool _okumaModu = false; // false: theme colors, true: black & white mode
+  int? _gorunenSureNo;
   int? _gorunenAyetNo;
+
+  // "Kaldığın yer" ekranın EN ÜSTÜNDE görünen ayete göre belirlenir (aksi
+  // halde uzun ayet kartlarında piksel bazlı tahmin ekranın altındaki bir
+  // ayeti işaret edip ilerlemeyi olduğundan fazla ilerletebilir). Her ayet
+  // kartının gerçek ekran konumu, bu GlobalKey'ler üzerinden ölçülür (bkz.
+  // _enUsttekiAyetiBul). _listeKey, ListView'in (dolayısıyla görünür
+  // alanın) üst kenarını referans almak için kullanılır.
+  final GlobalKey _listeKey = GlobalKey();
+  final Map<String, GlobalKey> _ayetAnahtarlari = {};
+  Timer? _kaydirmaDurdurmaZamanlayicisi;
+
+  GlobalKey _ayetAnahtari(int sureNo, int ayetNo) =>
+      _ayetAnahtarlari.putIfAbsent('$sureNo:$ayetNo', () => GlobalKey());
 
   // Sesli okuma
   final AudioPlayer _sesOynatici = AudioPlayer();
+  int? _calanSureNo;
   int? _calanAyetNo;
   bool _sesYukleniyor = false;
   bool _sureIndirilmis = false;
@@ -2389,6 +2485,12 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
   @override
   void dispose() {
     _scrollController.removeListener(_onScroll);
+    _kaydirmaDurdurmaZamanlayicisi?.cancel();
+    // Ekrandan ayrılmadan hemen önce son bir kez daha en üstteki ayeti
+    // ölçmeyi dene (kaydırma durduktan sonraki 200ms'lik gecikme henüz
+    // dolmadan geri dönülmüş olabilir); render ağacı hâlâ ayaktaysa bu
+    // en güncel değeri yakalar, değilse zaten en son ölçülen değer kalır.
+    _enUsttekiAyetiBul();
     _scrollController.dispose();
     _kaydetSonOkunanYer();
     _sesOynatici.dispose();
@@ -2402,8 +2504,8 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     if (mounted) setState(() => _sureIndirilmis = indirilmis);
   }
 
-  Future<void> _ayetiCalDurdur(Ayet ayet) async {
-    if (_calanAyetNo == ayet.no) {
+  Future<void> _ayetiCalDurdur(Ayet ayet, int sureNo) async {
+    if (_calanSureNo == sureNo && _calanAyetNo == ayet.no) {
       await _sesOynatici.stop();
       if (mounted) setState(() => _calanAyetNo = null);
       return;
@@ -2411,11 +2513,12 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
 
     setState(() {
       _sesYukleniyor = true;
+      _calanSureNo = sureNo;
       _calanAyetNo = ayet.no;
     });
 
     try {
-      final sonuc = await KuranSesService.calmaKaynagi(widget.sure.no, ayet.no);
+      final sonuc = await KuranSesService.calmaKaynagi(sureNo, ayet.no);
 
       // Ayet indirilmemişse akıştan (CDN'den) çalınacak; internet yoksa
       // sessizce başarısız olmak yerine kullanıcıyı önceden bilgilendir.
@@ -2496,56 +2599,87 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     if (mounted) setState(() => _sureIndirilmis = false);
   }
 
+  /// Kaydırma her hareket ettiğinde tetiklenir; asıl ölçüm (GlobalKey'lerle
+  /// gerçek render konumlarını okumak) ucuz olmadığından her piksel için
+  /// değil, kaydırma ~200ms durduktan sonra bir kez yapılır (bkz.
+  /// _enUsttekiAyetiBul).
   void _onScroll() {
-    // Capture the first visible verse (simplified)
-    if (_ayetler.isNotEmpty) {
-      final scrollOffset = _scrollController.offset;
-      // Each verse card is roughly 200-300px tall
-      final tahminiIndex = (scrollOffset / 250).floor();
-      final yeniAyetNo = tahminiIndex < _ayetler.length
-          ? _ayetler[tahminiIndex].no
-          : _ayetler.last.no;
+    _kaydirmaDurdurmaZamanlayicisi?.cancel();
+    _kaydirmaDurdurmaZamanlayicisi = Timer(
+      const Duration(milliseconds: 200),
+      _enUsttekiAyetiBul,
+    );
+  }
 
-      if (_gorunenAyetNo != yeniAyetNo) {
-        _gorunenAyetNo = yeniAyetNo;
+  /// Ekranın en üstünde (gerçekte) görünen ayeti, her ayet kartına iliştirilen
+  /// GlobalKey'lerin render konumlarını [_listeKey] (ListView'in, dolayısıyla
+  /// görünür alanın üst kenarı) ile karşılaştırarak bulur. Piksel bazlı bir
+  /// tahmin yerine gerçek layout kullanıldığından, ayet kartlarının boyu
+  /// (Arapça + okunuş + meal uzunluğuna göre değişir) fark etmeksizin doğru
+  /// sonuç verir — "kaldığın yer" ekranın altındaki değil, üstündeki ayete
+  /// göre kaydedilir.
+  void _enUsttekiAyetiBul() {
+    if (_ayetler.isEmpty) return;
+    final viewportBox =
+        _listeKey.currentContext?.findRenderObject() as RenderBox?;
+    if (viewportBox == null || !viewportBox.attached) return;
+    final viewportTop = viewportBox.localToGlobal(Offset.zero).dy;
+
+    for (final e in _ayetler) {
+      final anahtar = _ayetAnahtarlari['${e.sureNo}:${e.ayet.no}'];
+      final kutu = anahtar?.currentContext?.findRenderObject();
+      if (kutu is! RenderBox || !kutu.attached) continue;
+      final ustKenar = kutu.localToGlobal(Offset.zero).dy;
+      final altKenar = ustKenar + kutu.size.height;
+      if (altKenar > viewportTop) {
+        if (_gorunenSureNo != e.sureNo || _gorunenAyetNo != e.ayet.no) {
+          _gorunenSureNo = e.sureNo;
+          _gorunenAyetNo = e.ayet.no;
+        }
+        return;
       }
     }
   }
 
   Future<void> _kaydetSonOkunanYer() async {
-    // _gorunenAyetNo yalnızca kaydırma olduğunda güncellenir (bkz.
-    // _onScroll). Fatiha gibi tamamı ekrana sığan kısa sureler hiç
-    // kaydırma tetiklemez ve _gorunenAyetNo null kalır; bu durumda okuma
-    // ilerlemesi hiç kaydedilmez ve hatim planı hep baştan (Fatiha)
-    // başlatılır. Bunu önlemek için: içerik zaten tamamen görünür
-    // durumdaysa (kaydırma alanı yok) sayfadaki son ayet okunmuş sayılır;
-    // sayfa henüz layout almadıysa bile en azından başlangıç ayeti
-    // kaydedilir.
-    final gorunenAyetNo =
-        _gorunenAyetNo ??
-        (_ayetler.isEmpty
-            ? null
-            : (_scrollController.hasClients &&
-                      _scrollController.position.maxScrollExtent <= 0
-                  ? _ayetler.last.no
-                  : (widget.baslangicAyetNo ?? _ayetler.first.no)));
+    // _gorunenSureNo/_gorunenAyetNo normalde _enUsttekiAyetiBul() ile
+    // (kaydırma durunca, ilk yüklemede ve dispose'da) güncel tutulur; bkz.
+    // orada. Yalnızca ölçüm hiç yapılamamışsa (ör. render ağacı henüz hazır
+    // değilken çok hızlı çıkılırsa) burada bir yedek değere düşülür.
+    int? sureNo = _gorunenSureNo;
+    int? ayetNo = _gorunenAyetNo;
+    if ((sureNo == null || ayetNo == null) && _ayetler.isNotEmpty) {
+      final tamamiGorunuyor =
+          _scrollController.hasClients &&
+          _scrollController.position.maxScrollExtent <= 0;
+      final secilen = tamamiGorunuyor ? _ayetler.last : _ayetler.first;
+      sureNo = secilen.sureNo;
+      ayetNo = secilen.ayet.no;
+    }
 
-    if (gorunenAyetNo != null) {
-      final prefs = await SharedPreferences.getInstance();
-      await prefs.setInt('son_okunan_sure_no', widget.sure.no);
-      await prefs.setInt('son_okunan_ayet_no', gorunenAyetNo);
-      await prefs.setString('son_okunan_sure_ad', widget.sure.turkceAd);
+    if (sureNo != null && ayetNo != null) {
       // Bu okuma bir hatim planından başlatıldıysa (bkz. "Kaldığın Yerden
-      // Oku" butonu), ilerleme yalnızca o plana işlenir. Birden fazla plan
-      // aynı anda aktif olabildiğinden, hangi plandan okunduğu bilinmeden
-      // otomatik güncelleme yapılamaz.
+      // Oku" butonu), ilerleme YALNIZCA o plana işlenir. "Kaldığınız Yerden
+      // Devam Edin" genel kaydı, hatim planlarından bağımsız serbest okuma
+      // için ayrı bir yer tutucudur; plan içi okuma onu güncellemez, aksi
+      // halde hangi hatim planından okunduğu belirsizleşir ve genel kayıt
+      // planın ilerlemesini tekrarlamış olur.
       if (widget.hatimPlanId != null) {
         await HatimPlanService.ilerlemeGuncelle(
           widget.hatimPlanId!,
-          widget.sure.no,
-          gorunenAyetNo,
+          sureNo,
+          ayetNo,
         );
+        return;
       }
+
+      final sureAdi = _sureSegmentleri
+          .firstWhere((s) => s.no == sureNo, orElse: () => widget.sure)
+          .turkceAd;
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setInt('son_okunan_sure_no', sureNo);
+      await prefs.setInt('son_okunan_ayet_no', ayetNo);
+      await prefs.setString('son_okunan_sure_ad', sureAdi);
     }
   }
 
@@ -2553,7 +2687,8 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     if (widget.baslangicAyetNo != null && _ayetler.isNotEmpty) {
       WidgetsBinding.instance.addPostFrameCallback((_) {
         final ayetIndex = _ayetler.indexWhere(
-          (a) => a.no == widget.baslangicAyetNo,
+          (e) =>
+              e.sureNo == widget.sure.no && e.ayet.no == widget.baslangicAyetNo,
         );
         if (ayetIndex >= 0 && _scrollController.hasClients) {
           // Each verse card is roughly 250px + header
@@ -2566,17 +2701,37 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
         } else if (_scrollController.hasClients) {
           _scrollController.jumpTo(0);
         }
+        _enUsttekiAyetiBul();
       });
+    } else if (_ayetler.isNotEmpty) {
+      // Kaydırma gerekmeyecek kısa içerik (ör. Fatiha) için de "kaldığın
+      // yer" bilgisi ilk anda kaydedilebilsin diye bir kare sonra ölçülür.
+      WidgetsBinding.instance.addPostFrameCallback((_) => _enUsttekiAyetiBul());
     }
   }
 
-  List<Ayet> _filtreAyetler(List<Ayet> ayetler) {
-    if (ayetler.isEmpty) return ayetler;
+  /// [_sureSegmentleri] + [_sureAyetleriMap] + geçerli sınırlardan
+  /// ([widget.baslangicAyetNo], [_etkinBitisSureNo]/[_etkinBitisAyetNo])
+  /// görüntülenecek düz ayet listesini üretir. Yükleme sonrası ve
+  /// "Devam Et" ile yeni bir sayfa eklendiğinde yeniden çağrılır.
+  List<_SureAyet> _duzListeOlustur() {
+    final liste = <_SureAyet>[];
+    for (int i = 0; i < _sureSegmentleri.length; i++) {
+      final sure = _sureSegmentleri[i];
+      final tumAyetler = _sureAyetleriMap[sure.no];
+      if (tumAyetler == null || tumAyetler.isEmpty) continue;
 
-    final baslangic = widget.baslangicAyetNo ?? ayetler.first.no;
-    final bitis = widget.bitisAyetNo ?? ayetler.last.no;
+      final ilkSegment = i == 0;
+      final sonSegment = i == _sureSegmentleri.length - 1;
+      final baslangic = ilkSegment ? _etkinBaslangicAyetNo : 1;
+      final bitis = sonSegment ? _etkinBitisAyetNo : tumAyetler.last.no;
 
-    return ayetler.where((a) => a.no >= baslangic && a.no <= bitis).toList();
+      for (final a in tumAyetler) {
+        if (a.no < baslangic || a.no > bitis) continue;
+        liste.add(_SureAyet(sure.no, a));
+      }
+    }
+    return liste;
   }
 
   Future<void> _loadOkumaModu() async {
@@ -2670,48 +2825,92 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     }
   }
 
+  List<Ayet> _hamVeriyiAyetlereDonustur(List<Map<String, dynamic>> ham) {
+    return ham
+        .map(
+          (a) => Ayet(
+            no: a['no'] is int
+                ? a['no'] as int
+                : int.tryParse(a['no']?.toString() ?? '') ?? 0,
+            arapca: a['arapca']?.toString() ?? '',
+            okunus: a['okunus']?.toString() ?? '',
+            meal: a['meal']?.toString() ?? '',
+          ),
+        )
+        .toList();
+  }
+
   Future<void> _ayetleriYukle() async {
     // Cihazda gömülü tam Kur'an verisi (Elmalılı Hamdi Yazır meali) — internet
     // gerektirmez, her sure için kullanılabilir. Açılışta arka planda
     // yüklendiği için burada hazır olması beklenir (yüklüyse anında döner).
     await KuranVeriService.yukle();
 
-    if (KuranVeriService.yuklendiMi) {
-      final yerelAyetler = KuranVeriService.sureAyetleri(widget.sure.no);
-      if (yerelAyetler.isNotEmpty) {
-        final tumAyetler = yerelAyetler
-            .map(
-              (a) => Ayet(
-                no: a['no'] is int
-                    ? a['no'] as int
-                    : int.tryParse(a['no']?.toString() ?? '') ?? 0,
-                arapca: a['arapca']?.toString() ?? '',
-                okunus: a['okunus']?.toString() ?? '',
-                meal: a['meal']?.toString() ?? '',
-              ),
-            )
-            .toList();
-        setState(() {
-          _ayetler = _filtreAyetler(tumAyetler);
-          _yukleniyor = false;
-        });
-        _scrollToBaslangicAyet();
-        return;
-      }
+    if (!KuranVeriService.yuklendiMi) {
+      return _ayetleriYukleYedek();
     }
 
-    // Yedek: Kısa sureler için önceden hazırlanmış veri (dil dosyasından).
+    // Hatim planından okunuyorsa ve günün hedefi başka bir surede
+    // bitiyorsa, kullanıcı "Devam Et"e basmadan günün hedefinin tamamını
+    // (birden fazla sureye yayılsa bile) tek seferde görür; hedefe
+    // ulaştıktan sonra "Devam Et" yalnızca gerçek Mushaf sayfa sınırına
+    // göre fazladan okuma sunar (bkz. _sayfaEkle).
+    final hedefSureNo = widget.bitisAyetNo == null ? widget.hedefSureNo : null;
+    final bitisSureNo = (hedefSureNo != null && hedefSureNo > widget.sure.no)
+        ? hedefSureNo
+        : widget.sure.no;
+
+    final segmentler = <Sure>[];
+    final harita = <int, List<Ayet>>{};
+    for (int s = widget.sure.no; s <= bitisSureNo; s++) {
+      final ham = KuranVeriService.sureAyetleri(s);
+      if (ham.isEmpty) break;
+      final sure = s == widget.sure.no
+          ? widget.sure
+          : sureListesi.firstWhere((x) => x.no == s, orElse: () => widget.sure);
+      segmentler.add(sure);
+      harita[s] = _hamVeriyiAyetlereDonustur(ham);
+    }
+
+    if (segmentler.isEmpty) {
+      return _ayetleriYukleYedek();
+    }
+
+    final sonSure = segmentler.last;
+    final sonAyetler = harita[sonSure.no]!;
+    final etkinBitisAyet =
+        widget.bitisAyetNo ??
+        (hedefSureNo != null && sonSure.no == hedefSureNo
+            ? widget.hedefAyetNo!
+            : sonAyetler.last.no);
+
+    setState(() {
+      _sureSegmentleri = segmentler;
+      _sureAyetleriMap
+        ..clear()
+        ..addAll(harita);
+      _etkinBaslangicSureNo = widget.sure.no;
+      _etkinBaslangicAyetNo = widget.baslangicAyetNo ?? 1;
+      _etkinBitisSureNo = sonSure.no;
+      _etkinBitisAyetNo = etkinBitisAyet;
+      _ayetler = _duzListeOlustur();
+      _renderOgeleri = _renderListesiOlustur();
+      _yukleniyor = false;
+    });
+    _scrollToBaslangicAyet();
+  }
+
+  /// Yerel Kur'an verisi yüklenememişse (aşırı nadir) düşülen tekil-sure
+  /// yedek yol: dil dosyasındaki hazır ayetler, olmazsa API. Çoklu sure
+  /// desteklemez; hatim planından okurken bile o an açık olan tek sureyi
+  /// gösterir.
+  Future<void> _ayetleriYukleYedek() async {
     final hazirAyetler = _getHazirAyetler(widget.sure.no);
     if (hazirAyetler.isNotEmpty) {
-      setState(() {
-        _ayetler = _filtreAyetler(hazirAyetler);
-        _yukleniyor = false;
-      });
-      _scrollToBaslangicAyet();
+      _tekSureYukle(hazirAyetler);
       return;
     }
 
-    // Son çare: API'den çekmeyi dene (yerel veri yoksa/yüklenemediyse)
     try {
       final response = await http.get(
         Uri.parse(
@@ -2729,19 +2928,15 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
               ? editions[2]['ayahs'] as List
               : null;
 
-          setState(() {
-            final tumAyetler = List.generate(arapca.length, (i) {
-              return Ayet(
-                no: arapca[i]['numberInSurah'],
-                arapca: arapca[i]['text'],
-                okunus: okunusEdition != null ? okunusEdition[i]['text'] : '',
-                meal: turkce[i]['text'],
-              );
-            });
-            _ayetler = _filtreAyetler(tumAyetler);
-            _yukleniyor = false;
+          final tumAyetler = List.generate(arapca.length, (i) {
+            return Ayet(
+              no: arapca[i]['numberInSurah'],
+              arapca: arapca[i]['text'],
+              okunus: okunusEdition != null ? okunusEdition[i]['text'] : '',
+              meal: turkce[i]['text'],
+            );
           });
-          _scrollToBaslangicAyet();
+          _tekSureYukle(tumAyetler);
         }
       } else {
         setState(() {
@@ -2761,261 +2956,342 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     }
   }
 
+  void _tekSureYukle(List<Ayet> tumAyetler) {
+    setState(() {
+      _sureSegmentleri = [widget.sure];
+      _sureAyetleriMap
+        ..clear()
+        ..[widget.sure.no] = tumAyetler;
+      _etkinBaslangicSureNo = widget.sure.no;
+      _etkinBaslangicAyetNo = widget.baslangicAyetNo ?? 1;
+      _etkinBitisSureNo = widget.sure.no;
+      _etkinBitisAyetNo = widget.bitisAyetNo ?? tumAyetler.last.no;
+      _ayetler = _duzListeOlustur();
+      _renderOgeleri = _renderListesiOlustur();
+      _yukleniyor = false;
+    });
+    _scrollToBaslangicAyet();
+  }
+
+  /// Geri gidilmeden önce kaldığın yeri kaydeder. dispose() içindeki
+  /// fire-and-forget çağrı, kullanıcı hemen ardından "Kaldığın Yerden Oku"ya
+  /// bastığında henüz tamamlanmamış olabilir (SharedPreferences yazımı bir
+  /// sonraki karede biter, ama sayfa zaten kapanmış ve okuma yeniden
+  /// açılmıştır) — bu yarış durumu, eski konumun gösterilmesine yol açar.
+  /// PopScope ile pop işlemi, kayıt bitene kadar geciktirilir.
+  Future<void> _kaydedipGeriDon() async {
+    await _kaydetSonOkunanYer();
+    if (mounted) Navigator.pop(context);
+  }
+
   @override
   Widget build(BuildContext context) {
     final renkler = _temaService.renkler;
 
-    return Scaffold(
-      backgroundColor: _arkaPlanRengi,
-      appBar: AppBar(
-        title: Column(
-          children: [
-            Text(
-              widget.sure.turkceAd,
-              style: TextStyle(fontSize: 14, color: _yaziRengi),
-            ),
-            Text(
-              widget.sure.arapca,
-              style: TextStyle(
-                fontSize: 16,
-                color: _vurguRengi,
-                fontFamily: 'Amiri',
+    return PopScope(
+      canPop: false,
+      onPopInvokedWithResult: (didPop, result) {
+        if (didPop) return;
+        _kaydedipGeriDon();
+      },
+      child: Scaffold(
+        backgroundColor: _arkaPlanRengi,
+        appBar: AppBar(
+          title: Column(
+            children: [
+              Text(
+                widget.sure.turkceAd,
+                style: TextStyle(fontSize: 14, color: _yaziRengi),
               ),
-            ),
-          ],
-        ),
-        centerTitle: true,
-        backgroundColor: _okumaModu ? Colors.white : Colors.transparent,
-        elevation: _okumaModu ? 1 : 0,
-        leading: IconButton(
-          icon: Icon(Icons.arrow_back, color: _yaziRengi),
-          onPressed: () => Navigator.pop(context),
-        ),
-        actions: [
-          PopupMenuButton<String>(
-            icon: Icon(Icons.palette_outlined, color: _yaziRengi),
-            tooltip: _languageService['reading_mode'] ?? 'Okuma Modu',
-            onSelected: (value) {
-              if (value == 'toggle') {
-                _toggleOkumaModu();
-              }
-            },
-            itemBuilder: (context) => [
-              PopupMenuItem(
-                value: 'toggle',
-                child: Row(
-                  children: [
-                    Icon(
-                      _okumaModu
-                          ? Icons.check_box
-                          : Icons.check_box_outline_blank,
-                      color: _okumaModu ? Colors.green : Colors.grey,
-                      size: 20,
-                    ),
-                    const SizedBox(width: 12),
-                    Text(
-                      _languageService['black_white_mode'] ??
-                          'Black & White Mode',
-                    ),
-                  ],
-                ),
-              ),
-              PopupMenuItem(
-                enabled: false,
-                child: Padding(
-                  padding: EdgeInsets.only(left: 32),
-                  child: Text(
-                    _languageService['reading_mode_desc'] ?? 'Eases reading',
-                    style: const TextStyle(fontSize: 11, color: Colors.grey),
-                  ),
+              Text(
+                widget.sure.arapca,
+                style: TextStyle(
+                  fontSize: 16,
+                  color: _vurguRengi,
+                  fontFamily: 'Amiri',
                 ),
               ),
             ],
           ),
-          IconButton(
-            icon: Icon(Icons.text_decrease, color: _yaziRengi),
-            onPressed: _decreaseFontSize,
-            tooltip: _languageService['font_decrease'] ?? 'Decrease Font',
+          centerTitle: true,
+          backgroundColor: _okumaModu ? Colors.white : Colors.transparent,
+          elevation: _okumaModu ? 1 : 0,
+          leading: IconButton(
+            icon: Icon(Icons.arrow_back, color: _yaziRengi),
+            onPressed: _kaydedipGeriDon,
           ),
-          IconButton(
-            icon: Icon(Icons.text_increase, color: _yaziRengi),
-            onPressed: _increaseFontSize,
-            tooltip: _languageService['font_increase'] ?? 'Increase Font',
-          ),
-          _buildSesIndirmeButonu(),
-        ],
-      ),
-      body: Container(
-        decoration: _okumaModu
-            ? null
-            : (renkler.arkaPlanGradient != null
-                  ? BoxDecoration(gradient: renkler.arkaPlanGradient)
-                  : null),
-        child: _yukleniyor
-            ? Center(
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    CircularProgressIndicator(color: _vurguRengi),
-                    const SizedBox(height: 16),
-                    Text(
-                      _languageService['verses_loading'] ?? 'Loading verses...',
-                      style: TextStyle(color: _yaziSecondaryRengi),
-                    ),
-                  ],
-                ),
-              )
-            : _hata.isNotEmpty
-            ? Center(
-                child: Padding(
-                  padding: const EdgeInsets.all(20),
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+          actions: [
+            PopupMenuButton<String>(
+              icon: Icon(Icons.palette_outlined, color: _yaziRengi),
+              tooltip: _languageService['reading_mode'] ?? 'Okuma Modu',
+              onSelected: (value) {
+                if (value == 'toggle') {
+                  _toggleOkumaModu();
+                }
+              },
+              itemBuilder: (context) => [
+                PopupMenuItem(
+                  value: 'toggle',
+                  child: Row(
                     children: [
-                      Icon(Icons.error_outline, color: _vurguRengi, size: 48),
-                      const SizedBox(height: 16),
-                      Text(
-                        _hata,
-                        textAlign: TextAlign.center,
-                        style: TextStyle(color: _yaziRengi, fontSize: 16),
+                      Icon(
+                        _okumaModu
+                            ? Icons.check_box
+                            : Icons.check_box_outline_blank,
+                        color: _okumaModu ? Colors.green : Colors.grey,
+                        size: 20,
                       ),
-                      const SizedBox(height: 16),
-                      ElevatedButton(
-                        onPressed: () {
-                          setState(() {
-                            _yukleniyor = true;
-                            _hata = '';
-                          });
-                          _ayetleriYukle();
-                        },
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: _vurguRengi,
-                        ),
-                        child: Text(
-                          _languageService['try_again'] ?? 'Try Again',
-                        ),
+                      const SizedBox(width: 12),
+                      Text(
+                        _languageService['black_white_mode'] ??
+                            'Black & White Mode',
                       ),
                     ],
                   ),
                 ),
-              )
-            : ListView.builder(
-                controller: _scrollController,
-                padding: const EdgeInsets.all(12),
-                itemCount:
-                    _ayetler.length +
-                    1 + // +1 for Besmele
-                    (widget.hatimPlanId != null ? 1 : 0),
-                itemBuilder: (context, index) {
-                  if (index == 0 &&
-                      widget.sure.no != 1 &&
-                      widget.sure.no != 9) {
-                    // Basmalah (except Al-Fatiha and At-Tawbah)
-                    return Container(
-                      margin: const EdgeInsets.only(bottom: 16),
-                      padding: const EdgeInsets.all(16),
-                      decoration: BoxDecoration(
-                        color: renkler.vurgu.withOpacity(0.1),
-                        borderRadius: BorderRadius.circular(16),
+                PopupMenuItem(
+                  enabled: false,
+                  child: Padding(
+                    padding: EdgeInsets.only(left: 32),
+                    child: Text(
+                      _languageService['reading_mode_desc'] ?? 'Eases reading',
+                      style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                  ),
+                ),
+              ],
+            ),
+            IconButton(
+              icon: Icon(Icons.text_decrease, color: _yaziRengi),
+              onPressed: _decreaseFontSize,
+              tooltip: _languageService['font_decrease'] ?? 'Decrease Font',
+            ),
+            IconButton(
+              icon: Icon(Icons.text_increase, color: _yaziRengi),
+              onPressed: _increaseFontSize,
+              tooltip: _languageService['font_increase'] ?? 'Increase Font',
+            ),
+            _buildSesIndirmeButonu(),
+          ],
+        ),
+        body: Container(
+          decoration: _okumaModu
+              ? null
+              : (renkler.arkaPlanGradient != null
+                    ? BoxDecoration(gradient: renkler.arkaPlanGradient)
+                    : null),
+          child: _yukleniyor
+              ? Center(
+                  child: Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    children: [
+                      CircularProgressIndicator(color: _vurguRengi),
+                      const SizedBox(height: 16),
+                      Text(
+                        _languageService['verses_loading'] ??
+                            'Loading verses...',
+                        style: TextStyle(color: _yaziSecondaryRengi),
                       ),
-                      child: Text(
-                        'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
-                        textAlign: TextAlign.center,
-                        textDirection: TextDirection.rtl,
-                        style: TextStyle(
-                          color: renkler.vurgu,
-                          fontSize: 26 * _fontScale,
-                          fontFamily: 'Amiri',
+                    ],
+                  ),
+                )
+              : _hata.isNotEmpty
+              ? Center(
+                  child: Padding(
+                    padding: const EdgeInsets.all(20),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, color: _vurguRengi, size: 48),
+                        const SizedBox(height: 16),
+                        Text(
+                          _hata,
+                          textAlign: TextAlign.center,
+                          style: TextStyle(color: _yaziRengi, fontSize: 16),
                         ),
-                      ),
+                        const SizedBox(height: 16),
+                        ElevatedButton(
+                          onPressed: () {
+                            setState(() {
+                              _yukleniyor = true;
+                              _hata = '';
+                            });
+                            _ayetleriYukle();
+                          },
+                          style: ElevatedButton.styleFrom(
+                            backgroundColor: _vurguRengi,
+                          ),
+                          child: Text(
+                            _languageService['try_again'] ?? 'Try Again',
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                )
+              : Builder(
+                  builder: (context) {
+                    final ogeler = _renderOgeleri;
+                    final oncekiVarMi = _oncekiSayfaGosterilsinMi;
+                    final ustOfset = oncekiVarMi ? 1 : 0;
+                    return ListView.builder(
+                      key: _listeKey,
+                      controller: _scrollController,
+                      padding: const EdgeInsets.all(12),
+                      itemCount:
+                          ustOfset +
+                          ogeler.length +
+                          (widget.hatimPlanId != null ? 1 : 0),
+                      itemBuilder: (context, index) {
+                        if (oncekiVarMi && index == 0) {
+                          return _buildOncekiSayfaButonu(renkler);
+                        }
+                        final gercekIndex = index - ustOfset;
+                        if (gercekIndex >= ogeler.length) {
+                          return _buildDevamEtButonu(renkler);
+                        }
+
+                        final oge = ogeler[gercekIndex];
+                        if (oge.besmele) {
+                          // Basmalah (except Al-Fatiha and At-Tawbah)
+                          return Container(
+                            margin: const EdgeInsets.only(bottom: 16),
+                            padding: const EdgeInsets.all(16),
+                            decoration: BoxDecoration(
+                              color: renkler.vurgu.withOpacity(0.1),
+                              borderRadius: BorderRadius.circular(16),
+                            ),
+                            child: Text(
+                              'بِسْمِ اللَّهِ الرَّحْمَٰنِ الرَّحِيمِ',
+                              textAlign: TextAlign.center,
+                              textDirection: TextDirection.rtl,
+                              style: TextStyle(
+                                color: renkler.vurgu,
+                                fontSize: 26 * _fontScale,
+                                fontFamily: 'Amiri',
+                              ),
+                            ),
+                          );
+                        }
+                        if (oge.sureBasligi != null) {
+                          return _buildSureBasligi(oge.sureBasligi!, renkler);
+                        }
+                        final sureAyet = oge.ayet!;
+                        return _buildAyetKarti(
+                          sureAyet.ayet,
+                          sureAyet.sureNo,
+                          renkler,
+                        );
+                      },
                     );
-                  }
-
-                  final besmeleVarMi =
-                      widget.sure.no != 1 && widget.sure.no != 9;
-                  final sonAyetIndex =
-                      _ayetler.length - 1 + (besmeleVarMi ? 1 : 0);
-                  if (widget.hatimPlanId != null && index > sonAyetIndex) {
-                    return _buildDevamEtButonu(renkler);
-                  }
-
-                  final ayetIndex = besmeleVarMi ? index - 1 : index;
-                  if (ayetIndex < 0 || ayetIndex >= _ayetler.length) {
-                    return const SizedBox();
-                  }
-
-                  final ayet = _ayetler[ayetIndex];
-                  return _buildAyetKarti(ayet, renkler);
-                },
-              ),
+                  },
+                ),
+        ),
       ),
     );
   }
 
-  /// Hatim planından okunurken sure sonuna gelindiğinde gösterilen buton.
-  /// Bu sayfa yalnızca tek bir sureyi gösterdiğinden, günün hedefi başka
-  /// bir surede bitiyorsa kullanıcı buradan bir sonraki sureye "devam
-  /// edebilir"; ilerleme kaydı (bkz. _kaydetSonOkunanYer) her surede
-  /// otomatik güncellendiğinden ertesi gün "Kaldığın Yerden Oku" doğrudan
-  /// bırakılan yerden başlar.
-  Widget _buildDevamEtButonu(TemaRenkleri renkler) {
-    final sonraNo = widget.sure.no + 1;
-    if (sonraNo > 114) {
-      return Container(
-        margin: const EdgeInsets.only(top: 8, bottom: 24),
-        padding: const EdgeInsets.all(20),
-        decoration: BoxDecoration(
-          color: renkler.vurgu.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(18),
-        ),
-        child: Column(
-          children: [
-            Icon(Icons.celebration_rounded, color: renkler.vurgu, size: 32),
-            const SizedBox(height: 8),
-            Text(
-              _languageService['hatim_plan_completed'] ??
-                  'Tebrikler, hatmini tamamladın! 🎉',
-              textAlign: TextAlign.center,
-              style: TextStyle(
-                color: renkler.yaziPrimary,
-                fontSize: 15,
-                fontWeight: FontWeight.bold,
-              ),
-            ),
-          ],
-        ),
-      );
+  /// [_ayetler] düz listesindeki sure geçişlerinden, ekranda gösterilecek
+  /// öğe dizisini (sure başlığı / besmele / ayet kartı) üretir. Hatim
+  /// planı dışı normal okumada tek bir sure segmenti olduğundan, davranış
+  /// öncekiyle aynıdır.
+  List<_OkumaOgesi> _renderListesiOlustur() {
+    final liste = <_OkumaOgesi>[];
+    int? oncekiSure;
+    for (final e in _ayetler) {
+      if (e.sureNo != oncekiSure) {
+        if (oncekiSure != null) {
+          liste.add(_OkumaOgesi.baslik(e.sureNo));
+        }
+        if (e.sureNo != 1 && e.sureNo != 9) {
+          liste.add(const _OkumaOgesi.besmeleBlok());
+        }
+        oncekiSure = e.sureNo;
+      }
+      liste.add(_OkumaOgesi.ayetKarti(e));
     }
+    return liste;
+  }
 
-    final sonrakiSure = sureListesi.firstWhere(
-      (s) => s.no == sonraNo,
-      orElse: () => sureListesi.first,
+  Widget _buildSureBasligi(int sureNo, TemaRenkleri renkler) {
+    final sure = sureListesi.firstWhere(
+      (s) => s.no == sureNo,
+      orElse: () => widget.sure,
     );
+    return Padding(
+      padding: const EdgeInsets.only(top: 4, bottom: 16),
+      child: Row(
+        children: [
+          Expanded(child: Divider(color: renkler.vurgu.withOpacity(0.3))),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 12),
+            child: Column(
+              children: [
+                Text(
+                  sure.turkceAd,
+                  style: TextStyle(
+                    color: renkler.yaziPrimary,
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                  ),
+                ),
+                Text(
+                  sure.arapca,
+                  style: TextStyle(
+                    color: renkler.vurgu,
+                    fontSize: 15,
+                    fontFamily: 'Amiri',
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Expanded(child: Divider(color: renkler.vurgu.withOpacity(0.3))),
+        ],
+      ),
+    );
+  }
 
+  Widget _buildTamamlandiKarti(TemaRenkleri renkler) {
+    return Container(
+      margin: const EdgeInsets.only(top: 8, bottom: 24),
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        color: renkler.vurgu.withOpacity(0.12),
+        borderRadius: BorderRadius.circular(18),
+      ),
+      child: Column(
+        children: [
+          Icon(Icons.celebration_rounded, color: renkler.vurgu, size: 32),
+          const SizedBox(height: 8),
+          Text(
+            _languageService['hatim_plan_completed'] ??
+                'Tebrikler, hatmini tamamladın! 🎉',
+            textAlign: TextAlign.center,
+            style: TextStyle(
+              color: renkler.yaziPrimary,
+              fontSize: 15,
+              fontWeight: FontWeight.bold,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDevamButonGovdesi({
+    required TemaRenkleri renkler,
+    required String baslik,
+    required String altBaslik,
+    required VoidCallback onTap,
+  }) {
     return Container(
       margin: const EdgeInsets.only(top: 8, bottom: 24),
       child: Material(
         color: Colors.transparent,
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
-          onTap: () {
-            // Kullanıcı bu sureyi bitirdiğini bildirdi; ilerlemeyi sonuna
-            // kadar işleyip bir sonraki sureye geç.
-            _gorunenAyetNo = _ayetler.isNotEmpty
-                ? _ayetler.last.no
-                : _gorunenAyetNo;
-            _kaydetSonOkunanYer();
-            Navigator.pushReplacement(
-              context,
-              MaterialPageRoute(
-                builder: (context) => SureDetaySayfa(
-                  sure: sonrakiSure,
-                  baslangicAyetNo: 1,
-                  hatimPlanId: widget.hatimPlanId,
-                ),
-              ),
-            );
-          },
+          onTap: onTap,
           child: Container(
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
@@ -3030,8 +3306,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        _languageService['hatim_plan_continue_next_surah'] ??
-                            'Devam Et',
+                        baslik,
                         style: TextStyle(
                           color: renkler.vurgu,
                           fontSize: 15,
@@ -3040,7 +3315,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                       ),
                       const SizedBox(height: 2),
                       Text(
-                        '${_languageService['hatim_plan_next_surah_label'] ?? 'Sıradaki sure'}: ${sonrakiSure.turkceAd}',
+                        altBaslik,
                         style: TextStyle(
                           color: renkler.yaziSecondary,
                           fontSize: 12.5,
@@ -3058,7 +3333,177 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     );
   }
 
+  /// Kullanıcı isterse Mushaf'ın gerçek sayfa sınırlarına göre birer sayfa
+  /// daha okuyabilir. Görünülen aralık ([_ayetleriYukle]) zaten günün tüm
+  /// hedefini (birden fazla sureye yayılsa bile) içerdiğinden, bu buton
+  /// yalnızca hedefin ötesine "fazladan" okumak için kullanılır. Yeni
+  /// sayfa farklı bir surede bitiyorsa o sure(ler) sessizce yüklenip
+  /// listeye eklenir — sayfa değiştirmeden aynı ekranda devam edilir.
+  Widget _buildDevamEtButonu(TemaRenkleri renkler) {
+    if (!KuranVeriService.sayfaVerisiHazirMi) {
+      return _buildTamamlandiKarti(renkler);
+    }
+
+    final suankiSayfa = KuranVeriService.sayfaNoForSureAyet(
+      _etkinBitisSureNo,
+      _etkinBitisAyetNo,
+    );
+    final sonrakiSayfa = suankiSayfa + 1;
+    if (sonrakiSayfa > KuranVeriService.toplamSayfaSayisi) {
+      return _buildTamamlandiKarti(renkler);
+    }
+
+    final sayfaBitis = KuranVeriService.sayfaBitisi(sonrakiSayfa);
+
+    return _buildDevamButonGovdesi(
+      renkler: renkler,
+      baslik: _languageService['hatim_plan_add_one_page'] ?? 'Devam Et',
+      altBaslik:
+          (_languageService['hatim_plan_add_one_page_desc'] ??
+                  '{sayfa}. sayfayı ekle')
+              .replaceAll('{sayfa}', '$sonrakiSayfa'),
+      onTap: () => _sayfaEkle(sayfaBitis),
+    );
+  }
+
+  void _sayfaEkle(List<int> sayfaBitis) {
+    _gorunenSureNo = _etkinBitisSureNo;
+    _gorunenAyetNo = _etkinBitisAyetNo;
+    _kaydetSonOkunanYer();
+
+    setState(() {
+      for (int s = _etkinBitisSureNo; s <= sayfaBitis[0]; s++) {
+        if (_sureAyetleriMap.containsKey(s)) continue;
+        final ham = KuranVeriService.sureAyetleri(s);
+        if (ham.isEmpty) continue;
+        _sureAyetleriMap[s] = _hamVeriyiAyetlereDonustur(ham);
+        _sureSegmentleri.add(
+          sureListesi.firstWhere((x) => x.no == s, orElse: () => widget.sure),
+        );
+      }
+      _etkinBitisSureNo = sayfaBitis[0];
+      _etkinBitisAyetNo = sayfaBitis[1];
+      _ayetler = _duzListeOlustur();
+      _renderOgeleri = _renderListesiOlustur();
+    });
+  }
+
+  /// Hatim planından okurken görünüm tam olarak kaldığın ayetten başlar;
+  /// öncesini görmek isteyenler için listenin en üstünde gösterilen bu
+  /// buton, Mushaf'ın gerçek sayfa sınırına göre bir önceki sayfayı
+  /// geriye doğru ekler (bkz. _buildDevamEtButonu'nun ileri yönlü eşi).
+  /// Fatiha'ya (Kur'an'ın başına) ulaşılınca kaybolur.
+  bool get _oncekiSayfaGosterilsinMi =>
+      widget.hatimPlanId != null &&
+      (_etkinBaslangicSureNo > 1 || _etkinBaslangicAyetNo > 1);
+
+  Widget _buildOncekiSayfaButonu(TemaRenkleri renkler) {
+    if (!KuranVeriService.sayfaVerisiHazirMi) return const SizedBox.shrink();
+
+    final suankiSayfa = KuranVeriService.sayfaNoForSureAyet(
+      _etkinBaslangicSureNo,
+      _etkinBaslangicAyetNo,
+    );
+    final oncekiSayfa = suankiSayfa - 1;
+    if (oncekiSayfa < 1) return const SizedBox.shrink();
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 16),
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          borderRadius: BorderRadius.circular(16),
+          onTap: () => _oncekiSayfayiEkle(oncekiSayfa),
+          child: Container(
+            padding: const EdgeInsets.all(18),
+            decoration: BoxDecoration(
+              color: renkler.vurgu.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: renkler.vurgu.withOpacity(0.4)),
+            ),
+            child: Row(
+              children: [
+                Icon(Icons.arrow_upward_rounded, color: renkler.vurgu),
+                const SizedBox(width: 14),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        _languageService['hatim_plan_show_previous'] ??
+                            'Öncesini Göster',
+                        style: TextStyle(
+                          color: renkler.vurgu,
+                          fontSize: 15,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        (_languageService['hatim_plan_show_previous_desc'] ??
+                                '{sayfa}. sayfayı ekle')
+                            .replaceAll('{sayfa}', '$oncekiSayfa'),
+                        style: TextStyle(
+                          color: renkler.yaziSecondary,
+                          fontSize: 12.5,
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _oncekiSayfayiEkle(int oncekiSayfa) {
+    final sayfaBaslangic = KuranVeriService.sayfaBaslangici(oncekiSayfa);
+    final eskiPiksel = _scrollController.hasClients
+        ? _scrollController.position.pixels
+        : 0.0;
+    final eskiUzunluk = _scrollController.hasClients
+        ? _scrollController.position.maxScrollExtent
+        : 0.0;
+
+    setState(() {
+      final yeniSegmentler = <Sure>[];
+      for (int s = sayfaBaslangic[0]; s < _etkinBaslangicSureNo; s++) {
+        if (!_sureAyetleriMap.containsKey(s)) {
+          final ham = KuranVeriService.sureAyetleri(s);
+          if (ham.isEmpty) continue;
+          _sureAyetleriMap[s] = _hamVeriyiAyetlereDonustur(ham);
+        }
+        yeniSegmentler.add(
+          sureListesi.firstWhere((x) => x.no == s, orElse: () => widget.sure),
+        );
+      }
+      _sureSegmentleri = [...yeniSegmentler, ..._sureSegmentleri];
+      _etkinBaslangicSureNo = sayfaBaslangic[0];
+      _etkinBaslangicAyetNo = sayfaBaslangic[1];
+      _ayetler = _duzListeOlustur();
+      _renderOgeleri = _renderListesiOlustur();
+    });
+
+    // Yeni içerik en üste eklendi; kullanıcı hâlâ aynı ayetlere bakıyor
+    // olsun diye kaydırma konumu, eklenen içeriğin yüksekliği kadar
+    // kaydırılır (aksi halde liste büyüdüğünde görünüm otomatik en tepeye,
+    // yani az önce eklenen sayfaya zıplar).
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!_scrollController.hasClients) return;
+      final yeniUzunluk = _scrollController.position.maxScrollExtent;
+      _scrollController.jumpTo(eskiPiksel + (yeniUzunluk - eskiUzunluk));
+    });
+  }
+
   Widget _buildSesIndirmeButonu() {
+    // İndirme yalnızca ilk sure için çalışır (bkz. _sureyiIndir); görünüm
+    // birden fazla sureye yayıldığında (hatim planı, "Devam Et" ile
+    // genişletilmiş) yanıltıcı olmaması için gizlenir.
+    if (_sureSegmentleri.length > 1) return const SizedBox.shrink();
+
     if (_sureIndiriliyor) {
       return Padding(
         padding: const EdgeInsets.symmetric(horizontal: 12),
@@ -3121,25 +3566,29 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
 
   /// Ayeti paylaşım önizlemesinde açar. Kart, ayet olduğu için besmele ile
   /// başlar; kaynak "Sure adı, ayet no" biçiminde yazılır.
-  void _ayetiPaylas(Ayet ayet) {
+  void _ayetiPaylas(Ayet ayet, int sureNo) {
+    final sureAdi = sureListesi
+        .firstWhere((s) => s.no == sureNo, orElse: () => widget.sure)
+        .turkceAd;
     PaylasimOnizlemeSayfa.ac(
       context,
       PaylasimIcerigi(
         tur: PaylasimIcerikTuru.ayet,
         baslik: _languageService['quran'] ?? 'Kur\'an-ı Kerim',
         metin: ayet.meal,
-        kaynak: '${widget.sure.turkceAd}, ${ayet.no}',
+        kaynak: '$sureAdi, ${ayet.no}',
         arapca: ayet.arapca,
       ),
     );
   }
 
-  Widget _buildAyetKarti(Ayet ayet, TemaRenkleri renkler) {
+  Widget _buildAyetKarti(Ayet ayet, int sureNo, TemaRenkleri renkler) {
     // Hide recitation/translation for Arabic or Persian
     final currentLang = _languageService.currentLanguage;
     final hideTranslation = currentLang == 'ar' || currentLang == 'fa';
 
     return Container(
+      key: _ayetAnahtari(sureNo, ayet.no),
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
         color: _kartRengi,
@@ -3198,7 +3647,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                 ),
                 const SizedBox(width: 4),
                 InkWell(
-                  onTap: () => _ayetiPaylas(ayet),
+                  onTap: () => _ayetiPaylas(ayet, sureNo),
                   borderRadius: BorderRadius.circular(20),
                   child: Padding(
                     padding: const EdgeInsets.all(4),
@@ -3211,11 +3660,14 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                 ),
                 const SizedBox(width: 4),
                 InkWell(
-                  onTap: () => _ayetiCalDurdur(ayet),
+                  onTap: () => _ayetiCalDurdur(ayet, sureNo),
                   borderRadius: BorderRadius.circular(20),
                   child: Padding(
                     padding: const EdgeInsets.all(4),
-                    child: _calanAyetNo == ayet.no && _sesYukleniyor
+                    child:
+                        _calanSureNo == sureNo &&
+                            _calanAyetNo == ayet.no &&
+                            _sesYukleniyor
                         ? SizedBox(
                             width: 18,
                             height: 18,
@@ -3225,10 +3677,12 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                             ),
                           )
                         : Icon(
-                            _calanAyetNo == ayet.no
+                            _calanSureNo == sureNo && _calanAyetNo == ayet.no
                                 ? Icons.stop_circle_outlined
                                 : Icons.play_circle_outline,
-                            color: _calanAyetNo == ayet.no
+                            color:
+                                _calanSureNo == sureNo &&
+                                    _calanAyetNo == ayet.no
                                 ? _vurguRengi
                                 : (_okumaModu ? Colors.black54 : renkler.vurgu),
                             size: 22,

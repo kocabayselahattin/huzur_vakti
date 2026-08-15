@@ -3,6 +3,7 @@ package com.huzura.davet
 import android.content.Context
 import android.media.AudioAttributes
 import android.media.MediaPlayer
+import android.media.RingtoneManager
 import android.net.Uri
 import android.util.Log
 import io.flutter.embedding.engine.FlutterEngine
@@ -51,10 +52,21 @@ object SesOnizleme {
     private fun cal(context: Context, sesId: String): Boolean {
         durdur()
 
-        val resId = kaynakId(context, sesId)
-        if (resId == 0) {
-            Log.w(TAG, "⚠️ res/raw altında ses bulunamadı: $sesId")
-            return false
+        // "system_default": telefonun varsayılan bildirim sesi (content://
+        // URI); "/" içeren bir yol ise kullanıcının cihazdan seçtiği özel
+        // dosya. İkisi de res/raw'da değildir, doğrudan URI ile çalınır.
+        val sesUri: Uri = when {
+            sesId == "system_default" ->
+                RingtoneManager.getDefaultUri(RingtoneManager.TYPE_NOTIFICATION)
+            sesId.contains('/') -> Uri.fromFile(java.io.File(sesId))
+            else -> {
+                val resId = kaynakId(context, sesId)
+                if (resId == 0) {
+                    Log.w(TAG, "⚠️ res/raw altında ses bulunamadı: $sesId")
+                    return false
+                }
+                Uri.parse("android.resource://${context.packageName}/$resId")
+            }
         }
 
         return try {
@@ -67,10 +79,7 @@ object SesOnizleme {
                         .setContentType(AudioAttributes.CONTENT_TYPE_MUSIC)
                         .build()
                 )
-                setDataSource(
-                    context,
-                    Uri.parse("android.resource://${context.packageName}/$resId")
-                )
+                setDataSource(context, sesUri)
                 setOnCompletionListener { bittiginiBildir() }
                 setOnErrorListener { _, ne, ekstra ->
                     Log.e(TAG, "❌ Ön dinleme hatası: $ne / $ekstra")

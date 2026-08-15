@@ -346,6 +346,23 @@ class KuranVeriService {
     return sonucIndex + 1;
   }
 
+  /// Verilen sayfa numarasının (1-604) bittiği [sureNo, ayetNo] (bir
+  /// sonraki sayfanın başlangıcından bir önceki ayet). Son sayfa için
+  /// Kur'an'ın son ayeti (Nâs, 6) döner.
+  static List<int> sayfaBitisi(int sayfaNo) {
+    if (sayfaNo >= toplamSayfaSayisi) return const [114, 6];
+    final sonrakiBaslangic = sayfaBaslangici(sayfaNo + 1);
+    return oncekiAyet(sonrakiBaslangic[0], sonrakiBaslangic[1]);
+  }
+
+  /// Verilen ayetten bir önceki ayet; sure başıysa bir önceki surenin son
+  /// ayeti. Fatiha'nın ilk ayetinden öncesi olmadığından kendisi döner.
+  static List<int> oncekiAyet(int sureNo, int ayetNo) {
+    if (ayetNo > 1) return [sureNo, ayetNo - 1];
+    if (sureNo > 1) return [sureNo - 1, ayetSayilari[sureNo - 2]];
+    return const [1, 1];
+  }
+
   /// compute() ile ayrı isolate'te çalışır; üst düzey/static olmak zorundadır.
   static Map<String, dynamic> _jsonAyristir(String jsonStr) =>
       json.decode(jsonStr) as Map<String, dynamic>;
