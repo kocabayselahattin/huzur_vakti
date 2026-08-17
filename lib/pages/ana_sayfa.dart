@@ -45,6 +45,9 @@ import 'ayarlar_sayfa.dart';
 import 'zikir_matik_sayfa.dart';
 import 'kirk_hadis_sayfa.dart';
 import 'kuran_sayfa.dart';
+import 'kutuphane_sayfa.dart';
+import 'tesbihat_sayfa.dart';
+import 'zekat_hesaplayici_sayfa.dart';
 import 'ibadet_sayfa.dart';
 import 'ozel_gunler_sayfa.dart';
 import 'kible_sayfa.dart';
@@ -1326,6 +1329,34 @@ class _AnaSayfaState extends State<AnaSayfa>
                       },
                     ),
                     _buildMenuCard(
+                      icon: Icons.self_improvement,
+                      title: _languageService['tesbihat'] ?? '',
+                      color: Colors.lightGreen,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const TesbihatSayfa(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildMenuCard(
+                      icon: Icons.calculate_rounded,
+                      title: _languageService['zakat_calculator'] ?? '',
+                      color: Colors.amber,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const ZekatHesaplayiciSayfa(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildMenuCard(
                       icon: Icons.explore,
                       title: _languageService['qibla'] ?? '',
                       color: Colors.orange,
@@ -1405,6 +1436,20 @@ class _AnaSayfaState extends State<AnaSayfa>
                           context,
                           MaterialPageRoute(
                             builder: (context) => const KuranSayfa(),
+                          ),
+                        );
+                      },
+                    ),
+                    _buildMenuCard(
+                      icon: Icons.local_library_rounded,
+                      title: _languageService['library'] ?? '',
+                      color: Colors.brown,
+                      onTap: () {
+                        Navigator.pop(context);
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => const KutuphaneSayfa(),
                           ),
                         );
                       },
