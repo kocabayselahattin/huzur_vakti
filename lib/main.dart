@@ -15,7 +15,14 @@ import 'services/daily_content_notification_service.dart';
 import 'services/ozel_gunler_service.dart';
 import 'services/kuran_veri_service.dart';
 import 'services/hatim_plan_service.dart';
+import 'services/alarm_service.dart';
+import 'services/gunluk_icerik_yonlendirme_service.dart';
 import 'app_version.dart';
+
+/// Uygulama genelinde tek Navigator; günlük içerik bildirimine tıklanınca
+/// hangi sayfada olunursa olunsun ana sayfaya geri dönebilmek için gerekir
+/// (bkz. _HuzurVaktiAppState._gunlukIcerikBildirimineTiklandi).
+final navigatorKey = GlobalKey<NavigatorState>();
 
 /// Save default notification settings in SharedPreferences on first run.
 Future<void> _initializeDefaultNotificationSettings(
@@ -290,6 +297,22 @@ class _HuzurVaktiAppState extends State<HuzurVaktiApp> {
     super.initState();
     _temaService.addListener(_onTemaChanged);
     _languageService.addListener(_onTemaChanged);
+
+    // Uygulama açıkken (arka plandan öne gelirken) günlük içerik
+    // bildirimine tıklanırsa.
+    AlarmService.gunlukIcerikDinle(_gunlukIcerikBildirimineTiklandi);
+    // Soğuk başlangıçta (uygulama kapalıyken bildirime tıklanarak
+    // açıldıysa) bekleyen bir istek olabilir.
+    AlarmService.gunlukIcerikBekleyenTuruAl().then((tur) {
+      if (tur != null && tur.isNotEmpty) _gunlukIcerikBildirimineTiklandi(tur);
+    });
+  }
+
+  void _gunlukIcerikBildirimineTiklandi(String tur) {
+    // Kullanıcı hangi sayfada olursa olsun ana sayfaya dönülür ki
+    // "Günün İçeriği" kartı görünür olsun.
+    navigatorKey.currentState?.popUntil((route) => route.isFirst);
+    GunlukIcerikYonlendirmeService.bildir(tur);
   }
 
   @override
@@ -306,6 +329,7 @@ class _HuzurVaktiAppState extends State<HuzurVaktiApp> {
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
+      navigatorKey: navigatorKey,
       debugShowCheckedModeBanner: false,
       title: _languageService['app_name'],
       theme: _temaService.buildThemeData(),

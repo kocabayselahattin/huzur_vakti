@@ -31,7 +31,19 @@ class PaylasimOnizlemeSayfa extends StatefulWidget {
 class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
   final TemaService _temaService = TemaService();
   final LanguageService _languageService = LanguageService();
-  final GlobalKey _kartAnahtari = GlobalKey();
+
+  // Metin tek kartta okunamayacak kadar uzunsa birden çok karta bölünür;
+  // her sayfanın kendi yakalama anahtarı olur (bkz. PaylasimIcerigi.metniBol).
+  late final List<String> _metinParcalari;
+  late final List<GlobalKey> _kartAnahtarlari;
+  late final PageController _sayfaController;
+  int _sayfaIndex = 0;
+
+  // Yatay seçici şeritlerin (Tasarım/Kart stili/Oran) kaydırılabilir
+  // olduğu belli olsun diye kaydırma çubuğu gösterilir.
+  final ScrollController _duzenKaydirici = ScrollController();
+  final ScrollController _stilKaydirici = ScrollController();
+  final ScrollController _oranKaydirici = ScrollController();
 
   late List<PaylasimKartiStili> _stiller;
   int _seciliStil = 0;
@@ -41,10 +53,30 @@ class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
   bool _paylasiliyor = false;
 
   bool get _arapcaVar => (widget.icerik.arapca ?? '').trim().isNotEmpty;
+  bool get _cokSayfali => _metinParcalari.length > 1;
+
+  /// [index]. sayfanın içeriği: Arapça/besmele yalnızca ilk sayfada, kaynak
+  /// yalnızca son sayfada gösterilir; metin o sayfanın parçasıdır.
+  PaylasimIcerigi _sayfaIcerigi(int index) {
+    if (!_cokSayfali) return widget.icerik;
+    final ilkSayfa = index == 0;
+    final sonSayfa = index == _metinParcalari.length - 1;
+    return PaylasimIcerigi(
+      tur: widget.icerik.tur,
+      baslik: widget.icerik.baslik,
+      metin: _metinParcalari[index],
+      kaynak: sonSayfa ? widget.icerik.kaynak : '',
+      arapca: ilkSayfa ? widget.icerik.arapca : null,
+      besmeleGoster: ilkSayfa,
+    );
+  }
 
   @override
   void initState() {
     super.initState();
+    _metinParcalari = PaylasimIcerigi.metniBol(widget.icerik.metin);
+    _kartAnahtarlari = List.generate(_metinParcalari.length, (_) => GlobalKey());
+    _sayfaController = PageController();
     _stilleriHazirla();
     _temaService.addListener(_onDegisti);
     _languageService.addListener(_onDegisti);
@@ -52,6 +84,10 @@ class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
 
   @override
   void dispose() {
+    _sayfaController.dispose();
+    _duzenKaydirici.dispose();
+    _stilKaydirici.dispose();
+    _oranKaydirici.dispose();
     _temaService.removeListener(_onDegisti);
     _languageService.removeListener(_onDegisti);
     super.dispose();
@@ -97,8 +133,8 @@ class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
     // Beklenmedik bir hata çıksa bile düğme "yükleniyor"da kilitli kalmamalı.
     var basarili = false;
     try {
-      basarili = await PaylasimKartiService.gorselPaylas(
-        kartAnahtari: _kartAnahtari,
+      basarili = await PaylasimKartiService.gorselleriPaylas(
+        kartAnahtarlari: _kartAnahtarlari,
         konu: widget.icerik.baslik,
         konum: PaylasimKartiService.konumBul(butonContext),
       );
@@ -150,59 +186,150 @@ class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
           ),
         ),
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          color: renkler.arkaPlan,
-          gradient: renkler.arkaPlanGradient,
-        ),
-        child: SafeArea(
-          top: false,
-          child: Column(
-            children: [
-              // Önizleme: kart doğal boyutunda çizilir, ekrana sığacak
-              // şekilde ölçeklenir. Yakalama kartın kendi boyutundan yapılır.
-              Expanded(
-                child: Center(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 24,
-                      vertical: 12,
-                    ),
-                    child: FittedBox(
-                      fit: BoxFit.contain,
-                      child: Container(
-                        decoration: BoxDecoration(
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.black.withValues(alpha: 0.25),
-                              blurRadius: 24,
-                              offset: const Offset(0, 10),
-                            ),
-                          ],
-                        ),
-                        child: RepaintBoundary(
-                          key: _kartAnahtari,
-                          child: PaylasimKarti(
-                            icerik: widget.icerik,
-                            stil: _stiller[_seciliStil],
-                            duzen: _seciliDuzen,
-                            oran: _seciliOran,
-                            imza: _imza,
-                            tanitim: _tanitim,
-                            arapcaGoster: _arapcaGoster,
-                          ),
-                        ),
-                      ),
-                    ),
+      body: Stack(
+        children: [
+          Container(
+            decoration: BoxDecoration(
+              color: renkler.arkaPlan,
+              gradient: renkler.arkaPlanGradient,
+            ),
+            child: SafeArea(
+              top: false,
+              child: Column(
+                children: [
+                  // Önizleme: kart doğal boyutunda çizilir, ekrana sığacak
+                  // şekilde ölçeklenir. Yakalama kartın kendi boyutundan yapılır.
+                  // İçerik birden çok karta bölündüyse yatay kaydırmalı bir
+                  // önizleme ve altında sayfa noktaları gösterilir; kullanıcı
+                  // paylaşmadan önce ikinci (ve varsa sonraki) kartı da görebilsin.
+                  Expanded(
+                    child: _cokSayfali
+                        ? Column(
+                            children: [
+                              Expanded(
+                                child: PageView.builder(
+                                  controller: _sayfaController,
+                                  itemCount: _metinParcalari.length,
+                                  onPageChanged: (index) =>
+                                      setState(() => _sayfaIndex = index),
+                                  itemBuilder: (context, index) =>
+                                      Center(child: _kartOnizleme(index)),
+                                ),
+                              ),
+                              const SizedBox(height: 12),
+                              _sayfaNoktalari(renkler),
+                              const SizedBox(height: 4),
+                            ],
+                          )
+                        : Center(child: _kartOnizleme(0)),
                   ),
-                ),
-              ),
 
-              _altPanel(renkler),
+                  _altPanel(renkler),
+                ],
+              ),
+            ),
+          ),
+
+          // Yakalama katmanı: PageView yalnızca o an görünen sayfayı ağaca
+          // eklediği için (diğer sayfaların RepaintBoundary'si hiç boyanmaz),
+          // paylaşım tüm kartları aynı anda yakalayabilsin diye tüm kartlar
+          // burada, ekranın dışında, kalıcı olarak boyalı tutulur.
+          if (_cokSayfali) _yakalamaKatmani(),
+        ],
+      ),
+    );
+  }
+
+  /// Belirli bir sayfanın kart içeriği; önizleme ve yakalama katmanı
+  /// arasında paylaşılır.
+  Widget _kartIcerigi(int index) {
+    return PaylasimKarti(
+      icerik: _sayfaIcerigi(index),
+      stil: _stiller[_seciliStil],
+      duzen: _seciliDuzen,
+      oran: _seciliOran,
+      imza: _imza,
+      tanitim: _tanitim,
+      arapcaGoster: _arapcaGoster,
+      sayfaNo: _cokSayfali ? index + 1 : null,
+      sayfaToplam: _cokSayfali ? _metinParcalari.length : null,
+    );
+  }
+
+  /// Tek bir sayfanın önizleme kartı: gölge + ölçeklenmiş görünüm.
+  ///
+  /// Çok sayfalı içerikte bu widget yakalama için kullanılmaz (bkz.
+  /// [_yakalamaKatmani]) çünkü PageView.builder yalnızca görünen sayfayı
+  /// ağaca ekler; aynı GlobalKey iki widget'a birden atanamayacağı için
+  /// burada anahtarsız bir kopya gösterilir.
+  Widget _kartOnizleme(int index) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+      child: FittedBox(
+        fit: BoxFit.contain,
+        child: Container(
+          decoration: BoxDecoration(
+            boxShadow: [
+              BoxShadow(
+                color: Colors.black.withValues(alpha: 0.25),
+                blurRadius: 24,
+                offset: const Offset(0, 10),
+              ),
             ],
           ),
+          child: _cokSayfali
+              ? _kartIcerigi(index)
+              : RepaintBoundary(
+                  key: _kartAnahtarlari[index],
+                  child: _kartIcerigi(index),
+                ),
         ),
       ),
+    );
+  }
+
+  /// Tüm kartları ekranın dışında sürekli boyalı tutan gizli katman.
+  ///
+  /// [gorselleriPaylas] her sayfayı aynı anda yakalayabilsin diye, sayfalar
+  /// kullanıcının o an gördüğü karttan bağımsız olarak burada kalıcı
+  /// RepaintBoundary'lere sahip olur.
+  Widget _yakalamaKatmani() {
+    return Positioned(
+      left: -100000,
+      top: 0,
+      child: IgnorePointer(
+        child: Column(
+          children: [
+            for (var index = 0; index < _metinParcalari.length; index++)
+              RepaintBoundary(
+                key: _kartAnahtarlari[index],
+                child: _kartIcerigi(index),
+              ),
+          ],
+        ),
+      ),
+    );
+  }
+
+  /// Çok sayfalı önizlemede hangi sayfada olunduğunu gösteren noktalar.
+  Widget _sayfaNoktalari(TemaRenkleri renkler) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.center,
+      children: List.generate(_metinParcalari.length, (index) {
+        final aktif = index == _sayfaIndex;
+        return AnimatedContainer(
+          duration: const Duration(milliseconds: 180),
+          margin: const EdgeInsets.symmetric(horizontal: 3),
+          width: aktif ? 18 : 6,
+          height: 6,
+          decoration: BoxDecoration(
+            color: aktif
+                ? renkler.vurgu
+                : renkler.yaziSecondary.withValues(alpha: 0.3),
+            borderRadius: BorderRadius.circular(3),
+          ),
+        );
+      }),
     );
   }
 
@@ -284,7 +411,11 @@ class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
   /// Kartın yerleşim tasarımını seçen şerit.
   Widget _duzenSeridi(TemaRenkleri renkler) {
     const duzenler = PaylasimKartiDuzeni.values;
-    return ListView.separated(
+    return Scrollbar(
+      controller: _duzenKaydirici,
+      thumbVisibility: true,
+      child: ListView.separated(
+      controller: _duzenKaydirici,
       scrollDirection: Axis.horizontal,
       itemCount: duzenler.length,
       separatorBuilder: (_, _) => const SizedBox(width: 10),
@@ -331,6 +462,7 @@ class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
           ),
         );
       },
+      ),
     );
   }
 
@@ -338,7 +470,11 @@ class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
   /// durumunda kartın tam ekran görünmesi için 9:16 üretir.
   Widget _oranSeridi(TemaRenkleri renkler) {
     const oranlar = PaylasimKartiOrani.values;
-    return ListView.separated(
+    return Scrollbar(
+      controller: _oranKaydirici,
+      thumbVisibility: true,
+      child: ListView.separated(
+      controller: _oranKaydirici,
       scrollDirection: Axis.horizontal,
       itemCount: oranlar.length,
       separatorBuilder: (_, _) => const SizedBox(width: 8),
@@ -384,11 +520,16 @@ class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
           ),
         );
       },
+      ),
     );
   }
 
   Widget _stilSeridi(TemaRenkleri renkler) {
-    return ListView.separated(
+    return Scrollbar(
+      controller: _stilKaydirici,
+      thumbVisibility: true,
+      child: ListView.separated(
+      controller: _stilKaydirici,
       scrollDirection: Axis.horizontal,
       itemCount: _stiller.length,
       separatorBuilder: (_, _) => const SizedBox(width: 12),
@@ -435,6 +576,7 @@ class _PaylasimOnizlemeSayfaState extends State<PaylasimOnizlemeSayfa> {
           ),
         );
       },
+      ),
     );
   }
 

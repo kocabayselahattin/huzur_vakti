@@ -98,6 +98,52 @@ class PaylasimKartiService {
     }
   }
 
+  /// Birden çok karta bölünmüş içeriği tüm görselleri tek paylaşımda
+  /// birlikte göndererek paylaşır (bkz. PaylasimIcerigi.metniBol). Herhangi
+  /// bir kart yakalanamazsa false döner ki çağıran taraf metin paylaşımına
+  /// düşebilsin.
+  static Future<bool> gorselleriPaylas({
+    required List<GlobalKey> kartAnahtarlari,
+    String? metin,
+    String? konu,
+    Rect? konum,
+  }) async {
+    if (kartAnahtarlari.isEmpty) return false;
+    if (kartAnahtarlari.length == 1) {
+      return gorselPaylas(
+        kartAnahtari: kartAnahtarlari.first,
+        metin: metin,
+        konu: konu,
+        konum: konum,
+      );
+    }
+
+    final dosyalar = <File>[];
+    for (final anahtar in kartAnahtarlari) {
+      final baytlar = await pngUret(anahtar);
+      if (baytlar == null) return false;
+      dosyalar.add(await _dosyayaYaz(baytlar));
+    }
+
+    try {
+      await SharePlus.instance.share(
+        ShareParams(
+          files: [
+            for (final dosya in dosyalar)
+              XFile(dosya.path, mimeType: 'image/png'),
+          ],
+          text: metin,
+          subject: konu,
+          sharePositionOrigin: konum,
+        ),
+      );
+      unawaited(_eskiDosyalariTemizle());
+      return true;
+    } catch (_) {
+      return false;
+    }
+  }
+
   /// Kartın içeriğini düz metin olarak paylaşır.
   static Future<bool> metinPaylas({
     required String metin,

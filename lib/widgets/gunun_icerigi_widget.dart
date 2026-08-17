@@ -4,6 +4,7 @@ import '../pages/paylasim_onizleme_sayfa.dart';
 import '../services/tema_service.dart';
 import '../services/language_service.dart';
 import '../services/gunluk_hadis_dua_service.dart';
+import '../services/gunluk_icerik_yonlendirme_service.dart';
 import '../services/kuran_veri_service.dart';
 import 'paylasim_karti.dart';
 
@@ -25,6 +26,11 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
   Map<String, String>? _canliHadis;
   Map<String, String>? _canliDua;
 
+  // Günlük içerik bildirimine tıklanınca ilgili sayfaya atlanır ve kısa
+  // süreliğine vurgulanır (bkz. GunlukIcerikYonlendirmeService).
+  bool _vurguAktif = false;
+  Timer? _vurguTimer;
+
   @override
   void initState() {
     super.initState();
@@ -32,6 +38,84 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
     _languageService.addListener(_onTemaChanged);
     _scheduleMidnightRefresh();
     _canliIcerigiYukle();
+
+    GunlukIcerikYonlendirmeService.acilacakSayfa.addListener(
+      _yonlendirmeGeldi,
+    );
+    // Widget zaten kuruluyken (uygulama arka planda çalışırken bildirime
+    // tıklandıysa) bekleyen bir istek olabilir.
+    WidgetsBinding.instance.addPostFrameCallback((_) => _yonlendirmeGeldi());
+  }
+
+  void _yonlendirmeGeldi() {
+    final sayfa = GunlukIcerikYonlendirmeService.acilacakSayfa.value;
+    if (sayfa == null || !mounted) return;
+    GunlukIcerikYonlendirmeService.acilacakSayfa.value = null; // tüketildi
+
+    if (_pageController.hasClients) {
+      _pageController.animateToPage(
+        sayfa,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeOutCubic,
+      );
+    }
+    _vurguTimer?.cancel();
+    setState(() {
+      _currentPage = sayfa;
+      _vurguAktif = true;
+    });
+    _vurguTimer = Timer(const Duration(seconds: 3), () {
+      if (mounted) setState(() => _vurguAktif = false);
+    });
+
+    // Kullanıcı bildirime dokunduğunda ana sayfa açılıyor ama kart ekranın
+    // altında kalabiliyor (kaydırmadan görünmüyor); içeriği doğrudan
+    // popup'ta göstererek elle kaydırma ihtiyacını ortadan kaldırıyoruz.
+    WidgetsBinding.instance.addPostFrameCallback(
+      (_) => _icerigiPopupTaGoster(sayfa),
+    );
+  }
+
+  void _icerigiPopupTaGoster(int sayfa) {
+    if (!mounted) return;
+    final renkler = _temaService.renkler;
+
+    switch (sayfa) {
+      case 0:
+        final ayet = _getGununAyeti();
+        _tamMetniGoster(
+          tur: PaylasimIcerikTuru.ayet,
+          baslik: (_languageService['todays_verse'] ?? '').toUpperCase(),
+          icerik: ayet['text'] ?? '',
+          kaynak: ayet['source'] ?? '',
+          arapca: ayet['arabic'],
+          ikon: Icons.menu_book_rounded,
+          renkler: renkler,
+        );
+        break;
+      case 1:
+        final hadis = _getGununHadisi();
+        _tamMetniGoster(
+          tur: PaylasimIcerikTuru.hadis,
+          baslik: (_languageService['todays_hadith'] ?? '').toUpperCase(),
+          icerik: hadis['text'] ?? '',
+          kaynak: hadis['source'] ?? '',
+          ikon: Icons.star_rounded,
+          renkler: renkler,
+        );
+        break;
+      case 2:
+        final dua = _getGununDuasi();
+        _tamMetniGoster(
+          tur: PaylasimIcerikTuru.dua,
+          baslik: (_languageService['todays_dua'] ?? '').toUpperCase(),
+          icerik: dua['text'] ?? '',
+          kaynak: dua['source'] ?? '',
+          ikon: Icons.favorite_rounded,
+          renkler: renkler,
+        );
+        break;
+    }
   }
 
   Future<void> _canliIcerigiYukle() async {
@@ -75,9 +159,13 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
   @override
   void dispose() {
     _midnightTimer?.cancel();
+    _vurguTimer?.cancel();
     _pageController.dispose();
     _temaService.removeListener(_onTemaChanged);
     _languageService.removeListener(_onTemaChanged);
+    GunlukIcerikYonlendirmeService.acilacakSayfa.removeListener(
+      _yonlendirmeGeldi,
+    );
     super.dispose();
   }
 
@@ -231,8 +319,27 @@ class _GununIcerigiWidgetState extends State<GununIcerigiWidget> {
         // Scrollable content.
         // Yükseklik, ayet kartındaki büyütülmüş besmele satırını karşılayacak ve
         // metne bir satır daha yer bırakacak şekilde ölçüldü.
-        SizedBox(
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 300),
           height: 252,
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(16),
+            border: Border.all(
+              color: _vurguAktif
+                  ? renkler.vurgu
+                  : Colors.transparent,
+              width: 2,
+            ),
+            boxShadow: _vurguAktif
+                ? [
+                    BoxShadow(
+                      color: renkler.vurgu.withOpacity(0.35),
+                      blurRadius: 16,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : null,
+          ),
           child: PageView(
             controller: _pageController,
             onPageChanged: (index) {

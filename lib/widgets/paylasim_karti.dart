@@ -103,12 +103,17 @@ class PaylasimIcerigi {
   final String metin;
   final String kaynak;
 
+  /// Besmele yalnızca çok sayfalı paylaşımlarda ilk kartta gösterilsin diye
+  /// eklendi; tek kartlık içerikte her zaman true kalır.
+  final bool besmeleGoster;
+
   const PaylasimIcerigi({
     required this.tur,
     required this.baslik,
     required this.metin,
     required this.kaynak,
     this.arapca,
+    this.besmeleGoster = true,
   });
 
   IconData get ikon {
@@ -125,7 +130,27 @@ class PaylasimIcerigi {
   }
 
   /// Ayet paylaşımları besmele ile başlar.
-  bool get besmeleliMi => tur == PaylasimIcerikTuru.ayet;
+  bool get besmeleliMi => tur == PaylasimIcerikTuru.ayet && besmeleGoster;
+
+  /// Metni, her parçası en fazla [sinir] karakter olacak biçimde kelime
+  /// sınırından böler. Tek kartta okunamayacak kadar uzun ayet/hadis/dua
+  /// metinleri bu şekilde birden çok karta bölünür; hiçbir bölüm kırpılıp
+  /// yarıda bırakılmaz (bkz. paylasim_onizleme_sayfa.dart).
+  static List<String> metniBol(String metin, {int sinir = 700}) {
+    final temiz = metin.trim();
+    if (temiz.length <= sinir) return [temiz];
+
+    final parcalar = <String>[];
+    var kalan = temiz;
+    while (kalan.length > sinir) {
+      var kesimNoktasi = kalan.lastIndexOf(' ', sinir);
+      if (kesimNoktasi <= 0) kesimNoktasi = sinir;
+      parcalar.add(kalan.substring(0, kesimNoktasi).trim());
+      kalan = kalan.substring(kesimNoktasi).trim();
+    }
+    if (kalan.isNotEmpty) parcalar.add(kalan);
+    return parcalar;
+  }
 
   /// Uygulamanın Play Store adresi. Görseldeki imza tıklanamadığı için düz
   /// metin paylaşımlarına bu bağlantı eklenir.
@@ -322,6 +347,14 @@ class PaylasimKarti extends StatelessWidget {
   /// İmzanın altındaki tanıtım satırı (örn. "Namaz Vakti Uygulaması").
   final String tanitim;
 
+  /// Metin birden çok karta bölündüğünde bu kartın sırası (1 tabanlı).
+  /// Null veya [sayfaToplam] 1 ise rozet çizilmez.
+  final int? sayfaNo;
+
+  /// Toplam kart sayısı; birden fazlaysa köşede "sayfaNo/sayfaToplam"
+  /// rozeti gösterilir ki kullanıcı içeriğin birkaç karta bölündüğünü görsün.
+  final int? sayfaToplam;
+
   const PaylasimKarti({
     super.key,
     required this.icerik,
@@ -331,6 +364,8 @@ class PaylasimKarti extends StatelessWidget {
     this.duzen = PaylasimKartiDuzeni.klasik,
     this.oran = PaylasimKartiOrani.serbest,
     this.arapcaGoster = true,
+    this.sayfaNo,
+    this.sayfaToplam,
   });
 
   /// Uzun metinlerde kartın taşmaması için yazı boyutunu kademeli küçültür.
@@ -368,7 +403,7 @@ class PaylasimKarti extends StatelessWidget {
     // uzar; kısaysa boşluk kartın zeminiyle dolar ve oran korunur.
     final enAzYukseklik = oran.enBoy > 0 ? genislik * oran.enBoy : 460.0;
 
-    return Container(
+    final govde = Container(
       width: genislik,
       constraints: BoxConstraints(minHeight: enAzYukseklik),
       decoration: BoxDecoration(
@@ -394,6 +429,36 @@ class PaylasimKarti extends StatelessWidget {
           },
         ),
       ),
+    );
+
+    if (sayfaNo == null || (sayfaToplam ?? 1) <= 1) return govde;
+
+    // İçerik birden çok karta bölündüğünde köşede "1/2" gibi bir rozet
+    // gösterilir; kullanıcı bunun bir dizinin parçası olduğunu görsün.
+    return Stack(
+      children: [
+        govde,
+        Positioned(
+          top: 14,
+          right: 14,
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: stil.vurgu.withValues(alpha: 0.18),
+              borderRadius: BorderRadius.circular(12),
+              border: Border.all(color: stil.vurgu.withValues(alpha: 0.4)),
+            ),
+            child: Text(
+              '$sayfaNo/$sayfaToplam',
+              style: TextStyle(
+                color: stil.vurgu,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

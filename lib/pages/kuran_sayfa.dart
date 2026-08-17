@@ -2464,6 +2464,9 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
   int? _calanSureNo;
   int? _calanAyetNo;
   bool _sesYukleniyor = false;
+  // true iken bir ayet bitince otomatik olarak sıradaki ayete geçilir;
+  // kullanıcı çalan ayete tekrar basıp durdurunca false yapılır.
+  bool _otomatikDevamEt = false;
   bool _sureIndirilmis = false;
   bool _sureIndiriliyor = false;
   int _indirmeTamamlanan = 0;
@@ -2478,7 +2481,19 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     _scrollController.addListener(_onScroll);
     _sesIndirmeDurumunuKontrolEt();
     _sesOynatici.onPlayerComplete.listen((_) {
-      if (mounted) setState(() => _calanAyetNo = null);
+      if (!mounted) return;
+      if (_otomatikDevamEt && _calanSureNo != null && _calanAyetNo != null) {
+        final index = _ayetler.indexWhere(
+          (sa) => sa.sureNo == _calanSureNo && sa.ayet.no == _calanAyetNo,
+        );
+        if (index != -1 && index + 1 < _ayetler.length) {
+          final sonraki = _ayetler[index + 1];
+          _ayetiCal(sonraki.ayet, sonraki.sureNo);
+          return;
+        }
+      }
+      _otomatikDevamEt = false;
+      setState(() => _calanAyetNo = null);
     });
   }
 
@@ -2504,18 +2519,28 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     if (mounted) setState(() => _sureIndirilmis = indirilmis);
   }
 
+  /// Tek bir ayete tıklandığında çağrılır: aynı ayet çalıyorsa tamamen
+  /// durdurur, değilse o ayetten başlayıp sure bitene (ya da kullanıcı
+  /// durdurana) kadar sırayla otomatik devam eden bir okuma başlatır.
   Future<void> _ayetiCalDurdur(Ayet ayet, int sureNo) async {
     if (_calanSureNo == sureNo && _calanAyetNo == ayet.no) {
+      _otomatikDevamEt = false;
       await _sesOynatici.stop();
       if (mounted) setState(() => _calanAyetNo = null);
       return;
     }
 
+    _otomatikDevamEt = true;
+    await _ayetiCal(ayet, sureNo);
+  }
+
+  Future<void> _ayetiCal(Ayet ayet, int sureNo) async {
     setState(() {
       _sesYukleniyor = true;
       _calanSureNo = sureNo;
       _calanAyetNo = ayet.no;
     });
+    _calanAyeteKaydir(sureNo, ayet.no);
 
     try {
       final sonuc = await KuranSesService.calmaKaynagi(sureNo, ayet.no);
@@ -2524,6 +2549,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
       // sessizce başarısız olmak yerine kullanıcıyı önceden bilgilendir.
       if (!sonuc.yerel && !await _internetVarMi()) {
         if (mounted) {
+          _otomatikDevamEt = false;
           setState(() => _calanAyetNo = null);
           _internetYokUyarisiGoster();
         }
@@ -2536,12 +2562,30 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
       );
     } catch (e) {
       if (mounted) {
+        _otomatikDevamEt = false;
         setState(() => _calanAyetNo = null);
         _internetYokUyarisiGoster();
       }
     } finally {
       if (mounted) setState(() => _sesYukleniyor = false);
     }
+  }
+
+  /// Otomatik sıradaki ayete geçilirken, o ayet ekranda görünmüyorsa
+  /// kullanıcının hangi ayetin okunduğunu takip edebilmesi için yumuşakça
+  /// oraya kaydırır.
+  void _calanAyeteKaydir(int sureNo, int ayetNo) {
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      final anahtar = _ayetAnahtarlari['$sureNo:$ayetNo'];
+      final ctx = anahtar?.currentContext;
+      if (ctx == null) return;
+      Scrollable.ensureVisible(
+        ctx,
+        duration: const Duration(milliseconds: 400),
+        curve: Curves.easeInOut,
+        alignment: 0.2,
+      );
+    });
   }
 
   /// Kısa bir DNS sorgusuyla internet bağlantısını yoklar. VPN/kısıtlı
@@ -3587,27 +3631,39 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     final currentLang = _languageService.currentLanguage;
     final hideTranslation = currentLang == 'ar' || currentLang == 'fa';
 
+    final buAyetCaliyor = _calanSureNo == sureNo && _calanAyetNo == ayet.no;
+
     return Container(
       key: _ayetAnahtari(sureNo, ayet.no),
       margin: const EdgeInsets.only(bottom: 16),
       decoration: BoxDecoration(
-        color: _kartRengi,
+        color: buAyetCaliyor ? _vurguRengi.withOpacity(0.08) : _kartRengi,
         borderRadius: BorderRadius.circular(16),
-        border: _okumaModu ? Border.all(color: Colors.grey.shade200) : null,
-        boxShadow: _okumaModu
-            ? []
-            : [
-                BoxShadow(
-                  color: renkler.vurgu.withOpacity(0.05),
-                  blurRadius: 8,
-                ),
-              ],
+        border: buAyetCaliyor
+            ? Border.all(color: _vurguRengi, width: 1.5)
+            : (_okumaModu ? Border.all(color: Colors.grey.shade200) : null),
+        boxShadow: buAyetCaliyor
+            ? [BoxShadow(color: _vurguRengi.withOpacity(0.25), blurRadius: 12)]
+            : (_okumaModu
+                  ? []
+                  : [
+                      BoxShadow(
+                        color: renkler.vurgu.withOpacity(0.05),
+                        blurRadius: 8,
+                      ),
+                    ]),
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          // Verse number
-          Container(
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(16),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => _ayetiCalDurdur(ayet, sureNo),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              // Verse number
+              Container(
             padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
             decoration: BoxDecoration(
               color: _okumaModu
@@ -3771,7 +3827,9 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                 ],
               ),
             ),
-        ],
+            ],
+          ),
+        ),
       ),
     );
   }

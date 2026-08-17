@@ -73,6 +73,9 @@ class WidgetYapilandirmaActivity : Activity() {
         for (anahtar in WidgetZeminleri.ANAHTARLAR) {
             val kutu = View(this).apply {
                 setBackgroundResource(WidgetZeminleri.zemin(anahtar, 100))
+                // Sabit ince kenarlık: beyaza/saydama yakın zeminler (semi_white,
+                // transparent) ekran zemininde kaybolmasın diye her zaman görünür.
+                foreground = getDrawable(R.drawable.widget_zemin_kenarlik)
                 layoutParams = LinearLayout.LayoutParams(dp(52), dp(52)).apply {
                     marginEnd = dp(10)
                 }

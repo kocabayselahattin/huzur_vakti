@@ -7,7 +7,7 @@ import '../services/tema_service.dart';
 import '../services/language_service.dart';
 import '../services/hatim_plan_service.dart';
 import '../services/kuran_veri_service.dart';
-import '../services/ses_onizleme_service.dart';
+import '../widgets/ses_secici_sheet.dart';
 import 'kuran_sayfa.dart';
 
 /// Hatim planı hatırlatmasında seçilebilecek bildirim sesleri. "custom"
@@ -133,122 +133,30 @@ class _HatimPlaniSayfaState extends State<HatimPlaniSayfa> {
   /// Hatırlatma sesi seçim panelini açar; her seçenek ön dinlenebilir.
   /// "Özel Ses Seç" için önce cihazdan dosya seçtirilir. Seçim yapılırsa
   /// sonuç kaydını döndürür, vazgeçilirse null.
+  List<Map<String, String>> get _hatirlaticiSesSecenekleriResolved =>
+      _hatirlaticiSesSecenekleri
+          .map(
+            (s) => <String, String>{
+              'id': s[0],
+              'ad': s[0] == 'custom'
+                  ? (_languageService['custom_sound'] ?? 'Özel Ses Seç')
+                  : (_languageService[s[1]] ?? s[0]),
+            },
+          )
+          .toList();
+
   Future<({String id, String? ozelYol})?> _sesSeciciGoster(
     String seciliSesId,
-  ) async {
-    final renkler = _temaService.renkler;
-    String? calanSesId;
-
-    final sonuc = await showModalBottomSheet<({String id, String? ozelYol})>(
+  ) {
+    return sesSeciciSheetAc(
       context: context,
-      backgroundColor: renkler.kartArkaPlan,
-      isScrollControlled: true,
-      shape: const RoundedRectangleBorder(
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      builder: (sheetContext) {
-        return StatefulBuilder(
-          builder: (sheetContext, setSheetState) {
-            return SafeArea(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(
-                  maxHeight: MediaQuery.of(sheetContext).size.height * 0.7,
-                ),
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Padding(
-                      padding: const EdgeInsets.fromLTRB(20, 20, 20, 8),
-                      child: Align(
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          _languageService['hatim_plan_reminder_sound'] ??
-                              'Hatırlatma Sesi',
-                          style: TextStyle(
-                            color: renkler.yaziPrimary,
-                            fontSize: 16,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                    ),
-                    Flexible(
-                      child: ListView(
-                        shrinkWrap: true,
-                        children: _hatirlaticiSesSecenekleri.map((s) {
-                          final id = s[0];
-                          final ozel = id == 'custom';
-                          final ad = ozel
-                              ? (_languageService['custom_sound'] ??
-                                    'Özel Ses Seç')
-                              : (_languageService[s[1]] ?? id);
-                          final secili = id == seciliSesId;
-                          final caliyor = calanSesId == id;
-                          return ListTile(
-                            leading: Icon(
-                              ozel
-                                  ? Icons.folder_open_rounded
-                                  : (secili
-                                        ? Icons.radio_button_checked_rounded
-                                        : Icons.radio_button_off_rounded),
-                              color: secili
-                                  ? renkler.vurgu
-                                  : renkler.yaziSecondary,
-                            ),
-                            title: Text(
-                              ad,
-                              style: TextStyle(color: renkler.yaziPrimary),
-                            ),
-                            trailing: ozel
-                                ? null
-                                : IconButton(
-                                    icon: Icon(
-                                      caliyor
-                                          ? Icons.stop_circle_outlined
-                                          : Icons.play_circle_outline,
-                                      color: renkler.vurgu,
-                                    ),
-                                    onPressed: () async {
-                                      if (caliyor) {
-                                        await SesOnizlemeService.durdur();
-                                        setSheetState(() => calanSesId = null);
-                                      } else {
-                                        await SesOnizlemeService.cal(id);
-                                        setSheetState(() => calanSesId = id);
-                                      }
-                                    },
-                                  ),
-                            onTap: () async {
-                              if (ozel) {
-                                final yol = await _ozelSesSecVeKopyala();
-                                if (yol != null && sheetContext.mounted) {
-                                  Navigator.pop(sheetContext, (
-                                    id: 'custom',
-                                    ozelYol: yol,
-                                  ));
-                                }
-                                return;
-                              }
-                              Navigator.pop(sheetContext, (
-                                id: id,
-                                ozelYol: null,
-                              ));
-                            },
-                          );
-                        }).toList(),
-                      ),
-                    ),
-                    const SizedBox(height: 12),
-                  ],
-                ),
-              ),
-            );
-          },
-        );
-      },
+      renkler: _temaService.renkler,
+      baslik:
+          _languageService['hatim_plan_reminder_sound'] ?? 'Hatırlatma Sesi',
+      secenekler: _hatirlaticiSesSecenekleriResolved,
+      seciliSesId: seciliSesId,
+      ozelDosyaSec: _ozelSesSecVeKopyala,
     );
-    await SesOnizlemeService.durdur();
-    return sonuc;
   }
 
   Widget _buildSesSatiri({
@@ -259,67 +167,15 @@ class _HatimPlaniSayfaState extends State<HatimPlaniSayfa> {
   }) {
     return Padding(
       padding: const EdgeInsets.only(top: 10),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          borderRadius: BorderRadius.circular(12),
-          onTap: () async {
-            final secilen = await _sesSeciciGoster(sesId);
-            if (secilen != null) onSecildi(secilen.id, secilen.ozelYol);
-          },
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-            decoration: BoxDecoration(
-              color: renkler.vurgu.withOpacity(0.1),
-              borderRadius: BorderRadius.circular(12),
-              border: Border.all(color: renkler.vurgu.withOpacity(0.35)),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Row(
-                  children: [
-                    Icon(
-                      Icons.music_note_rounded,
-                      color: renkler.vurgu,
-                      size: 18,
-                    ),
-                    const SizedBox(width: 8),
-                    Text(
-                      _languageService['hatim_plan_reminder_sound'] ??
-                          'Hatırlatma Sesi',
-                      style: TextStyle(
-                        color: renkler.yaziSecondary,
-                        fontSize: 13,
-                      ),
-                    ),
-                  ],
-                ),
-                Expanded(
-                  child: Row(
-                    mainAxisAlignment: MainAxisAlignment.end,
-                    children: [
-                      Flexible(
-                        child: Text(
-                          _sesAdi(sesId, ozelSesYolu),
-                          overflow: TextOverflow.ellipsis,
-                          textAlign: TextAlign.right,
-                          style: TextStyle(
-                            color: renkler.vurgu,
-                            fontSize: 15,
-                            fontWeight: FontWeight.bold,
-                          ),
-                        ),
-                      ),
-                      const SizedBox(width: 4),
-                      Icon(Icons.edit_rounded, color: renkler.vurgu, size: 16),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
+      child: SesSeciciSatiri(
+        renkler: renkler,
+        icon: Icons.music_note_rounded,
+        etiket: _languageService['hatim_plan_reminder_sound'] ?? 'Hatırlatma Sesi',
+        secilenAd: _sesAdi(sesId, ozelSesYolu),
+        onTap: () async {
+          final secilen = await _sesSeciciGoster(sesId);
+          if (secilen != null) onSecildi(secilen.id, secilen.ozelYol);
+        },
       ),
     );
   }
@@ -494,15 +350,78 @@ class _HatimPlaniSayfaState extends State<HatimPlaniSayfa> {
     String ses = plan.hatirlaticiSesi;
     String? ozelSesYolu = plan.hatirlaticiOzelSesYolu;
 
+    // Kullanıcı "Kaydet"e basmadan (geri tuşu, sayfa dışına dokunma vb.)
+    // panelden çıkarsa yaptığı değişiklikler sessizce kaybolmasın diye
+    // önce değişiklik olup olmadığı kontrol edilir, varsa onay istenir.
+    bool degisiklikVarMi() {
+      final saatMetni =
+          '${saat.hour.toString().padLeft(2, '0')}:${saat.minute.toString().padLeft(2, '0')}';
+      return adCtrl.text.trim() != plan.ad ||
+          acik != plan.hatirlaticiAcik ||
+          (acik && saatMetni != plan.hatirlaticiSaati) ||
+          (acik && ses != plan.hatirlaticiSesi) ||
+          (acik && ozelSesYolu != plan.hatirlaticiOzelSesYolu);
+    }
+
+    Future<void> kapatmayaCalis(BuildContext sheetContext) async {
+      if (!degisiklikVarMi()) {
+        Navigator.pop(sheetContext, false);
+        return;
+      }
+      final kaydet = await showDialog<bool>(
+        context: sheetContext,
+        builder: (dialogContext) => AlertDialog(
+          backgroundColor: renkler.kartArkaPlan,
+          title: Text(
+            _languageService['save_changes_title'] ?? '',
+            style: TextStyle(color: renkler.yaziPrimary),
+          ),
+          content: Text(
+            _languageService['save_changes_message'] ?? '',
+            style: TextStyle(color: renkler.yaziSecondary),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(dialogContext, false),
+              child: Text(
+                _languageService['dont_save'] ?? '',
+                style: TextStyle(color: renkler.yaziSecondary),
+              ),
+            ),
+            ElevatedButton(
+              onPressed: () => Navigator.pop(dialogContext, true),
+              style: ElevatedButton.styleFrom(backgroundColor: renkler.vurgu),
+              child: Text(
+                _languageService['save'] ?? '',
+                style: TextStyle(color: renkler.arkaPlan),
+              ),
+            ),
+          ],
+        ),
+      );
+      if (!sheetContext.mounted || kaydet == null) return;
+      Navigator.pop(sheetContext, kaydet);
+    }
+
     final kaydedildi = await showModalBottomSheet<bool>(
       context: context,
       backgroundColor: renkler.kartArkaPlan,
       isScrollControlled: true,
+      // Değişiklikler yanlışlıkla kaybolmasın diye dışarı dokunarak veya
+      // aşağı kaydırarak kapatma kapalı; çıkış yalnızca X düğmesi, Kaydet
+      // düğmesi ya da geri tuşu üzerinden olur (üçü de kapatmayaCalis'ten geçer).
+      isDismissible: false,
+      enableDrag: false,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       builder: (sheetContext) {
-        return StatefulBuilder(
+        return PopScope(
+          canPop: false,
+          onPopInvokedWithResult: (didPop, result) {
+            if (!didPop) kapatmayaCalis(sheetContext);
+          },
+          child: StatefulBuilder(
           builder: (sheetContext, setSheetState) => Padding(
             padding: EdgeInsets.only(
               left: 20,
@@ -514,15 +433,26 @@ class _HatimPlaniSayfaState extends State<HatimPlaniSayfa> {
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
-                Text(
-                  _languageService['hatim_plan_settings'] ?? 'Plan Ayarları',
-                  style: TextStyle(
-                    color: renkler.yaziPrimary,
-                    fontSize: 16,
-                    fontWeight: FontWeight.bold,
-                  ),
+                Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        _languageService['hatim_plan_settings'] ??
+                            'Plan Ayarları',
+                        style: TextStyle(
+                          color: renkler.yaziPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                    IconButton(
+                      icon: Icon(Icons.close_rounded, color: renkler.yaziSecondary),
+                      onPressed: () => kapatmayaCalis(sheetContext),
+                    ),
+                  ],
                 ),
-                const SizedBox(height: 16),
+                const SizedBox(height: 4),
                 TextField(
                   controller: adCtrl,
                   style: TextStyle(color: renkler.yaziPrimary),
@@ -570,74 +500,26 @@ class _HatimPlaniSayfaState extends State<HatimPlaniSayfa> {
                 if (acik)
                   Padding(
                     padding: const EdgeInsets.only(top: 10),
-                    child: Material(
-                      color: Colors.transparent,
-                      child: InkWell(
-                        borderRadius: BorderRadius.circular(12),
-                        onTap: () async {
-                          final secilen = await showTimePicker(
-                            context: sheetContext,
-                            initialTime: saat,
-                          );
-                          if (secilen != null) {
-                            setSheetState(() => saat = secilen);
-                          }
-                        },
-                        child: Container(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 14,
-                            vertical: 10,
-                          ),
-                          decoration: BoxDecoration(
-                            color: renkler.vurgu.withOpacity(0.1),
-                            borderRadius: BorderRadius.circular(12),
-                            border: Border.all(
-                              color: renkler.vurgu.withOpacity(0.35),
-                            ),
-                          ),
-                          child: Row(
-                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                            children: [
-                              Row(
-                                children: [
-                                  Icon(
-                                    Icons.schedule_rounded,
-                                    color: renkler.vurgu,
-                                    size: 18,
-                                  ),
-                                  const SizedBox(width: 8),
-                                  Text(
-                                    _languageService['hatim_plan_reminder_time'] ??
-                                        'Bildirim Saati',
-                                    style: TextStyle(
-                                      color: renkler.yaziSecondary,
-                                      fontSize: 13,
-                                    ),
-                                  ),
-                                ],
-                              ),
-                              Row(
-                                children: [
-                                  Text(
-                                    saat.format(sheetContext),
-                                    style: TextStyle(
-                                      color: renkler.vurgu,
-                                      fontSize: 15,
-                                      fontWeight: FontWeight.bold,
-                                    ),
-                                  ),
-                                  const SizedBox(width: 4),
-                                  Icon(
-                                    Icons.edit_rounded,
-                                    color: renkler.vurgu,
-                                    size: 16,
-                                  ),
-                                ],
-                              ),
-                            ],
-                          ),
-                        ),
+                    child: ZamanSeciciSatiri(
+                      renkler: renkler,
+                      leading: Icon(
+                        Icons.schedule_rounded,
+                        color: renkler.vurgu,
+                        size: 18,
                       ),
+                      etiket:
+                          _languageService['hatim_plan_reminder_time'] ??
+                          'Bildirim Saati',
+                      saatMetni: saat.format(sheetContext),
+                      onTap: () async {
+                        final secilen = await showTimePicker(
+                          context: sheetContext,
+                          initialTime: saat,
+                        );
+                        if (secilen != null) {
+                          setSheetState(() => saat = secilen);
+                        }
+                      },
                     ),
                   ),
                 if (acik)
@@ -679,6 +561,7 @@ class _HatimPlaniSayfaState extends State<HatimPlaniSayfa> {
                 ),
               ],
             ),
+          ),
           ),
         );
       },
@@ -1196,74 +1079,26 @@ class _HatimPlaniSayfaState extends State<HatimPlaniSayfa> {
           if (_hatirlaticiAcik)
             Padding(
               padding: const EdgeInsets.only(top: 10),
-              child: Material(
-                color: Colors.transparent,
-                child: InkWell(
-                  borderRadius: BorderRadius.circular(12),
-                  onTap: () async {
-                    final secilen = await showTimePicker(
-                      context: context,
-                      initialTime: _hatirlaticiSaati,
-                    );
-                    if (secilen != null) {
-                      setState(() => _hatirlaticiSaati = secilen);
-                    }
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(
-                      horizontal: 14,
-                      vertical: 10,
-                    ),
-                    decoration: BoxDecoration(
-                      color: renkler.vurgu.withOpacity(0.1),
-                      borderRadius: BorderRadius.circular(12),
-                      border: Border.all(
-                        color: renkler.vurgu.withOpacity(0.35),
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Row(
-                          children: [
-                            Icon(
-                              Icons.schedule_rounded,
-                              color: renkler.vurgu,
-                              size: 18,
-                            ),
-                            const SizedBox(width: 8),
-                            Text(
-                              _languageService['hatim_plan_reminder_time'] ??
-                                  'Bildirim Saati',
-                              style: TextStyle(
-                                color: renkler.yaziSecondary,
-                                fontSize: 13,
-                              ),
-                            ),
-                          ],
-                        ),
-                        Row(
-                          children: [
-                            Text(
-                              _hatirlaticiSaati.format(context),
-                              style: TextStyle(
-                                color: renkler.vurgu,
-                                fontSize: 15,
-                                fontWeight: FontWeight.bold,
-                              ),
-                            ),
-                            const SizedBox(width: 4),
-                            Icon(
-                              Icons.edit_rounded,
-                              color: renkler.vurgu,
-                              size: 16,
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                  ),
+              child: ZamanSeciciSatiri(
+                renkler: renkler,
+                leading: Icon(
+                  Icons.schedule_rounded,
+                  color: renkler.vurgu,
+                  size: 18,
                 ),
+                etiket:
+                    _languageService['hatim_plan_reminder_time'] ??
+                    'Bildirim Saati',
+                saatMetni: _hatirlaticiSaati.format(context),
+                onTap: () async {
+                  final secilen = await showTimePicker(
+                    context: context,
+                    initialTime: _hatirlaticiSaati,
+                  );
+                  if (secilen != null) {
+                    setState(() => _hatirlaticiSaati = secilen);
+                  }
+                },
               ),
             ),
           if (_hatirlaticiAcik)

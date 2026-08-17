@@ -94,6 +94,9 @@ class AlarmService : Service() {
     private var currentEarlyMinutes = 0
     private var currentIsDailyContent = false
     private var currentContentBody = ""
+    // "verse" | "hadith" | "prayer" | "tahajjud" — bildirime tıklanınca
+    // Flutter tarafında hangi içeriğin açılacağını belirtir.
+    private var currentContentType = ""
     private var wasPhoneSilentBefore = false // Alarm başlamadan önce telefon sessiz miydi
 
     // Ekran kapanma (güç/kilit tuşu) algılama için BroadcastReceiver
@@ -371,6 +374,7 @@ class AlarmService : Service() {
         val isEarly = intent?.getBooleanExtra(AlarmReceiver.EXTRA_IS_EARLY, false) ?: false
         val earlyMinutes = intent?.getIntExtra(AlarmReceiver.EXTRA_EARLY_MINUTES, 0) ?: 0
         val contentBody = intent?.getStringExtra("content_body") // Günlük içerik için
+        val contentType = intent?.getStringExtra("content_type") ?: ""
         val isDailyContent = intent?.action == "DAILY_CONTENT_ALARM"
 
         // AlarmService tek bir servis örneği üzerinden çalışır; vakit alarmı,
@@ -403,6 +407,7 @@ class AlarmService : Service() {
         currentEarlyMinutes = earlyMinutes
         currentIsDailyContent = isDailyContent
         currentContentBody = contentBody ?: ""
+        currentContentType = contentType
 
         Log.d(TAG, "🎶 Gelen ses ID'si: $soundId, Erken: $isEarly, Günlük İçerik: $isDailyContent")
 
@@ -634,6 +639,11 @@ class AlarmService : Service() {
 
         val mainIntent = Intent(this, MainActivity::class.java).apply {
             flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            // Günlük içerik bildirimine tıklanınca Flutter tarafı hangi
+            // içeriği (ayet/hadis/dua/teheccüd) açacağını bilsin diye.
+            if (currentIsDailyContent && currentContentType.isNotEmpty()) {
+                putExtra(MainActivity.EXTRA_DAILY_CONTENT_TYPE, currentContentType)
+            }
         }
         val mainPendingIntent = PendingIntent.getActivity(
             this, 10, mainIntent,
