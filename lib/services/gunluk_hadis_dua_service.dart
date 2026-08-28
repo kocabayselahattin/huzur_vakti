@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'dart:convert';
+import 'dart:math';
 import 'package:flutter/services.dart' show rootBundle;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'kuran_veri_service.dart';
@@ -42,6 +43,30 @@ class GunlukHadisDuaService {
   static Map<String, dynamic>? _metinler;
   static Future<void>? _havuzFuture;
 
+  /// Havuzdaki numaralar kaynak kitapta olduğu sırayla (konu/bölüm sırasıyla)
+  /// durduğu için sıra numarasını doğrudan kullanmak, bir kitabın tek bir
+  /// konusunun (ör. "Kitâbü'l-İstiskâ" / yağmur duası bölümü) art arda onlarca
+  /// gün gösterilmesine yol açar. Sabit tohumlu bir karıştırma ile sıra
+  /// numarasını havuz içinde deterministik ama "dağınık" bir konuma
+  /// eşleştiriyoruz; tarihe göre sonuç yine sabit kalır (kart/bildirim
+  /// tutarlılığı bozulmaz), sadece ardışık günler artık aynı bölüme denk
+  /// gelmez.
+  static const int _karistirmaTohumu = 20240101;
+  static List<int>? _hadisKarisikSira;
+  static List<int>? _duaKarisikSira;
+
+  static List<int> _karisikSiraOlustur(int uzunluk) {
+    final sira = List<int>.generate(uzunluk, (i) => i);
+    final rastgele = Random(_karistirmaTohumu);
+    for (var i = uzunluk - 1; i > 0; i--) {
+      final j = rastgele.nextInt(i + 1);
+      final gecici = sira[i];
+      sira[i] = sira[j];
+      sira[j] = gecici;
+    }
+    return sira;
+  }
+
   static Future<void> _havuzuYukle() {
     if (_hadisKaynaklari != null) return Future.value();
     return _havuzFuture ??= _havuzuOku();
@@ -53,6 +78,12 @@ class GunlukHadisDuaService {
       final data = json.decode(jsonStr) as Map<String, dynamic>;
       _hadisKaynaklari = _kaynaklariAyristir(data['hadis']);
       _duaKaynaklari = _kaynaklariAyristir(data['dua']);
+      _hadisKarisikSira = _karisikSiraOlustur(
+        _hadisKaynaklari!.fold<int>(0, (t, k) => t + k.nolar.length),
+      );
+      _duaKarisikSira = _karisikSiraOlustur(
+        _duaKaynaklari!.fold<int>(0, (t, k) => t + k.nolar.length),
+      );
 
       final metinlerStr = await rootBundle.loadString(_metinlerAsset);
       _metinler = json.decode(metinlerStr) as Map<String, dynamic>;
@@ -98,11 +129,13 @@ class GunlukHadisDuaService {
   /// ardışık günler farklı içerik alır.
   static ({String kitap, String kisaAd, int no})? _havuzKonumu(
     List<_HavuzKaynagi> kaynaklar,
+    List<int> karisikSira,
     int sira,
   ) {
     final toplam = kaynaklar.fold<int>(0, (t, k) => t + k.nolar.length);
     if (toplam == 0) return null;
-    var kalan = ((sira % toplam) + toplam) % toplam;
+    final duzSira = ((sira % toplam) + toplam) % toplam;
+    var kalan = karisikSira[duzSira];
     for (final kaynak in kaynaklar) {
       if (kalan < kaynak.nolar.length) {
         return (
@@ -150,11 +183,12 @@ class GunlukHadisDuaService {
   /// yalnızca (teorik olarak) eksik kalmış birkaç kayda karşıdır.
   static Map<String, String>? _uygunHadisBul({
     required List<_HavuzKaynagi> kaynaklar,
+    required List<int> karisikSira,
     required int baslangicSira,
     int denemeSayisi = 3,
   }) {
     for (int i = 0; i < denemeSayisi; i++) {
-      final konum = _havuzKonumu(kaynaklar, baslangicSira + i);
+      final konum = _havuzKonumu(kaynaklar, karisikSira, baslangicSira + i);
       if (konum == null) return null;
       final sonuc = _hadisNoBul(konum.kitap, konum.no);
       if (sonuc != null && (sonuc['text'] ?? '').isNotEmpty) {
@@ -225,11 +259,14 @@ class GunlukHadisDuaService {
     await _havuzuYukle();
     final kaynaklar =
         (duaMi ? _duaKaynaklari : _hadisKaynaklari) ?? const <_HavuzKaynagi>[];
+    final karisikSira =
+        (duaMi ? _duaKarisikSira : _hadisKarisikSira) ?? const <int>[];
 
-    final gomuluSonuc = kaynaklar.isEmpty
+    final gomuluSonuc = kaynaklar.isEmpty || karisikSira.isEmpty
         ? null
         : _uygunHadisBul(
             kaynaklar: kaynaklar,
+            karisikSira: karisikSira,
             baslangicSira: _gunSayisi(tarih),
           );
 
