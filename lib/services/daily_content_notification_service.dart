@@ -590,7 +590,6 @@ class DailyContentNotificationService {
       visibility: NotificationVisibility.public,
       autoCancel: false,
       ticker: channelTicker,
-      largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
       // BigText style - show full content
       styleInformation: BigTextStyleInformation(
         body,

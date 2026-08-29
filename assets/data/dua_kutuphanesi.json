@@ -1,5 +1,32 @@
 [
   {
+    "id": "ezan_1",
+    "kategori": "ezan",
+    "baslik": "Ezan Duası",
+    "arapca": "اَللّٰهُمَّ رَبَّ هٰذِهِ الدَّعْوَةِ التَّامَّةِ وَالصَّلَاةِ الْقَائِمَةِ آتِ مُحَمَّدًا الْوَسٖيلَةَ وَالْفَضٖيلَةَ وَابْعَثْهُ مَقَامًا مَحْمُودًا الَّذٖى وَعَدْتَهُ إِنَّكَ لَا تُخْلِفُ الْمٖيعَادَ",
+    "okunus": "Allâhümme Rabbe hâzihi'd-da'veti't-tâmmeh, ves-salâtil-kâimeh, âti Muhammeden-il vesîlete vel fadîlete, veb'as-hü makâmen mahmûdenillezî veadteh, inneke lâ tuhlifü'l-mîâd",
+    "meal": "Allah'ım! Bu eksiksiz davetin ve kılınacak namazın Rabbi! Muhammed'e vesîleyi (cennette yüksek bir makamı) ve fazileti ver, onu kendisine vaad ettiğin makam-ı mahmûda (şefaat makamına) ulaştır. Şüphesiz Sen, verdiğin sözden dönmezsin.",
+    "kaynak": "Buhârî, Ezân, 8"
+  },
+  {
+    "id": "nazar_1",
+    "kategori": "nazar",
+    "baslik": "Nazar Ayeti (Kalem Sûresi)",
+    "arapca": "وَإِنْ يَكَادُ الَّذٖينَ كَفَرُوا لَيُزْلِقُونَكَ بِأَبْصَارِهِمْ لَمَّا سَمِعُوا الذِّكْرَ وَيَقُولُونَ إِنَّهُ لَمَجْنُونٌ. وَمَا هُوَ إِلَّا ذِكْرٌ لِلْعَالَمٖينَ",
+    "okunus": "Ve in yekâdüllezîne keferû le yuzlikûneke bi ebsârihim lemmâ semiu'z-zikra ve yekûlûne innehû le mecnûn. Ve mâ hüve illâ zikrun lil-âlemîn",
+    "meal": "İnkâr edenler Kur'an'ı işittikleri zaman neredeyse seni gözleriyle devirecekler; 'O gerçekten bir delidir' diyorlar. Hâlbuki o (Kur'an), âlemler için ancak bir öğüttür.",
+    "kaynak": "Kur'ân-ı Kerîm, Kalem, 51-52"
+  },
+  {
+    "id": "nazar_2",
+    "kategori": "nazar",
+    "baslik": "Nazar Duası (Hadis)",
+    "arapca": "أُعٖيذُكَ بِكَلِمَاتِ اللَّهِ التَّامَّةِ مِنْ كُلِّ شَيْطَانٍ وَهَامَّةٍ وَمِنْ كُلِّ عَيْنٍ لَامَّةٍ",
+    "okunus": "Üîzüke bi kelimâtillâhi't-tâmmeti min külli şeytânin ve hâmmeh, ve min külli aynin lâmmeh",
+    "meal": "Seni; her türlü şeytandan, zehirli haşerattan ve nazar değdiren her gözden Allah'ın eksiksiz kelimeleriyle korumaya alırım.",
+    "kaynak": "Buhârî, Enbiyâ, 10"
+  },
+  {
     "id": "yemek_1",
     "kategori": "yemek",
     "baslik": "Yemeğe Başlarken",

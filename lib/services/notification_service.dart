@@ -191,7 +191,6 @@ class NotificationService {
         autoCancel: false,
         ongoing: false,
         ticker: prayerChannelTicker,
-        largeIcon: const DrawableResourceAndroidBitmap('@mipmap/ic_launcher'),
       );
 
       final notificationDetails = NotificationDetails(

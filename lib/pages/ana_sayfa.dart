@@ -46,7 +46,6 @@ import 'zikir_matik_sayfa.dart';
 import 'kirk_hadis_sayfa.dart';
 import 'kuran_sayfa.dart';
 import 'kutuphane_sayfa.dart';
-import 'tesbihat_sayfa.dart';
 import 'zekat_hesaplayici_sayfa.dart';
 import 'ibadet_sayfa.dart';
 import 'ozel_gunler_sayfa.dart';
@@ -1324,20 +1323,6 @@ class _AnaSayfaState extends State<AnaSayfa>
                           context,
                           MaterialPageRoute(
                             builder: (context) => const IbadetSayfa(),
-                          ),
-                        );
-                      },
-                    ),
-                    _buildMenuCard(
-                      icon: Icons.self_improvement,
-                      title: _languageService['tesbihat'] ?? '',
-                      color: Colors.lightGreen,
-                      onTap: () {
-                        Navigator.pop(context);
-                        Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (context) => const TesbihatSayfa(),
                           ),
                         );
                       },

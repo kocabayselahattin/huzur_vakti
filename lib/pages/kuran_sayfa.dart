@@ -10,6 +10,7 @@ import '../services/language_service.dart';
 import '../services/kuran_veri_service.dart';
 import '../services/kuran_ses_service.dart';
 import '../services/hatim_plan_service.dart';
+import '../services/arapca_font_ayarlari.dart';
 import 'hatim_plani_sayfa.dart';
 import '../widgets/paylasim_karti.dart';
 import 'paylasim_onizleme_sayfa.dart';
@@ -37,6 +38,7 @@ class _KuranSayfaState extends State<KuranSayfa>
   String _aramaSorgusu = '';
   List<Sure> _aramaSureSonuclari = [];
   List<_AyetAramaSonucu> _aramaAyetSonuclari = [];
+  String _arapcaFont = ArapcaFontAyarlari.varsayilanFont;
 
   @override
   void initState() {
@@ -45,6 +47,7 @@ class _KuranSayfaState extends State<KuranSayfa>
     _sureleriYukle();
     _sonOkunanYeriYukle();
     _hatimPlaniYukle();
+    _arapcaFontuYukle();
     // Ayet metninde arama yapabilmek için Kur'an verisi önceden yüklenir;
     // henüz yüklenmemişse arama sadece sure adlarında çalışır.
     KuranVeriService.yukle().then((_) {
@@ -55,6 +58,11 @@ class _KuranSayfaState extends State<KuranSayfa>
   Future<void> _hatimPlaniYukle() async {
     final planlar = await HatimPlanService.tumPlanlar();
     if (mounted) setState(() => _hatimPlanlari = planlar);
+  }
+
+  Future<void> _arapcaFontuYukle() async {
+    final font = await ArapcaFontAyarlari.yukle();
+    if (mounted) setState(() => _arapcaFont = font);
   }
 
   @override
@@ -1082,7 +1090,7 @@ class _KuranSayfaState extends State<KuranSayfa>
                   style: TextStyle(
                     color: renkler.vurgu,
                     fontSize: 22,
-                    fontFamily: 'Amiri',
+                    fontFamily: _arapcaFont,
                   ),
                 ),
               ],
@@ -1168,7 +1176,7 @@ class _KuranSayfaState extends State<KuranSayfa>
                   style: TextStyle(
                     color: renkler.vurgu,
                     fontSize: 20,
-                    fontFamily: 'Amiri',
+                    fontFamily: _arapcaFont,
                   ),
                 ),
               ],
@@ -2443,6 +2451,9 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
   String _hata = '';
   double _fontScale = 1.0;
   bool _okumaModu = false; // false: theme colors, true: black & white mode
+  String _arapcaFont = ArapcaFontAyarlari.varsayilanFont;
+  bool _okunusGizli = false;
+  bool _mealGizli = false;
   int? _gorunenSureNo;
   int? _gorunenAyetNo;
 
@@ -2478,6 +2489,8 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     _ayetleriYukle();
     _loadFontScale();
     _loadOkumaModu();
+    _loadArapcaFont();
+    _loadGosterimAyarlari();
     _scrollController.addListener(_onScroll);
     _sesIndirmeDurumunuKontrolEt();
     _sesOynatici.onPlayerComplete.listen((_) {
@@ -2800,6 +2813,39 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
     _saveOkumaModu();
   }
 
+  Future<void> _loadArapcaFont() async {
+    final font = await ArapcaFontAyarlari.yukle();
+    if (mounted) setState(() => _arapcaFont = font);
+  }
+
+  void _arapcaFontuSec(String fontFamily) {
+    setState(() => _arapcaFont = fontFamily);
+    ArapcaFontAyarlari.kaydet(fontFamily);
+  }
+
+  Future<void> _loadGosterimAyarlari() async {
+    final prefs = await SharedPreferences.getInstance();
+    if (!mounted) return;
+    setState(() {
+      _okunusGizli = prefs.getBool('kuran_okunus_gizli') ?? false;
+      _mealGizli = prefs.getBool('kuran_meal_gizli') ?? false;
+    });
+  }
+
+  void _toggleOkunusGizli() {
+    setState(() => _okunusGizli = !_okunusGizli);
+    SharedPreferences.getInstance().then(
+      (p) => p.setBool('kuran_okunus_gizli', _okunusGizli),
+    );
+  }
+
+  void _toggleMealGizli() {
+    setState(() => _mealGizli = !_mealGizli);
+    SharedPreferences.getInstance().then(
+      (p) => p.setBool('kuran_meal_gizli', _mealGizli),
+    );
+  }
+
   Color get _arkaPlanRengi {
     if (_okumaModu) {
       return Colors.white;
@@ -3052,7 +3098,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                 style: TextStyle(
                   fontSize: 16,
                   color: _vurguRengi,
-                  fontFamily: 'Amiri',
+                  fontFamily: _arapcaFont,
                 ),
               ),
             ],
@@ -3071,6 +3117,12 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
               onSelected: (value) {
                 if (value == 'toggle') {
                   _toggleOkumaModu();
+                } else if (value == 'toggle_okunus') {
+                  _toggleOkunusGizli();
+                } else if (value == 'toggle_meal') {
+                  _toggleMealGizli();
+                } else if (value.startsWith('font_')) {
+                  _arapcaFontuSec(value.substring('font_'.length));
                 }
               },
               itemBuilder: (context) => [
@@ -3100,6 +3152,82 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                     child: Text(
                       _languageService['reading_mode_desc'] ?? 'Eases reading',
                       style: const TextStyle(fontSize: 11, color: Colors.grey),
+                    ),
+                  ),
+                ),
+                const PopupMenuDivider(),
+                PopupMenuItem(
+                  value: 'toggle_okunus',
+                  child: Row(
+                    children: [
+                      Icon(
+                        _okunusGizli
+                            ? Icons.check_box_outline_blank
+                            : Icons.check_box,
+                        color: _okunusGizli ? Colors.grey : Colors.green,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Okunuşu Göster'),
+                    ],
+                  ),
+                ),
+                PopupMenuItem(
+                  value: 'toggle_meal',
+                  child: Row(
+                    children: [
+                      Icon(
+                        _mealGizli
+                            ? Icons.check_box_outline_blank
+                            : Icons.check_box,
+                        color: _mealGizli ? Colors.grey : Colors.green,
+                        size: 20,
+                      ),
+                      const SizedBox(width: 12),
+                      const Text('Meali Göster'),
+                    ],
+                  ),
+                ),
+                const PopupMenuDivider(),
+                const PopupMenuItem(
+                  enabled: false,
+                  child: Text(
+                    'Arapça Yazı Tipi',
+                    style: TextStyle(fontSize: 11, color: Colors.grey),
+                  ),
+                ),
+                ...ArapcaFontAyarlari.secenekler.map(
+                  (secenek) => PopupMenuItem(
+                    value: 'font_${secenek.fontFamily}',
+                    child: Row(
+                      children: [
+                        Icon(
+                          _arapcaFont == secenek.fontFamily
+                              ? Icons.radio_button_checked
+                              : Icons.radio_button_off,
+                          color: _arapcaFont == secenek.fontFamily
+                              ? Colors.green
+                              : Colors.grey,
+                          size: 20,
+                        ),
+                        const SizedBox(width: 12),
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(secenek.isim),
+                              Text(
+                                secenek.aciklama,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  fontSize: 11,
+                                  color: Colors.grey,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
                     ),
                   ),
                 ),
@@ -3212,7 +3340,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                               style: TextStyle(
                                 color: renkler.vurgu,
                                 fontSize: 26 * _fontScale,
-                                fontFamily: 'Amiri',
+                                fontFamily: _arapcaFont,
                               ),
                             ),
                           );
@@ -3284,7 +3412,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                   style: TextStyle(
                     color: renkler.vurgu,
                     fontSize: 15,
-                    fontFamily: 'Amiri',
+                    fontFamily: _arapcaFont,
                   ),
                 ),
               ],
@@ -3629,7 +3757,11 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
   Widget _buildAyetKarti(Ayet ayet, int sureNo, TemaRenkleri renkler) {
     // Hide recitation/translation for Arabic or Persian
     final currentLang = _languageService.currentLanguage;
-    final hideTranslation = currentLang == 'ar' || currentLang == 'fa';
+    final dilNedeniyleGizli = currentLang == 'ar' || currentLang == 'fa';
+    final okunusGorunsun =
+        !dilNedeniyleGizli && !_okunusGizli && ayet.okunus.isNotEmpty;
+    final mealGorunsun =
+        !dilNedeniyleGizli && !_mealGizli && ayet.meal.isNotEmpty;
 
     final buAyetCaliyor = _calanSureNo == sureNo && _calanAyetNo == ayet.no;
 
@@ -3760,13 +3892,13 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
                 color: _yaziRengi,
                 fontSize: 24 * _fontScale,
                 height: 2,
-                fontFamily: 'Amiri',
+                fontFamily: _arapcaFont,
               ),
             ),
           ),
 
           // Recitation - shown for non-Arabic/Persian languages
-          if (ayet.okunus.isNotEmpty && !hideTranslation)
+          if (okunusGorunsun)
             Container(
               width: double.infinity,
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
@@ -3801,7 +3933,7 @@ class _SureDetaySayfaState extends State<SureDetaySayfa> {
             ),
 
           // Translation - shown for non-Arabic/Persian languages
-          if (!hideTranslation && ayet.meal.isNotEmpty)
+          if (mealGorunsun)
             Padding(
               padding: const EdgeInsets.all(16),
               child: Column(
@@ -3902,6 +4034,15 @@ class CuzDetaySayfa extends StatefulWidget {
 
 class _CuzDetaySayfaState extends State<CuzDetaySayfa> {
   final TemaService _temaService = TemaService();
+  String _arapcaFont = ArapcaFontAyarlari.varsayilanFont;
+
+  @override
+  void initState() {
+    super.initState();
+    ArapcaFontAyarlari.yukle().then((font) {
+      if (mounted) setState(() => _arapcaFont = font);
+    });
+  }
 
   List<_CuzSureSegment> _getCuzSureleri() {
     final tumSureler = sureListesi;
@@ -3985,7 +4126,7 @@ class _CuzDetaySayfaState extends State<CuzDetaySayfa> {
                     style: TextStyle(
                       color: renkler.vurgu,
                       fontSize: 32,
-                      fontFamily: 'Amiri',
+                      fontFamily: _arapcaFont,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -4106,7 +4247,7 @@ class _CuzDetaySayfaState extends State<CuzDetaySayfa> {
                   style: TextStyle(
                     color: renkler.vurgu,
                     fontSize: 20,
-                    fontFamily: 'Amiri',
+                    fontFamily: _arapcaFont,
                   ),
                 ),
               ],

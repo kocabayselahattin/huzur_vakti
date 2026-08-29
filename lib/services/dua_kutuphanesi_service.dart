@@ -50,6 +50,8 @@ class DuaKutuphanesiService {
 
   /// Sabit kategori sırası; sayfadaki sekme/çip sırasıyla birebir eşleşir.
   static const List<String> kategoriler = [
+    'ezan',
+    'nazar',
     'yemek',
     'uyku',
     'yolculuk',

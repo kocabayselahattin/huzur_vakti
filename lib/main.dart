@@ -247,6 +247,7 @@ Future<void> _arkaPlanBaslatma() async {
     // 🗓️ Sync Hijri calendar with Turkey/Diyanet to avoid 1-day drift (Ramadan, Berat, etc.).
     // MUST run before HomeWidgetService.initialize() so hijriNowTR() uses the correct shift.
     await OzelGunlerService.syncHijriDayShiftWithDiyanet();
+    await OzelGunlerService.syncVakitlerWithDiyanet();
 
     // Initialize Home Widget service and schedule background updates.
     await HomeWidgetService.initialize();
