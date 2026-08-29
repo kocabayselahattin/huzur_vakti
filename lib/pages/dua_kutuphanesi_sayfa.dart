@@ -4,6 +4,7 @@ import '../services/language_service.dart';
 import '../services/dua_kutuphanesi_service.dart';
 import 'dua_detay_sayfa.dart';
 import 'dua_kategori_sayfa.dart';
+import 'genel_dualar_sayfa.dart';
 
 /// Kütüphane > Dua Kütüphanesi: dualar kategori halinde listelenir (ör.
 /// "Ezan Duası", "Nazar Duası", "Yemek Duası"). Tek duası olan kategoriler
@@ -103,9 +104,10 @@ class _DuaKutuphanesiSayfaState extends State<DuaKutuphanesiSayfa> {
         final tumDualar = snapshot.data ?? const [];
         return ListView.builder(
           padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
-          itemCount: DuaKutuphanesiService.kategoriler.length,
+          itemCount: DuaKutuphanesiService.kategoriler.length + 1,
           itemBuilder: (context, index) {
-            final kategori = DuaKutuphanesiService.kategoriler[index];
+            if (index == 0) return _genelDualarOgesi(context, renkler);
+            final kategori = DuaKutuphanesiService.kategoriler[index - 1];
             final dualar = tumDualar.where((d) => d.kategori == kategori).toList();
             return _kategoriOgesi(kategori, dualar, renkler);
           },
@@ -140,6 +142,51 @@ class _DuaKutuphanesiSayfaState extends State<DuaKutuphanesiSayfa> {
           itemBuilder: (context, index) => _duaListeOgesi(dualar[index], renkler),
         );
       },
+    );
+  }
+
+  Widget _genelDualarOgesi(BuildContext context, TemaRenkleri renkler) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 14),
+      decoration: BoxDecoration(
+        color: renkler.kartArkaPlan,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: renkler.vurgu.withOpacity(0.35)),
+        boxShadow: [
+          BoxShadow(color: renkler.vurgu.withOpacity(0.1), blurRadius: 8),
+        ],
+      ),
+      child: Material(
+        color: Colors.transparent,
+        borderRadius: BorderRadius.circular(14),
+        clipBehavior: Clip.antiAlias,
+        child: InkWell(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const GenelDualarSayfa()),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 16),
+            child: Row(
+              children: [
+                Icon(Icons.auto_stories_rounded, color: renkler.vurgu, size: 20),
+                const SizedBox(width: 12),
+                Expanded(
+                  child: Text(
+                    _ceviri('genel_dualar_title', 'Genel Dualar'),
+                    style: TextStyle(
+                      color: renkler.yaziPrimary,
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                ),
+                Icon(Icons.chevron_right_rounded, color: renkler.yaziSecondary),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 

@@ -154,7 +154,7 @@ class _DuaKategoriSayfaState extends State<DuaKategoriSayfa> {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          if (!tekDua)
+          if (!tekDua && dua.baslik != widget.kategoriBaslik)
             Padding(
               padding: const EdgeInsets.only(bottom: 12),
               child: Text(
@@ -166,37 +166,41 @@ class _DuaKategoriSayfaState extends State<DuaKategoriSayfa> {
                 ),
               ),
             ),
-          Text(
-            dua.arapca,
-            textDirection: TextDirection.rtl,
-            textAlign: TextAlign.right,
-            style: TextStyle(
-              color: renkler.yaziPrimary,
-              fontSize: 24 * _fontScale,
-              fontFamily: 'Amiri',
-              height: 2,
+          if (dua.arapca.isNotEmpty) ...[
+            Text(
+              dua.arapca,
+              textDirection: TextDirection.rtl,
+              textAlign: TextAlign.right,
+              style: TextStyle(
+                color: renkler.yaziPrimary,
+                fontSize: 24 * _fontScale,
+                fontFamily: 'Amiri',
+                height: 2,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          Text(
-            'Okunuşu',
-            style: TextStyle(
-              color: renkler.vurguSecondary,
-              fontSize: 11,
-              fontWeight: FontWeight.w600,
+            const SizedBox(height: 16),
+          ],
+          if (dua.okunus.isNotEmpty) ...[
+            Text(
+              'Okunuşu',
+              style: TextStyle(
+                color: renkler.vurguSecondary,
+                fontSize: 11,
+                fontWeight: FontWeight.w600,
+              ),
             ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            dua.okunus,
-            style: TextStyle(
-              color: renkler.yaziPrimary,
-              fontSize: 15 * _fontScale,
-              fontStyle: FontStyle.italic,
-              height: 1.6,
+            const SizedBox(height: 4),
+            Text(
+              dua.okunus,
+              style: TextStyle(
+                color: renkler.yaziPrimary,
+                fontSize: 15 * _fontScale,
+                fontStyle: FontStyle.italic,
+                height: 1.6,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
+            const SizedBox(height: 16),
+          ],
           Text(
             'Meali',
             style: TextStyle(

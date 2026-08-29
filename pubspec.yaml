@@ -102,6 +102,7 @@ flutter:
     - assets/data/gunluk_icerik_metinleri.json
     - assets/data/mushaf_sayfalari.json
     - assets/data/dua_kutuphanesi.json
+    - assets/data/genel_dualar.json
     - assets/icon/app_icon.png
     - assets/icon/sun.png
     - assets/icon/moon.png
