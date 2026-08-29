@@ -4,6 +4,7 @@ import '../services/language_service.dart';
 import 'kuran_sayfa.dart';
 import 'kuran_ses_ayarlari_sayfa.dart';
 import 'dua_kutuphanesi_sayfa.dart';
+import 'hadis_kutuphanesi_sayfa.dart';
 import 'mezarlik_ziyareti_sayfa.dart';
 
 /// Kütüphane: Kur'an-ı Kerim ve dua kaynaklarının toplandığı hub sayfa.
@@ -79,6 +80,20 @@ class KutuphaneSayfa extends StatelessWidget {
                   context,
                   MaterialPageRoute(
                     builder: (context) => const DuaKutuphanesiSayfa(),
+                  ),
+                ),
+              ),
+              Divider(color: renkler.ayirac),
+              _kutuphaneSatiri(
+                icon: Icons.menu_book_rounded,
+                iconColor: Colors.deepPurple,
+                baslik: 'Hadisler',
+                altBaslik: "Riyâzü's-Sâlihîn — konu başlığına göre",
+                renkler: renkler,
+                onTap: () => Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (context) => const HadisKutuphanesiSayfa(),
                   ),
                 ),
               ),
